@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.017 — Dust and leavings
+
+- Dust hangs in the air: fine specks drift in the headlamp's beam, and only there, so the cone of light shows in the dark.
+- The quarrymen left more behind. Against pillars and walls: crates (one stacked on another now and then) and a barrel, a pick and a shovel leant on the rock with a bucket, or a stack of squared blocks that were never hauled up. Out in the halls, here and there, a wooden derrick for lifting blocks, its rope and hook still hanging, sometimes over the block it never lifted.
+
 ## v0.016 — Shadows
 
 - The headlamp casts shadows. It is a cone now, carried above the nobody's head and shining where you look, with a little light spilling all round. Stones, pillars, props, rats and the nobody throw shadows away from it, so from behind you see them stretch ahead into the dark.

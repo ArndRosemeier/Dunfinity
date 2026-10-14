@@ -18,6 +18,11 @@ test('props are deterministic per seed', () => {
   assert.deepEqual(a.lamps, b.lamps);
 });
 
+test('things are left against the rock, and derricks stand in the open', () => {
+  assert.ok(total('leftovers') >= 5, `left behind ${total('leftovers')}`);
+  assert.ok(total('derricks') >= 1, `derricks ${total('derricks')}`);
+});
+
 test('the quarry around the spawn has tracks, carts, lamps and a shack', () => {
   assert.ok(total('sleepers') > 100, `sleepers ${total('sleepers')}`);
   assert.ok(total('carts') >= 1);
@@ -54,6 +59,8 @@ test('prop boxes wind outwards', () => {
   const b = new PropBuilder();
   b.upright(0, 0, 0, 0.7, 1, 2, 3, [1, 1, 1]);
   b.beam(0, 0, 0, 3, 1, 2, 0.2, 0.3, [1, 1, 1]);
+  b.cylinder(1, 2, 3, 0.3, 0.4, [1, 1, 1], 12, 0.12);
+  b.cylinder(1, 2, 3, 0.2, 0.2, [1, 1, 1], 8, 0, 0.2);
   const m = b.build()!;
   for (let i = 0; i < m.indices.length; i += 3) {
     const [a, c, d] = [m.indices[i], m.indices[i + 1], m.indices[i + 2]].map((k) => [m.positions[3 * k], m.positions[3 * k + 1], m.positions[3 * k + 2]]);

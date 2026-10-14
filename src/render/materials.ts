@@ -7,8 +7,8 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, type Material, type Node } from 'three/webgpu';
-import { abs, faceDirection, float, mx_fractal_noise_float, mx_noise_float, normalView, normalWorld, positionView, positionWorld, smoothstep, sin, vec2, vec3, vertexColor } from 'three/tsl';
+import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, Vector3, type Material, type Node } from 'three/webgpu';
+import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, mod, mx_fractal_noise_float, mx_noise_float, normalize, normalView, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -102,3 +102,33 @@ export const METAL = defineKind('metal', ['position', 'normal', 'color'], () => 
   const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.28, metalness: 0.65 });
   return m;
 });
+
+/** Where the headlamp is and which way it shines (world), for the dust in its beam: set every frame by `Dust`. */
+export const DUST_LAMP = { at: uniform(new Vector3()), dir: uniform(new Vector3(0, 0, -1)) };
+/** The dust box: motes fill a cube this many metres wide that travels with the camera. */
+export const DUST_BOX = 12;
+
+/**
+ * Dust in the air, seen only where the headlamp's beam catches it: tiny soft specks, additive. One
+ * mesh of quads (built by `Dust`): `position` is a mote's place in the box, `normal` carries its
+ * corner (x, y, -1..1) and size (z, m), `color` its phase, drift speed and brightness. The vertex
+ * shader drifts the motes, wraps them round the camera (so the box never runs out) and turns each
+ * quad to face the camera. Same attributes as the solid kind.
+ */
+export const DUST = defineKind('dust', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
+  const corner = attribute<'vec3'>('normal', 'vec3'), seed = attribute<'vec3'>('color', 'vec3');
+  const t = time.mul(seed.y.mul(0.5).add(0.2)).add(seed.x.mul(6.283));
+  const drift = vec3(sin(t), sin(t.mul(0.7).add(1.3)).mul(0.6), cos(t.mul(0.9))).mul(0.25);
+  const half = DUST_BOX / 2;
+  const p = mod(positionLocal.add(drift).sub(cameraPosition).add(half), DUST_BOX).add(cameraPosition).sub(half);
+  const view = cameraViewMatrix.mul(vec4(p, 1));
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(corner.xy.mul(corner.z)), view.z, view.w));
+  // Lit by the beam: inside the cone, falling off with distance from the lamp, gone right at the lamp (no glare on the lens).
+  const toMote = p.sub(DUST_LAMP.at), d = length(toMote);
+  const inBeam = smoothstep(0.82, 0.95, dot(normalize(toMote), DUST_LAMP.dir));
+  const lit = varying(inBeam.mul(smoothstep(0.4, 1.2, d)).div(max(d.mul(d), 1).mul(0.1)).mul(seed.z), 'vDustLit');
+  const soft = smoothstep(1, 0.2, length(varying(corner.xy, 'vDustCorner')));
+  m.colorNode = vec3(1.0, 0.86, 0.66).mul(lit.mul(soft));
+  return m;
+}, { cast: false, receive: false });
