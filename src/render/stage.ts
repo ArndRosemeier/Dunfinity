@@ -28,8 +28,12 @@ export class Stage {
   /** Objects compiled but not yet visible. */
   get waiting(): number { return this.pending.size; }
 
-  /** Compile every material kind, then switch the cap on. Call after lights and fog are set up. */
-  async warmUp(): Promise<void> {
+  /**
+   * Compile every material kind, then switch the cap on. Call after lights and fog are set up.
+   * `extra`: objects whose materials are not registry kinds (the humanoid's, made by its package),
+   * compiled with them; add them with `add` later (a cache hit by then).
+   */
+  async warmUp(extra: readonly Object3D[] = []): Promise<void> {
     // One real frame first: it settles the render context (frame buffer target) that compiled
     // shaders are keyed by, and builds the renderer's own output pass.
     this.renderer.render(this.scene, this.camera);
@@ -42,6 +46,7 @@ export class Stage {
     for (const m of standIns) group.add(m);
     await this.renderer.compileAsync(group, this.camera, this.scene);
     for (const m of standIns) m.geometry.dispose();
+    for (const o of extra) await this.prepare(o);
     this.monitor.phase = 'run';
     this.cap.active = true;
   }

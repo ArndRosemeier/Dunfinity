@@ -4,7 +4,7 @@
  *
  * Lights are fixed before the warm-up: they are part of every shader's cache key (docs/SHADERS.md).
  */
-import { Scene, PerspectiveCamera, Color, Fog, HemisphereLight, PointLight, Group, type WebGPURenderer } from 'three/webgpu';
+import { Scene, PerspectiveCamera, Color, Fog, HemisphereLight, PointLight, Group, type Object3D, type WebGPURenderer } from 'three/webgpu';
 import type { Level } from '../gen/level';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
@@ -53,8 +53,9 @@ export class LevelView {
   }
 
   /** Compile every material kind (behind the loading screen), then start streaming the level. */
-  async start(): Promise<void> {
-    await this.stage.warmUp();
+  /** Warm up the shaders (with `extra`, see Stage.warmUp), then start streaming the level. */
+  async start(extra: readonly Object3D[] = []): Promise<void> {
+    await this.stage.warmUp(extra);
     const rock = new Group();
     const things = new Group();
     this.scene.add(rock, things);

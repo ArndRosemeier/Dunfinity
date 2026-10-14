@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.006 — The nobody is a person
+
+- The box stand-in is gone: the nobody is Scale's human (decision D1), a grandchild with a face, hair and a body of their own from the seed, in rags (a patched tunic, worn trousers, foot wraps). Motion-captured animation follows the body: standing idle, walking, sprinting, jumping, falling, climbing, swimming and dying; the feet find the rock.
+- Scale's humans now live in the shared `@futuremagic/humanoid` package (AssetGenerator): the pure body build plus a node-material-only renderer side (`Humanoid`: character, garments, animator, clips). Games bring their own clothes through a `Wardrobe` hook.
+- The human assets (bodies, clips) are served from the package under `/humanoid/`.
+- Shaders: the human's materials compile in the warm-up (`stage.warmUp(extra)`); after it, 0 builds while walking.
+
 ## v0.005 — Walk the Quarry
 
 - The game is now the default page: you are the nobody, standing in a grand hall of the Quarry in the dark, with a lamp. The Level Lab moved to `?lab`.
