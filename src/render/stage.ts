@@ -13,6 +13,9 @@ import { ShaderCap } from './shaders/cap';
 import { ShaderMonitor } from './shaders/monitor';
 import { installShaderPolicy } from './shaders/patches';
 
+/** Frames drawn to warm the shadow pass (async pipelines finish over a few). */
+const WARM_FRAMES = 8;
+
 export class Stage {
   readonly cap = new ShaderCap();
   readonly monitor = new ShaderMonitor();
@@ -45,10 +48,36 @@ export class Stage {
     const group = new Group();
     for (const m of standIns) group.add(m);
     await this.renderer.compileAsync(group, this.camera, this.scene);
-    for (const m of standIns) m.geometry.dispose();
     for (const o of extra) await this.prepare(o);
+    // Then draw them, for the shadow pass's own (small) shaders, which compileAsync does not build.
+    await this.warmShadows(group, extra);
+    for (const m of standIns) m.geometry.dispose();
     this.monitor.phase = 'run';
     this.cap.active = true;
+  }
+
+  /**
+   * The shadow pass draws casters with shaders of its own, which compileAsync does not build: draw
+   * the stand-ins and `extra` in front of the camera (where the headlamp shines) for a few real
+   * frames, so those build now, behind the loading screen, and not in play.
+   */
+  private async warmShadows(group: Group, extra: readonly Object3D[]): Promise<void> {
+    const parents = extra.map((o) => o.parent);
+    for (const o of extra) {
+      group.add(o);
+      o.traverse((c) => { c.frustumCulled = false; });
+    }
+    this.scene.add(group);
+    for (let k = 0; k < WARM_FRAMES; k++) {
+      this.renderer.render(this.scene, this.camera);
+      await new Promise((r) => setTimeout(r, 30));
+    }
+    this.scene.remove(group);
+    extra.forEach((o, i) => {
+      o.removeFromParent();
+      parents[i]?.add(o);
+      o.traverse((c) => { c.frustumCulled = true; });
+    });
   }
 
   /** Put `obj` into the scene once everything it draws with is compiled. */
@@ -101,5 +130,8 @@ function standIn(kind: MaterialKind): Mesh {
   if (kind.attributes.includes('normal')) g.setAttribute('normal', new Float32BufferAttribute([0, 0, 1, 0, 0, 1, 0, 0, 1], 3));
   if (kind.attributes.includes('color')) g.setAttribute('color', new Float32BufferAttribute([1, 1, 1, 1, 1, 1, 1, 1, 1], 3));
   if (kind.attributes.includes('uv')) g.setAttribute('uv', new Float32BufferAttribute([0, 0, 1, 0, 0, 1], 2));
-  return new Mesh(g, kind.make());
+  const m = new Mesh(g, kind.make());
+  m.castShadow = kind.shadow.cast;
+  m.receiveShadow = kind.shadow.receive;
+  return m;
 }

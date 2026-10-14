@@ -5,6 +5,8 @@
  *  1. Steady state: after warm-up, flying through the Lab builds no new shader.
  *  2. Cap: eight new shader variants requested at once are built one at a time, at least 200 ms
  *     apart and at most 5 per second, each under 100 ms of blocking.
+ *  3. The game: after its warm-up, the first seconds of play (figure, rats, finds, shadows) build
+ *     no new shader.
  */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
@@ -55,6 +57,20 @@ try {
   if (cap.starts.length !== 8) problems.push(`cap: expected 8 builds, saw ${cap.starts.length}`);
   if (cap.starts.some((e) => e.kind !== 'node-async')) problems.push('cap: a build ran synchronously on the render path');
   problems.push(...cap.violations);
+
+  await page.close();
+  const game = await browser.newPage({ viewport: { width: 960, height: 600 } });
+  game.on('pageerror', (e) => problems.push(`game page error: ${e.message}`));
+  await game.goto(server.resolvedUrls.local[0] + '?seed=1&gl', { timeout: 120000 });
+  await game.waitForFunction(() => window.__ready === true, null, { timeout: 240000 });
+  const played = await game.evaluate(async () => {
+    const g = window.__game;
+    for (let t = 0; t < 20; t++) { g.cam.yaw += 0.3; await new Promise((r) => setTimeout(r, 150)); }
+    return { built: window.shaders.summary().run, violations: window.shaders.violations() };
+  });
+  console.log(`game: ${played.built} shaders built after warm-up`);
+  if (played.built) problems.push(`game: ${played.built} shaders built after warm-up (something drawn differs from what was warmed: a light moved to another parent, shadow flags set per mesh, ...)`);
+  problems.push(...played.violations);
 } catch (e) {
   problems.push(String(e?.stack || e));
 } finally {

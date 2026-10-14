@@ -14,18 +14,21 @@ export interface MaterialKind {
   readonly name: string;
   /** The geometry attributes meshes of this kind carry (warm-up builds a matching stand-in). Meshes are always indexed. */
   readonly attributes: readonly ('position' | 'normal' | 'color' | 'uv')[];
+  /** Whether meshes of this kind cast and receive the headlamp's shadow (receiving is part of the shader's cache key). */
+  readonly shadow: { readonly cast: boolean; readonly receive: boolean };
   /** The kind's material (one instance, made on first use). */
   make(): Material;
 }
 
 const kinds = new Map<string, MaterialKind>();
 
-function defineKind(name: string, attributes: MaterialKind['attributes'], build: () => Material): MaterialKind {
+function defineKind(name: string, attributes: MaterialKind['attributes'], build: () => Material, shadow = { cast: true, receive: true }): MaterialKind {
   if (kinds.has(name)) throw new Error(`material kind "${name}" defined twice`);
   let proto: Material | null = null;
   const kind: MaterialKind = {
     name,
     attributes,
+    shadow,
     make() {
       proto ??= Object.assign(build(), { name });
       return proto;
@@ -86,13 +89,13 @@ function bumped(height: Node<'float'>, scale: number) {
 export const GLOW = defineKind('glow', ['position', 'normal', 'color'], () => {
   const m = new MeshBasicNodeMaterial({ vertexColors: true });
   return m;
-});
+}, { cast: false, receive: false });
 
 /** Standing water: dark and glossy, so lamps and the headlamp glint on it. Same attributes as the solid kind. */
 export const WATER = defineKind('water', ['position', 'normal', 'color'], () => {
   const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.06, metalness: 0.1 });
   return m;
-});
+}, { cast: false, receive: true });
 
 /** Worked metal: a knife's blade, tools. Glints in the lamps. Same attributes as the solid kind. */
 export const METAL = defineKind('metal', ['position', 'normal', 'color'], () => {

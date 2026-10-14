@@ -23,6 +23,8 @@ export function meshFromData(d: IndexedData, kind: MaterialKind): Mesh {
   g.computeBoundingSphere();
   const m = new Mesh(g, kind.make());
   m.matrixAutoUpdate = false;
+  m.castShadow = kind.shadow.cast;
+  m.receiveShadow = kind.shadow.receive;
   return m;
 }
 
