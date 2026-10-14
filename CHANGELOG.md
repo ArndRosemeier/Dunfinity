@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.013 — Limestone
+
+- The rock looks like rock: limestone mottled in patches a metre or two across, a fine grain, dark bedding seams that come and go along the walls and pillars, gritty dusty floors, and a bumpy surface the headlamp rakes across. All worked out in the shader from where a point is, so it never repeats and needs no textures.
+- The new `ROCK` material kind (one shader, compiled in the warm-up like the rest).
+
 ## v0.012 — Finds
 
 - Things to find: what the miners left on the floor of the Quarry (old Pfennigs, brass tally tokens, chisels, clay pipes, tobacco tins, a carbide lamp now and then) and what the rats dragged into their nests (rats hoard shiny things: silver spoons, medals, a pocket watch, gold rings only there). A faint twinkle gives a find away in the dark.
