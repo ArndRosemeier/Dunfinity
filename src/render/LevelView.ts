@@ -4,7 +4,7 @@
  *
  * Lights are fixed before the warm-up: they are part of every shader's cache key (docs/SHADERS.md).
  */
-import { Scene, PerspectiveCamera, Color, Fog, HemisphereLight, PointLight, Group, type Object3D, type WebGPURenderer } from 'three/webgpu';
+import { Scene, PerspectiveCamera, Color, Fog, HemisphereLight, PointLight, SpotLight, Group, Vector3, type Object3D, type WebGPURenderer } from 'three/webgpu';
 import type { Level } from '../gen/level';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
@@ -20,8 +20,16 @@ export class LevelView {
   readonly camera = new PerspectiveCamera(70, 1, 0.1, 4000);
   readonly stage: Stage;
   readonly fog = new Fog(0x050607, FOG.survey[0], FOG.survey[1]);
-  /** The light the viewer carries; it rides on the camera. */
-  readonly headlamp = new PointLight(0xffe9cc, 160, 160, 1.4);
+  /**
+   * The lamp the viewer carries: a cone where the camera looks, casting the one shadow in the game,
+   * from where it is carried (the nobody's head; the camera in the Lab). Off the camera, so the
+   * shadows show from behind.
+   */
+  readonly headlamp = new SpotLight(0xffe9cc, 160, 160, HEADLAMP.angle, HEADLAMP.penumbra, 1.4);
+  /** A little of its light all round the carrier (the cone's spill). */
+  private readonly spill = new PointLight(0xffe9cc, 0, 30, 1.4);
+  /** Where the headlamp is carried (null: on the camera). */
+  carrier: Vector3 | null = null;
   private readonly ambient = new HemisphereLight(0x9aa6b4, 0x2a2218, 0.7);
   private readonly lamps: LampLights;
   private readonly rock = new Group();
@@ -49,13 +57,24 @@ export class LevelView {
     this.scene.fog = this.fog;
     this.scene.add(this.ambient);
     this.lamps = new LampLights(this.scene);
-    this.camera.add(this.headlamp);
+    renderer.shadowMap.enabled = true;
+    const sh = this.headlamp.shadow;
+    sh.mapSize.set(HEADLAMP.map, HEADLAMP.map);
+    sh.camera.near = 0.2;
+    sh.camera.far = HEADLAMP.shadowFar;
+    sh.bias = -0.0004;
+    sh.normalBias = 0.03;
+    this.headlamp.castShadow = true;
+    // On the camera: lights moved out of it into the scene changed every shader's key after the warm-up.
+    this.headlamp.target.position.set(0, 0, -10);
+    this.camera.add(this.headlamp, this.headlamp.target, this.spill);
     this.scene.add(this.camera);
     this.stage = new Stage(renderer, this.scene, this.camera);
   }
 
   /** Warm up the shaders (with `extra`, see Stage.warmUp), then start streaming the level. */
   async start(extra: readonly Object3D[] = []): Promise<void> {
+    this.aimHeadlamp(); // the warm-up draws the shadow pass too: the lamp must shine where the camera looks
     await this.stage.warmUp(extra);
     this.scene.add(this.rock, this.things);
     this.stream();
@@ -86,11 +105,22 @@ export class LevelView {
     [this.fog.near, this.fog.far] = dark ? FOG.dark : FOG.survey;
     this.ambient.intensity = dark ? 0.05 : 0.7;
     this.headlamp.intensity = dark ? this.headlampPower.dark : this.headlampPower.survey;
+    this.spill.intensity = this.headlamp.intensity * HEADLAMP.spill;
   }
 
   /** True when the rock and props around the viewer are all on screen. */
   get settled(): boolean {
     return !!this.terrain_?.settled && !!this.props_?.settled;
+  }
+
+  /** Put the headlamp where it is carried (in the camera's frame); it shines where the camera looks. */
+  private aimHeadlamp(): void {
+    if (!this.carrier) this.headlamp.position.set(0, 0, 0);
+    else {
+      this.camera.updateMatrixWorld();
+      this.camera.worldToLocal(this.headlamp.position.copy(this.carrier));
+    }
+    this.spill.position.copy(this.headlamp.position);
   }
 
   resize(width: number, height: number): void {
@@ -102,11 +132,15 @@ export class LevelView {
   /** Once per frame: stream around (x, y, z), then render. `time` in seconds. */
   frame(x: number, y: number, z: number, time: number): void {
     this.stage.frame();
+    this.aimHeadlamp();
     this.terrain.update(x, y, z);
     this.props.update(x, y, z, time);
     this.renderer.render(this.scene, this.camera);
   }
 }
+
+/** The headlamp: half the cone's angle and its soft edge, its shadow map size and reach, and the share of its light spilt all round. */
+const HEADLAMP = { angle: 0.95, penumbra: 0.6, map: 1024, shadowFar: 60, spill: 0.3 };
 
 function need<T>(v: T | null): T {
   if (!v) throw new Error('LevelView.start() has not finished');

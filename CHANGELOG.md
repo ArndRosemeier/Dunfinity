@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.016 — Shadows
+
+- The headlamp casts shadows. It is a cone now, carried above the nobody's head and shining where you look, with a little light spilling all round. Stones, pillars, props, rats and the nobody throw shadows away from it, so from behind you see them stretch ahead into the dark.
+- Fix: the first moments in a level built a dozen shaders while you played (a stutter). The lamp was moved onto the figure after the warm-up, and that alone changed what every shader is keyed by. Now no shader is built after the warm-up, shadows included.
+
 ## v0.015 — Rats you can see coming
 
 - Rats no longer jitter. Before, a rat by your legs could flick back and forth between two spots: its place round you turned as it moved, it overshot and came back, and it dithered left and right round a stone. Now each rat takes its own place round you (fixed by where its nest lies), slows as it arrives and stops, and keeps to one side going round things. Tests check that no rat goes back and forth, at 60 fps, at 10 fps and round a walking player.

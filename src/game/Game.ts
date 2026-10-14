@@ -4,7 +4,7 @@
  * ladder to the next level, where one arrives at the foot of the ladder up. Third-person camera,
  * wheel to first person.
  */
-import { Timer } from 'three/webgpu';
+import { Timer, Vector3 } from 'three/webgpu';
 import { Level } from '../gen/level';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
 import { LevelView } from '../render/LevelView';
@@ -42,6 +42,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   view.headlampPower = { survey: 40, dark: 9 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
+  view.carrier = new Vector3(); // the headlamp is on the nobody's forehead
   const controls = new Controls(canvas);
   const cam = new OrbitCamera(view.camera, level);
   if (params.look) [cam.yaw, cam.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
@@ -87,8 +88,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const findView = new FindView();
   await view.stage.add(findView.root);
   const shownFinds: Find[] = [];
-  nobody.head.add(view.headlamp); // the nobody carries the light
-  view.headlamp.position.set(0, 0.5, -0.7); // above and ahead of the eyes, so it does not glare on the figure
 
   const input: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: false };
   const hud = document.getElementById('hud');
@@ -281,6 +280,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (rats.killed) lines.push(`rats killed: ${rats.killed}`);
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
     if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
+    // The headlamp: above the head and a little towards where one looks (the camera, not the
+    // body: standing and looking round, the figure would shade its own way).
+    view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.y + (body.mode === 'swim' ? 0.45 : 1.85), body.z - Math.cos(cam.yaw) * 0.4);
     view.frame(body.x, body.y, body.z, timer.getElapsed());
     (globalThis as { __ready?: boolean }).__ready = view.settled;
     controls.endFrame();

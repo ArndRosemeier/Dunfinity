@@ -32,6 +32,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Turn worker mesh data (positions, normals, colours, indices) into a mesh | `meshFromData(data, kind)` | `src/render/meshes.ts` |
 | A small hand-built mesh posed per frame (creature parts, finds) | `meshOf(build, kind)` | `src/render/meshes.ts` |
 | Show a level's props (rails, lamps, shacks) around the viewer | `Props` (streams tiles) | `src/render/props/Props.ts` |
+| Which meshes cast and receive the headlamp's shadow | the material kind's `shadow` flags, set by `meshFromData` (never per mesh) | `src/render/materials.ts` |
+| Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later) | `src/render/props/lamps.ts` |
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
