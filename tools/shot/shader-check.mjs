@@ -22,10 +22,10 @@ try {
   await page.waitForFunction(() => window.__labReady === true, null, { timeout: 120000 });
 
   const steady = await page.evaluate(async () => {
-    const { camera } = window.__lab;
+    const lab = window.__lab; const { camera } = lab;
     for (let t = 0; t < 40; t++) {
       camera.position.x += 3;
-      camera.rotation.y += 0.16;
+      lab.fly.yaw += 0.16;
       await new Promise((r) => setTimeout(r, 50));
     }
     const s = window.shaders.summary();
@@ -37,7 +37,8 @@ try {
 
   const cap = await page.evaluate(async () => {
     const { stage } = window.__lab;
-    const proto = stage.scene.children.find((o) => o.isMesh);
+    let proto = null;
+    stage.scene.traverse((o) => { if (!proto && o.isMesh && o.parent !== stage.camera) proto = o; });
     const variants = [['side', 1], ['side', 2], ['flatShading', true], ['fog', false], ['alphaTest', 0.5], ['wireframe', true], ['transparent', true], ['dithering', true]];
     const before = window.shaders.events.length;
     await Promise.all(variants.map(([k, v]) => {

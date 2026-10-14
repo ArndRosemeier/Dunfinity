@@ -11,3 +11,10 @@ test('Lab params: numeric and text seeds, depth floor, position', () => {
   assert.equal(parseLabParams('?pos=1,2').pos, null);
   assert.equal(parseLabParams('?gl').forceWebGL, true);
 });
+
+test('Lab params: look direction and colour mode', () => {
+  assert.deepEqual(parseLabParams('?look=90,-20').look, [90, -20]);
+  assert.equal(parseLabParams('?look=90').look, null);
+  assert.equal(parseLabParams('?color=working').color, 'working');
+  assert.equal(parseLabParams('?color=nonsense').color, 'rock');
+});
