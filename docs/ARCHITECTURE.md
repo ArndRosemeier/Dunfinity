@@ -25,10 +25,13 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
-| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`. Never `new ...Material` elsewhere (guarded). | `src/render/materials.ts` |
+| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`. Never `new ...Material` elsewhere (guarded). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
 | Show a level's rock around the viewer | `Terrain` (streams chunks, swaps without holes) | `src/render/terrain/Terrain.ts` |
+| Turn worker mesh data (positions, normals, colours, indices) into a mesh | `meshFromData(data, kind)` | `src/render/meshes.ts` |
+| Show a level's props (rails, lamps, shacks) around the viewer | `Props` (streams tiles) | `src/render/props/Props.ts` |
+| Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later) | `src/render/props/lamps.ts` |
 | Compile shaders ahead of time | `stage.warmUp()` / `stage.add()` only (guarded) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `screen.toScreen` *(planned; guarded already)* | `src/render/screen.ts` |
@@ -42,11 +45,17 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where is the floor under a point? | `level.floorAt(x, z)` (the working's floor; ignores pillars) | `src/gen/level.ts` |
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
 | Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |
+| Where exactly is the rock surface under a point (where props stand)? | `level.groundAt(x, z)` | `src/gen/level.ts` |
+| Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
+| A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
+| What the miners left in a tile (rails, carts, lamps, shacks) | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
+| Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`) | `src/gen/propMesh.ts` |
 | Sample the field on a grid fast | `level.sampleGrid` (one column pass per x, z) | `src/gen/level.ts` |
 | Turn a grid of distances into a mesh | `surfaceNets` | `src/gen/surfaceNets.ts` |
 | Mesh one chunk of a level | `meshChunk` (skips chunks far from any surface) | `src/gen/chunkMesh.ts` |
 | Which chunks, at which detail, around a viewer? | `chunksAround` (octree; marks sides next to coarser chunks) | `src/world/chunks.ts` |
-| Run work off the main thread | `WorkerPool` / `createMeshPool` (guarded: `new Worker` only there) | `src/workers/pool.ts` |
+| Run work off the main thread | `WorkerPool` / `createMeshPool` / `createPropsPool` (guarded: `new Worker` only there) | `src/workers/pool.ts` |
+| Write a worker script | `serve(handle)` and `levelFor(seed, depth)` | `src/workers/serve.ts` |
 
 ### The world (planned)
 

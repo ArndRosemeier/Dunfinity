@@ -7,7 +7,7 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { MeshStandardNodeMaterial, type Material } from 'three/webgpu';
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, type Material } from 'three/webgpu';
 
 export interface MaterialKind {
   readonly name: string;
@@ -42,5 +42,11 @@ export function allKinds(): readonly MaterialKind[] {
 /** Lit, vertex-coloured solid: debug markers and, for now, the generated rock. */
 export const VERTEX_COLOR_SOLID = defineKind('vertexColorSolid', ['position', 'normal', 'color'], () => {
   const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 });
+  return m;
+});
+
+/** Unlit, vertex-coloured: things that give light (lamp flames, lit windows). Same attributes as the solid kind. */
+export const GLOW = defineKind('glow', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ vertexColors: true });
   return m;
 });

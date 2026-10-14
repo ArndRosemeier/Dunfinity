@@ -18,3 +18,8 @@ test('Lab params: look direction and colour mode', () => {
   assert.equal(parseLabParams('?color=working').color, 'working');
   assert.equal(parseLabParams('?color=nonsense').color, 'rock');
 });
+
+test('dark starts in headlamp darkness', () => {
+  assert.equal(parseLabParams('?seed=1').dark, false);
+  assert.equal(parseLabParams('?seed=1&dark').dark, true);
+});

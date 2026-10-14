@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.003 — Lamps and the miners' leftovers
+
+- The Quarry's intact workings now hold what the quarrymen left: narrow-gauge tracks down the aisles between pillars, ore carts (some still loaded), lamp posts beside the tracks, lamps on pillar faces, and site shacks with a lamp over the door and sometimes a lit window and crates. Everything follows the working's pillar grid and comes from the seed, in 64 m tiles built in workers.
+- Lamplight: about half the lamps still burn. Eight point lights, fixed before the shader warm-up, follow the burning lamps nearest the viewer and flicker a little; unused ones sit at zero, so lights never cause a shader build. Lamp flames and lit windows use a new unlit `glow` material kind.
+- Lab: `F` now dims the ambient light and the headlamp too, so the lamps show; `?dark` starts that way. The HUD counts prop tiles and burning lamps.
+- Level: `level.columnAt` and `level.groundAt` (the rock surface under a point, roughness included). The worker side of the pool protocol is one helper (`serve`), and worker mesh data becomes a three.js mesh in one place (`meshFromData`).
+
 ## v0.002 — The Quarry in the Level Lab
 
 - First level generator band: the Quarry (levels 1–2). Room-and-pillar limestone workings about 220 m across, each with its own pillar grid, height and floor terrace; grand halls with 30–55 m pillar spacing; collapsed workings with broken pillars, rubble hills and domed ceilings; natural rock between workings, broken through in many places. Floors, ceilings and collapse blend across the borders between workings.
