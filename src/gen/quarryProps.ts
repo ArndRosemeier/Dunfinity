@@ -28,6 +28,8 @@ export interface PropTile {
   stones: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
   lamps: Float32Array;
+  /** What one cannot walk through: upright boxes, BLOCKER_STRIDE numbers each (src/world/blockers.ts). */
+  blockers: Float32Array;
   counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number };
 }
 
@@ -71,6 +73,7 @@ class TileBuilder {
   private readonly water = new PropBuilder();
   private readonly stones = new PropBuilder();
   private readonly lamps: number[] = [];
+  private readonly blocks: number[] = [];
   private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0 };
   private readonly seed: number;
   private readonly x0: number;
@@ -101,7 +104,7 @@ class TileBuilder {
     }
     this.nooks();
     this.debris();
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), counts: this.counts };
   }
 
   /** Stones and chippings over the floor of the tile (see DEBRIS). */
@@ -125,8 +128,20 @@ class TileBuilder {
       const hx = rad * (0.6 + 0.5 * r(7)), hy = rad * (0.3 + 0.35 * r(6)), hz = rad * (0.6 + 0.5 * r(8));
       const a = r(9) * Math.PI, ca = Math.cos(a), sa = Math.sin(a), t1 = (r(10) - 0.5) * 0.6, t2 = (r(11) - 0.5) * 0.6;
       this.stones.box(x, g + hy * 0.25, z, [ca * hx, t1 * hx, -sa * hx], [-t1 * ca * hy, hy, t2 * hy], [sa * hz, -t2 * hz, ca * hz], c);
+      if (big && hy > 0.12) this.block(x, z, a, hx * 0.9, hz * 0.9, g - 0.2, g + hy * 1.25);
       this.counts.stones++;
     }
+  }
+
+  /** Something in the way: an upright box at (x, z) turned by `yaw` (as `PropBuilder.upright`), half sizes hx, hz, from y0 to y1. */
+  private block(x: number, z: number, yaw: number, hx: number, hz: number, y0: number, y1: number): void {
+    this.blocks.push(x, z, hx, hz, Math.cos(yaw), Math.sin(yaw), y0, y1);
+  }
+
+  /** A railing or a beam in the way, from (x0, z0) to (x1, z1), `half` thick. */
+  private blockLine(x0: number, z0: number, x1: number, z1: number, half: number, y0: number, y1: number): void {
+    const dx = x1 - x0, dz = z1 - z0;
+    this.block((x0 + x1) / 2, (z0 + z1) / 2, Math.atan2(-dz, dx), Math.hypot(dx, dz) / 2, half, y0, y1);
   }
 
   /** Is (x, z) dry ground, `margin` metres above the water? */
@@ -269,6 +284,7 @@ class TileBuilder {
       this.solid.upright(wx, g + 0.42, wz, yaw, 0.05, 0.17, 0.17, IRON);
     }
     this.solid.upright(x, g + 1.0, z, yaw, 0.52, 0.42, 0.82, RUST);
+    this.block(x, z, yaw, 0.52, 0.82, g, g + 1.45);
     if (r < 0.6) this.solid.upright(x, g + 1.4, z, yaw, 0.46, 0.06, 0.74, LOAD);
     this.counts.carts++;
   }
@@ -280,6 +296,7 @@ class TileBuilder {
     const g = this.level.groundAt(x, z);
     if (this.level.sdf(x, g + 1.5, z) < 0.4 || !this.dry(x, z, 0.1)) return;
     this.solid.upright(x, g + 1.25, z, 0, 0.05, 1.25, 0.05, IRON);
+    this.block(x, z, 0, 0.07, 0.07, g, g + 2.5);
     const ax = x + dx * 0.55, az = z + dz * 0.55;
     this.solid.beam(x, g + 2.45, z, ax, g + 2.45, az, 0.03, 0.03, IRON);
     this.lamp(ax, g + 2.3, az, r < 0.45);
@@ -329,7 +346,10 @@ class TileBuilder {
       const a = sh.ladder + Math.PI / 4 + (k * Math.PI) / 2;
       legs.push([x + Math.cos(a) * base, z + Math.sin(a) * base, x + Math.cos(a) * head, z + Math.sin(a) * head]);
     }
-    for (const [bx, bz, tx, tz] of legs) this.solid.beam(bx, top, bz, tx, top + H, tz, 0.14, 0.14, frame);
+    for (const [bx, bz, tx, tz] of legs) {
+      this.solid.beam(bx, top, bz, tx, top + H, tz, 0.14, 0.14, frame);
+      this.block(bx, bz, 0, 0.18, 0.18, top - 0.5, top + 2);
+    }
     for (let k = 0; k < 4; k++) {
       const [, , ax, az] = legs[k], [, , bx, bz] = legs[(k + 1) % 4];
       this.solid.beam(ax, top + H, az, bx, top + H, bz, 0.1, 0.12, frame);
@@ -350,6 +370,7 @@ class TileBuilder {
       if (k === n - 1) continue; // the gap at the ladder
       const qx = x + Math.cos(a1) * rr, qz = z + Math.sin(a1) * rr;
       for (const h of [0.5, 1.0]) this.solid.beam(px, top + h, pz, qx, top + h, qz, 0.03, 0.03, frame);
+      this.blockLine(px, pz, qx, qz, 0.06, top - 0.5, top + 1.05);
     }
     this.ladder(ladderOf(sh), 0.4);
     this.counts.shafts++;
@@ -424,11 +445,14 @@ class TileBuilder {
       for (let c = 0; c < 2 + Math.floor(r(11) * 2); c++) {
         const size = 0.22 + 0.12 * r(12 + c), [cx, cz] = at(-0.9 + c * 0.62, size + 0.05);
         const gy = ground(cx, cz);
-        this.solid.upright(cx, gy + size, cz, yaw + (r(15 + c) - 0.5) * 0.4, size, size, size, crate);
+        const cyaw = yaw + (r(15 + c) - 0.5) * 0.4;
+        this.solid.upright(cx, gy + size, cz, cyaw, size, size, size, crate);
+        this.block(cx, cz, cyaw, size, size, gy - 0.3, gy + size * 2);
         if (c === 0 && r(18) < 0.5) this.solid.upright(cx, gy + size * 2 + 0.17, cz, yaw + r(19), 0.17, 0.17, 0.17, crate);
       }
       const [bx, bz] = at(1.05, 0.35), by = ground(bx, bz);
       this.solid.cylinder(bx, by + 0.42, bz, 0.26, 0.42, [WOOD[0] * 0.9, WOOD[1] * 0.8, WOOD[2] * 0.7], 12, 0.12);
+      this.block(bx, bz, 0, 0.25, 0.25, by - 0.3, by + 0.84);
       for (const h of [0.15, 0.69]) this.solid.cylinder(bx, by + h, bz, 0.29, 0.03, IRON, 12);
     } else if (kind === 1) {
       // A pick and a shovel leant on the rock, a bucket by them.
@@ -448,7 +472,9 @@ class TileBuilder {
       for (let y = 0; y < rows; y++) for (let c = 0; c < cols - y; c++) {
         const [cx, cz] = at(-0.85 + (c + y * 0.5) * 0.85, 0.5);
         const k = 0.9 + 0.2 * r(13 + c + y * 3), tone: Rgb = [STONE[0] * k * 1.08, STONE[1] * k * 1.08, STONE[2] * k * 1.08];
-        this.stones.upright(cx, g + 0.2 + y * 0.4, cz, yaw + (r(20 + c) - 0.5) * 0.08, 0.4, 0.2, 0.4, tone);
+        const byaw = yaw + (r(20 + c) - 0.5) * 0.08;
+        this.stones.upright(cx, g + 0.2 + y * 0.4, cz, byaw, 0.4, 0.2, 0.4, tone);
+        if (y === 0) this.block(cx, cz, byaw, 0.4, 0.4, g - 0.3, g + 0.4 * rows);
       }
     }
     this.counts.leftovers++;
@@ -472,6 +498,7 @@ class TileBuilder {
     const wood: Rgb = [WOOD[0] * 1.05, WOOD[1] * 0.95, WOOD[2] * 0.8];
     for (const a of [yaw, yaw + Math.PI / 2]) this.solid.upright(x, g + 0.12, z, a, 0.12, 0.12, 1.4, wood);
     this.solid.upright(x, g + H / 2, z, yaw, 0.13, H / 2, 0.13, wood);
+    this.block(x, z, yaw, 0.16, 0.16, g - 0.3, g + H);
     this.solid.beam(x + sa * 0.15, g + 1.5, z + ca * 0.15, tx, ty, tz, 0.1, 0.1, wood);
     this.solid.beam(x, g + H, z, tx, ty + 0.1, tz, 0.012, 0.012, RUST); // the stay
     const hook = g + 1.2 + r(30) * 1.5;
@@ -506,6 +533,7 @@ class TileBuilder {
     if (this.level.sdf(x, g + 3.6, z) < 1.2) return;
     const tint = 0.8 + 0.4 * this.roll(w, 52, iu, iv);
     this.solid.upright(x, g + 1.2, z, yaw, 2.2, 1.4, 1.6, [WOOD[0] * tint * 1.2, WOOD[1] * tint * 1.15, WOOD[2] * tint]);
+    this.block(x, z, yaw, 2.3, 1.7, g - 0.5, g + 2.7);
     // Corner posts and a beam under the eaves, darker than the boards.
     const frame: Rgb = [WOOD[0] * 0.6, WOOD[1] * 0.6, WOOD[2] * 0.6];
     for (const [sd, fw] of [[-2.2, -1.6], [2.2, -1.6], [-2.2, 1.6], [2.2, 1.6]]) {
@@ -526,7 +554,9 @@ class TileBuilder {
       const size = 0.28 + 0.2 * this.roll(w, 57 + c, iu, iv);
       const [cx, cz] = at(-2.2 - 0.4 - size - c * 0.1, -1.2 + c * 1.1);
       if (this.level.sdf(cx, this.level.groundAt(cx, cz) + 0.5, cz) < 0.6 || !this.dry(cx, cz, 0.05)) continue;
-      this.solid.upright(cx, this.level.groundAt(cx, cz) + size, cz, yaw + this.roll(w, 60 + c, iu, iv), size, size, size, [WOOD[0] * 1.4, WOOD[1] * 1.3, WOOD[2] * 1.1]);
+      const cy = this.level.groundAt(cx, cz), cyaw = yaw + this.roll(w, 60 + c, iu, iv);
+      this.solid.upright(cx, cy + size, cz, cyaw, size, size, size, [WOOD[0] * 1.4, WOOD[1] * 1.3, WOOD[2] * 1.1]);
+      this.block(cx, cz, cyaw, size, size, cy - 0.3, cy + size * 2);
     }
     this.counts.shacks++;
   }

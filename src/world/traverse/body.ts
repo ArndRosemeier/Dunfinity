@@ -6,11 +6,14 @@
  * Any rock is climbable while stamina lasts, except overhangs (decision L1). Water deeper than the
  * chest is swum. Landing too hard hurts.
  */
+import type { Blockers } from '../blockers';
 import type { Level } from '../../gen/level';
 
 /** The body's movement metrics: what the reachability check must assume the player can do. */
 export const MOVE = {
   radius: 0.35,
+  /** Props lower than this over the feet are stepped over (the body does not stand on props), metres. */
+  stepOver: 0.3,
   height: 1.75,
   walk: 4.2,
   sprint: 7,
@@ -82,6 +85,7 @@ export class Body {
   private pushing = 0;
   private restSince = 0;
   private readonly n: [number, number, number] = [0, 0, 0];
+  private readonly pushOut: [number, number] = [0, 0];
   /** A climbable wall the capsule touched in the last step, and its normal. */
   private touching = false;
   private readonly touch: [number, number, number] = [0, 0, 0];
@@ -92,8 +96,8 @@ export class Body {
 
   get dead(): boolean { return this.health <= 0; }
 
-  /** Advance by dt seconds (call with small fixed steps, ~1/120 s). */
-  step(level: Level, input: BodyInput, dt: number): void {
+  /** Advance by dt seconds (call with small fixed steps, ~1/120 s). `blockers`: the props in the way (src/world/blockers.ts). */
+  step(level: Level, input: BodyInput, dt: number, blockers?: Blockers): void {
     this.time += dt;
     if (!this.dead && this.time - this.hurtAt > MOVE.healAfter) this.health = Math.min(MOVE.maxHealth, this.health + MOVE.healRate * dt);
     if (this.dead) { input.jump = false; return; }
@@ -113,6 +117,7 @@ export class Body {
 
     this.x += this.vx * dt; this.y += this.vy * dt; this.z += this.vz * dt;
     const impact = this.collide(level);
+    if (blockers && this.mode !== 'climb') this.collideProps(blockers);
     if (this.mode === 'walk' && impact > MOVE.safeImpact && depth < 1.5) this.hurt((impact - MOVE.safeImpact) * MOVE.impactDamage, 'fall');
     if (this.mode === 'climb' && this.grounded && input.forward < 0) this.mode = 'walk'; // climbed down to the floor
 
@@ -200,6 +205,17 @@ export class Body {
     this.vx += clampStep(tx - this.vx, 20 * dt);
     this.vy += clampStep(ty - this.vy, 20 * dt);
     this.vz += clampStep(tz - this.vz, 20 * dt);
+  }
+
+  /** Push the capsule out of the props (not what it can step over), and stop the speed into them. */
+  private collideProps(blockers: Blockers): void {
+    const p = this.pushOut;
+    if (!blockers.pushOut(this.x, this.z, MOVE.radius, this.y + MOVE.stepOver, this.y + MOVE.height, p)) return;
+    this.x += p[0]; this.z += p[1];
+    const l = Math.hypot(p[0], p[1]);
+    if (l < 1e-6) return;
+    const vn = (this.vx * p[0] + this.vz * p[1]) / l;
+    if (vn < 0) { this.vx -= (p[0] / l) * vn; this.vz -= (p[1] / l) * vn; }
   }
 
   /** Push the capsule out of the rock; returns the speed it hit the rock with. */

@@ -11,6 +11,7 @@ import { GLOW, ROCK, VERTEX_COLOR_SOLID, WATER } from '../materials';
 import { meshFromData } from '../meshes';
 import type { Stage } from '../stage';
 import type { LampLights } from './lamps';
+import { Blockers } from '../../world/blockers';
 
 /** Props show within this distance of the viewer, metres. */
 const RADIUS = 200;
@@ -30,6 +31,8 @@ export class Props {
   private readonly tiles = new Map<string, Tile>();
   private readonly lampLists: Float32Array[] = [];
   stats = { tiles: 0, triangles: 0, lamps: 0, pending: 0 };
+  /** The props in the way, for the tiles that are built (bodies and creatures ask it). */
+  readonly blockers = new Blockers();
 
   constructor(private readonly stage: Stage, private readonly group: Object3D, readonly seed: number, readonly depth: number, private readonly lights: LampLights) {
     this.pool = createPropsPool();
@@ -85,6 +88,7 @@ export class Props {
       if (this.tiles.get(id) !== tile) { dispose(group); return; }
       if (group.children.length) { tile.group = group; this.group.add(group); }
       tile.lamps = data.lamps;
+      this.blockers.set(id, data.blockers);
       tile.done = true;
     }, (err: unknown) => {
       console.error('props failed', id, err);
@@ -94,6 +98,7 @@ export class Props {
 
   private drop(id: string, t: Tile): void {
     this.tiles.delete(id);
+    this.blockers.clear(id);
     if (t.group) dispose(t.group);
   }
 
