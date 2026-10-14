@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@futuremagic/core": "file:vendor/assetgenerator/packages/core",
+    "@futuremagic/humanoid": "file:vendor/assetgenerator/packages/humanoid",
     "three": "^0.186.1"
   },
   "devDependencies": {

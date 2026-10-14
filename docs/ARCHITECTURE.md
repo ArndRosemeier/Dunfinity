@@ -25,19 +25,24 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
-| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). | `src/render/materials.ts` |
+| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
 | Show a level's rock around the viewer | `Terrain` (streams chunks, swaps without holes) | `src/render/terrain/Terrain.ts` |
 | Turn worker mesh data (positions, normals, colours, indices) into a mesh | `meshFromData(data, kind)` | `src/render/meshes.ts` |
 | Show a level's props (rails, lamps, shacks) around the viewer | `Props` (streams tiles) | `src/render/props/Props.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later) | `src/render/props/lamps.ts` |
-| Compile shaders ahead of time | `stage.warmUp()` / `stage.add()` only (guarded) | `src/render/stage.ts` |
+| Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `screen.toScreen` *(planned; guarded already)* | `src/render/screen.ts` |
 | A third-person camera that stays out of the rock | `OrbitCamera` (pulls in along `level.trace`) | `src/render/camera/OrbitCamera.ts` |
 | Look at a level: scene, fixed lights, warm-up, streamed rock and props | `LevelView` (`LevelView.open`) | `src/render/LevelView.ts` |
-| The player's figure | `Figure` (stand-in until Scale's human) | `src/render/figure.ts` |
+| The player's figure | `Nobody` (Scale's human in rags, posed from the `Body`) | `src/render/humans/nobody.ts` |
+| A human: body, skeleton, materials, clothes, animation | `Humanoid` (`Humanoid.create(look, { wardrobe })`, `dress`, `update`) | `@futuremagic/humanoid/three` |
+| A human's look (race, age, hair, skin) from a seed | `randomAppearance(race, seed, opts)` | `@futuremagic/humanoid` |
+| Which clothes exist and how they sit | `WARDROBE` (the package's `Wardrobe` hook) and outfits like `rags(seed)` | `src/render/humans/wardrobe.ts` |
+| What the animator plays for the body's state | `moveOf(body)` | `src/render/humans/move.ts` |
+| Where the human assets (bodies, clips) are served | `/humanoid/` from the package's `assets/` (Vite plugin), set by `setHumanAssetBase` | `vite.config.ts`, `src/render/humans/nobody.ts` |
 | The HUD line on shader health | `stage.hudLine()` | `src/render/stage.ts` |
 
 ### The level (generator)

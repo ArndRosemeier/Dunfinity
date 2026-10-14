@@ -7,7 +7,7 @@ import { Level } from '../gen/level';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
 import { LevelView } from '../render/LevelView';
 import { OrbitCamera } from '../render/camera/OrbitCamera';
-import { Figure } from '../render/figure';
+import { Nobody } from '../render/humans/nobody';
 import { Controls } from '../input/controls';
 import { parseViewParams } from '../app/params';
 
@@ -31,11 +31,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let body = start();
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
-  await view.start();
-  const figure = new Figure();
-  await view.stage.add(figure.root);
-  figure.head.add(view.headlamp); // the nobody carries the light
-  view.headlamp.position.set(0, 0.45, -0.45); // above and ahead of the eyes, so it does not glare on the figure
+  // The nobody is built before the warm-up, which compiles its materials with the rest.
+  const nobody = await Nobody.create(params.seed, level);
+  nobody.pose(body, 0, 0);
+  await view.start([nobody.root]);
+  await view.stage.add(nobody.root);
+  nobody.head.add(view.headlamp); // the nobody carries the light
+  view.headlamp.position.set(0, 0.5, -0.7); // above and ahead of the eyes, so it does not glare on the figure
 
   const input: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: false };
   const hud = document.getElementById('hud');
@@ -56,8 +58,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (body.dead && controls.tap('KeyR')) body = start();
     for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP);
 
-    figure.pose(body, dt);
-    figure.shown = !cam.firstPerson;
+    nobody.pose(body, dt, timer.getElapsed());
+    nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}`;
     view.frame(body.x, body.y, body.z, timer.getElapsed());
