@@ -10,7 +10,7 @@
 import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
 import type { Working } from './quarry';
-import type { Shaft } from './descents';
+import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
 import { PropBuilder, type PropMesh, type Rgb } from './propMesh';
 
 /** Tile size, metres. */
@@ -280,6 +280,7 @@ class TileBuilder {
    * a railing round the rim with a gap at the ladder, and the iron ladder down the wall.
    */
   private shaft(sh: Shaft): void {
+    if (sh.up) { this.wayUp(sh); return; }
     const { x, z, r, top } = sh;
     const frame: Rgb = [WOOD[0] * 0.8, WOOD[1] * 0.8, WOOD[2] * 0.8];
     // Headframe: four legs leaning in to a square top, cross beams, a pulley wheel on top.
@@ -311,15 +312,34 @@ class TileBuilder {
       const qx = x + Math.cos(a1) * rr, qz = z + Math.sin(a1) * rr;
       for (const h of [0.5, 1.0]) this.solid.beam(px, top + h, pz, qx, top + h, qz, 0.03, 0.03, frame);
     }
-    // The ladder: two stiles and rungs down the wall, from the rim into the dark.
-    const lx = x + ca * (r - 0.12), lz = z + sa * (r - 0.12);
-    const sx = -sa * 0.25, sz = ca * 0.25;
-    for (const sd of [-1, 1]) this.solid.upright(lx + sx * sd, top - 6.5, lz + sz * sd, 0, 0.025, 7.5, 0.025, RUST);
-    for (let k = 0; k < 50; k++) {
-      const y = top + 0.6 - k * 0.3;
-      this.solid.beam(lx - sx, y, lz - sz, lx + sx, y, lz + sz, 0.015, 0.015, RUST);
-    }
+    this.ladder(ladderOf(sh), 0.4);
     this.counts.shafts++;
+  }
+
+  /**
+   * The way up (src/gen/descents.ts): the ladder up the pillar and on up the shaft in the ceiling,
+   * held by brackets, and a burning lamp on the pillar beside its foot.
+   */
+  private wayUp(sh: Shaft): void {
+    const l = ladderOf(sh);
+    this.ladder(l, 0.6);
+    for (let y = l.floor + 1.5; y < l.hi; y += 3) {
+      for (const sd of [-1, 1]) {
+        const bx = l.x - l.nz * l.halfWidth * sd, bz = l.z + l.nx * l.halfWidth * sd;
+        this.solid.beam(bx, y, bz, bx + l.nx * (ASCENT.standoff + 0.25), y, bz + l.nz * (ASCENT.standoff + 0.25), 0.02, 0.02, IRON);
+      }
+    }
+    const side = 0.9;
+    this.lamp(l.x + l.nx * 0.2 - l.nz * side, l.floor + 2.4, l.z + l.nz * 0.2 + l.nx * side, true);
+    this.counts.shafts++;
+  }
+
+  /** A ladder's two stiles and its rungs (src/gen/descents.ts `Ladder`), the stiles `over` metres past the top rung. */
+  private ladder(l: Ladder, over: number): void {
+    const sx = -l.nz * l.halfWidth, sz = l.nx * l.halfWidth;
+    const y0 = l.rim ? l.lo - 0.4 : l.floor, y1 = l.hi + over;
+    for (const sd of [-1, 1]) this.solid.upright(l.x + sx * sd, (y0 + y1) / 2, l.z + sz * sd, 0, 0.025, (y1 - y0) / 2, 0.025, RUST);
+    for (let y = l.lo; y <= l.hi + 1e-6; y += RUNG) this.solid.beam(l.x - sx, y, l.z - sz, l.x + sx, y, l.z + sz, 0.015, 0.015, RUST);
   }
 
   /** A site shack at aisle crossing (iu·s, iv·s), where no track runs. */

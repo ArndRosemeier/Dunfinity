@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.009 — Down the ladder
+
+- Climbing a shaft's ladder is played out instead of a cut to black: the nobody walks to the ladder, turns their back to the shaft, lowers themself over the rim and climbs down hand over hand, hands and feet on the rungs (Scale's manhole climb). A few metres down the picture fades, and the next level comes up out of the dark.
+- Below the first level you arrive at the foot of the way back up: an iron ladder bolted up the side of a pillar, into a shaft through the ceiling, with a burning lamp beside it. You climb the last metres down it, step off, and turn away.
+- E at the foot of that ladder climbs back up to the level above, coming out over the rim of its nearest shaft.
+- The camera turns to watch the climb (behind the climber, looking at the ladder).
+- `ladderOf(shaft)` (rungs, the wall, where one gets on and off), `level.ascent`, `LadderClimb` (the puppet scene), `nobody.puppet`.
+
 ## v0.008 — Skin on WebGPU
 
 - Fix: on WebGPU (Chrome, Edge) the nobody had no skin, only eyes, teeth, hair and clothes. The skin mesh needed 9 vertex buffers, one more than WebGPU allows, so its shader never built. Face coordinates and the expression column now share one attribute (`@futuremagic/humanoid`). WebGL was not affected.

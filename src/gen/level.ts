@@ -6,7 +6,7 @@
  */
 import { deriveSeed } from '@futuremagic/core';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
-import { Descents, type Shaft } from './descents';
+import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -32,15 +32,39 @@ export class Level {
   readonly descents: Descents;
   private readonly col = newColumn();
   private arrival_: [number, number, number] | null = null;
+  private ascent_: Shaft | null | undefined;
 
   constructor(readonly seed: number, readonly depth: number) {
     this.field = new QuarryField(deriveSeed(seed, 'level', depth));
-    this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]]);
+    this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent);
   }
 
-  /** Where a player arrives on this level (from above, or at the start): `spawn()` near the origin. */
+  /** The way up, where one arrives from the level above (null on the first level, or if no pillar there will do). */
+  get ascent(): Shaft | null {
+    if (this.ascent_ === undefined) {
+      this.ascent_ = null;
+      // In the arrival hall, else in one further out.
+      for (let k = 0; k < 6 && this.depth > 1 && !this.ascent_; k++) {
+        const [x, , z] = this.spawn(k ? Math.cos(k) * 300 : 0, k ? Math.sin(k) * 300 : 0);
+        this.ascent_ = findAscent(this.field, x, z);
+      }
+    }
+    return this.ascent_;
+  }
+
+  /**
+   * Where a player arrives on this level: at the foot of the way up below the first level, else
+   * (and at the start) `spawn()` near the origin.
+   */
   get arrival(): [number, number, number] {
-    return (this.arrival_ ??= this.spawn());
+    if (!this.arrival_) {
+      const a = this.ascent;
+      if (a) {
+        const [x, z] = ladderTop(a);
+        this.arrival_ = [x, a.floor, z];
+      } else this.arrival_ = this.spawn();
+    }
+    return this.arrival_;
   }
 
   /** Signed distance to rock in metres: positive in air, negative in rock. */

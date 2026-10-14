@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { SHAFT, ladderTop } from '../src/gen/descents';
+import { SHAFT, ladderOf, ladderTop } from '../src/gen/descents';
 
 const level = new Level(1, 1);
 const [ax, , az] = level.arrival;
@@ -27,4 +27,21 @@ test('a shaft is a hole in the floor: air down the middle, rock beside it, the l
   assert.ok(level.sdf(s.x, s.bottom - 1, s.z) < 0, 'a bottom');
   const [lx, lz] = ladderTop(s);
   assert.ok(Math.abs(level.groundAt(lx, lz) - s.top) < 0.8, 'the ladder starts on the floor');
+});
+
+test('below the first level one arrives at the foot of a way up: a ladder up a pillar into the ceiling', () => {
+  assert.equal(new Level(1, 1).ascent, null);
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const l = new Level(seed, 2), a = l.ascent;
+    assert.ok(a && a.up, `seed ${seed}: no way up`);
+    const L = ladderOf(a);
+    const [x, y, z] = l.arrival;
+    assert.ok(Math.hypot(x - L.x, z - L.z) < 1.5 && Math.abs(y - L.floor) < 0.01);
+    // Room to climb in front of the rungs, rock right behind them, and the shaft open above the ceiling.
+    for (let h = L.floor + 1; h < L.hi; h += 2) assert.ok(l.sdf(L.x - L.nx * 0.4, h, L.z - L.nz * 0.4) > 0.25, `seed ${seed}: blocked at ${h}`);
+    assert.ok(l.sdf(L.x + L.nx * 0.7, L.floor + 3, L.z + L.nz * 0.7) < 0.1);
+    assert.ok(L.hi > a.bottom + 10);
+    // The draft never points up.
+    assert.notEqual(l.descents.nearest(x, z, 1500), a);
+  }
 });
