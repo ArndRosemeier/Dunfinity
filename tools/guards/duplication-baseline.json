@@ -6,5 +6,13 @@
   {
     "key": "clone: core/noise.ts#fbm2 + core/noise.ts#fbm3",
     "reason": "2D and 3D variants of the same noise in one file; merging them would cost the hot path a dimension branch."
+  },
+  {
+    "key": "same name: core/heap.ts#size + dunfinity/workers/pool.ts#size",
+    "reason": "one-line getters that return a length; same shape, unrelated meaning"
+  },
+  {
+    "key": "same name: dunfinity/render/terrain/Terrain.ts#dispose + dunfinity/workers/pool.ts#dispose",
+    "reason": "each frees its own resources (meshes vs workers); the pool is one of the terrain's resources"
   }
 ]

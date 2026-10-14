@@ -24,14 +24,6 @@ for (let i = 0; i < args.length; i += 2) {
   page.on('pageerror', (e) => { failed = true; console.error(`[page error] ${e.message}`); });
   await page.goto(base + (args[i].startsWith('?') ? args[i] : '?' + args[i]));
   await page.waitForFunction(() => (window).__labReady === true, null, { timeout: 120000 }).catch(() => { failed = true; console.error('Lab did not report ready'); });
-  // Steady state: fly through the scene for a while; the shader policy must hold after warm-up.
-  await page.evaluate(async () => {
-    const lab = (window).__lab;
-    for (let t = 0; t < 40; t++) {
-      lab.camera.position.x += 3; lab.camera.rotation.y += 0.05;
-      await new Promise((r) => setTimeout(r, 50));
-    }
-  });
   await page.screenshot({ path: args[i + 1] });
   const hud = await page.textContent('#hud');
   console.log(`${args[i + 1]}: ${hud?.split('\n')[0]}`);

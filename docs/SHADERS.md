@@ -23,7 +23,7 @@ So even in the worst case, shaders take at most half of any stretch of time, and
 ## What you must do
 
 - **A new look is a new kind** in `materials.ts`, with the attributes its meshes carry. Meshes of a kind are indexed and carry exactly those attributes: the attribute set and the index are part of the shader's cache key, so a mismatch means a second shader nobody warmed.
-- **Put things into the scene with `stage.add`**, never `scene.add` for anything drawn with a new material or geometry layout.
+- **Put things into the scene with `stage.add`**, or `stage.prepare` first when you add them to a group of your own (the terrain does this), never plain `scene.add` for anything drawn with a new material or geometry layout.
 - **Never** construct a material outside `materials.ts`, use `onBeforeCompile`, or call `renderer.compile*` outside the Stage. `npm test` fails on all three (`tools/guards/rules.json`).
 
 ## How it is checked

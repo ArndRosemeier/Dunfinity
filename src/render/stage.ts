@@ -46,14 +46,23 @@ export class Stage {
   /** Put `obj` into the scene once everything it draws with is compiled. */
   add(obj: Object3D): Promise<void> {
     this.pending.add(obj);
+    return this.prepare(obj).then(() => {
+      if (!this.pending.delete(obj)) return; // removed meanwhile
+      this.scene.add(obj);
+    });
+  }
+
+  /**
+   * Compile everything `obj` draws with, without adding it (for callers that add it to a group of
+   * their own once it is ready, like the terrain).
+   */
+  prepare(obj: Object3D): Promise<void> {
     // compileAsync skips what is outside the view; it must compile everything, or the object
     // would build its shader on the render path the first time it comes into view.
     const culled: Object3D[] = [];
     obj.traverse((o) => { if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); } });
-    return this.renderer.compileAsync(obj, this.camera, this.scene).then(() => {
+    return this.renderer.compileAsync(obj, this.camera, this.scene).finally(() => {
       for (const o of culled) o.frustumCulled = true;
-      if (!this.pending.delete(obj)) return; // removed meanwhile
-      this.scene.add(obj);
     });
   }
 
