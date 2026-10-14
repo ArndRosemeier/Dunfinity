@@ -30,6 +30,11 @@ export interface Band {
   readonly natural: readonly [number, number, number];
   /** How strongly veins of glowing blue infused salt show in the rock (0: none). */
   readonly veins: number;
+  /** Loose stones, cut blocks and carvings: their colour. */
+  readonly stone: readonly [number, number, number];
+  /** What the miners left (src/gen/quarryProps.ts): the share of things against the rock that are carvings (statues of miners, chapels), and the chance per open spot of an electric lamp hanging from the roof. */
+  readonly carvings: number;
+  readonly hanging: number;
 }
 
 export const QUARRY: Band = {
@@ -42,6 +47,7 @@ export const QUARRY: Band = {
   water: [-3.7, 1.3],
   rock: [0.46, 0.42, 0.35], layers: [0.05, 0.045, 0.035], dust: [0.08, 0.075, 0.065], natural: [0.82, 0.82, 0.85],
   veins: 0,
+  stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0,
 };
 
 /** The salt mine proper (levels 3–5): cathedral chambers carved by miners, fluted pillars, brine lakes, the first veins of infused salt. */
@@ -55,6 +61,7 @@ export const SALT: Band = {
   water: [-2.4, 1.6],
   rock: [0.31, 0.32, 0.34], layers: [0.12, 0.12, 0.125], dust: [0.1, 0.1, 0.1], natural: [0.7, 0.72, 0.76],
   veins: 1,
+  stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05,
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */

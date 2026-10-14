@@ -67,7 +67,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Is there water here, how high does it stand? | `level.waterAt(x, z)` (water wherever the ground is lower) | `src/gen/level.ts` |
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
-| What the miners left in a tile (rails, carts, lamps, shacks, things left against the rock, derricks, loose stones), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
+| What the miners left in a tile (rails, carts, lamps, shacks, things left against the rock, derricks, loose stones; in the Salt Works statues, chapels and hanging lamps, as much as `level.band` asks for), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
 | Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts, `cylinder` for barrels and buckets) | `src/gen/propMesh.ts` |
 | One thing per grid cell (shafts, rat nests), decided once per cell | `CellMemo` (`at(i, j)`) | `src/gen/cellMemo.ts` |
 | Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |

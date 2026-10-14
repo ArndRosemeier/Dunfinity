@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.020 — Chapels and statues
+
+- The salt miners carved. Against the salt walls and pillars stand statues of miners on their plinths: one leans on his pick, one prays, one holds a lamp up into the dark. Here and there a little chapel: steps up to an altar, a cross cut into the rock above, candles still burning.
+- Old electric lamps hang on long chains from the roof of the Salt Works halls. Most of them still burn, though nothing down here has power.
+- Loose stones and cut blocks are salt in the Salt Works.
+
 ## v0.019 — The Salt Works
 
 - From level 3 down you are in the Salt Works: grey-white rock salt instead of limestone, its pillars fluted where the miners cut them, the pools brine. Thin blue veins glow in the salt, slowly pulsing, so the halls are never quite dark.
