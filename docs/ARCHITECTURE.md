@@ -25,7 +25,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
-| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`, `METAL.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
+| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `ROCK.make()` (the generated rock), `GLOW.make()`, `METAL.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
 | Show a level's rock around the viewer | `Terrain` (streams chunks, swaps without holes) | `src/render/terrain/Terrain.ts` |

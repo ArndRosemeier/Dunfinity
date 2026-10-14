@@ -7,7 +7,8 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, type Material } from 'three/webgpu';
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, type Material, type Node } from 'three/webgpu';
+import { abs, faceDirection, float, mx_fractal_noise_float, mx_noise_float, normalView, normalWorld, positionView, positionWorld, smoothstep, sin, vec2, vec3, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -39,11 +40,47 @@ export function allKinds(): readonly MaterialKind[] {
   return [...kinds.values()];
 }
 
-/** Lit, vertex-coloured solid: debug markers and, for now, the generated rock. */
+/** Lit, vertex-coloured solid: props, creatures, held things. */
 export const VERTEX_COLOR_SOLID = defineKind('vertexColorSolid', ['position', 'normal', 'color'], () => {
   const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 });
   return m;
 });
+
+/**
+ * The rock: the generator's vertex colours (bands, dust, soot) with limestone worked into them in
+ * the shader, from the world position so it needs no uvs and never repeats: mottling, a fine grain,
+ * dark bedding seams on the walls, and a bumpy surface (a procedural height turned into a normal
+ * with screen-space derivatives, Mikkelsen's surface-gradient bump). Same attributes as the solid kind.
+ */
+export const ROCK = defineKind('rock', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ roughness: 0.95, metalness: 0 });
+  const p = positionWorld;
+  const mottle = mx_fractal_noise_float(p.mul(0.32), 3, 2.0, 0.5); // about -1..1, metres-wide patches
+  const grain = mx_noise_float(p.mul(9.0)); // centimetre grain
+  // Bedding: thin dark seams along the strata, wavering; only on steep faces (not the dusty floors).
+  const steep = smoothstep(0.75, 0.35, abs(normalWorld.y));
+  const bed = mx_noise_float(p.mul(vec3(0.05, 0.6, 0.05))); // which beds show a seam, and how strongly
+  const seam = smoothstep(0.95, 0.995, abs(sin(p.y.mul(1.9).add(mottle.mul(2.2))))).mul(smoothstep(-0.1, 0.4, bed)).mul(steep);
+  const flat = float(1).sub(steep);
+  const grit = mx_noise_float(p.mul(23.0)).mul(flat); // dust and grit on the floors
+  const shade = float(1).add(mottle.mul(0.12)).add(grain.mul(0.04)).add(grit.mul(0.07)).sub(seam.mul(0.25));
+  m.colorNode = vertexColor().mul(shade);
+  // Height for the bump: broad lumps, a chiselled roughness, the seams cut in.
+  const height = mottle.mul(0.35).add(mx_noise_float(p.mul(3.1)).mul(0.12)).sub(seam.mul(0.12));
+  m.normalNode = bumped(height, 0.35);
+  m.roughnessNode = float(0.9).add(grain.mul(0.06));
+  return m;
+});
+
+/** The view normal bent by a procedural `height` (Mikkelsen 2010, forward differences in screen space). */
+function bumped(height: Node<'float'>, scale: number) {
+  const dH = vec2(height.dFdx(), height.dFdy()).mul(scale);
+  const sx = positionView.dFdx(), sy = positionView.dFdy(), n = normalView;
+  const r1 = sy.cross(n), r2 = n.cross(sx);
+  const det = sx.dot(r1).mul(faceDirection);
+  const grad = det.sign().mul(dH.x.mul(r1).add(dH.y.mul(r2)));
+  return det.abs().mul(n).sub(grad).normalize();
+}
 
 /** Unlit, vertex-coloured: things that give light (lamp flames, lit windows). Same attributes as the solid kind. */
 export const GLOW = defineKind('glow', ['position', 'normal', 'color'], () => {

@@ -9,7 +9,7 @@ import type { ColorMode } from '../../gen/level';
 import type { ChunkMesh } from '../../gen/chunkMesh';
 import { createMeshPool, type WorkerPool } from '../../workers/pool';
 import type { MeshJob } from '../../workers/mesh.worker';
-import { VERTEX_COLOR_SOLID } from '../materials';
+import { ROCK } from '../materials';
 import { meshFromData } from '../meshes';
 import type { Stage } from '../stage';
 
@@ -89,7 +89,7 @@ export class Terrain {
     const job: MeshJob = { seed: this.seed, depth: this.depth, ox: k.ix * k.size, oy: k.iy * k.size, oz: k.iz * k.size, step: k.step, cells: CELLS, lod: k.lod, colorMode: this.colorMode, overlap: k.overlap };
     void this.pool.run(job).then(async (data) => {
       if (gen !== this.generation || !this.wantedIds.has(k.id)) { this.requested.delete(k.id); return; }
-      const shown: Shown = { key: k, mesh: data ? meshFromData(data, VERTEX_COLOR_SOLID) : null };
+      const shown: Shown = { key: k, mesh: data ? meshFromData(data, ROCK) : null };
       if (shown.mesh) await this.stage.prepare(shown.mesh);
       this.requested.delete(k.id);
       if (gen !== this.generation || !this.wantedIds.has(k.id)) { this.drop(shown); return; }
