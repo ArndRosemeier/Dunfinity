@@ -25,7 +25,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
-| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`. Never `new ...Material` elsewhere (guarded). | `src/render/materials.ts` |
+| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
 | Show a level's rock around the viewer | `Terrain` (streams chunks, swaps without holes) | `src/render/terrain/Terrain.ts` |
@@ -46,9 +46,10 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
 | Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |
 | Where exactly is the rock surface under a point (where props stand)? | `level.groundAt(x, z)` | `src/gen/level.ts` |
+| Is there water here, how high does it stand? | `level.waterAt(x, z)` (water wherever the ground is lower) | `src/gen/level.ts` |
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
-| What the miners left in a tile (rails, carts, lamps, shacks) | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
+| What the miners left in a tile (rails, carts, lamps, shacks), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
 | Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`) | `src/gen/propMesh.ts` |
 | Sample the field on a grid fast | `level.sampleGrid` (one column pass per x, z) | `src/gen/level.ts` |
 | Turn a grid of distances into a mesh | `surfaceNets` | `src/gen/surfaceNets.ts` |

@@ -67,6 +67,11 @@ export class Level {
     return y;
   }
 
+  /** Height of the water surface at (x, z): wherever the ground is lower, there is water. */
+  waterAt(x: number, z: number): number {
+    return this.field.water(x, z);
+  }
+
   /** Sample an n×n×n grid starting at origin with spacing `step` (one column pass per (x, z)). */
   sampleGrid(ox: number, oy: number, oz: number, step: number, n: number): SampledGrid {
     const d = new Float32Array(n * n * n);
@@ -108,6 +113,7 @@ export class Level {
         const w = this.workingAt(px, pz);
         if (w.collapse > 0 || w.height < above + 6 || w.spacing < minSpacing) continue;
         const f = this.floorAt(px, pz);
+        if (f < this.waterAt(px, pz) + 1) continue;
         if (this.sdf(px, f + 5, pz) > 3.5 && this.sdf(px, f + above, pz) > 3) return [px, f + above, pz];
       }
     }

@@ -238,6 +238,15 @@ export class QuarryField {
     return inside;
   }
 
+  /**
+   * The water table at (x, z): groundwater fills every hollow below it. It sits a little above the
+   * lowest floor terrace and wanders slowly across the level, so some low workings are flooded,
+   * some only have puddles, and higher terraces stay dry.
+   */
+  water(x: number, z: number): number {
+    return -3.7 + 1.3 * (0.5 + 0.5 * this.noise.n2(x / 450 - 17.9, z / 450 + 41.3));
+  }
+
   /** The field at height y in a column filled by `column`. */
   at(col: Column, x: number, y: number, z: number): number {
     let pillar = col.pillarD;

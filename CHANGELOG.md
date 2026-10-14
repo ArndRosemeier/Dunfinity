@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.004 — Water in the Quarry
+
+- Groundwater: each level has a water table a little above the lowest floor terrace, wandering slowly across the level. Low workings below it are flooded (pillars standing in dark, still water), others only hold puddles in dips, and the higher terraces stay dry. Deep water is darker than shallow water.
+- Water surfaces are built with the props, per 64 m tile in workers, with a new glossy `water` material kind (compiled in the warm-up, like every kind).
+- Tracks, lamps, shacks and crates keep out of the water; the Lab spawn is always dry.
+- Level: `level.waterAt(x, z)`, the water surface height.
+
 ## v0.003 — Lamps and the miners' leftovers
 
 - The Quarry's intact workings now hold what the quarrymen left: narrow-gauge tracks down the aisles between pillars, ore carts (some still loaded), lamp posts beside the tracks, lamps on pillar faces, and site shacks with a lamp over the door and sometimes a lit window and crates. Everything follows the working's pillar grid and comes from the seed, in 64 m tiles built in workers.

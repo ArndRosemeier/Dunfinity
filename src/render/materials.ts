@@ -50,3 +50,9 @@ export const GLOW = defineKind('glow', ['position', 'normal', 'color'], () => {
   const m = new MeshBasicNodeMaterial({ vertexColors: true });
   return m;
 });
+
+/** Standing water: dark and glossy, so lamps and the headlamp glint on it. Same attributes as the solid kind. */
+export const WATER = defineKind('water', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.06, metalness: 0.1 });
+  return m;
+});

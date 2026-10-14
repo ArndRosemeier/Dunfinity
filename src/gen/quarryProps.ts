@@ -20,9 +20,11 @@ export interface PropTile {
   solid: PropMesh | null;
   /** Burning lamps and lit windows: they glow. */
   glow: PropMesh | null;
+  /** Standing water, where the ground lies below the water table. */
+  water: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
   lamps: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -31,6 +33,11 @@ const STEP = 0.7;
 const MIN_RUN = 10;
 /** Half the rail gauge, metres. */
 const GAUGE = 0.3;
+/** Water surface cell, metres; wet cells in a row merge into runs of up to WATER_RUN cells. */
+const WATER_CELL = 2;
+const WATER_RUN = 4;
+/** Cells whose floor is up to this far above the water still carry the surface, so it reaches under the shore rock, metres. */
+const SHORE = 1;
 
 const WOOD: Rgb = [0.2, 0.13, 0.075];
 const RUST: Rgb = [0.13, 0.065, 0.04];
@@ -39,6 +46,8 @@ const TAR: Rgb = [0.05, 0.045, 0.04];
 const GLASS: Rgb = [0.09, 0.085, 0.07];
 const FLAME: Rgb = [1.0, 0.72, 0.4];
 const LOAD: Rgb = [0.4, 0.37, 0.31];
+const SHALLOW: Rgb = [0.2, 0.21, 0.18];
+const DEEP: Rgb = [0.015, 0.03, 0.035];
 
 export function quarryProps(level: Level, tx: number, tz: number): PropTile {
   return new TileBuilder(level, tx, tz).build();
@@ -47,8 +56,9 @@ export function quarryProps(level: Level, tx: number, tz: number): PropTile {
 class TileBuilder {
   private readonly solid = new PropBuilder();
   private readonly glow = new PropBuilder();
+  private readonly water = new PropBuilder();
   private readonly lamps: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -60,7 +70,9 @@ class TileBuilder {
   }
 
   build(): PropTile {
-    for (const w of this.workings()) {
+    const workings = this.workings();
+    if (workings.some((w) => w.floor < 0)) this.flood();
+    for (const w of workings) {
       if (w.collapse > 0) continue; // nobody works a collapsed working any more
       const [umin, umax, vmin, vmax] = this.gridBounds(w);
       const s = w.spacing;
@@ -73,7 +85,47 @@ class TileBuilder {
         }
       }
     }
-    return { solid: this.solid.build(), glow: this.glow.build(), lamps: new Float32Array(this.lamps), counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), lamps: new Float32Array(this.lamps), counts: this.counts };
+  }
+
+  /** Is (x, z) dry ground, `margin` metres above the water? */
+  private dry(x: number, z: number, margin: number): boolean {
+    return this.level.groundAt(x, z) > this.level.waterAt(x, z) + margin;
+  }
+
+  /** The water surface: cells whose floor lies below the table, merged into runs along x. */
+  private flood(): void {
+    const n = PROP_TILE / WATER_CELL;
+    for (let j = 0; j < n; j++) {
+      const z0 = this.z0 + j * WATER_CELL, z1 = z0 + WATER_CELL;
+      let start = -1;
+      let depth = 0;
+      for (let i = 0; i <= n; i++) {
+        let d = -Infinity;
+        if (i < n) {
+          const cx = this.x0 + (i + 0.5) * WATER_CELL, cz = z0 + WATER_CELL / 2;
+          d = this.level.waterAt(cx, cz) - this.level.columnAt(cx, cz).floor;
+        }
+        const wet = d > -SHORE; // a cell just above the shore still carries the surface, under the rock
+        if (start >= 0 && (!wet || i - start === WATER_RUN)) {
+          const x0 = this.x0 + start * WATER_CELL, x1 = this.x0 + i * WATER_CELL;
+          if (depth > 0) {
+            const corners = [[x0, z0], [x1, z0], [x0, z1], [x1, z1]];
+            this.water.quad(x0, z0, x1, z1, corners.map(([x, z]) => this.level.waterAt(x, z)), corners.map(([x, z]) => this.waterColor(x, z)));
+            this.counts.wet += i - start;
+          }
+          start = -1;
+        }
+        if (!wet) continue;
+        if (start < 0) { start = i; depth = d; } else depth = Math.max(depth, d);
+      }
+    }
+  }
+
+  /** Water colour by depth: shallow water shows the pale floor, deep water is nearly black. */
+  private waterColor(x: number, z: number): Rgb {
+    const k = Math.min(1, Math.max(0, (this.level.waterAt(x, z) - this.level.columnAt(x, z).floor) / 2));
+    return [SHALLOW[0] + (DEEP[0] - SHALLOW[0]) * k, SHALLOW[1] + (DEEP[1] - SHALLOW[1]) * k, SHALLOW[2] + (DEEP[2] - SHALLOW[2]) * k];
   }
 
   private inTile(x: number, z: number): boolean {
@@ -122,7 +174,7 @@ class TileBuilder {
   private trackable(w: Working, x: number, z: number): boolean {
     const col = this.level.columnAt(x, z);
     if (col.working.id !== w.id || col.border < 5 || col.collapse > 0 || col.rubble > 0.02 || col.pillarD < 1.3) return false;
-    return this.level.sdf(x, col.floor + 1.8, z) > 1.2;
+    return col.floor > this.level.waterAt(x, z) + 0.25 && this.level.sdf(x, col.floor + 1.8, z) > 1.2;
   }
 
   /** Lay the track along aisle k: sleepers, rails, and the carts and lamps along it. */
@@ -184,7 +236,7 @@ class TileBuilder {
     const col = this.level.columnAt(x, z);
     if (col.working.id !== w.id || col.pillarD < 0.4) return;
     const g = this.level.groundAt(x, z);
-    if (this.level.sdf(x, g + 1.5, z) < 0.4) return;
+    if (this.level.sdf(x, g + 1.5, z) < 0.4 || !this.dry(x, z, 0.1)) return;
     this.solid.upright(x, g + 1.25, z, 0, 0.05, 1.25, 0.05, IRON);
     const ax = x + dx * 0.55, az = z + dz * 0.55;
     this.solid.beam(x, g + 2.45, z, ax, g + 2.45, az, 0.03, 0.03, IRON);
@@ -205,7 +257,7 @@ class TileBuilder {
     const col = this.level.columnAt(ox, oz);
     if (col.working.id !== w.id || col.rubble > 0.05) return;
     const g = this.level.groundAt(ox, oz);
-    if (this.level.sdf(ox, g + 3, oz) < 0.3) return;
+    if (this.level.sdf(ox, g + 3, oz) < 0.3 || !this.dry(ox, oz, 0.1)) return;
     this.solid.beam(x, g + 3.3, z, ox, g + 3.3, oz, 0.03, 0.03, IRON);
     this.lamp(ox, g + 3.15, oz, r < 0.06);
   }
@@ -237,6 +289,7 @@ class TileBuilder {
       const col = this.level.columnAt(cx, cz);
       if (col.working.id !== w.id || col.pillarD < 0.5 || col.border < 6 || col.rubble > 0.03) return;
       g = Math.min(g, this.level.groundAt(cx, cz));
+      if (g < this.level.waterAt(cx, cz) + 0.2) return;
     }
     if (this.level.sdf(x, g + 3.6, z) < 1.2) return;
     const tint = 0.8 + 0.4 * this.roll(w, 52, iu, iv);
@@ -260,7 +313,7 @@ class TileBuilder {
       if (this.roll(w, 54 + c, iu, iv) < 0.4) continue;
       const size = 0.28 + 0.2 * this.roll(w, 57 + c, iu, iv);
       const [cx, cz] = at(-2.2 - 0.4 - size - c * 0.1, -1.2 + c * 1.1);
-      if (this.level.sdf(cx, this.level.groundAt(cx, cz) + 0.5, cz) < 0.6) continue;
+      if (this.level.sdf(cx, this.level.groundAt(cx, cz) + 0.5, cz) < 0.6 || !this.dry(cx, cz, 0.05)) continue;
       this.solid.upright(cx, this.level.groundAt(cx, cz) + size, cz, yaw + this.roll(w, 60 + c, iu, iv), size, size, size, [WOOD[0] * 1.4, WOOD[1] * 1.3, WOOD[2] * 1.1]);
     }
     this.counts.shacks++;
