@@ -93,6 +93,43 @@ export class PropBuilder {
   }
 
   /**
+   * An upright cylinder centred at (x, y, z), radius r, half height hy, with caps; `bulge` swells
+   * the middle (a barrel: 0.15), `taper` narrows the bottom (a bucket: 0.2). `seg` sides.
+   */
+  cylinder(x: number, y: number, z: number, r: number, hy: number, color: Rgb, seg = 10, bulge = 0, taper = 0): void {
+    const rings = bulge > 0 ? 4 : 1;
+    const base = this.p.length / 3;
+    const radius = (t: number) => r * (1 + bulge * Math.sin(t * Math.PI)) * (1 - taper * (1 - t));
+    for (let v = 0; v <= rings; v++) {
+      const t = v / rings, rr = radius(t), slope = (radius(Math.min(1, t + 0.01)) - radius(Math.max(0, t - 0.01))) / (0.02 * 2 * hy);
+      for (let u = 0; u <= seg; u++) {
+        const th = (u / seg) * Math.PI * 2, cx = Math.cos(th), cz = Math.sin(th);
+        const nl = Math.hypot(1, slope);
+        this.p.push(x + cx * rr, y - hy + t * 2 * hy, z + cz * rr);
+        this.n.push(cx / nl, -slope / nl, cz / nl);
+        this.c.push(color[0], color[1], color[2]);
+      }
+    }
+    for (let v = 0; v < rings; v++) for (let u = 0; u < seg; u++) {
+      const a = base + v * (seg + 1) + u, b = a + seg + 1;
+      this.i.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+    // Caps: a fan at each end.
+    for (const [end, t] of [[1, 1], [-1, 0]] as const) {
+      const centre = this.p.length / 3, rr = radius(t), cy = y - hy + t * 2 * hy;
+      this.p.push(x, cy, z); this.n.push(0, end, 0); this.c.push(color[0], color[1], color[2]);
+      for (let u = 0; u <= seg; u++) {
+        const th = (u / seg) * Math.PI * 2;
+        this.p.push(x + Math.cos(th) * rr, cy, z + Math.sin(th) * rr); this.n.push(0, end, 0); this.c.push(color[0], color[1], color[2]);
+      }
+      for (let u = 0; u < seg; u++) {
+        if (end > 0) this.i.push(centre, centre + 2 + u, centre + 1 + u);
+        else this.i.push(centre, centre + 1 + u, centre + 2 + u);
+      }
+    }
+  }
+
+  /**
    * A level-ish quad facing up over [x0, x1] × [z0, z1], with its own height and colour at each
    * corner (in the order (x0, z0), (x1, z0), (x0, z1), (x1, z1)).
    */

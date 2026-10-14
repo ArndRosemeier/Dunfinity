@@ -25,7 +25,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
-| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `ROCK.make()` (the generated rock), `GLOW.make()`, `METAL.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
+| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `ROCK.make()` (the generated rock), `DUST.make()` (motes, moved by the shader), `GLOW.make()`, `METAL.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
 | Show a level's rock around the viewer | `Terrain` (streams chunks, swaps without holes) | `src/render/terrain/Terrain.ts` |
@@ -34,6 +34,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Show a level's props (rails, lamps, shacks) around the viewer | `Props` (streams tiles) | `src/render/props/Props.ts` |
 | Which meshes cast and receive the headlamp's shadow | the material kind's `shadow` flags, set by `meshFromData` (never per mesh) | `src/render/materials.ts` |
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
+| Dust in the air, seen in the headlamp's beam | `Dust` (one mesh of the `DUST` kind; `follow(lamp)` each frame) | `src/render/dust.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later) | `src/render/props/lamps.ts` |
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
@@ -64,8 +65,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Is there water here, how high does it stand? | `level.waterAt(x, z)` (water wherever the ground is lower) | `src/gen/level.ts` |
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
-| What the miners left in a tile (rails, carts, lamps, shacks, loose stones), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
-| Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts) | `src/gen/propMesh.ts` |
+| What the miners left in a tile (rails, carts, lamps, shacks, things left against the rock, derricks, loose stones), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
+| Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts, `cylinder` for barrels and buckets) | `src/gen/propMesh.ts` |
 | One thing per grid cell (shafts, rat nests), decided once per cell | `CellMemo` (`at(i, j)`) | `src/gen/cellMemo.ts` |
 | Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |
 | Where does a player arrive on a level? | `level.arrival` (below the first level: the foot of `level.ascent`, the way up) | `src/gen/level.ts` |

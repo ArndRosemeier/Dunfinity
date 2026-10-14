@@ -8,6 +8,7 @@ import { Scene, PerspectiveCamera, Color, Fog, HemisphereLight, PointLight, Spot
 import type { Level } from '../gen/level';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
+import { Dust } from './dust';
 import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
@@ -34,6 +35,7 @@ export class LevelView {
   private readonly lamps: LampLights;
   private readonly rock = new Group();
   private readonly things = new Group();
+  private readonly dust: Dust;
   private terrain_: Terrain | null = null;
   private props_: Props | null = null;
   private dark_ = false;
@@ -70,6 +72,7 @@ export class LevelView {
     this.camera.add(this.headlamp, this.headlamp.target, this.spill);
     this.scene.add(this.camera);
     this.stage = new Stage(renderer, this.scene, this.camera);
+    this.dust = new Dust(level_.seed);
   }
 
   /** Warm up the shaders (with `extra`, see Stage.warmUp), then start streaming the level. */
@@ -77,6 +80,7 @@ export class LevelView {
     this.aimHeadlamp(); // the warm-up draws the shadow pass too: the lamp must shine where the camera looks
     await this.stage.warmUp(extra);
     this.scene.add(this.rock, this.things);
+    await this.stage.add(this.dust.mesh);
     this.stream();
   }
 
@@ -133,6 +137,7 @@ export class LevelView {
   frame(x: number, y: number, z: number, time: number): void {
     this.stage.frame();
     this.aimHeadlamp();
+    this.dust.follow(this.headlamp);
     this.terrain.update(x, y, z);
     this.props.update(x, y, z, time);
     this.renderer.render(this.scene, this.camera);

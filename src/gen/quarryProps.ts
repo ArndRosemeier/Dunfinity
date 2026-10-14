@@ -1,7 +1,8 @@
 /**
  * What the quarrymen left behind (layer 3 of the generator, docs/design/level-generator.md §3):
  * narrow-gauge rails down the aisles between pillars, ore carts, lamps on posts and on pillar faces,
- * site shacks at quiet crossings, and the stones and chippings they let fall. Pure data, in tiles of PROP_TILE metres, so it runs in a worker.
+ * site shacks at quiet crossings, what was left against the pillars (crates and barrels, tools and
+ * buckets, stacks of cut blocks), derricks for lifting blocks, and the stones and chippings they let fall. Pure data, in tiles of PROP_TILE metres, so it runs in a worker.
  *
  * Everything hangs off the working's pillar grid: aisles run along u = k·s and v = k·s. A tile only
  * places what sits inside it, and every decision is a hash of the working and grid position, so
@@ -27,7 +28,7 @@ export interface PropTile {
   stones: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
   lamps: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -70,7 +71,7 @@ class TileBuilder {
   private readonly water = new PropBuilder();
   private readonly stones = new PropBuilder();
   private readonly lamps: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -98,6 +99,7 @@ class TileBuilder {
         }
       }
     }
+    this.nooks();
     this.debris();
     return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), counts: this.counts };
   }
@@ -379,6 +381,109 @@ class TileBuilder {
     for (let y = l.lo; y <= l.hi + 1e-6; y += RUNG) this.solid.beam(l.x - sx, y, l.z - sz, l.x + sx, y, l.z + sz, 0.015, 0.015, RUST);
   }
 
+  /**
+   * Over the tile in cells of LEFT.cell metres: against the rock (a pillar or a wall) something left
+   * behind; out in the open, now and then, a derrick for lifting blocks.
+   */
+  private nooks(): void {
+    const n = Math.round(PROP_TILE / LEFT.cell), s = deriveSeed(this.seed, 'nooks');
+    const o: [number, number, number] = [0, 0, 0];
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const r = (k: number) => hashToFloat(hash3i(s, this.x0 / LEFT.cell + i, this.z0 / LEFT.cell + j, k));
+      const x = this.x0 + (i + 0.15 + 0.7 * r(1)) * LEFT.cell, z = this.z0 + (j + 0.15 + 0.7 * r(2)) * LEFT.cell;
+      const col = this.level.columnAt(x, z);
+      if (col.collapse > 0 || col.rubble > 0.05 || col.border < 3 || this.level.descents.at(x, z, 4) || !this.dry(x, z, 0.1)) continue;
+      // How far to the rock beside (a pillar or a wall; the floor and roof do not count).
+      const g = this.level.groundAt(x, z), d = Math.min(col.pillarD, col.wall);
+      if (d < 0.3 || this.level.sdf(x, g + 2, z) < 0.3) continue;
+      if (d < 2.2) {
+        if (r(0) > LEFT.chance) continue;
+        // Back it against the rock: the rock's normal there points out into the air.
+        this.level.normal(x, g + 1.6, z, o);
+        const h = Math.hypot(o[0], o[2]);
+        if (h < 0.5) continue;
+        const ox = o[0] / h, oz = o[2] / h;
+        this.leftBehind(x - ox * (d - 0.05), z - oz * (d - 0.05), ox, oz, g, r);
+      } else if (r(0) < LEFT.derricks && d > 5) this.derrick(x, z, r(3) * Math.PI * 2, r);
+    }
+  }
+
+  /**
+   * Something left against the rock at (x, z), backed onto it, (ox, oz) pointing away from it: crates
+   * and a barrel, tools and a bucket, or a stack of cut blocks waiting to be hauled.
+   */
+  private leftBehind(x: number, z: number, ox: number, oz: number, g: number, r: (k: number) => number): void {
+    const yaw = Math.atan2(ox, oz), ca = Math.cos(yaw), sa = Math.sin(yaw);
+    // (side, out) from the rock face to world: side runs along the face, out away from it.
+    const at = (side: number, out: number): [number, number] => [x + ca * side + ox * out, z - sa * side + oz * out];
+    const ground = (px: number, pz: number) => this.level.groundAt(px, pz);
+    const kind = Math.floor(r(10) * 3);
+    if (kind === 0) {
+      // Crates, one on another sometimes, and a barrel.
+      const crate: Rgb = [WOOD[0] * 1.35, WOOD[1] * 1.25, WOOD[2] * 1.05];
+      for (let c = 0; c < 2 + Math.floor(r(11) * 2); c++) {
+        const size = 0.22 + 0.12 * r(12 + c), [cx, cz] = at(-0.9 + c * 0.62, size + 0.05);
+        const gy = ground(cx, cz);
+        this.solid.upright(cx, gy + size, cz, yaw + (r(15 + c) - 0.5) * 0.4, size, size, size, crate);
+        if (c === 0 && r(18) < 0.5) this.solid.upright(cx, gy + size * 2 + 0.17, cz, yaw + r(19), 0.17, 0.17, 0.17, crate);
+      }
+      const [bx, bz] = at(1.05, 0.35), by = ground(bx, bz);
+      this.solid.cylinder(bx, by + 0.42, bz, 0.26, 0.42, [WOOD[0] * 0.9, WOOD[1] * 0.8, WOOD[2] * 0.7], 12, 0.12);
+      for (const h of [0.15, 0.69]) this.solid.cylinder(bx, by + h, bz, 0.29, 0.03, IRON, 12);
+    } else if (kind === 1) {
+      // A pick and a shovel leant on the rock, a bucket by them.
+      const handle: Rgb = [WOOD[0] * 1.5, WOOD[1] * 1.35, WOOD[2] * 1.1];
+      for (const [side, len, isPick] of [[-0.4, 0.95, true], [0.15, 1.1, false]] as const) {
+        const [fx, fz] = at(side, 0.55), [tx, tz] = at(side + 0.08, 0.04);
+        const gy = ground(fx, fz), top = gy + len;
+        this.solid.beam(fx, gy + 0.02, fz, tx, top, tz, 0.018, 0.018, handle);
+        if (isPick) this.solid.beam(tx - ca * 0.28, top + 0.02, tz + sa * 0.28, tx + ca * 0.28, top - 0.04, tz - sa * 0.28, 0.025, 0.025, IRON);
+        else this.solid.upright(fx + ox * 0.03, gy + 0.14, fz + oz * 0.03, yaw, 0.12, 0.15, 0.015, RUST);
+      }
+      const [kx, kz] = at(0.75, 0.4);
+      this.solid.cylinder(kx, ground(kx, kz) + 0.15, kz, 0.15, 0.15, RUST, 10, 0, 0.2);
+    } else {
+      // Cut blocks, squared and stacked, the way they were never hauled up.
+      const rows = 1 + Math.floor(r(11) * 2), cols = 2 + Math.floor(r(12) * 2);
+      for (let y = 0; y < rows; y++) for (let c = 0; c < cols - y; c++) {
+        const [cx, cz] = at(-0.85 + (c + y * 0.5) * 0.85, 0.5);
+        const k = 0.9 + 0.2 * r(13 + c + y * 3), tone: Rgb = [STONE[0] * k * 1.08, STONE[1] * k * 1.08, STONE[2] * k * 1.08];
+        this.stones.upright(cx, g + 0.2 + y * 0.4, cz, yaw + (r(20 + c) - 0.5) * 0.08, 0.4, 0.2, 0.4, tone);
+      }
+    }
+    this.counts.leftovers++;
+  }
+
+  /**
+   * A wooden derrick for lifting blocks at (x, z): a mast on crossed sills, a boom leaning out along
+   * `yaw` with its stay, the rope and hook hanging from the tip, sometimes a block left under it.
+   */
+  private derrick(x: number, z: number, yaw: number, r: (k: number) => number): void {
+    const ca = Math.cos(yaw), sa = Math.sin(yaw);
+    const g = this.level.groundAt(x, z);
+    const H = DERRICK.mast, reach = DERRICK.reach;
+    const tx = x + sa * reach, tz = z + ca * reach, ty = g + H - 0.6;
+    // Room for it all: the mast, the boom and under the tip.
+    for (let k = 0; k <= 4; k++) {
+      const f = k / 4;
+      if (this.level.sdf(x, g + 1 + (H - 1) * f, z) < 0.5 || this.level.sdf(x + (tx - x) * f, g + 1.5 + (ty - g - 1.5) * f, z + (tz - z) * f) < 0.5) return;
+    }
+    if (!this.dry(tx, tz, 0.1) || this.level.descents.at(tx, tz, 3)) return;
+    const wood: Rgb = [WOOD[0] * 1.05, WOOD[1] * 0.95, WOOD[2] * 0.8];
+    for (const a of [yaw, yaw + Math.PI / 2]) this.solid.upright(x, g + 0.12, z, a, 0.12, 0.12, 1.4, wood);
+    this.solid.upright(x, g + H / 2, z, yaw, 0.13, H / 2, 0.13, wood);
+    this.solid.beam(x + sa * 0.15, g + 1.5, z + ca * 0.15, tx, ty, tz, 0.1, 0.1, wood);
+    this.solid.beam(x, g + H, z, tx, ty + 0.1, tz, 0.012, 0.012, RUST); // the stay
+    const hook = g + 1.2 + r(30) * 1.5;
+    this.solid.upright(tx, (ty + hook) / 2, tz, 0, 0.012, (ty - hook) / 2, 0.012, RUST);
+    this.solid.upright(tx, hook - 0.08, tz, yaw, 0.05, 0.08, 0.03, IRON);
+    if (r(31) < 0.5) {
+      const by = this.level.groundAt(tx, tz), k = 1.05;
+      this.stones.upright(tx + 0.1, by + 0.3, tz - 0.1, yaw + r(32), 0.55, 0.3, 0.45, [STONE[0] * k, STONE[1] * k, STONE[2] * k]);
+    }
+    this.counts.derricks++;
+  }
+
   /** A site shack at aisle crossing (iu·s, iv·s), where no track runs. */
   private shack(w: Working, iu: number, iv: number): void {
     const s = w.spacing;
@@ -426,6 +531,11 @@ class TileBuilder {
     this.counts.shacks++;
   }
 }
+
+/** What was left against the rock, and the derricks: the cell size scanned (m) and the chance per cell. */
+const LEFT = { cell: 6, chance: 0.22, derricks: 0.006 };
+/** A derrick's mast height and how far its boom reaches out, m. */
+const DERRICK = { mast: 7, reach: 3.6 };
 
 /** f, remembering its answer for each integer it was asked about. */
 function memo<T>(f: (i: number) => T): (i: number) => T {
