@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.014 — Stones underfoot
+
+- Loose stones on the floors of the Quarry: a few everywhere, a skirt of chippings round the feet of the pillars and walls where the miners cut, and heaps of broken blocks where the roof came down. Limestone breaks blocky, so they are slabs and blocks, half sunk in the dust, in the same limestone as the walls.
+- Props tiles carry a `stones` mesh, drawn in the `ROCK` kind.
+
 ## v0.013 — Limestone
 
 - The rock looks like rock: limestone mottled in patches a metre or two across, a fine grain, dark bedding seams that come and go along the walls and pillars, gritty dusty floors, and a bumpy surface the headlamp rakes across. All worked out in the shader from where a point is, so it never repeats and needs no textures.

@@ -1,7 +1,7 @@
 /**
  * What the quarrymen left behind (layer 3 of the generator, docs/design/level-generator.md §3):
  * narrow-gauge rails down the aisles between pillars, ore carts, lamps on posts and on pillar faces,
- * and site shacks at quiet crossings. Pure data, in tiles of PROP_TILE metres, so it runs in a worker.
+ * site shacks at quiet crossings, and the stones and chippings they let fall. Pure data, in tiles of PROP_TILE metres, so it runs in a worker.
  *
  * Everything hangs off the working's pillar grid: aisles run along u = k·s and v = k·s. A tile only
  * places what sits inside it, and every decision is a hash of the working and grid position, so
@@ -23,9 +23,11 @@ export interface PropTile {
   glow: PropMesh | null;
   /** Standing water, where the ground lies below the water table. */
   water: PropMesh | null;
+  /** Loose stones on the floor: drawn as rock. */
+  stones: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
   lamps: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -49,6 +51,14 @@ const FLAME: Rgb = [1.0, 0.72, 0.4];
 const LOAD: Rgb = [0.4, 0.37, 0.31];
 const SHALLOW: Rgb = [0.2, 0.21, 0.18];
 const DEEP: Rgb = [0.015, 0.03, 0.035];
+const STONE: Rgb = [0.4, 0.365, 0.3];
+
+/**
+ * Loose stones: one try per DEBRIS.cell metres of floor. The chance of a stone there: a few
+ * everywhere, many in rubble and collapse, a skirt of chippings round the feet of pillars and walls.
+ * Radii in metres, bigger where the roof came down.
+ */
+const DEBRIS = { cell: 1, base: 0.04, rubble: 0.6, collapse: 0.4, foot: 0.3, footWidth: 1.6, small: [0.03, 0.09] as const, big: [0.12, 0.45] as const };
 
 export function quarryProps(level: Level, tx: number, tz: number): PropTile {
   return new TileBuilder(level, tx, tz).build();
@@ -58,8 +68,9 @@ class TileBuilder {
   private readonly solid = new PropBuilder();
   private readonly glow = new PropBuilder();
   private readonly water = new PropBuilder();
+  private readonly stones = new PropBuilder();
   private readonly lamps: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -87,7 +98,33 @@ class TileBuilder {
         }
       }
     }
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), lamps: new Float32Array(this.lamps), counts: this.counts };
+    this.debris();
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), counts: this.counts };
+  }
+
+  /** Stones and chippings over the floor of the tile (see DEBRIS). */
+  private debris(): void {
+    const n = Math.round(PROP_TILE / DEBRIS.cell), s = this.seed;
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const r = (k: number) => hashToFloat(hash3i(s, this.x0 / DEBRIS.cell + i, this.z0 / DEBRIS.cell + j, k));
+      const x = this.x0 + (i + r(1)) * DEBRIS.cell, z = this.z0 + (j + r(2)) * DEBRIS.cell;
+      const col = this.level.columnAt(x, z);
+      const foot = Math.max(0, 1 - Math.min(col.pillarD, col.wall) / DEBRIS.footWidth);
+      const chance = DEBRIS.base + DEBRIS.rubble * col.rubble + DEBRIS.collapse * col.collapse + DEBRIS.foot * foot;
+      if (r(0) >= chance) continue;
+      // Mostly chippings; a big block where the rubble is.
+      const big = r(3) < 0.15 + 0.6 * Math.max(col.rubble, col.collapse);
+      const [lo, hi] = big ? DEBRIS.big : DEBRIS.small;
+      const rad = lo + (hi - lo) * r(4) * r(4);
+      const g = this.level.groundAt(x, z);
+      if (g < this.level.waterAt(x, z) + 0.02 || this.level.descents.at(x, z, 1) || this.level.sdf(x, g + rad + 0.05, z) < rad * 0.5) continue;
+      const k = 0.85 + 0.3 * r(5), c: Rgb = [STONE[0] * k, STONE[1] * k, STONE[2] * k];
+      // Limestone breaks blocky: a slab turned any way, tipped a little, half sunk in the dust.
+      const hx = rad * (0.6 + 0.5 * r(7)), hy = rad * (0.3 + 0.35 * r(6)), hz = rad * (0.6 + 0.5 * r(8));
+      const a = r(9) * Math.PI, ca = Math.cos(a), sa = Math.sin(a), t1 = (r(10) - 0.5) * 0.6, t2 = (r(11) - 0.5) * 0.6;
+      this.stones.box(x, g + hy * 0.25, z, [ca * hx, t1 * hx, -sa * hx], [-t1 * ca * hy, hy, t2 * hy], [sa * hz, -t2 * hz, ca * hz], c);
+      this.counts.stones++;
+    }
   }
 
   /** Is (x, z) dry ground, `margin` metres above the water? */
