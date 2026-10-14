@@ -9,6 +9,7 @@ import type { Level } from '../gen/level';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
 import { Dust } from './dust';
+import { ROCK_VEINS } from './materials';
 import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
@@ -95,6 +96,7 @@ export class LevelView {
   }
 
   private stream(): void {
+    ROCK_VEINS.value = this.level_.band.veins; // a uniform: the same shader in every band
     this.terrain_ = new Terrain(this.stage, this.rock, this.level_.seed, this.level_.depth);
     this.props_ = new Props(this.stage, this.things, this.level_.seed, this.level_.depth, this.lamps);
   }

@@ -1,6 +1,7 @@
 /**
- * The Quarry (levels 1–2, docs/design/town-and-first-strata.md §4): room-and-pillar limestone
- * workings. Layer 1 of the generator (docs/design/level-generator.md §3) for the excavation process.
+ * The excavation field: room-and-pillar workings, the Quarry's limestone (levels 1–2) and, with
+ * the Salt Works' band, the salt mine's carved chambers (docs/design/town-and-first-strata.md §4;
+ * the numbers per band are in src/gen/bands.ts). Layer 1 of the generator (docs/design/level-generator.md §3) for the excavation process.
  *
  * The level is a mosaic of *workings*: Voronoi cells about 220 m across. Each working was cut by a
  * different crew: its own pillar grid (spacing, pillar size, orientation), its own floor terrace and
@@ -11,7 +12,15 @@
  * except roughness) is computed once per column, so a chunk costs one column pass plus a cheap
  * per-sample pass.
  */
+import { QUARRY, type Band } from './bands';
 import { Noise, cellular2, cellBorder, hash2i, hashToFloat, deriveSeed, smoothstep, clamp, lerp, type CellResult } from '@futuremagic/core';
+
+/** Flutes across a pillar side: 0 on the ridges, 1 deep in a flute; none near the corners. */
+function fluting(along: number, half: number, count: number): number {
+  const t = (along / half + 1) / 2; // 0..1 across the side
+  const edge = smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t);
+  return edge * (0.5 - 0.5 * Math.cos(t * count * 2 * Math.PI));
+}
 
 /** Average size of a working, metres. */
 const WORKING = 220;
@@ -65,20 +74,21 @@ export function newColumn(): Column {
   return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0 };
 }
 
-function workingFrom(id: number, cx: number, cz: number): Working {
+function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Working {
   const f = (k: number) => hashToFloat(hash2i(id, k, 7));
   // Most crews cut ordinary galleries; some cut grand halls with few, massive pillars.
-  const grand = f(9) < 0.3;
-  const spacing = grand ? 32 + 22 * f(1) : 14 + 12 * f(1);
-  const cathedral = f(5) < 0.15;
+  const grand = f(9) < b.grand;
+  const spacing = grand ? b.grandSpacing[0] + b.grandSpacing[1] * f(1) : b.spacing[0] + b.spacing[1] * f(1);
+  const cathedral = f(5) < b.cathedral;
+  const [h0, h1] = cathedral ? b.cathedralHeight : grand ? b.grandHeight : b.height;
   return {
     id,
     angle: f(0) * Math.PI * 0.5,
     spacing,
     pillar: spacing * (grand ? 0.22 + 0.12 * f(2) : 0.32 + 0.18 * f(2)),
     floor: (Math.floor(f(3) * 3) - 1) * 4,
-    height: cathedral ? 45 + 20 * f(4) : grand ? 28 + 22 * f(4) : 12 + 26 * f(4),
-    collapse: f(6) < 0.3 ? 0.3 + 0.5 * f(8) : 0,
+    height: h0 + h1 * f(4),
+    collapse: f(6) < b.collapse ? 0.3 + 0.5 * f(8) : 0,
     cx,
     cz,
   };
@@ -95,7 +105,7 @@ export class QuarryField {
   private readonly workings = new Map<number, Working>();
   private readonly pillarCache = new Map<number, boolean>();
 
-  constructor(readonly seed: number) {
+  constructor(readonly seed: number, readonly band: Band = QUARRY) {
     this.noise = new Noise(deriveSeed(seed, 'quarry', 'shape'));
     this.rough = new Noise(deriveSeed(seed, 'quarry', 'rough'));
     this.cellSeed = deriveSeed(seed, 'quarry', 'workings');
@@ -113,7 +123,7 @@ export class QuarryField {
     let w = this.workings.get(id);
     if (!w) {
       if (this.workings.size > 4096) this.workings.clear();
-      w = workingFrom(id, px * WORKING, py * WORKING);
+      w = workingFrom(id, px * WORKING, py * WORKING, this.band);
       this.workings.set(id, w);
     }
     return w;
@@ -179,8 +189,11 @@ export class QuarryField {
       for (let du = -1; du <= 1; du++) {
         const state = this.pillarAt(w, iu + du, iv + dv, near);
         if (state === 'none') continue;
-        const qx = Math.abs(u - (iu + du + 0.5) * s) - half, qz = Math.abs(v - (iv + dv + 0.5) * s) - half;
-        const d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0);
+        const lu = u - (iu + du + 0.5) * s, lv = v - (iv + dv + 0.5) * s;
+        const qx = Math.abs(lu) - half, qz = Math.abs(lv) - half;
+        let d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0);
+        // Carved pillars: flutes down each side (the salt miners carved theirs like a church's).
+        if (this.band.flutes > 0 && d > -1) d += this.band.flutes * fluting(qx > qz ? lv : lu, half, this.band.fluteCount);
         if (d >= col.pillarD) continue;
         col.pillarD = d;
         if (state === 'broken') {
@@ -244,7 +257,7 @@ export class QuarryField {
    * some only have puddles, and higher terraces stay dry.
    */
   water(x: number, z: number): number {
-    return -3.7 + 1.3 * (0.5 + 0.5 * this.noise.n2(x / 450 - 17.9, z / 450 + 41.3));
+    return this.band.water[0] + this.band.water[1] * (0.5 + 0.5 * this.noise.n2(x / 450 - 17.9, z / 450 + 41.3));
   }
 
   /** The field at height y in a column filled by `column`. */
@@ -261,12 +274,13 @@ export class QuarryField {
 
   /** Limestone colour at a surface point (linear RGB, written into out). */
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    const B = this.band;
     const band = 0.5 + 0.5 * Math.sin(y * 1.3 + this.noise.n2(x / 25, z / 25) * 2);
     const dust = smoothstep(2.5, 0, y - col.floor); // floors are dusty and lighter
     const soot = smoothstep(col.ceiling - 3, col.ceiling, y) * 0.35; // lamp soot under the ceiling
-    let r = 0.46 + 0.05 * band, g = 0.42 + 0.045 * band, b = 0.35 + 0.035 * band;
-    if (col.wall < 1.5 && y - col.floor > 0.5) { r *= 0.82; g *= 0.82; b *= 0.85; } // natural rock between workings
-    r += dust * 0.08; g += dust * 0.075; b += dust * 0.065;
+    let r = B.rock[0] + B.layers[0] * band, g = B.rock[1] + B.layers[1] * band, b = B.rock[2] + B.layers[2] * band;
+    if (col.wall < 1.5 && y - col.floor > 0.5) { r *= B.natural[0]; g *= B.natural[1]; b *= B.natural[2]; } // natural rock between workings
+    r += dust * B.dust[0]; g += dust * B.dust[1]; b += dust * B.dust[2];
     r += col.rubble * 0.04; g += col.rubble * 0.03;
     const k = 1 - soot;
     out[o] = r * k; out[o + 1] = g * k; out[o + 2] = b * k;

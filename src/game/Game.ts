@@ -124,7 +124,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
   };
   /** A line to show for a while (arriving on a level), and until when. */
-  let notice = levelName(level.depth), noticeUntil = 5;
+  let notice = levelName(level), noticeUntil = 5;
   const ladder: [number, number] = [0, 0];
   /** The shaft whose ladder the nobody stands at (a way down or the way up), or null. */
   const atLadder = (): Shaft | null => {
@@ -154,7 +154,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     steps.push({
       kind: 'call', then: () => {
         show(other);
-        notice = levelName(other.depth);
+        notice = levelName(other);
         // Behind the climber, looking at the ladder (from above coming out of a shaft).
         if (to) [cam.yaw, cam.pitch] = [faceYaw(ladderOf(to)), s.up ? -0.55 : -0.12];
       },
@@ -290,8 +290,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   });
 }
 
-function levelName(depth: number): string {
-  return `Level ${depth} · The Quarry`;
+function levelName(level: Level): string {
+  return `Level ${level.depth} · ${level.band.name}`;
 }
 
 function bar(value: number, max: number): string {

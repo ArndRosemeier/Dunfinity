@@ -2,9 +2,10 @@
  * A level: the one density function and everything derived from it (docs/ARCHITECTURE.md:
  * "Is this point rock or air?"). Pure data, so it runs in workers and in headless tests.
  *
- * For now every depth uses the Quarry; the other bands of levels 1–10 replace it as they land.
+ * Which kind of place a depth is (the Quarry, the Salt Works...) is its band (src/gen/bands.ts).
  */
 import { deriveSeed } from '@futuremagic/core';
+import { bandOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 
@@ -28,6 +29,8 @@ export interface SampledGrid extends Grid {
 
 export class Level {
   readonly field: QuarryField;
+  /** What kind of place this level is. */
+  readonly band: Band;
   /** The ways down to the next level (shafts). */
   readonly descents: Descents;
   private readonly col = newColumn();
@@ -35,7 +38,8 @@ export class Level {
   private ascent_: Shaft | null | undefined;
 
   constructor(readonly seed: number, readonly depth: number) {
-    this.field = new QuarryField(deriveSeed(seed, 'level', depth));
+    this.band = bandOf(depth);
+    this.field = new QuarryField(deriveSeed(seed, 'level', depth), this.band);
     this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent);
   }
 

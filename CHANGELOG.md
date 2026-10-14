@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.019 — The Salt Works
+
+- From level 3 down you are in the Salt Works: grey-white rock salt instead of limestone, its pillars fluted where the miners cut them, the pools brine. Thin blue veins glow in the salt, slowly pulsing, so the halls are never quite dark.
+- The level name in the HUD says which band you are in.
+
 ## v0.018 — Solid things, steady knees
 
 - You can no longer walk through the props. Carts, shacks, crates, barrels, stacked blocks, lamp posts, derricks, big fallen stones and the railings round the shafts stop you, and the rats run round them too. Rails, sleepers and chippings you still step over.

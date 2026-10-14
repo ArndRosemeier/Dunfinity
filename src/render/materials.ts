@@ -72,8 +72,21 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color'], () => {
   const height = mottle.mul(0.35).add(mx_noise_float(p.mul(3.1)).mul(0.12)).sub(seam.mul(0.12));
   m.normalNode = bumped(height, 0.35);
   m.roughnessNode = float(0.9).add(grain.mul(0.06));
+  // Veins of infused salt (the Salt Works): thin glowing blue lines where a noise crosses zero,
+  // branching finer near the main ones, only in some stretches of rock, pulsing slowly.
+  const line = float(1).sub(abs(mx_noise_float(p.mul(0.16).add(vec3(mottle.mul(0.7))))));
+  const fine = float(1).sub(abs(mx_noise_float(p.mul(0.55).add(13.1))));
+  const stretch = smoothstep(0.15, 0.5, mx_noise_float(p.mul(0.045).add(vec3(7.3, 1.1, -4.2))));
+  const vein = smoothstep(0.975, 0.996, line).add(smoothstep(0.985, 0.998, fine).mul(smoothstep(0.85, 0.97, line)).mul(0.7)).mul(stretch);
+  const pulse = sin(time.mul(1.1).add(p.x.mul(0.13)).add(p.z.mul(0.09))).mul(0.15).add(0.85);
+  // Thin lines alias into glitter far off: they fade out with distance (the fog hides the rest).
+  const near = smoothstep(55, 20, length(positionView));
+  m.emissiveNode = vec3(0.25, 0.6, 1.0).mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4));
   return m;
 });
+
+/** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
+export const ROCK_VEINS = uniform(0);
 
 /** The view normal bent by a procedural `height` (Mikkelsen 2010, forward differences in screen space). */
 function bumped(height: Node<'float'>, scale: number) {

@@ -33,6 +33,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | A small hand-built mesh posed per frame (creature parts, finds) | `meshOf(build, kind)` | `src/render/meshes.ts` |
 | Show a level's props (rails, lamps, shacks) around the viewer | `Props` (streams tiles) | `src/render/props/Props.ts` |
 | Which meshes cast and receive the headlamp's shadow | the material kind's `shadow` flags, set by `meshFromData` (never per mesh) | `src/render/materials.ts` |
+| How strongly the rock's veins glow (per band) | `ROCK_VEINS.value`, set by `LevelView` from `level.band.veins` | `src/render/materials.ts` |
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
 | Dust in the air, seen in the headlamp's beam | `Dust` (one mesh of the `DUST` kind; `follow(lamp)` each frame) | `src/render/dust.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later) | `src/render/props/lamps.ts` |
@@ -58,6 +59,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Is this point rock or air, how far to rock? | `level.sdf(x, y, z)`: the single density function (positive in air) | `src/gen/level.ts` |
 | Where is the floor under a point? | `level.floorAt(x, z)` (the working's floor; ignores pillars) | `src/gen/level.ts` |
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
+| Which band (Quarry, Salt Works, ...) a depth belongs to, and how it looks: rock colours, pillar fluting, water, glowing veins, its name | `bandOf(depth)`, `level.band` (passed to `QuarryField`) | `src/gen/bands.ts` |
 | Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |
 | Where exactly is the rock surface under a point (where props stand)? | `level.groundAt(x, z)` | `src/gen/level.ts` |
 | Which way does the rock face here? | `level.normal(x, y, z, out)` | `src/gen/level.ts` |

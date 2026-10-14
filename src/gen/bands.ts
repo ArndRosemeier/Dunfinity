@@ -1,0 +1,63 @@
+/**
+ * The bands of levels 1–10 (docs/design/town-and-first-strata.md §4): which kind of place a depth is,
+ * and the numbers that make the excavation field (src/gen/quarry.ts) look like that place. One field,
+ * many looks: a band is data, not a second generator.
+ */
+export interface Band {
+  readonly id: 'quarry' | 'salt';
+  /** Shown on arrival: "Level 3 · The Salt Works". */
+  readonly name: string;
+  /** Workings: the chance of a grand hall (few, massive pillars) and of a cathedral (very tall). */
+  readonly grand: number;
+  readonly cathedral: number;
+  /** Ordinary and grand pillar spacing ranges (min, extra), and the ceiling heights (min, extra) of ordinary, grand and cathedral workings. */
+  readonly spacing: readonly [number, number];
+  readonly grandSpacing: readonly [number, number];
+  readonly height: readonly [number, number];
+  readonly grandHeight: readonly [number, number];
+  readonly cathedralHeight: readonly [number, number];
+  /** Chance that a working has collapsed. */
+  readonly collapse: number;
+  /** Carved pillars: flutes cut into the sides (depth, metres; 0: plain cut stone), and how many per side (even: a ridge down the middle of each side, where a ladder can go). */
+  readonly flutes: number;
+  readonly fluteCount: number;
+  /** The water table's base height and how far it wanders (brine lakes in the salt). */
+  readonly water: readonly [number, number];
+  /** The rock's colour: base, what the lighter layers add, the floor dust, and the natural rock between workings (a multiplier). */
+  readonly rock: readonly [number, number, number];
+  readonly layers: readonly [number, number, number];
+  readonly dust: readonly [number, number, number];
+  readonly natural: readonly [number, number, number];
+  /** How strongly veins of glowing blue infused salt show in the rock (0: none). */
+  readonly veins: number;
+}
+
+export const QUARRY: Band = {
+  id: 'quarry', name: 'The Quarry',
+  grand: 0.3, cathedral: 0.15,
+  spacing: [14, 12], grandSpacing: [32, 22],
+  height: [12, 26], grandHeight: [28, 22], cathedralHeight: [45, 20],
+  collapse: 0.3,
+  flutes: 0, fluteCount: 0,
+  water: [-3.7, 1.3],
+  rock: [0.46, 0.42, 0.35], layers: [0.05, 0.045, 0.035], dust: [0.08, 0.075, 0.065], natural: [0.82, 0.82, 0.85],
+  veins: 0,
+};
+
+/** The salt mine proper (levels 3–5): cathedral chambers carved by miners, fluted pillars, brine lakes, the first veins of infused salt. */
+export const SALT: Band = {
+  id: 'salt', name: 'The Salt Works',
+  grand: 0.45, cathedral: 0.35,
+  spacing: [16, 10], grandSpacing: [34, 18],
+  height: [16, 22], grandHeight: [32, 20], cathedralHeight: [55, 25],
+  collapse: 0.15,
+  flutes: 0.35, fluteCount: 4,
+  water: [-2.4, 1.6],
+  rock: [0.31, 0.32, 0.34], layers: [0.12, 0.12, 0.125], dust: [0.1, 0.1, 0.1], natural: [0.7, 0.72, 0.76],
+  veins: 1,
+};
+
+/** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
+export function bandOf(depth: number): Band {
+  return depth >= 3 ? SALT : QUARRY;
+}
