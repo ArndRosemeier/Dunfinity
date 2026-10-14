@@ -25,7 +25,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
-| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
+| I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `GLOW.make()`, `METAL.make()`, `WATER.make()`. Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
 | Show a level's rock around the viewer | `Terrain` (streams chunks, swaps without holes) | `src/render/terrain/Terrain.ts` |
@@ -40,7 +40,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | The player's figure | `Nobody` (Scale's human in rags, posed from the `Body`) | `src/render/humans/nobody.ts` |
 | A human: body, skeleton, materials, clothes, animation | `Humanoid` (`Humanoid.create(look, { wardrobe })`, `dress`, `update`) | `@futuremagic/humanoid/three` |
 | A human's look (race, age, hair, skin) from a seed | `randomAppearance(race, seed, opts)` | `@futuremagic/humanoid` |
-| Which clothes exist and how they sit | `WARDROBE` (the package's `Wardrobe` hook) and outfits like `rags(seed)` | `src/render/humans/wardrobe.ts` |
+| Which clothes and held items exist and how they sit | `WARDROBE` (the package's `Wardrobe` hook: clothes, and items like the kitchen knife) and outfits like `rags(seed)` | `src/render/humans/wardrobe.ts` |
 | What the animator plays for the body's state | `moveOf(body)` | `src/render/humans/move.ts` |
 | Play out a ladder climb (walk up, over a rim or at the foot, hands and feet on the rungs, a level change in the middle) | `LadderClimb` (`play(steps)`, `advance`) | `src/render/humans/ladderClimb.ts` |
 | Pose the nobody in a scripted scene (not from the body) | `nobody.puppet(...)` with the animator's `override` / `limbs` | `src/render/humans/nobody.ts` |
@@ -62,7 +62,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
 | What the miners left in a tile (rails, carts, lamps, shacks), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
-| Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`) | `src/gen/propMesh.ts` |
+| Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts) | `src/gen/propMesh.ts` |
+| One thing per grid cell (shafts, rat nests), decided once per cell | `CellMemo` (`at(i, j)`) | `src/gen/cellMemo.ts` |
 | Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |
 | Where does a player arrive on a level? | `level.arrival` (below the first level: the foot of `level.ascent`, the way up) | `src/gen/level.ts` |
 | Where are a ladder's rungs, which way is its wall, where does one get on and off? | `ladderOf(shaft)` (a `Ladder`; `RUNG` spacing) | `src/gen/descents.ts` |
@@ -83,11 +84,14 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Move a body on the rock: walk, climb, swim, fall | `Body.step` and its metrics `MOVE` (the reachability check will use the same) | `src/world/traverse/body.ts` |
 | A persisted change to the world | `persist.mark(chunk, change)` (guarded: `localStorage` only in `src/persist/`) | `src/persist/` |
 
-### Gameplay (planned)
+### Gameplay
 
 | Question | The one way | Where |
 |---|---|---|
-| Does a blow, blast or effect reach someone? | `combat.reach(...)` then `combat.damage(...)`; never write `hp` | `src/combat/` |
+| Does a blow, blast or effect reach someone? Who does it hit? | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
+| Rats: nests, waking, chasing, biting | `Rats` (`advance(dt, prey)`, `list`, `nestAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
+| Draw the rats | `RatView` (a pool added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
+| Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
 
 ### The Lab
 

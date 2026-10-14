@@ -15,6 +15,10 @@ import { parseViewParams } from '../app/params';
 import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
 import { DRAFT_RANGE, draftLine } from './draft';
+import { Rats, type Rat } from '../creatures/rats';
+import { RatView } from '../render/creatures/ratView';
+import { damage, nearestReached, type Blow } from '../combat/combat';
+import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -22,6 +26,11 @@ const STEP = 1 / 120;
 const LADDER_REACH = 1.6;
 /** How much of the ladder is climbed on each level when going from one to the other, metres. */
 const CLIMB_SHOWN = 4.5;
+/**
+ * A stab with the kitchen knife: seconds it takes, when it lands, its reach (beyond the nobody's
+ * centre), sweep and heights, damage and knockback; and how far it turns the nobody to a rat.
+ */
+const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
 
 export async function startGame(host: HTMLElement): Promise<void> {
   const params = parseViewParams(location.search);
@@ -38,8 +47,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const [x, , z] = pos ?? level.arrival;
     return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
+  let rats: Rats;
   const show = (l: Level) => {
     level = l;
+    rats = new Rats(l);
     view.go(l);
     cam.level = l;
     nobody.level = l;
@@ -48,6 +59,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
     return arrive();
   };
+  rats = new Rats(level);
   let body = nextGrandchild();
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
@@ -56,6 +68,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   nobody.pose(body, 0, 0);
   await view.start([nobody.root]);
   await view.stage.add(nobody.root);
+  const ratView = new RatView();
+  await view.stage.add(ratView.root);
   nobody.head.add(view.headlamp); // the nobody carries the light
   view.headlamp.position.set(0, 0.5, -0.7); // above and ahead of the eyes, so it does not glare on the figure
 
@@ -67,6 +81,21 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const timer = new Timer();
   let acc = 0;
   const climb = new LadderClimb(nobody);
+  const blows = new Rng(deriveSeed(params.seed, 'blows'));
+  /** The stab in progress: when it started (or -Infinity), the way it faces, whether it has landed. */
+  let stabAt = -Infinity, stabYaw = 0, stabDone = true;
+  const stab = (now: number): void => {
+    stabAt = now;
+    stabDone = false;
+    // Turn to the nearest rat roughly where the camera looks, else where it looks.
+    stabYaw = cam.yaw;
+    let best = STAB.aim;
+    for (const r of rats.list) {
+      if (r.dead) continue;
+      const d = Math.hypot(r.x - body.x, r.z - body.z), yaw = Math.atan2(-(r.x - body.x), -(r.z - body.z));
+      if (d < best && Math.abs(angleDiff(cam.yaw, yaw)) < STAB.aimArc && Math.abs(r.y - body.y) < 1.5) { best = d; stabYaw = yaw; }
+    }
+  };
   /** A line to show for a while (arriving on a level), and until when. */
   let notice = levelName(level.depth), noticeUntil = 5;
   const ladder: [number, number] = [0, 0];
@@ -126,7 +155,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return rats; },
+    /** Stab as the mouse button would. */
+    stab: () => stab(timer.getElapsed()),
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
     descend: (up = false) => {
       const s = up ? level.ascent : level.descents.nearest(body.x, body.z, 5000);
@@ -148,7 +179,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) body = nextGrandchild();
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); rats = new Rats(level); }
+    const now = timer.getElapsed();
+    if (controls.tap('Mouse0') && !climb.active && !body.dead && body.mode === 'walk' && now - stabAt > STAB.dur) stab(now);
     const nearLadder = climb.active ? null : atLadder();
     if (nearLadder && controls.tap('KeyE')) climbFrom(nearLadder);
     if (climb.active) {
@@ -164,10 +197,30 @@ export async function startGame(host: HTMLElement): Promise<void> {
       input.jump = false;
     } else {
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP);
-      nobody.pose(body, dt, timer.getElapsed());
+      const stabbing = now - stabAt < STAB.dur;
+      if (stabbing) body.facing = stabYaw;
+      if (!stabDone && now - stabAt >= STAB.hit) {
+        stabDone = true;
+        const blow: Blow = { x: body.x, y: body.y, z: body.z, yaw: stabYaw, range: STAB.range, arc: STAB.arc, low: STAB.low, high: STAB.high };
+        const r = nearestReached(blow, rats.list);
+        if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]), body.x, body.z, STAB.knock, 'knife');
+      }
+      const health = body.health;
+      rats.advance(dt, body);
+      if (body.health < health) {
+        // Flinch away from the nearest rat.
+        let near: Rat | undefined, nd = Infinity;
+        for (const r of rats.list) { const d = Math.hypot(r.x - body.x, r.z - body.z); if (!r.dead && d < nd) { nd = d; near = r; } }
+        if (near) nobody.hit(body.x - near.x, body.z - near.z, 0.5);
+      }
+      // The knife comes out when rats are after the nobody or it is used, and goes back after a while.
+      const threat = rats.list.some((r) => (r.mode === 'chase' || r.mode === 'bite') && Math.hypot(r.x - body.x, r.z - body.z) < 14);
+      const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
+      nobody.pose(body, dt, now, stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined, ready);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
 
+    ratView.draw(rats.list, now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     const lines = [timer.getElapsed() < noticeUntil ? notice : ''];
@@ -177,6 +230,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (draft) lines.push(draft);
     }
+    if (rats.killed) lines.push(`rats killed: ${rats.killed}`);
     if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     view.frame(body.x, body.y, body.z, timer.getElapsed());
     (globalThis as { __ready?: boolean }).__ready = view.settled;
@@ -197,8 +251,8 @@ function hudText(b: Body, backend: string): string {
     `health   ${bar(b.health, MOVE.maxHealth)}  ${b.health.toFixed(0)}`,
     `stamina  ${bar(b.stamina, MOVE.stamina)}${b.mode === 'climb' ? '  climbing' : b.mode === 'swim' ? '  swimming' : ''}`,
   ];
-  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`a hard landing: -${b.lastHurt.toFixed(0)}`);
-  if (b.dead) lines.push('', 'You fell to your death.', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder · wheel zoom · F light  ·  ${backend}`);
+  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${b.lastCause === 'rat' ? 'a rat bites' : 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
+  if (b.dead) lines.push('', b.lastCause === 'rat' ? 'The rats got you.' : 'You fell to your death.', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
+  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder · wheel zoom · F light  ·  ${backend}`);
   return lines.join('\n');
 }

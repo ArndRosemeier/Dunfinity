@@ -56,3 +56,9 @@ export const WATER = defineKind('water', ['position', 'normal', 'color'], () => 
   const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.06, metalness: 0.1 });
   return m;
 });
+
+/** Worked metal: a knife's blade, tools. Glints in the lamps. Same attributes as the solid kind. */
+export const METAL = defineKind('metal', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.28, metalness: 0.65 });
+  return m;
+});

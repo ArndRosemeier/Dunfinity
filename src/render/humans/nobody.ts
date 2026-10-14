@@ -4,7 +4,7 @@
  */
 import { Group, type Mesh, type Object3D } from 'three/webgpu';
 import { randomAppearance, setHumanAssetBase, type HumanoidAppearance } from '@futuremagic/humanoid';
-import { Humanoid, type MoveState } from '@futuremagic/humanoid/three';
+import { Humanoid, type ActionAnim, type MoveState } from '@futuremagic/humanoid/three';
 import { deriveSeed } from '@futuremagic/core';
 import type { Body } from '../../world/traverse/body';
 import type { Level } from '../../gen/level';
@@ -59,9 +59,17 @@ export class Nobody {
     this.human.update({ pos, vel, yaw, anim: { move } }, dt, time, null);
   }
 
-  /** Follow the body: place, turn and pose. */
-  pose(b: Body, dt: number, time: number): void {
+  /**
+   * Follow the body: place, turn and pose. `action`: a one-shot (a stab) playing over the movement;
+   * `combat`: the knife drawn and held ready (else sheathed at the hip).
+   */
+  pose(b: Body, dt: number, time: number, action?: ActionAnim, combat = false): void {
     const yaw = b.mode === 'climb' ? Math.atan2(b.wall[0], b.wall[2]) : b.facing;
-    this.human.update({ pos: [b.x, b.y, b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move: moveOf(b) } }, dt, time, this.ground);
+    this.human.update({ pos: [b.x, b.y, b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move: moveOf(b), action }, combat }, dt, time, this.ground);
+  }
+
+  /** A blow landed on the nobody from direction (dx, dz) (towards them), strength 0..1: they flinch. */
+  hit(dx: number, dz: number, strength: number): void {
+    this.human.animator.onHit(dx, dz, strength);
   }
 }

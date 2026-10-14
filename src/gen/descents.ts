@@ -12,6 +12,7 @@
  */
 import { deriveSeed, hash3f } from '@futuremagic/core';
 import { newColumn, type QuarryField } from './quarry';
+import { CellMemo } from './cellMemo';
 
 export const SHAFT = {
   /** Shaft radius, metres. */
@@ -91,7 +92,7 @@ export const ASCENT = { radius: 1.5, standoff: 0.45, above: 24 } as const;
 
 export class Descents {
   private readonly seed: number;
-  private readonly cells = new Map<number, Shaft | null>();
+  private readonly cells = new CellMemo<Shaft | null>((i, j) => this.place(i, j));
   private readonly col = newColumn();
 
   /**
@@ -144,13 +145,7 @@ export class Descents {
   }
 
   private cell(i: number, j: number): Shaft | null {
-    const key = (i + 32768) * 65536 + (j + 32768);
-    let s = this.cells.get(key);
-    if (s === undefined) {
-      s = this.place(i, j);
-      this.cells.set(key, s);
-    }
-    return s;
+    return this.cells.at(i, j);
   }
 
   /** Whether cell (i, j) has a shaft, and where: the first of a few candidate spots that fits. */
