@@ -82,3 +82,13 @@ test('the spawn is not under water', () => {
   const [x, , z] = level.spawn();
   assert.ok(level.floorAt(x, z) > level.waterAt(x, z));
 });
+
+test('loose stones lie on the floor, out of the water', () => {
+  const stones = tiles.reduce((s, t) => s + t.counts.stones, 0);
+  assert.ok(stones > 200, `stones on the floor (${stones})`);
+  for (const t of tiles) {
+    if (!t.stones) continue;
+    const p = t.stones.positions;
+    for (let i = 0; i < p.length; i += 3 * 24) assert.ok(level.waterAt(p[i], p[i + 2]) < level.groundAt(p[i], p[i + 2]) + 0.6, 'a stone in the water');
+  }
+});
