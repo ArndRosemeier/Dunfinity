@@ -1,6 +1,7 @@
 /**
  * The game, first playable: a nobody in the Quarry. Walk, sprint, jump, climb any rock while
- * stamina lasts, swim, and mind the drops. Third-person camera, wheel to first person.
+ * stamina lasts, swim, and mind the drops. Find a shaft (a draft gives it away) and climb down its
+ * ladder to the next level. Third-person camera, wheel to first person.
  */
 import { Timer } from 'three/webgpu';
 import { Level } from '../gen/level';
@@ -10,13 +11,19 @@ import { OrbitCamera } from '../render/camera/OrbitCamera';
 import { Nobody } from '../render/humans/nobody';
 import { Controls } from '../input/controls';
 import { parseViewParams } from '../app/params';
+import { ladderTop } from '../gen/descents';
+import { DRAFT_RANGE, draftLine } from './draft';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
+/** How close to the ladder's top the nobody must stand to climb down, metres. */
+const LADDER_REACH = 1.6;
+/** Seconds of the fade to black (and back) on the way down. */
+const FADE = 1.2;
 
 export async function startGame(host: HTMLElement): Promise<void> {
   const params = parseViewParams(location.search);
-  const level = new Level(params.seed, params.depth);
+  let level = new Level(params.seed, params.depth);
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   view.headlampPower = { survey: 40, dark: 9 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
@@ -24,11 +31,22 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const cam = new OrbitCamera(view.camera, level);
   if (params.look) [cam.yaw, cam.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
-  const start = (): Body => {
-    const [x, , z] = params.pos ?? level.spawn();
-    return new Body(x, params.pos ? params.pos[1] : level.groundAt(x, z) + 0.2, z);
+  /** A body where one arrives on the current level (or at ?pos on the first). */
+  const arrive = (pos: [number, number, number] | null = params.pos): Body => {
+    const [x, , z] = pos ?? level.arrival;
+    return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
-  let body = start();
+  const show = (l: Level) => {
+    level = l;
+    view.go(l);
+    cam.level = l;
+    nobody.level = l;
+  };
+  const nextGrandchild = (): Body => {
+    if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
+    return arrive();
+  };
+  let body = nextGrandchild();
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
@@ -41,9 +59,24 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   const input: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: false };
   const hud = document.getElementById('hud');
+  const fade = document.createElement('div');
+  fade.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none';
+  host.appendChild(fade);
   const timer = new Timer();
   let acc = 0;
-  (globalThis as { __game?: unknown }).__game = { view, cam, get body() { return body; }, level };
+  /** On the ladder: seconds since starting down (the fade), or -1; and whether the next level is up yet. */
+  let climbing = -1, below = false;
+  /** A line to show for a while (arriving on a level), and until when. */
+  let notice = levelName(level.depth), noticeUntil = 5;
+  const ladder: [number, number] = [0, 0];
+  const atLadder = (): boolean => {
+    if (body.dead || body.mode !== 'walk' || !body.grounded) return false;
+    const s = level.descents.at(body.x, body.z, LADDER_REACH + 1);
+    if (!s) return false;
+    ladderTop(s, ladder);
+    return Math.hypot(body.x - ladder[0], body.z - ladder[1]) < LADDER_REACH;
+  };
+  (globalThis as { __game?: unknown }).__game = { view, cam, get body() { return body; }, get depth() { return level.depth; }, descend: () => { climbing = 0; } };
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
@@ -55,16 +88,43 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) body = start();
-    for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP);
+    if (body.dead && controls.tap('KeyR')) body = nextGrandchild();
+    const nearLadder = climbing < 0 && atLadder();
+    if (nearLadder && controls.tap('KeyE')) climbing = 0;
+    if (climbing >= 0) {
+      // Down the ladder into the dark; the next level comes up out of it.
+      climbing += dt;
+      if (climbing >= FADE && !below) {
+        const { health } = body;
+        show(new Level(params.seed, level.depth + 1));
+        body = arrive(null);
+        body.health = health;
+        below = true;
+        notice = levelName(level.depth);
+        noticeUntil = timer.getElapsed() + 5;
+      }
+      fade.style.opacity = String(climbing < FADE ? climbing / FADE : Math.max(0, 2 - climbing / FADE));
+      if (climbing >= 2 * FADE) { climbing = -1; below = false; }
+    } else for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP);
 
     nobody.pose(body, dt, timer.getElapsed());
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
-    if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}`;
+    const lines = [timer.getElapsed() < noticeUntil ? notice : ''];
+    if (nearLadder) lines.push('E: climb down the ladder');
+    else if (!body.dead) {
+      const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
+      const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
+      if (draft) lines.push(draft);
+    }
+    if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     view.frame(body.x, body.y, body.z, timer.getElapsed());
     (globalThis as { __ready?: boolean }).__ready = view.settled;
   });
+}
+
+function levelName(depth: number): string {
+  return `Level ${depth} · The Quarry`;
 }
 
 function bar(value: number, max: number): string {
@@ -79,6 +139,6 @@ function hudText(b: Body, backend: string): string {
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`a hard landing: -${b.lastHurt.toFixed(0)}`);
   if (b.dead) lines.push('', 'You fell to your death.', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look · WASD move · Shift run · Space jump · walk into rock to climb · wheel zoom · F light  ·  ${backend}`);
+  lines.push('', `click: mouse look · WASD move · Shift run · Space jump · walk into rock to climb · E climb down a shaft · wheel zoom · F light  ·  ${backend}`);
   return lines.join('\n');
 }

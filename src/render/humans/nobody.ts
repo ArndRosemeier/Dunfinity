@@ -25,6 +25,8 @@ export class Nobody {
   /** At eye height, turning with the body: things like the headlamp hang here. */
   readonly head = new Group();
   private readonly ground: (x: number, y: number, z: number) => number | null;
+  /** The level the feet stand on (changes on the way down). */
+  level: Level;
 
   static async create(seed: number, level: Level): Promise<Nobody> {
     const h = await Humanoid.create(nobodyLook(seed), { wardrobe: WARDROBE, expressions: true });
@@ -33,12 +35,13 @@ export class Nobody {
   }
 
   private constructor(readonly human: Humanoid, level: Level) {
+    this.level = level;
     this.root = human.object;
     this.head.position.y = human.height - 0.1;
     this.root.add(this.head);
     // The feet find the floor (the rock's surface under them, if near).
     this.ground = (x, y, z) => {
-      const g = level.groundAt(x, z);
+      const g = this.level.groundAt(x, z);
       return Math.abs(g - y) < 0.8 ? g : null;
     };
   }

@@ -6,6 +6,7 @@
  */
 import { deriveSeed } from '@futuremagic/core';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
+import { Descents, type Shaft } from './descents';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -27,15 +28,26 @@ export interface SampledGrid extends Grid {
 
 export class Level {
   readonly field: QuarryField;
+  /** The ways down to the next level (shafts). */
+  readonly descents: Descents;
   private readonly col = newColumn();
+  private arrival_: [number, number, number] | null = null;
 
   constructor(readonly seed: number, readonly depth: number) {
     this.field = new QuarryField(deriveSeed(seed, 'level', depth));
+    this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]]);
+  }
+
+  /** Where a player arrives on this level (from above, or at the start): `spawn()` near the origin. */
+  get arrival(): [number, number, number] {
+    return (this.arrival_ ??= this.spawn());
   }
 
   /** Signed distance to rock in metres: positive in air, negative in rock. */
   sdf(x: number, y: number, z: number): number {
-    return this.field.at(this.field.column(x, z, this.col), x, y, z);
+    const d = this.field.at(this.field.column(x, z, this.col), x, y, z);
+    const s = this.descents.of(x, z);
+    return s ? shaftAir(s, d, x, y, z) : d;
   }
 
   /**
@@ -109,7 +121,11 @@ export class Level {
         const x = ox + i * step;
         const col = this.field.column(x, z, newColumn());
         columns[i + n * k] = col;
-        for (let j = 0; j < n; j++) d[i + n * (j + n * k)] = this.field.at(col, x, oy + j * step, z);
+        const s = this.descents.of(x, z);
+        for (let j = 0; j < n; j++) {
+          const y = oy + j * step, f = this.field.at(col, x, y, z);
+          d[i + n * (j + n * k)] = s ? shaftAir(s, f, x, y, z) : f;
+        }
       }
     }
     return { n, d, ox, oz, step, columns };
@@ -141,11 +157,18 @@ export class Level {
         if (w.collapse > 0 || w.height < above + 6 || w.spacing < minSpacing) continue;
         const f = this.floorAt(px, pz);
         if (f < this.waterAt(px, pz) + 1) continue;
-        if (this.sdf(px, f + 5, pz) > 3.5 && this.sdf(px, f + above, pz) > 3) return [px, f + above, pz];
+        // (The field without shafts: the shafts are placed from the arrival, which is found here.)
+        const col = this.field.column(px, pz, this.col);
+        if (this.field.at(col, px, f + 5, pz) > 3.5 && this.field.at(col, px, f + above, pz) > 3) return [px, f + above, pz];
       }
     }
     return [x, this.floorAt(x, z) + above, z];
   }
+}
+
+/** The field `d` with shaft s's air added: a cylinder from its bottom up through the floor. */
+function shaftAir(s: Shaft, d: number, x: number, y: number, z: number): number {
+  return Math.max(d, Math.min(s.r - Math.hypot(x - s.x, z - s.z), y - s.bottom, s.top + 2 - y));
 }
 
 function hueOf(id: number, out: Float32Array, o: number): void {
