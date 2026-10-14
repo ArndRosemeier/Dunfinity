@@ -30,7 +30,7 @@ export interface PropTile {
   lamps: Float32Array;
   /** What one cannot walk through: upright boxes, BLOCKER_STRIDE numbers each (src/world/blockers.ts). */
   blockers: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; chapels: number; hanging: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -54,7 +54,10 @@ const FLAME: Rgb = [1.0, 0.72, 0.4];
 const LOAD: Rgb = [0.4, 0.37, 0.31];
 const SHALLOW: Rgb = [0.2, 0.21, 0.18];
 const DEEP: Rgb = [0.015, 0.03, 0.035];
-const STONE: Rgb = [0.4, 0.365, 0.3];
+/** An electric lamp's enamel shade and its bulb, burning. */
+const ENAMEL: Rgb = [0.09, 0.13, 0.1];
+const BULB: Rgb = [1.0, 0.85, 0.6];
+const WAX: Rgb = [0.5, 0.47, 0.38];
 
 /**
  * Loose stones: one try per DEBRIS.cell metres of floor. The chance of a stone there: a few
@@ -74,7 +77,7 @@ class TileBuilder {
   private readonly stones = new PropBuilder();
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, chapels: 0, hanging: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -123,7 +126,7 @@ class TileBuilder {
       const rad = lo + (hi - lo) * r(4) * r(4);
       const g = this.level.groundAt(x, z);
       if (g < this.level.waterAt(x, z) + 0.02 || this.level.descents.at(x, z, 1) || this.level.sdf(x, g + rad + 0.05, z) < rad * 0.5) continue;
-      const k = 0.85 + 0.3 * r(5), c: Rgb = [STONE[0] * k, STONE[1] * k, STONE[2] * k];
+      const c = this.tone(0.85 + 0.3 * r(5));
       // Limestone breaks blocky: a slab turned any way, tipped a little, half sunk in the dust.
       const hx = rad * (0.6 + 0.5 * r(7)), hy = rad * (0.3 + 0.35 * r(6)), hz = rad * (0.6 + 0.5 * r(8));
       const a = r(9) * Math.PI, ca = Math.cos(a), sa = Math.sin(a), t1 = (r(10) - 0.5) * 0.6, t2 = (r(11) - 0.5) * 0.6;
@@ -206,6 +209,12 @@ class TileBuilder {
       b[0] = Math.min(b[0], u); b[1] = Math.max(b[1], u); b[2] = Math.min(b[2], v); b[3] = Math.max(b[3], v);
     }
     return b;
+  }
+
+  /** The band's stone colour (loose stones, cut blocks, carvings), times k. */
+  private tone(k: number): Rgb {
+    const c = this.level.band.stone;
+    return [c[0] * k, c[1] * k, c[2] * k];
   }
 
   /** A per-decision random number for working w. */
@@ -424,8 +433,12 @@ class TileBuilder {
         const h = Math.hypot(o[0], o[2]);
         if (h < 0.5) continue;
         const ox = o[0] / h, oz = o[2] / h;
-        this.leftBehind(x - ox * (d - 0.05), z - oz * (d - 0.05), ox, oz, g, r);
+        const rx = x - ox * (d - 0.05), rz = z - oz * (d - 0.05);
+        if (r(5) >= this.level.band.carvings) this.leftBehind(rx, rz, ox, oz, g, r);
+        else if (r(6) < 0.2) this.chapel(rx, rz, ox, oz, g, r);
+        else this.statue(rx, rz, ox, oz, r);
       } else if (r(0) < LEFT.derricks && d > 5) this.derrick(x, z, r(3) * Math.PI * 2, r);
+      else if (r(0) > 1 - this.level.band.hanging && d > 2.5) this.hangingLamp(x, z, g, r);
     }
   }
 
@@ -471,13 +484,123 @@ class TileBuilder {
       const rows = 1 + Math.floor(r(11) * 2), cols = 2 + Math.floor(r(12) * 2);
       for (let y = 0; y < rows; y++) for (let c = 0; c < cols - y; c++) {
         const [cx, cz] = at(-0.85 + (c + y * 0.5) * 0.85, 0.5);
-        const k = 0.9 + 0.2 * r(13 + c + y * 3), tone: Rgb = [STONE[0] * k * 1.08, STONE[1] * k * 1.08, STONE[2] * k * 1.08];
+        const tone = this.tone((0.9 + 0.2 * r(13 + c + y * 3)) * 1.08);
         const byaw = yaw + (r(20 + c) - 0.5) * 0.08;
         this.stones.upright(cx, g + 0.2 + y * 0.4, cz, byaw, 0.4, 0.2, 0.4, tone);
         if (y === 0) this.block(cx, cz, byaw, 0.4, 0.4, g - 0.3, g + 0.4 * rows);
       }
     }
     this.counts.leftovers++;
+  }
+
+  /**
+   * A miner carved in salt, on a plinth against the rock at (x, z), facing out along (ox, oz): leaning
+   * on his pick, praying, or holding up a lamp.
+   */
+  private statue(x: number, z: number, ox: number, oz: number, r: (k: number) => number): void {
+    const px = x + ox * 0.5, pz = z + oz * 0.5;
+    if (this.level.sdf(px, this.level.groundAt(px, pz) + 2.2, pz) < 0.45) return;
+    const gy = this.level.groundAt(px, pz), yaw = Math.atan2(ox, oz), ca = Math.cos(yaw), sa = Math.sin(yaw);
+    const salt = this.tone(1.1 + 0.1 * r(40));
+    // (side, out, up) on the figure to world: out is where it faces, up from the top of the plinth.
+    const top = gy + 0.62;
+    const at = (side: number, out: number): [number, number] => [px + ca * side + ox * out, pz - sa * side + oz * out];
+    const limb = (a: readonly [number, number, number], b: readonly [number, number, number], half: number) => {
+      const [ax, az] = at(a[0], a[1]), [bx, bz] = at(b[0], b[1]);
+      this.stones.beam(ax, top + a[2], az, bx, top + b[2], bz, half, half, salt);
+    };
+    this.stones.upright(px, gy + 0.28, pz, yaw, 0.42, 0.34, 0.42, this.tone(0.95));
+    this.block(px, pz, yaw, 0.42, 0.42, gy - 0.3, top + 1.8);
+    for (const sd of [-0.11, 0.11]) {
+      const [lx, lz] = at(sd, 0), [bx, bz] = at(sd, 0.05);
+      this.stones.cylinder(lx, top + 0.45, lz, 0.085, 0.43, salt, 8, 0, 0.25);
+      this.stones.upright(bx, top + 0.06, bz, yaw, 0.07, 0.06, 0.13, salt);
+    }
+    this.stones.cylinder(px, top + 1.17, pz, 0.2, 0.32, salt, 10, 0.1, 0.15);
+    this.stones.ellipsoid(px, top + 1.62, pz, 0.11, 0.13, 0.11, salt, 10);
+    this.stones.cylinder(px, top + 1.72, pz, 0.125, 0.05, salt, 10);
+    this.stones.cylinder(px, top + 1.68, pz, 0.17, 0.012, salt, 12);
+    const pose = Math.floor(r(41) * 3);
+    if (pose === 0) {
+      // Leaning on his pick: the handle from the right hand to the plinth, the head across it.
+      limb([-0.25, 0, 1.42], [-0.29, 0.04, 0.86], 0.05);
+      limb([0.25, 0, 1.42], [0.3, 0.12, 1.12], 0.05);
+      limb([0.3, 0.12, 1.12], [0.24, 0.24, 0.98], 0.045);
+      limb([0.24, 0.26, 1.0], [0.3, 0.32, 0.05], 0.025);
+      limb([0.06, 0.32, 0.05], [0.54, 0.32, 0.08], 0.03);
+    } else if (pose === 1) {
+      // Praying: the hands together in front of the chest.
+      for (const sd of [-1, 1]) {
+        limb([0.25 * sd, 0, 1.42], [0.2 * sd, 0.14, 1.12], 0.05);
+        limb([0.2 * sd, 0.14, 1.12], [0.03 * sd, 0.24, 1.3], 0.045);
+      }
+    } else {
+      // Holding a lamp up into the dark.
+      limb([-0.25, 0, 1.42], [-0.29, 0.04, 0.86], 0.05);
+      limb([0.25, 0, 1.42], [0.32, 0.1, 1.72], 0.05);
+      limb([0.32, 0.1, 1.72], [0.3, 0.2, 2.02], 0.045);
+      const [lx, lz] = at(0.3, 0.2);
+      this.stones.cylinder(lx, top + 2.14, lz, 0.07, 0.1, salt, 8, 0.2);
+    }
+    this.counts.statues++;
+  }
+
+  /**
+   * A salt chapel against the rock at (x, z), (ox, oz) pointing away from it: steps up to an altar,
+   * a cross cut into the rock above it, and candles still burning.
+   */
+  private chapel(x: number, z: number, ox: number, oz: number, g: number, r: (k: number) => number): void {
+    const yaw = Math.atan2(ox, oz), ca = Math.cos(yaw), sa = Math.sin(yaw);
+    const at = (side: number, out: number): [number, number] => [x + ca * side + ox * out, z - sa * side + oz * out];
+    for (const [sd, out] of [[-1.4, 1], [1.4, 1], [0, 1.6]]) {
+      const [cx, cz] = at(sd, out);
+      if (!this.dry(cx, cz, 0.1) || Math.abs(this.level.groundAt(cx, cz) - g) > 0.35) return;
+    }
+    const [hx, hz] = at(0, 0.6);
+    if (this.level.sdf(hx, g + 3.2, hz) < 0.4) return;
+    const [s1x, s1z] = at(0, 0.95), [s2x, s2z] = at(0, 0.6), [ax, az] = at(0, 0.42), [kx, kz] = at(0, 0.1);
+    this.stones.upright(s1x, g, s1z, yaw, 1.5, 0.15, 0.95, this.tone(0.95));
+    this.stones.upright(s2x, g + 0.2, s2z, yaw, 1.15, 0.15, 0.6, this.tone(1));
+    this.stones.upright(ax, g + 0.85, az, yaw, 0.8, 0.5, 0.3, this.tone(1.1));
+    this.stones.upright(ax, g + 1.37, az, yaw, 0.88, 0.03, 0.36, this.tone(1.15));
+    this.stones.upright(kx, g + 2.75, kz, yaw, 0.1, 0.95, 0.12, this.tone(1.15));
+    this.stones.upright(kx, g + 3.15, kz, yaw, 0.55, 0.1, 0.12, this.tone(1.15));
+    this.block(s2x, s2z, yaw, 1.5, 0.95, g - 0.3, g + 1.4);
+    const n = 3 + Math.floor(r(42) * 4);
+    for (let c = 0; c < n; c++) {
+      const [cx, cz] = at(-0.65 + (1.3 * c) / (n - 1), 0.42 + (r(43 + c) - 0.5) * 0.25);
+      const h = 0.05 + 0.08 * r(50 + c);
+      this.solid.cylinder(cx, g + 1.4 + h, cz, 0.025, h, WAX, 8);
+      this.glow.upright(cx, g + 1.4 + h * 2 + 0.035, cz, yaw, 0.012, 0.03, 0.012, FLAME);
+    }
+    const [lx, lz] = at(0, 0.9);
+    this.lamps.push(lx, g + 1.8, lz);
+    this.counts.lit++;
+    this.counts.chapels++;
+  }
+
+  /** An old electric lamp hanging on its chain from the roof over (x, z), its bulb `HANG.low`–`HANG.high` above the floor; most still burn. */
+  private hangingLamp(x: number, z: number, g: number, r: (k: number) => number): void {
+    const y = g + HANG.low + (HANG.high - HANG.low) * r(44);
+    if (this.level.sdf(x, y, z) < 0.8) return;
+    // Up the chain to the roof.
+    let roof = -1;
+    for (let t = y + 0.4; t < y + HANG.chain;) {
+      const d = this.level.sdf(x, t, z);
+      if (d < 0.05) { roof = t; break; }
+      t += Math.max(0.1, d * 0.9);
+    }
+    if (roof < 0) return;
+    this.solid.upright(x, (roof + y + 0.36) / 2, z, 0, 0.012, (roof - y - 0.36) / 2 + 0.05, 0.012, IRON);
+    this.solid.cylinder(x, y + 0.3, z, 0.05, 0.06, ENAMEL, 8);
+    this.solid.cylinder(x, y + 0.17, z, 0.12, 0.08, ENAMEL, 14, 0, -1.5); // wide at the rim
+    const lit = r(45) < 0.7;
+    (lit ? this.glow : this.solid).ellipsoid(x, y + 0.04, z, 0.07, 0.09, 0.07, lit ? BULB : GLASS, 8);
+    this.counts.lamps++;
+    this.counts.hanging++;
+    if (!lit) return;
+    this.counts.lit++;
+    this.lamps.push(x, y - 0.2, z);
   }
 
   /**
@@ -505,8 +628,8 @@ class TileBuilder {
     this.solid.upright(tx, (ty + hook) / 2, tz, 0, 0.012, (ty - hook) / 2, 0.012, RUST);
     this.solid.upright(tx, hook - 0.08, tz, yaw, 0.05, 0.08, 0.03, IRON);
     if (r(31) < 0.5) {
-      const by = this.level.groundAt(tx, tz), k = 1.05;
-      this.stones.upright(tx + 0.1, by + 0.3, tz - 0.1, yaw + r(32), 0.55, 0.3, 0.45, [STONE[0] * k, STONE[1] * k, STONE[2] * k]);
+      const by = this.level.groundAt(tx, tz);
+      this.stones.upright(tx + 0.1, by + 0.3, tz - 0.1, yaw + r(32), 0.55, 0.3, 0.45, this.tone(1.05));
     }
     this.counts.derricks++;
   }
@@ -564,6 +687,8 @@ class TileBuilder {
 
 /** What was left against the rock, and the derricks: the cell size scanned (m) and the chance per cell. */
 const LEFT = { cell: 6, chance: 0.22, derricks: 0.006 };
+/** A hanging lamp's bulb height over the floor (low, high) and the longest chain it hangs on, m. */
+const HANG = { low: 3.6, high: 5, chain: 30 };
 /** A derrick's mast height and how far its boom reaches out, m. */
 const DERRICK = { mast: 7, reach: 3.6 };
 
