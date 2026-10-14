@@ -81,3 +81,14 @@ test('in deep water the body swims with its head out', () => {
   assert.equal(b.mode, 'swim');
   assert.ok(b.y + 1.6 > level.waterAt(b.x, b.z), 'head under water');
 });
+
+test('health comes back slowly once the nobody has been left alone a while', () => {
+  const b = standing();
+  b.hurt(40, 'rat');
+  run(b, MOVE.healAfter - 1);
+  assert.equal(b.health, MOVE.maxHealth - 40, 'no healing straight after a hurt');
+  run(b, 11);
+  assert.ok(b.health > MOVE.maxHealth - 40 + 5 && b.health < MOVE.maxHealth);
+  run(b, 120);
+  assert.equal(b.health, MOVE.maxHealth, 'not past full');
+});

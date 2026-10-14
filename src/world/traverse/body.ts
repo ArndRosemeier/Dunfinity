@@ -31,6 +31,9 @@ export const MOVE = {
   /** Damage per m/s over the safe impact speed. */
   impactDamage: 12,
   maxHealth: 100,
+  /** Healing: after this many seconds unhurt, health comes back at this many points a second. */
+  healAfter: 10,
+  healRate: 0.8,
 } as const;
 
 /** What the player wants this step: move relative to the camera, which faces along `yaw`. */
@@ -92,6 +95,7 @@ export class Body {
   /** Advance by dt seconds (call with small fixed steps, ~1/120 s). */
   step(level: Level, input: BodyInput, dt: number): void {
     this.time += dt;
+    if (!this.dead && this.time - this.hurtAt > MOVE.healAfter) this.health = Math.min(MOVE.maxHealth, this.health + MOVE.healRate * dt);
     if (this.dead) { input.jump = false; return; }
     const fx = -Math.sin(input.yaw), fz = -Math.cos(input.yaw);
     const rx = Math.cos(input.yaw), rz = -Math.sin(input.yaw);

@@ -13,6 +13,7 @@
     { "from": "src/gen", "deny": ["three", "src/render", "src/lab", "src/world"], "why": "the generator is pure data: it runs in workers and headless tests" },
     { "from": "src/world", "deny": ["three", "src/render", "src/lab"], "why": "world queries are pure: gameplay, workers and tests use them" },
     { "from": "src/creatures", "deny": ["three", "src/render", "src/lab", "src/game"], "why": "creatures are pure simulation: the game draws them, tests run them" },
+    { "from": "src/loot", "deny": ["three", "src/render", "src/lab", "src/game", "src/creatures"], "why": "loot is pure data: the game shows it, tests run it" },
     { "from": "src/combat", "deny": ["three", "src/render", "src/lab", "src/game", "src/creatures"], "why": "combat is pure rules: anyone who fights uses them" },
     { "from": "src/render", "deny": ["src/lab", "src/game"], "why": "the renderer does not know about the Lab or the game" },
     { "from": "src/game", "deny": ["src/lab"], "why": "the game does not depend on the Lab (shared setup lives in src/render and src/app)" },

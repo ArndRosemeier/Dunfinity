@@ -30,6 +30,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
 | Show a level's rock around the viewer | `Terrain` (streams chunks, swaps without holes) | `src/render/terrain/Terrain.ts` |
 | Turn worker mesh data (positions, normals, colours, indices) into a mesh | `meshFromData(data, kind)` | `src/render/meshes.ts` |
+| A small hand-built mesh posed per frame (creature parts, finds) | `meshOf(build, kind)` | `src/render/meshes.ts` |
 | Show a level's props (rails, lamps, shacks) around the viewer | `Props` (streams tiles) | `src/render/props/Props.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later) | `src/render/props/lamps.ts` |
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
@@ -91,6 +92,9 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Does a blow, blast or effect reach someone? Who does it hit? | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
 | Rats: nests, waking, chasing, biting | `Rats` (`advance(dt, prey)`, `list`, `nestAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
 | Draw the rats | `RatView` (a pool added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
+| What lies about to be found (floor finds, rat hoards), what is in reach, what is taken | `Finds` (`near`, `inReach`, `take`), kinds and values in `FINDS` | `src/loot/finds.ts` |
+| What the nobody carries up | `Pack` (`items`, `worth`) | `src/loot/finds.ts` |
+| Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
 
 ### The Lab
@@ -99,7 +103,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
-| Held keys, mouse look, wheel | `Controls` | `src/input/controls.ts` |
+| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel | `Controls` | `src/input/controls.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 
 ## Layers

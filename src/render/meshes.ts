@@ -4,6 +4,7 @@
  */
 import { BufferGeometry, Float32BufferAttribute, Mesh, Uint32BufferAttribute } from 'three/webgpu';
 import type { MaterialKind } from './materials';
+import { PropBuilder } from '../gen/propMesh';
 
 export interface IndexedData {
   positions: Float32Array;
@@ -22,5 +23,14 @@ export function meshFromData(d: IndexedData, kind: MaterialKind): Mesh {
   g.computeBoundingSphere();
   const m = new Mesh(g, kind.make());
   m.matrixAutoUpdate = false;
+  return m;
+}
+
+/** A small hand-built mesh of `kind` (a creature's part, a find), posed per frame: `build` adds its shapes. */
+export function meshOf(build: (b: PropBuilder) => void, kind: MaterialKind): Mesh {
+  const b = new PropBuilder();
+  build(b);
+  const m = meshFromData(b.build()!, kind);
+  m.matrixAutoUpdate = true;
   return m;
 }

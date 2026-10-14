@@ -50,5 +50,9 @@
   {
     "key": "same name: dunfinity/creatures/rats.ts#hurt + dunfinity/world/traverse/body.ts#hurt",
     "reason": "both implement Fighter (src/combat/combat.ts): the interface needs these names on every fighter."
+  },
+  {
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/render/creatures/ratView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
+    "reason": "one three.js call putting a drawn thing where its sim object is; nothing to fold"
   }
 ]

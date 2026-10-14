@@ -7,10 +7,10 @@
  * A fixed pool of rats, built once and added with the Stage before play (the kinds are compiled in
  * the warm-up), so nothing is compiled or added to the scene later.
  */
-import { Group, type Mesh, type Object3D } from 'three/webgpu';
-import { PropBuilder, type Rgb } from '../../gen/propMesh';
-import { meshFromData } from '../meshes';
-import { GLOW, VERTEX_COLOR_SOLID, type MaterialKind } from '../materials';
+import { Group, type Object3D } from 'three/webgpu';
+import type { Rgb } from '../../gen/propMesh';
+import { meshOf as mesh } from '../meshes';
+import { GLOW, VERTEX_COLOR_SOLID } from '../materials';
 import { RAT, type Rat } from '../../creatures/rats';
 
 /** How many rats can be drawn at once. */
@@ -22,14 +22,6 @@ const EYE: Rgb = [1.0, 0.28, 0.1];
 /** Hips of the legs (x, y, z): front left, front right, back left, back right; and their trot phase. */
 const HIPS: [number, number, number, number][] = [[-0.06, 0.12, -0.11, 0], [0.06, 0.12, -0.11, Math.PI], [-0.075, 0.12, 0.13, Math.PI], [0.075, 0.12, 0.13, 0]];
 const TAIL = { base: [0, 0.13, 0.22] as const, segments: 4, length: 0.1 };
-
-function mesh(build: (b: PropBuilder) => void, kind: MaterialKind): Mesh {
-  const b = new PropBuilder();
-  build(b);
-  const m = meshFromData(b.build()!, kind);
-  m.matrixAutoUpdate = true;
-  return m;
-}
 
 /** The parts one rat is made of, built once and shared (geometry and material) by every rat. */
 function parts() {
