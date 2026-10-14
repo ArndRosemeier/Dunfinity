@@ -63,3 +63,22 @@ test('prop boxes wind outwards', () => {
     assert.ok(n[0] * m.normals[k] + n[1] * m.normals[k + 1] + n[2] * m.normals[k + 2] > 0, 'face winds against its normal');
   }
 });
+
+test('standing water lies on the water table, and props stay dry', () => {
+  // A patch that holds a flooded low working (found near the seed-1 spawn).
+  const wet = [] as ReturnType<typeof quarryProps>[];
+  for (let tz = -2; tz < 1; tz++) for (let tx = -12; tx < -9; tx++) wet.push(quarryProps(level, tx, tz));
+  assert.ok(wet.reduce((s, t) => s + t.counts.wet, 0) > 50, 'expected a flooded working');
+  for (const t of [...wet, ...tiles]) {
+    if (t.water) {
+      const p = t.water.positions;
+      for (let i = 0; i < p.length; i += 3) assert.ok(Math.abs(p[i + 1] - level.waterAt(p[i], p[i + 2])) < 1e-4);
+    }
+    for (let i = 0; i < t.lamps.length; i += 3) assert.ok(t.lamps[i + 1] > level.waterAt(t.lamps[i], t.lamps[i + 2]) + 1);
+  }
+});
+
+test('the spawn is not under water', () => {
+  const [x, , z] = level.spawn();
+  assert.ok(level.floorAt(x, z) > level.waterAt(x, z));
+});

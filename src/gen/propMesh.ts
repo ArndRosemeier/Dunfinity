@@ -65,6 +65,17 @@ export class PropBuilder {
     this.box(x0 + dx, y0 + dy, z0 + dz, [dx, dy, dz], [0, up, 0], [(-dz / h) * side, 0, (dx / h) * side], color);
   }
 
+  /**
+   * A level-ish quad facing up over [x0, x1] × [z0, z1], with its own height and colour at each
+   * corner (in the order (x0, z0), (x1, z0), (x0, z1), (x1, z1)).
+   */
+  quad(x0: number, z0: number, x1: number, z1: number, y: readonly number[], colors: readonly Rgb[]): void {
+    const base = this.p.length / 3;
+    this.p.push(x0, y[0], z0, x0, y[2], z1, x1, y[3], z1, x1, y[1], z0);
+    for (const k of [0, 2, 3, 1]) { this.n.push(0, 1, 0); this.c.push(colors[k][0], colors[k][1], colors[k][2]); }
+    this.i.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
   build(): PropMesh | null {
     if (this.empty) return null;
     return {

@@ -1,5 +1,5 @@
 /**
- * Streams a level's props (rails, carts, lamps, shacks; src/gen/quarryProps.ts) around the viewer in
+ * Streams a level's props (rails, carts, lamps, shacks, standing water; src/gen/quarryProps.ts) around the viewer in
  * tiles, built in the worker pool and compiled on the Stage before they show. Feeds the burning
  * lamps to the lamp lights.
  */
@@ -7,7 +7,7 @@ import { Group, type Object3D } from 'three/webgpu';
 import { PROP_TILE, type PropTile } from '../../gen/quarryProps';
 import { createPropsPool, type WorkerPool } from '../../workers/pool';
 import type { PropsJob } from '../../workers/props.worker';
-import { GLOW, VERTEX_COLOR_SOLID } from '../materials';
+import { GLOW, VERTEX_COLOR_SOLID, WATER } from '../materials';
 import { meshFromData } from '../meshes';
 import type { Stage } from '../stage';
 import type { LampLights } from './lamps';
@@ -76,7 +76,7 @@ export class Props {
     void this.pool.run({ seed: this.seed, depth: this.depth, tx, tz }).then(async (data) => {
       if (this.tiles.get(id) !== tile) return;
       const group = new Group();
-      for (const [mesh, kind] of [[data.solid, VERTEX_COLOR_SOLID], [data.glow, GLOW]] as const) {
+      for (const [mesh, kind] of [[data.solid, VERTEX_COLOR_SOLID], [data.glow, GLOW], [data.water, WATER]] as const) {
         if (!mesh) continue;
         group.add(meshFromData(mesh, kind));
         tile.triangles += mesh.indices.length / 3;
