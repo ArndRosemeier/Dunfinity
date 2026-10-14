@@ -35,7 +35,10 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Compile shaders ahead of time | `stage.warmUp()` / `stage.add()` only (guarded) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `screen.toScreen` *(planned; guarded already)* | `src/render/screen.ts` |
-| Where may the camera go? | `camera.solidAt` *(planned)* | `src/render/camera/` |
+| A third-person camera that stays out of the rock | `OrbitCamera` (pulls in along `level.trace`) | `src/render/camera/OrbitCamera.ts` |
+| Look at a level: scene, fixed lights, warm-up, streamed rock and props | `LevelView` (`LevelView.open`) | `src/render/LevelView.ts` |
+| The player's figure | `Figure` (stand-in until Scale's human) | `src/render/figure.ts` |
+| The HUD line on shader health | `stage.hudLine()` | `src/render/stage.ts` |
 
 ### The level (generator)
 
@@ -46,6 +49,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
 | Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |
 | Where exactly is the rock surface under a point (where props stand)? | `level.groundAt(x, z)` | `src/gen/level.ts` |
+| Which way does the rock face here? | `level.normal(x, y, z, out)` | `src/gen/level.ts` |
+| How far until a ray hits rock? | `level.trace(...)` | `src/gen/level.ts` |
 | Is there water here, how high does it stand? | `level.waterAt(x, z)` (water wherever the ground is lower) | `src/gen/level.ts` |
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
@@ -65,7 +70,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where is the ceiling above a point? | `world.ceilingAt` | `src/world/query/` |
 | Can A see B? Can A shoot B? | `world.sight(a, b)` (rock, darkness and objects) | `src/world/query/` |
 | How lit is this point? | `world.light(x, y, z)` | `src/world/query/` |
-| Can this body stand, climb, swim here? | `traverse.*` (also used by the generator's reachability check) | `src/world/traverse/` |
+| Move a body on the rock: walk, climb, swim, fall | `Body.step` and its metrics `MOVE` (the reachability check will use the same) | `src/world/traverse/body.ts` |
 | A persisted change to the world | `persist.mark(chunk, change)` (guarded: `localStorage` only in `src/persist/`) | `src/persist/` |
 
 ### Gameplay (planned)
@@ -78,7 +83,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 
 | Question | The one way | Where |
 |---|---|---|
-| Read seed, depth, position, look, colour mode and backend from the URL | `parseLabParams` | `src/lab/params.ts` |
+| Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
+| Held keys, mouse look, wheel | `Controls` | `src/input/controls.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 
 ## Layers

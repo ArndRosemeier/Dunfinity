@@ -1,25 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLabParams } from '../src/lab/params';
+import { parseViewParams } from '../src/app/params';
 
 test('Lab params: numeric and text seeds, depth floor, position', () => {
-  assert.equal(parseLabParams('?seed=42').seed, 42);
-  assert.equal(parseLabParams('?seed=grandma').seed, parseLabParams('?seed=grandma').seed);
-  assert.notEqual(parseLabParams('?seed=grandma').seed, parseLabParams('?seed=grandpa').seed);
-  assert.equal(parseLabParams('?depth=0').depth, 1);
-  assert.deepEqual(parseLabParams('?pos=1,2,3').pos, [1, 2, 3]);
-  assert.equal(parseLabParams('?pos=1,2').pos, null);
-  assert.equal(parseLabParams('?gl').forceWebGL, true);
+  assert.equal(parseViewParams('?seed=42').seed, 42);
+  assert.equal(parseViewParams('?seed=grandma').seed, parseViewParams('?seed=grandma').seed);
+  assert.notEqual(parseViewParams('?seed=grandma').seed, parseViewParams('?seed=grandpa').seed);
+  assert.equal(parseViewParams('?depth=0').depth, 1);
+  assert.deepEqual(parseViewParams('?pos=1,2,3').pos, [1, 2, 3]);
+  assert.equal(parseViewParams('?pos=1,2').pos, null);
+  assert.equal(parseViewParams('?gl').forceWebGL, true);
 });
 
 test('Lab params: look direction and colour mode', () => {
-  assert.deepEqual(parseLabParams('?look=90,-20').look, [90, -20]);
-  assert.equal(parseLabParams('?look=90').look, null);
-  assert.equal(parseLabParams('?color=working').color, 'working');
-  assert.equal(parseLabParams('?color=nonsense').color, 'rock');
+  assert.deepEqual(parseViewParams('?look=90,-20').look, [90, -20]);
+  assert.equal(parseViewParams('?look=90').look, null);
+  assert.equal(parseViewParams('?color=working').color, 'working');
+  assert.equal(parseViewParams('?color=nonsense').color, 'rock');
 });
 
 test('dark starts in headlamp darkness', () => {
-  assert.equal(parseLabParams('?seed=1').dark, false);
-  assert.equal(parseLabParams('?seed=1&dark').dark, true);
+  assert.equal(parseViewParams('?seed=1').dark, false);
+  assert.equal(parseViewParams('?seed=1&dark').dark, true);
 });

@@ -12,7 +12,9 @@
   "layers": [
     { "from": "src/gen", "deny": ["three", "src/render", "src/lab", "src/world"], "why": "the generator is pure data: it runs in workers and headless tests" },
     { "from": "src/world", "deny": ["three", "src/render", "src/lab"], "why": "world queries are pure: gameplay, workers and tests use them" },
-    { "from": "src/render", "deny": ["src/lab"], "why": "the renderer does not know about the Lab UI" }
+    { "from": "src/render", "deny": ["src/lab", "src/game"], "why": "the renderer does not know about the Lab or the game" },
+    { "from": "src/game", "deny": ["src/lab"], "why": "the game does not depend on the Lab (shared setup lives in src/render and src/app)" },
+    { "from": "src/input", "deny": ["three", "src/render", "src/lab", "src/game"], "why": "input is plain DOM: both the Lab and the game read it" }
   ],
   "duplication": {
     "roots": {

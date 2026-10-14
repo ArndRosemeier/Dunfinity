@@ -38,6 +38,33 @@ export class Level {
     return this.field.at(this.field.column(x, z, this.col), x, y, z);
   }
 
+  /**
+   * Which way the rock faces at (x, y, z): the field's gradient, normalised (pointing into the air),
+   * written into `out`. From four samples on a tetrahedron, `e` metres apart.
+   */
+  normal(x: number, y: number, z: number, out: [number, number, number], e = 0.05): [number, number, number] {
+    const a = this.sdf(x + e, y - e, z - e), b = this.sdf(x - e, y - e, z + e);
+    const c = this.sdf(x - e, y + e, z - e), d = this.sdf(x + e, y + e, z + e);
+    const nx = a - b - c + d, ny = -a - b + c + d, nz = -a + b - c + d;
+    const len = Math.hypot(nx, ny, nz) || 1;
+    out[0] = nx / len; out[1] = ny / len; out[2] = nz / len;
+    return out;
+  }
+
+  /**
+   * How far a ray from (x, y, z) along the unit direction (dx, dy, dz) travels before it reaches rock
+   * (sphere tracing the field), up to `max` metres. Stops `skin` metres short of the surface.
+   */
+  trace(x: number, y: number, z: number, dx: number, dy: number, dz: number, max: number, skin = 0.05): number {
+    let t = 0;
+    for (let i = 0; i < 96 && t < max; i++) {
+      const d = this.sdf(x + dx * t, y + dy * t, z + dz * t);
+      if (d < skin) return Math.max(0, t - skin);
+      t += Math.max(d * 0.8, 0.02); // the field is only nearly 1-Lipschitz
+    }
+    return Math.min(t, max);
+  }
+
   workingAt(x: number, z: number): Working {
     return this.field.workingAt(x, z);
   }

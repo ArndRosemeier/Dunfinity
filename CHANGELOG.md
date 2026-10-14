@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.005 — Walk the Quarry
+
+- The game is now the default page: you are the nobody, standing in a grand hall of the Quarry in the dark, with a lamp. The Level Lab moved to `?lab`.
+- Movement on the rock itself (no physics engine, the level's distance field is the collision): walk, run, jump; walk into any rock to climb it while stamina lasts, except overhangs (decision L1), and lunge up or push off with Space; climb over the top onto a ledge; swim in water deeper than the chest; hard landings hurt and a long fall kills. Death is final: R sends the next grandchild.
+- Third-person camera that orbits with the mouse and pulls in where rock is in the way; the wheel zooms down to first person (decision D9). A stand-in figure of boxes until Scale's human arrives.
+- Shared setup: `LevelView` (scene, fixed lights, warm-up, rock and props) for the Lab and the game, `Controls` for input, `level.normal` and `level.trace`.
+- Fix: the shader warm-up compiled only the material kinds in front of the camera; it now compiles all of them wherever the camera looks.
+
 ## v0.004 — Water in the Quarry
 
 - Groundwater: each level has a water table a little above the lowest floor terrace, wandering slowly across the level. Low workings below it are flooded (pillars standing in dark, still water), others only hold puddles in dips, and the higher terraces stay dry. Deep water is darker than shallow water.
