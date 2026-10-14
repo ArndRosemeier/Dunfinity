@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.015 — Rats you can see coming
+
+- Rats no longer jitter. Before, a rat by your legs could flick back and forth between two spots: its place round you turned as it moved, it overshot and came back, and it dithered left and right round a stone. Now each rat takes its own place round you (fixed by where its nest lies), slows as it arrives and stops, and keeps to one side going round things. Tests check that no rat goes back and forth, at 60 fps, at 10 fps and round a walking player.
+- Every rat action shows. A rat that notices you stands up on its hind legs a moment, nose to you, before the charge. A bite rears back with the mouth up, then lunges in, head down and paws out, and the rat really jumps forward and back. A lunge stops at your legs instead of running into them.
+- Getting hurt shows: the edges of the screen flash red (in first person too), as well as the flinch.
+
 ## v0.014 — Stones underfoot
 
 - Loose stones on the floors of the Quarry: a few everywhere, a skirt of chippings round the feet of the pillars and walls where the miners cut, and heaps of broken blocks where the roof came down. Limestone breaks blocky, so they are slabs and blocks, half sunk in the dust, in the same limestone as the walls.
