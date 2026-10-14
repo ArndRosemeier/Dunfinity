@@ -85,7 +85,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where is the ceiling above a point? | `world.ceilingAt` | `src/world/query/` |
 | Can A see B? Can A shoot B? | `world.sight(a, b)` (rock, darkness and objects) | `src/world/query/` |
 | How lit is this point? | `world.light(x, y, z)` | `src/world/query/` |
-| Move a body on the rock: walk, climb, swim, fall | `Body.step` and its metrics `MOVE` (the reachability check will use the same) | `src/world/traverse/body.ts` |
+| Move a body on the rock: walk, climb, swim, fall | `Body.step(level, input, dt, blockers)` and its metrics `MOVE` (the reachability check will use the same) | `src/world/traverse/body.ts` |
+| Is a prop in the way? Push out of the props | `Blockers` (`pushOut`, `hits`); the generator lists each tile's boxes (`PropTile.blockers`), `Props` keeps them (`view.props.blockers`) | `src/world/blockers.ts` |
 | A persisted change to the world | `persist.mark(chunk, change)` (guarded: `localStorage` only in `src/persist/`) | `src/persist/` |
 
 ### Gameplay

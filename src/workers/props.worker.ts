@@ -14,5 +14,5 @@ const buffers = (m: PropMesh | null) => (m ? [m.positions.buffer, m.normals.buff
 
 serve<PropsJob, PropTile>((job) => {
   const result = quarryProps(levelFor(job.seed, job.depth), job.tx, job.tz);
-  return { result, transfer: [...buffers(result.solid), ...buffers(result.glow), ...buffers(result.water), ...buffers(result.stones), result.lamps.buffer] };
+  return { result, transfer: [...buffers(result.solid), ...buffers(result.glow), ...buffers(result.water), ...buffers(result.stones), result.lamps.buffer, result.blockers.buffer] };
 });

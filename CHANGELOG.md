@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.018 — Solid things, steady knees
+
+- You can no longer walk through the props. Carts, shacks, crates, barrels, stacked blocks, lamp posts, derricks, big fallen stones and the railings round the shafts stop you, and the rats run round them too. Rails, sleepers and chippings you still step over.
+- Fix: a standing knee could fold backwards or snap bent on uneven ground (Scale's humans had it too). The leg's IK lost track of which way the knee bends when the leg was nearly straight, and it popped on and off with tiny ground offsets. Now knees always bend forward and settle smoothly.
+
 ## v0.017 — Dust and leavings
 
 - Dust hangs in the air: fine specks drift in the headlamp's beam, and only there, so the cone of light shows in the dark.

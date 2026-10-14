@@ -231,7 +231,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       input.jump = false;
     } else {
-      for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP);
+      for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
       const stabbing = now - stabAt < STAB.dur;
       if (stabbing) body.facing = stabYaw;
       if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
@@ -249,6 +249,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]), body.x, body.z, STAB.knock, 'knife');
       }
       const health = body.health;
+      rats.blockers = view.props.blockers;
       rats.advance(dt, body);
       if (body.health < health) {
         // Flinch away from the nearest rat.

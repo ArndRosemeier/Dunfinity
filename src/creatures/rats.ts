@@ -9,6 +9,7 @@
  * rats of a nest exist only while you are near it, and the ones you killed stay dead on this visit.
  */
 import { Rng, deriveSeed, hash3f, angleDiff } from '@futuremagic/core';
+import type { Blockers } from '../world/blockers';
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
@@ -120,6 +121,8 @@ export class Rats {
   private readonly dead = new Set<number>();
   private readonly seed: number;
   private readonly rng: Rng;
+  /** The props in the way (src/world/blockers.ts): rats run round them. */
+  blockers: Blockers | null = null;
   /** Who the rats are after this step (for keeping out of their legs). */
   private prey: Fighter | null = null;
   private readonly chance: number;
@@ -334,6 +337,7 @@ export class Rats {
   private walkable(r: Rat, x: number, z: number): boolean {
     const l = this.level;
     if (l.sdf(x, r.y + 0.18 * r.size, z) < r.radius * 0.8) return false;
+    if (this.blockers?.hits(x, z, r.radius * 0.8, r.y + 0.05, r.y + 0.3)) return false;
     const g = l.groundAt(x, z);
     if (g - r.y > RAT.step || r.y - g > RAT.drop) return false;
     return l.waterAt(x, z) < g + 0.2;
