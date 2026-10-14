@@ -1,8 +1,9 @@
 /**
  * The rats on screen (src/creatures/rats.ts): a fat-bodied quarry rat of smooth parts in the solid
  * kind, with eyes in the glow kind that catch the light in the dark. Legs and tail are their own
- * meshes on pivots, posed per frame: a trot, a sniff, the wind-up and snap of a bite, the jerk of a
- * blow, and rolled onto its back when dead.
+ * meshes on pivots, posed per frame: a trot, a sniff, up on the hind legs when it notices you, the
+ * rear-back and lunge of a bite, the jerk of a blow, and rolled onto its back when dead. Every action
+ * shows (docs: a rat that only takes your health away is not seen to bite).
  *
  * A fixed pool of rats, built once and added with the Stage before play (the kinds are compiled in
  * the warm-up), so nothing is compiled or added to the scene later.
@@ -58,6 +59,9 @@ class RatFigure {
   readonly body = new Group();
   readonly legs: Object3D[] = [];
   readonly tail: Object3D[] = [];
+  /** How far up on its hind legs (0..1), eased in and out. */
+  private rear = 0;
+  private last = 0;
 
   constructor(p: ReturnType<typeof parts>) {
     this.root.add(this.body);
@@ -101,19 +105,28 @@ class RatFigure {
     }
     // Trot: diagonal pairs together.
     this.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(g + HIPS[i][3]) * 0.75 * moving; });
-    // Sniffing: the nose works, the body sways; a bite winds up (nose up, back) then snaps forward.
-    let pitch = 0, lunge = 0;
+    // Noticing you: up on the hind legs, front paws hanging, nose working.
+    const dt = Math.min(0.1, Math.max(0, time - this.last));
+    this.last = time;
+    this.rear += ((r.mode === 'alert' ? 1 : 0) - this.rear) * Math.min(1, dt * 14);
+    // Pitch (+ is nose up) about the hind hips when rearing, about the front feet when ducking in.
+    let pitch = this.rear * 0.8 + Math.sin(time * 14 + r.id) * 0.05 * this.rear, lunge = 0, reach = 0;
     if (r.mode === 'sniff') pitch = Math.sin(time * 9 + r.id) * 0.04 + 0.05;
     if (r.mode === 'bite') {
-      const t = r.biteT;
-      pitch = t < RAT.windup ? -0.35 * (t / RAT.windup) : 0.25 * Math.max(0, 1 - (t - RAT.windup) / 0.3);
-      lunge = t < RAT.windup ? 0.05 * (t / RAT.windup) : -0.1 * Math.max(0, 1 - (t - RAT.windup) / 0.3);
+      // Rear back and up, mouth open to the sky; then drive the head down and forward, paws out.
+      const t = r.biteT, w = Math.min(1, t / RAT.windup), s = t < RAT.windup ? 0 : Math.max(0, 1 - (t - RAT.windup) / 0.3);
+      if (t < RAT.windup) { pitch = 0.55 * w * (2 - w); lunge = 0.07 * w; }
+      else { pitch = -0.3 * s; lunge = -0.16 * s; reach = 1.1 * s; }
     }
     // Hit: a jerk up and back.
     const hit = Math.max(0, 1 - r.hurtT / 0.25);
-    B.rotation.x = pitch + hit * -0.4;
-    B.position.z = lunge + hit * 0.06;
-    B.position.y += hit * 0.05;
+    pitch -= hit * 0.4;
+    const pz = pitch > 0 ? 0.13 : -0.11;
+    B.rotation.x = pitch;
+    B.position.y += pz * Math.sin(pitch) + hit * 0.05;
+    B.position.z = pz - pz * Math.cos(pitch) + lunge + hit * 0.06;
+    // Front paws: hang straight down when up on the hind legs; reach out in the snap.
+    for (let i = 0; i < 2; i++) this.legs[i].rotation.x += -Math.max(0, pitch) * 0.85 + reach;
     this.tail.forEach((s, i) => {
       s.rotation.y = Math.sin(time * (3 + moving * 6) + r.id - i * 0.8) * (0.18 + 0.12 * moving);
       s.rotation.x = i === 0 ? 0.25 - moving * 0.15 : 0.08;

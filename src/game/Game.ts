@@ -95,6 +95,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const fade = document.createElement('div');
   fade.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none';
   host.appendChild(fade);
+  // Getting hurt shows, in first person too: the edges of the view flash red.
+  const pain = document.createElement('div');
+  pain.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,0,0,0.85) 100%)';
+  host.appendChild(pain);
   const timer = new Timer();
   let acc = 0;
   const climb = new LadderClimb(nobody);
@@ -258,6 +262,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
       const action = stooping ? { id: 'pickup', t0: pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping);
+      pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
 

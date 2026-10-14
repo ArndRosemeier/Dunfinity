@@ -29,6 +29,15 @@ export const RAT = {
   biteDamage: [2, 4] as const,
   biteEvery: 1.6,
   windup: 0.3,
+  /** The bite as motion: backing off in the wind-up and the lunge of the snap, m/s; how long the lunge lasts, s. */
+  rear: 0.5,
+  lunge: 2.2,
+  lungeT: 0.12,
+  /** On noticing you: up on the hind legs a moment before the charge, s (plus a stagger per rat). */
+  alert: 0.45,
+  /** Arriving: slow down within `arrive` metres of where it is going, and stop within `still`. */
+  arrive: 0.35,
+  still: 0.06,
   /** Nests: cell size, chance per cell (rising a little with depth), none this close to the arrival, rats per nest, how far they roam. */
   cell: 36,
   chance: 0.42,
@@ -43,7 +52,7 @@ export const RAT = {
   drop: 1.6,
 } as const;
 
-export type RatMode = 'sniff' | 'scurry' | 'chase' | 'bite' | 'flee' | 'dead';
+export type RatMode = 'sniff' | 'scurry' | 'alert' | 'chase' | 'bite' | 'flee' | 'dead';
 
 export interface Nest {
   readonly key: number;
@@ -79,6 +88,8 @@ export class Rat implements Fighter {
   /** Where it is going (scurrying about). */
   tx: number;
   tz: number;
+  /** Which way it last went round something in its way (+1 / -1): it keeps to it, not dithering. */
+  side = 1;
   readonly radius: number;
   readonly height: number;
 
@@ -109,6 +120,8 @@ export class Rats {
   private readonly dead = new Set<number>();
   private readonly seed: number;
   private readonly rng: Rng;
+  /** Who the rats are after this step (for keeping out of their legs). */
+  private prey: Fighter | null = null;
   private readonly chance: number;
 
   constructor(private readonly level: Level) {
@@ -119,6 +132,7 @@ export class Rats {
 
   /** Advance by dt seconds. `prey`: the player; bites go through combat.damage. Returns the bites landed this step. */
   advance(dt: number, prey: Fighter): number {
+    this.prey = prey;
     this.wakeNests(prey.x, prey.z);
     // In steps of at most 1/60 s: a rat looks one step ahead for floor, and a long step overreaches.
     const n = Math.ceil(dt * 60 - 1e-6), h = dt / Math.max(1, n);
@@ -206,7 +220,7 @@ export class Rats {
     if (sees && r.mode !== 'chase' && r.mode !== 'bite' && r.mode !== 'flee') r.nest.alarmed = true;
     const hunting = r.nest.alarmed && !prey.dead && d < RAT.forget && Math.abs(prey.y - r.y) < 4;
     if (!hunting && (r.mode === 'chase' || r.mode === 'bite')) { r.mode = 'scurry'; r.t = 0; r.nest.alarmed = r.nest.alarmed && !prey.dead && d < RAT.forget; }
-    if (hunting && (r.mode === 'sniff' || r.mode === 'scurry')) r.mode = 'chase';
+    if (hunting && (r.mode === 'sniff' || r.mode === 'scurry')) { r.mode = 'alert'; r.t = RAT.alert + (r.slot % 3) * 0.12; }
     // Badly hurt: now and then it bolts for a moment.
     if (r.hurtT === 0 && r.health < RAT.health * 0.4 && this.rng.chance(0.5)) { r.mode = 'flee'; r.t = this.rng.range(1.2, 2.2); }
 
@@ -228,26 +242,39 @@ export class Rats {
         gx = r.x - dx; gz = r.z - dz; speed = RAT.run;
         if ((r.t -= dt) <= 0) r.mode = hunting ? 'chase' : 'sniff';
         break;
+      case 'alert':
+        // Up on the hind legs, nose to you; then the charge.
+        if ((r.t -= dt) <= 0) r.mode = 'chase';
+        break;
       case 'chase': {
-        // Spread round the prey: each rat makes for its own side.
-        const a = Math.atan2(-dz, -dx) + (r.slot - 2) * 0.55;
+        // Spread round the prey, each rat to its own place, far enough apart not to shove each other.
+        // The places hang off the bearing of the nest (not of the rat itself: a goal that turns as
+        // the rat moves is chased round and round).
         const ring = prey.radius + r.radius + 0.1;
+        const a = Math.atan2(r.nest.z - prey.z, r.nest.x - prey.x) + (r.slot - (r.nest.count - 1) / 2) * ((2 * r.radius + 0.14) / ring);
         gx = prey.x + Math.cos(a) * ring; gz = prey.z + Math.sin(a) * ring;
         speed = RAT.run;
         if (d - prey.radius - r.radius < RAT.biteReach && r.biteT > RAT.biteEvery) { r.mode = 'bite'; r.biteT = 0; }
         break;
       }
-      case 'bite':
-        // Wind up, snap, hang on a moment.
-        gx = prey.x; gz = prey.z; speed = r.biteT < RAT.windup ? 0.5 : 0;
+      case 'bite': {
+        // Rear back in the wind-up, then lunge in with the snap, and hang on a moment.
+        const ux = dx / (d || 1), uz = dz / (d || 1);
+        if (r.biteT < RAT.windup) { r.vx = -ux * RAT.rear; r.vz = -uz * RAT.rear; }
+        else if (r.biteT < RAT.windup + RAT.lungeT) { r.vx = ux * RAT.lunge; r.vz = uz * RAT.lunge; }
         if (r.biteT >= RAT.windup && r.biteT - dt < RAT.windup && d - prey.radius - r.radius < RAT.biteReach + 0.25 && Math.abs(prey.y - r.y) < 1.2) {
           damage(prey, this.rng.range(RAT.biteDamage[0], RAT.biteDamage[1]), r.x, r.z, 0.6, 'rat');
           bit = 1;
         }
         if (r.biteT > RAT.windup + 0.35) r.mode = 'chase';
         break;
+      }
     }
-    this.move(r, gx, gz, speed, dt, r.mode === 'bite' ? Math.atan2(-dx, -dz) : null);
+    const faceYou = r.mode === 'bite' || r.mode === 'alert' || (r.mode === 'chase' && Math.hypot(gx - r.x, gz - r.z) < RAT.arrive);
+    if (r.mode === 'bite') {
+      r.yaw += angleDiff(r.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 15);
+      this.slide(r, dt);
+    } else this.move(r, gx, gz, speed, dt, faceYou ? Math.atan2(-dx, -dz) : null);
     return bit;
   }
 
@@ -255,22 +282,28 @@ export class Rats {
   private move(r: Rat, gx: number, gz: number, speed: number, dt: number, face: number | null): void {
     let ddx = gx - r.x, ddz = gz - r.z;
     const dist = Math.hypot(ddx, ddz);
-    if (speed > 0 && dist > 0.05) {
+    // Arrive: ease off near the goal and stand still on it, so it never overshoots and comes back.
+    speed = Math.min(speed, (speed * Math.max(0, dist - RAT.still)) / RAT.arrive);
+    if (speed > 0.02) {
       ddx /= dist; ddz /= dist;
       let want = Math.atan2(-ddx, -ddz);
-      // Round obstacles: try the direct way, then ever wider to either side.
-      const step = Math.min(dist, speed * dt);
-      for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.9, -1.9]) {
-        const a = want + off, nx = r.x - Math.sin(a) * step, nz = r.z - Math.cos(a) * step;
-        if (this.walkable(r, nx, nz)) { want = a; break; }
-        if (off === -1.9) speed = 0; // boxed in
+      // Round obstacles: the direct way, else ever wider to the side it went round last, and only
+      // when that side is shut, the other (a rat that tries left, right, left dithers in place).
+      const step = Math.max(0.05, speed * dt);
+      let found = false;
+      for (const off of [0, 0.6, 1.2, 1.9, -0.6, -1.2, -1.9]) {
+        const a = want + off * r.side;
+        if (!this.walkable(r, r.x - Math.sin(a) * step, r.z - Math.cos(a) * step)) continue;
+        if (off < 0) r.side = -r.side;
+        want = a;
+        found = true;
+        break;
       }
-      r.yaw += angleDiff(r.yaw, want) * Math.min(1, dt * 12);
-      if (speed > 0) {
-        const fx = -Math.sin(want), fz = -Math.cos(want);
-        r.vx += (fx * speed - r.vx) * Math.min(1, dt * 10);
-        r.vz += (fz * speed - r.vz) * Math.min(1, dt * 10);
-      }
+      if (!found) speed = 0; // boxed in
+      if (face === null) r.yaw += angleDiff(r.yaw, want) * Math.min(1, dt * 12);
+      const fx = -Math.sin(want) * speed, fz = -Math.cos(want) * speed;
+      r.vx += (fx - r.vx) * Math.min(1, dt * 10);
+      r.vz += (fz - r.vz) * Math.min(1, dt * 10);
     } else {
       r.vx *= Math.max(0, 1 - dt * 10);
       r.vz *= Math.max(0, 1 - dt * 10);
@@ -279,8 +312,14 @@ export class Rats {
     this.slide(r, dt);
   }
 
-  /** Move by the velocity where the floor allows, settle on the ground, slow down. */
+  /** Move by the velocity where the floor allows (not into the prey's legs: a lunge stops there), settle on the ground, slow down. */
   private slide(r: Rat, dt: number): void {
+    const p = this.prey;
+    if (p && !r.dead && Math.abs(p.y - r.y) < 1) {
+      const ox = r.x - p.x, oz = r.z - p.z, od = Math.hypot(ox, oz);
+      const inward = od > 1e-4 ? (r.vx * ox + r.vz * oz) / od : 0;
+      if (inward < 0 && Math.hypot(ox + r.vx * dt, oz + r.vz * dt) < p.radius + r.radius * 0.5) { r.vx -= (inward * ox) / od; r.vz -= (inward * oz) / od; }
+    }
     const nx = r.x + r.vx * dt, nz = r.z + r.vz * dt;
     if (this.walkable(r, nx, nz)) {
       r.gait += Math.hypot(nx - r.x, nz - r.z) / (0.09 * r.size);
