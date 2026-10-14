@@ -94,6 +94,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
+| The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
 | Held keys, mouse look, wheel | `Controls` | `src/input/controls.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 

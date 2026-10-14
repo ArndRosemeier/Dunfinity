@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.010 — What's new
+
+- The version is shown top right; click it for this history, newest first (Esc closes it). Each merge to main is one version: v0.001, v0.002, ...
+
 ## v0.009 — Down the ladder
 
 - Climbing a shaft's ladder is played out instead of a cut to black: the nobody walks to the ladder, turns their back to the shaft, lowers themself over the rim and climbs down hand over hand, hands and feet on the rungs (Scale's manhole climb). A few metres down the picture fades, and the next level comes up out of the dark.
