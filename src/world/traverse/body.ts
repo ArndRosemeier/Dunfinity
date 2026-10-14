@@ -68,9 +68,12 @@ export class Body {
   facing = 0;
   /** The wall being climbed: its normal. */
   readonly wall: [number, number, number] = [0, 0, 1];
-  /** Damage taken by the last hard landing (for the HUD), and when (seconds of body time). */
+  /** The last damage taken (for the HUD), when (seconds of body time) and what from ('fall', 'rat', ...). */
   lastHurt = 0;
   hurtAt = -Infinity;
+  lastCause = '';
+  readonly radius = MOVE.radius;
+  readonly height = MOVE.height;
   /** Body time, seconds. */
   time = 0;
   private pushing = 0;
@@ -106,7 +109,7 @@ export class Body {
 
     this.x += this.vx * dt; this.y += this.vy * dt; this.z += this.vz * dt;
     const impact = this.collide(level);
-    if (this.mode === 'walk' && impact > MOVE.safeImpact && depth < 1.5) this.hurt((impact - MOVE.safeImpact) * MOVE.impactDamage);
+    if (this.mode === 'walk' && impact > MOVE.safeImpact && depth < 1.5) this.hurt((impact - MOVE.safeImpact) * MOVE.impactDamage, 'fall');
     if (this.mode === 'climb' && this.grounded && input.forward < 0) this.mode = 'walk'; // climbed down to the floor
 
     // Walking into a climbable wall for a moment starts a climb.
@@ -123,10 +126,12 @@ export class Body {
     input.jump = false;
   }
 
-  private hurt(amount: number): void {
+  /** Take damage: a hard landing, or a blow (through `combat.damage`, src/combat/combat.ts). */
+  hurt(amount: number, cause: string): void {
     this.health = Math.max(0, this.health - amount);
     this.lastHurt = amount;
     this.hurtAt = this.time;
+    this.lastCause = cause;
   }
 
   private walk(input: BodyInput, mx: number, mz: number, depth: number, dt: number): void {

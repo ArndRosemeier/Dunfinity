@@ -42,5 +42,13 @@
   {
     "key": "same name: dunfinity/lab/FlyCamera.ts#update + dunfinity/render/props/lamps.ts#update",
     "reason": "per-frame update methods of unrelated things (fly camera input vs tile streaming vs light assignment); the shared name is the frame-loop convention, not shared logic"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#dead + dunfinity/world/traverse/body.ts#dead",
+    "reason": "both implement Fighter (src/combat/combat.ts): the interface needs these names on every fighter."
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#hurt + dunfinity/world/traverse/body.ts#hurt",
+    "reason": "both implement Fighter (src/combat/combat.ts): the interface needs these names on every fighter."
   }
 ]

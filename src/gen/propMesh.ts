@@ -66,6 +66,33 @@ export class PropBuilder {
   }
 
   /**
+   * A smooth ellipsoid centred at (x, y, z) with radii (rx, ry, rz) along x, y, z, tilted by `pitch`
+   * about x (nose down for positive pitch): `seg` around, `seg / 2` rings. For creatures and round things.
+   */
+  ellipsoid(x: number, y: number, z: number, rx: number, ry: number, rz: number, color: Rgb, seg = 10, pitch = 0): void {
+    const base = this.p.length / 3, rings = Math.max(2, seg >> 1);
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    for (let v = 0; v <= rings; v++) {
+      const ph = (v / rings) * Math.PI, sy = Math.cos(ph), sr = Math.sin(ph);
+      for (let u = 0; u <= seg; u++) {
+        const th = (u / seg) * Math.PI * 2, ux = Math.cos(th) * sr, uz = Math.sin(th) * sr;
+        const px = ux * rx, py = sy * ry, pz = uz * rz;
+        let nx = ux / rx, ny = sy / ry, nz = uz / rz;
+        const nl = Math.hypot(nx, ny, nz) || 1;
+        nx /= nl; ny /= nl; nz /= nl;
+        // Pitch about x: y and z turn.
+        this.p.push(x + px, y + py * cp - pz * sp, z + py * sp + pz * cp);
+        this.n.push(nx, ny * cp - nz * sp, ny * sp + nz * cp);
+        this.c.push(color[0], color[1], color[2]);
+      }
+    }
+    for (let v = 0; v < rings; v++) for (let u = 0; u < seg; u++) {
+      const a = base + v * (seg + 1) + u, b = a + seg + 1;
+      this.i.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  }
+
+  /**
    * A level-ish quad facing up over [x0, x1] × [z0, z1], with its own height and colour at each
    * corner (in the order (x0, z0), (x1, z0), (x0, z1), (x1, z1)).
    */

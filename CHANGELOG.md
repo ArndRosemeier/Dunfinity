@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.011 — Rats and the kitchen knife
+
+- Rats: the first enemy. Fat quarry rats, about 40 cm with the tail, with glowing eyes; they live in nests a few to a nest on the dry floor of the workings (none near where you arrive, a few more on each level down). They sniff about the nest; get close and the nest notices, and they run at you, spread round you and bite. Badly hurt ones bolt for a moment. They scramble up knee-high ledges, but not up walls.
+- The nobody carries grandma's kitchen knife. Click (with the mouse captured) to stab: it turns you to the nearest rat ahead and lunges. Two stabs kill most rats. The knife comes out when rats are after you and goes back after a while.
+- Bites hurt and make the nobody flinch; the HUD says what hurt you, and if the rats get you, it says so. "rats killed" counts this level's rats.
+- The dead stay dead while you are on the level.
+- `src/combat/combat.ts` (blows and damage for anyone who can be hit), `Rats`, `RatView`, `CellMemo`, the METAL material kind.
+
 ## v0.010 — What's new
 
 - The version is shown top right; click it for this history, newest first (Esc closes it). Each merge to main is one version: v0.001, v0.002, ...

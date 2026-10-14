@@ -1,6 +1,6 @@
 /**
  * Keyboard and mouse for the canvas: held keys, mouse look while the pointer is captured (click to
- * capture), and the wheel. The Lab's fly camera and the game read input through this.
+ * capture), mouse buttons (as 'Mouse0', 'Mouse2' keys) and the wheel. The Lab's fly camera and the game read input through this.
  */
 export class Controls {
   private readonly keys = new Set<string>();
@@ -21,6 +21,9 @@ export class Controls {
       this.dx += e.movementX;
       this.dy += e.movementY;
     });
+    // Mouse buttons count as keys 'Mouse0' (left), 'Mouse2' (right) while the pointer is captured.
+    el.addEventListener('mousedown', (e) => { if (document.pointerLockElement === this.el) { this.pressed.add(`Mouse${e.button}`); this.keys.add(`Mouse${e.button}`); } });
+    window.addEventListener('mouseup', (e) => this.keys.delete(`Mouse${e.button}`));
     el.addEventListener('wheel', (e) => { this.wheel += Math.sign(e.deltaY); }, { passive: true });
   }
 
