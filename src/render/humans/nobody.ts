@@ -4,7 +4,7 @@
  */
 import { Group, type Mesh, type Object3D } from 'three/webgpu';
 import { randomAppearance, setHumanAssetBase, type HumanoidAppearance } from '@futuremagic/humanoid';
-import { Humanoid } from '@futuremagic/humanoid/three';
+import { Humanoid, type MoveState } from '@futuremagic/humanoid/three';
 import { deriveSeed } from '@futuremagic/core';
 import type { Body } from '../../world/traverse/body';
 import type { Level } from '../../gen/level';
@@ -52,6 +52,11 @@ export class Nobody {
    */
   set shown(v: boolean) {
     this.root.traverse((o) => { if ((o as Mesh).isMesh) o.visible = v; });
+  }
+
+  /** Pose as a puppet (a scripted scene such as a ladder climb): feet at pos, facing yaw. */
+  puppet(pos: [number, number, number], vel: [number, number, number], yaw: number, move: MoveState, dt: number, time: number): void {
+    this.human.update({ pos, vel, yaw, anim: { move } }, dt, time, null);
   }
 
   /** Follow the body: place, turn and pose. */

@@ -1,7 +1,8 @@
 /**
  * The game, first playable: a nobody in the Quarry. Walk, sprint, jump, climb any rock while
  * stamina lasts, swim, and mind the drops. Find a shaft (a draft gives it away) and climb down its
- * ladder to the next level. Third-person camera, wheel to first person.
+ * ladder to the next level, where one arrives at the foot of the ladder up. Third-person camera,
+ * wheel to first person.
  */
 import { Timer } from 'three/webgpu';
 import { Level } from '../gen/level';
@@ -11,15 +12,16 @@ import { OrbitCamera } from '../render/camera/OrbitCamera';
 import { Nobody } from '../render/humans/nobody';
 import { Controls } from '../input/controls';
 import { parseViewParams } from '../app/params';
-import { ladderTop } from '../gen/descents';
+import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
+import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
 import { DRAFT_RANGE, draftLine } from './draft';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
-/** How close to the ladder's top the nobody must stand to climb down, metres. */
+/** How close to where one gets on a ladder the nobody must stand to climb it, metres. */
 const LADDER_REACH = 1.6;
-/** Seconds of the fade to black (and back) on the way down. */
-const FADE = 1.2;
+/** How much of the ladder is climbed on each level when going from one to the other, metres. */
+const CLIMB_SHOWN = 4.5;
 
 export async function startGame(host: HTMLElement): Promise<void> {
   const params = parseViewParams(location.search);
@@ -64,19 +66,77 @@ export async function startGame(host: HTMLElement): Promise<void> {
   host.appendChild(fade);
   const timer = new Timer();
   let acc = 0;
-  /** On the ladder: seconds since starting down (the fade), or -1; and whether the next level is up yet. */
-  let climbing = -1, below = false;
+  const climb = new LadderClimb(nobody);
   /** A line to show for a while (arriving on a level), and until when. */
   let notice = levelName(level.depth), noticeUntil = 5;
   const ladder: [number, number] = [0, 0];
-  const atLadder = (): boolean => {
-    if (body.dead || body.mode !== 'walk' || !body.grounded) return false;
-    const s = level.descents.at(body.x, body.z, LADDER_REACH + 1);
-    if (!s) return false;
+  /** The shaft whose ladder the nobody stands at (a way down or the way up), or null. */
+  const atLadder = (): Shaft | null => {
+    if (body.dead || body.mode !== 'walk' || !body.grounded) return null;
+    const s = level.descents.at(body.x, body.z, LADDER_REACH + 3);
+    if (!s) return null;
     ladderTop(s, ladder);
-    return Math.hypot(body.x - ladder[0], body.z - ladder[1]) < LADDER_REACH;
+    return Math.hypot(body.x - ladder[0], body.z - ladder[1]) < LADDER_REACH ? s : null;
   };
-  (globalThis as { __game?: unknown }).__game = { view, cam, get body() { return body; }, get depth() { return level.depth; }, descend: () => { climbing = 0; } };
+  /**
+   * Climb shaft s's ladder to the level below (a way down) or above (the way up): the first few
+   * metres on this level, a fade while the next one streams in, the last few metres there.
+   */
+  const climbFrom = (s: Shaft): void => {
+    const here = ladderOf(s), health = body.health;
+    const other = new Level(params.seed, level.depth + (s.up ? -1 : 1));
+    const steps: ClimbStep[] = [{ kind: 'walk', ladder: here }];
+    if (s.up) {
+      steps.push({ kind: 'foot', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: here.floor, to: here.floor + CLIMB_SHOWN, fade: 'out' });
+    } else {
+      const top = climb.rimFeet(here);
+      steps.push({ kind: 'rim', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: top, to: top - CLIMB_SHOWN, fade: 'out' });
+    }
+    // Comes out at the foot of the way up below, or at the way down nearest the arrival above.
+    const [ax, , az] = other.arrival;
+    const to = s.up ? other.descents.nearest(ax, az, 5000) : other.ascent;
+    steps.push({
+      kind: 'call', then: () => {
+        show(other);
+        notice = levelName(other.depth);
+        // Behind the climber, looking at the ladder (from above coming out of a shaft).
+        if (to) [cam.yaw, cam.pitch] = [faceYaw(ladderOf(to)), s.up ? -0.55 : -0.12];
+      },
+    });
+    steps.push({ kind: 'wait', ready: () => view.settled });
+    if (to) {
+      const there = ladderOf(to);
+      if (s.up) {
+        const top = climb.rimFeet(there);
+        steps.push({ kind: 'climb', ladder: there, from: top - CLIMB_SHOWN, to: top, fade: 'in' }, { kind: 'rim', ladder: there, dir: 'off' });
+      } else steps.push({ kind: 'climb', ladder: there, from: there.floor + CLIMB_SHOWN, to: there.floor, fade: 'in' }, { kind: 'foot', ladder: there, dir: 'off' });
+    }
+    climb.play(steps, body.x, body.y, body.z, body.facing);
+    [cam.yaw, cam.pitch] = [faceYaw(here), s.up ? 0.15 : -0.45]; // behind the climber, facing the ladder
+    onLanded = () => {
+      const p = climb.pos;
+      body = to ? new Body(p.x, p.y + 0.05, p.z) : arrive(null);
+      body.health = health;
+      body.facing = climb.yaw;
+      noticeUntil = timer.getElapsed() + 5;
+    };
+  };
+  /** What to do when the climb in progress ends. */
+  let onLanded: (() => void) | null = null;
+  /** Seconds left of a fade in from black (a climb that came out without a ladder). */
+  let fadeIn = 0;
+  (globalThis as { __game?: unknown }).__game = {
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; },
+    /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
+    descend: (up = false) => {
+      const s = up ? level.ascent : level.descents.nearest(body.x, body.z, 5000);
+      if (!s) return false;
+      ladderTop(s, ladder);
+      body = new Body(ladder[0], s.floor + 0.05, ladder[1]);
+      climbFrom(s);
+      return true;
+    },
+  };
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
@@ -89,30 +149,30 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
     if (body.dead && controls.tap('KeyR')) body = nextGrandchild();
-    const nearLadder = climbing < 0 && atLadder();
-    if (nearLadder && controls.tap('KeyE')) climbing = 0;
-    if (climbing >= 0) {
-      // Down the ladder into the dark; the next level comes up out of it.
-      climbing += dt;
-      if (climbing >= FADE && !below) {
-        const { health } = body;
-        show(new Level(params.seed, level.depth + 1));
-        body = arrive(null);
-        body.health = health;
-        below = true;
-        notice = levelName(level.depth);
-        noticeUntil = timer.getElapsed() + 5;
+    const nearLadder = climb.active ? null : atLadder();
+    if (nearLadder && controls.tap('KeyE')) climbFrom(nearLadder);
+    if (climb.active) {
+      climb.advance(dt, timer.getElapsed());
+      body.x = climb.pos.x; body.y = climb.pos.y; body.z = climb.pos.z;
+      fade.style.opacity = String(climb.fade);
+      if (!climb.active) {
+        climb.stop();
+        onLanded?.();
+        onLanded = null;
+        if (fade.style.opacity !== '0') fadeIn = 0.8;
       }
-      fade.style.opacity = String(climbing < FADE ? climbing / FADE : Math.max(0, 2 - climbing / FADE));
-      if (climbing >= 2 * FADE) { climbing = -1; below = false; }
-    } else for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP);
+      input.jump = false;
+    } else {
+      for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP);
+      nobody.pose(body, dt, timer.getElapsed());
+      if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
+    }
 
-    nobody.pose(body, dt, timer.getElapsed());
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     const lines = [timer.getElapsed() < noticeUntil ? notice : ''];
-    if (nearLadder) lines.push('E: climb down the ladder');
-    else if (!body.dead) {
+    if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
+    else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (draft) lines.push(draft);
@@ -139,6 +199,6 @@ function hudText(b: Body, backend: string): string {
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`a hard landing: -${b.lastHurt.toFixed(0)}`);
   if (b.dead) lines.push('', 'You fell to your death.', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look · WASD move · Shift run · Space jump · walk into rock to climb · E climb down a shaft · wheel zoom · F light  ·  ${backend}`);
+  lines.push('', `click: mouse look · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder · wheel zoom · F light  ·  ${backend}`);
   return lines.join('\n');
 }

@@ -42,6 +42,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | A human's look (race, age, hair, skin) from a seed | `randomAppearance(race, seed, opts)` | `@futuremagic/humanoid` |
 | Which clothes exist and how they sit | `WARDROBE` (the package's `Wardrobe` hook) and outfits like `rags(seed)` | `src/render/humans/wardrobe.ts` |
 | What the animator plays for the body's state | `moveOf(body)` | `src/render/humans/move.ts` |
+| Play out a ladder climb (walk up, over a rim or at the foot, hands and feet on the rungs, a level change in the middle) | `LadderClimb` (`play(steps)`, `advance`) | `src/render/humans/ladderClimb.ts` |
+| Pose the nobody in a scripted scene (not from the body) | `nobody.puppet(...)` with the animator's `override` / `limbs` | `src/render/humans/nobody.ts` |
 | Where the human assets (bodies, clips) are served | `/humanoid/` from the package's `assets/` (Vite plugin), set by `setHumanAssetBase` | `vite.config.ts`, `src/render/humans/nobody.ts` |
 | The HUD line on shader health | `stage.hudLine()` | `src/render/stage.ts` |
 
@@ -62,7 +64,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | What the miners left in a tile (rails, carts, lamps, shacks), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
 | Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`) | `src/gen/propMesh.ts` |
 | Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |
-| Where does a player arrive on a level? | `level.arrival` | `src/gen/level.ts` |
+| Where does a player arrive on a level? | `level.arrival` (below the first level: the foot of `level.ascent`, the way up) | `src/gen/level.ts` |
+| Where are a ladder's rungs, which way is its wall, where does one get on and off? | `ladderOf(shaft)` (a `Ladder`; `RUNG` spacing) | `src/gen/descents.ts` |
 | Sample the field on a grid fast | `level.sampleGrid` (one column pass per x, z) | `src/gen/level.ts` |
 | Turn a grid of distances into a mesh | `surfaceNets` | `src/gen/surfaceNets.ts` |
 | Mesh one chunk of a level | `meshChunk` (skips chunks far from any surface) | `src/gen/chunkMesh.ts` |
