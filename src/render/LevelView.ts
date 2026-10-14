@@ -24,6 +24,8 @@ export class LevelView {
   readonly headlamp = new PointLight(0xffe9cc, 160, 160, 1.4);
   private readonly ambient = new HemisphereLight(0x9aa6b4, 0x2a2218, 0.7);
   private readonly lamps: LampLights;
+  private readonly rock = new Group();
+  private readonly things = new Group();
   private terrain_: Terrain | null = null;
   private props_: Props | null = null;
   private dark_ = false;
@@ -42,7 +44,7 @@ export class LevelView {
     return { view, canvas, backend };
   }
 
-  constructor(readonly renderer: WebGPURenderer, readonly level: Level) {
+  constructor(readonly renderer: WebGPURenderer, private level_: Level) {
     this.scene.background = new Color(0x050607);
     this.scene.fog = this.fog;
     this.scene.add(this.ambient);
@@ -52,15 +54,26 @@ export class LevelView {
     this.stage = new Stage(renderer, this.scene, this.camera);
   }
 
-  /** Compile every material kind (behind the loading screen), then start streaming the level. */
   /** Warm up the shaders (with `extra`, see Stage.warmUp), then start streaming the level. */
   async start(extra: readonly Object3D[] = []): Promise<void> {
     await this.stage.warmUp(extra);
-    const rock = new Group();
-    const things = new Group();
-    this.scene.add(rock, things);
-    this.terrain_ = new Terrain(this.stage, rock, this.level.seed, this.level.depth);
-    this.props_ = new Props(this.stage, things, this.level.seed, this.level.depth, this.lamps);
+    this.scene.add(this.rock, this.things);
+    this.stream();
+  }
+
+  get level(): Level { return this.level_; }
+
+  /** Show another level (the way down): drop the streamed rock and props and stream the new one's. */
+  go(level: Level): void {
+    this.terrain_?.dispose();
+    this.props_?.dispose();
+    this.level_ = level;
+    this.stream();
+  }
+
+  private stream(): void {
+    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.seed, this.level_.depth);
+    this.props_ = new Props(this.stage, this.things, this.level_.seed, this.level_.depth, this.lamps);
   }
 
   get terrain(): Terrain { return need(this.terrain_); }

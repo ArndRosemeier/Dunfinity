@@ -10,6 +10,7 @@
 import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
 import type { Working } from './quarry';
+import type { Shaft } from './descents';
 import { PropBuilder, type PropMesh, type Rgb } from './propMesh';
 
 /** Tile size, metres. */
@@ -24,7 +25,7 @@ export interface PropTile {
   water: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
   lamps: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -58,7 +59,7 @@ class TileBuilder {
   private readonly glow = new PropBuilder();
   private readonly water = new PropBuilder();
   private readonly lamps: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -72,6 +73,7 @@ class TileBuilder {
   build(): PropTile {
     const workings = this.workings();
     if (workings.some((w) => w.floor < 0)) this.flood();
+    for (const sh of this.level.descents.within(this.x0, this.z0, this.x0 + PROP_TILE, this.z0 + PROP_TILE)) this.shaft(sh);
     for (const w of workings) {
       if (w.collapse > 0) continue; // nobody works a collapsed working any more
       const [umin, umax, vmin, vmax] = this.gridBounds(w);
@@ -174,6 +176,7 @@ class TileBuilder {
   private trackable(w: Working, x: number, z: number): boolean {
     const col = this.level.columnAt(x, z);
     if (col.working.id !== w.id || col.border < 5 || col.collapse > 0 || col.rubble > 0.02 || col.pillarD < 1.3) return false;
+    if (this.level.descents.at(x, z, 2)) return false;
     return col.floor > this.level.waterAt(x, z) + 0.25 && this.level.sdf(x, col.floor + 1.8, z) > 1.2;
   }
 
@@ -234,7 +237,7 @@ class TileBuilder {
   /** A lamp post beside a track at (x, z), its arm reaching along (dx, dz) over the track. */
   private post(w: Working, x: number, z: number, dx: number, dz: number, r: number): void {
     const col = this.level.columnAt(x, z);
-    if (col.working.id !== w.id || col.pillarD < 0.4) return;
+    if (col.working.id !== w.id || col.pillarD < 0.4 || this.level.descents.at(x, z, 1)) return;
     const g = this.level.groundAt(x, z);
     if (this.level.sdf(x, g + 1.5, z) < 0.4 || !this.dry(x, z, 0.1)) return;
     this.solid.upright(x, g + 1.25, z, 0, 0.05, 1.25, 0.05, IRON);
@@ -255,7 +258,7 @@ class TileBuilder {
     if (!this.inTile(x, z) || field.pillarAt(w, iu, iv) !== 'whole') return;
     const [ox, oz] = field.fromGrid(w, (iu + 0.5) * s + du * (half + 0.6), (iv + 0.5) * s + dv * (half + 0.6));
     const col = this.level.columnAt(ox, oz);
-    if (col.working.id !== w.id || col.rubble > 0.05) return;
+    if (col.working.id !== w.id || col.rubble > 0.05 || this.level.descents.at(ox, oz, 1)) return;
     const g = this.level.groundAt(ox, oz);
     if (this.level.sdf(ox, g + 3, oz) < 0.3 || !this.dry(ox, oz, 0.1)) return;
     this.solid.beam(x, g + 3.3, z, ox, g + 3.3, oz, 0.03, 0.03, IRON);
@@ -272,13 +275,60 @@ class TileBuilder {
     this.lamps.push(x, y - 0.25, z);
   }
 
+  /**
+   * A mine shaft (src/gen/descents.ts): a timber headframe over it with a pulley and a burning lamp,
+   * a railing round the rim with a gap at the ladder, and the iron ladder down the wall.
+   */
+  private shaft(sh: Shaft): void {
+    const { x, z, r, top } = sh;
+    const frame: Rgb = [WOOD[0] * 0.8, WOOD[1] * 0.8, WOOD[2] * 0.8];
+    // Headframe: four legs leaning in to a square top, cross beams, a pulley wheel on top.
+    const H = 7, base = r + 0.7, head = 1.1;
+    const legs: [number, number, number, number][] = [];
+    for (let k = 0; k < 4; k++) {
+      const a = sh.ladder + Math.PI / 4 + (k * Math.PI) / 2;
+      legs.push([x + Math.cos(a) * base, z + Math.sin(a) * base, x + Math.cos(a) * head, z + Math.sin(a) * head]);
+    }
+    for (const [bx, bz, tx, tz] of legs) this.solid.beam(bx, top, bz, tx, top + H, tz, 0.14, 0.14, frame);
+    for (let k = 0; k < 4; k++) {
+      const [, , ax, az] = legs[k], [, , bx, bz] = legs[(k + 1) % 4];
+      this.solid.beam(ax, top + H, az, bx, top + H, bz, 0.1, 0.12, frame);
+      const [lx, lz] = [legs[k][0] * 0.55 + legs[k][2] * 0.45, legs[k][1] * 0.55 + legs[k][3] * 0.45];
+      const [mx, mz] = [legs[(k + 1) % 4][0] * 0.55 + legs[(k + 1) % 4][2] * 0.45, legs[(k + 1) % 4][1] * 0.55 + legs[(k + 1) % 4][3] * 0.45];
+      this.solid.beam(lx, top + H * 0.45, lz, mx, top + H * 0.45, mz, 0.08, 0.1, frame);
+    }
+    const ca = Math.cos(sh.ladder), sa = Math.sin(sh.ladder);
+    this.solid.box(x, top + H + 0.75, z, [ca * 0.06, 0, sa * 0.06], [0, 0.7, 0], [-sa * 0.7, 0, ca * 0.7], IRON); // pulley wheel
+    this.solid.upright(x, top + (H + 6.75) / 2 - 6, z, 0, 0.015, (H + 6.75) / 2, 0.015, RUST); // the rope, hanging into the dark
+    this.lamp(x + ca * 0.9, top + H - 0.3, z + sa * 0.9, true);
+    // Railing: posts round the rim and two rails between them, open where the ladder is.
+    const n = 12, rr = r + 0.35;
+    for (let k = 0; k < n; k++) {
+      const a0 = sh.ladder + ((k + 0.5) * Math.PI * 2) / n, a1 = sh.ladder + ((k + 1.5) * Math.PI * 2) / n;
+      const px = x + Math.cos(a0) * rr, pz = z + Math.sin(a0) * rr;
+      this.solid.upright(px, top + 0.55, pz, a0, 0.05, 0.55, 0.05, frame);
+      if (k === n - 1) continue; // the gap at the ladder
+      const qx = x + Math.cos(a1) * rr, qz = z + Math.sin(a1) * rr;
+      for (const h of [0.5, 1.0]) this.solid.beam(px, top + h, pz, qx, top + h, qz, 0.03, 0.03, frame);
+    }
+    // The ladder: two stiles and rungs down the wall, from the rim into the dark.
+    const lx = x + ca * (r - 0.12), lz = z + sa * (r - 0.12);
+    const sx = -sa * 0.25, sz = ca * 0.25;
+    for (const sd of [-1, 1]) this.solid.upright(lx + sx * sd, top - 6.5, lz + sz * sd, 0, 0.025, 7.5, 0.025, RUST);
+    for (let k = 0; k < 50; k++) {
+      const y = top + 0.6 - k * 0.3;
+      this.solid.beam(lx - sx, y, lz - sz, lx + sx, y, lz + sz, 0.015, 0.015, RUST);
+    }
+    this.counts.shafts++;
+  }
+
   /** A site shack at aisle crossing (iu·s, iv·s), where no track runs. */
   private shack(w: Working, iu: number, iv: number): void {
     const s = w.spacing;
     if (s - w.pillar < 7.5 || this.hasRail(w, 0, iu) || this.hasRail(w, 1, iv) || this.roll(w, 50, iu, iv) > 0.07) return;
     const field = this.level.field;
     const [x, z] = field.fromGrid(w, iu * s, iv * s);
-    if (!this.inTile(x, z)) return;
+    if (!this.inTile(x, z) || this.level.descents.at(x, z, 6)) return;
     // Square to the pillar grid (its +v is yaw = angle), the door to any of the four aisles.
     const yaw = w.angle + Math.floor(this.roll(w, 51, iu, iv) * 4) * (Math.PI / 2);
     const ca = Math.cos(yaw), sa = Math.sin(yaw);

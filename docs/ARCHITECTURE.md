@@ -36,7 +36,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `screen.toScreen` *(planned; guarded already)* | `src/render/screen.ts` |
 | A third-person camera that stays out of the rock | `OrbitCamera` (pulls in along `level.trace`) | `src/render/camera/OrbitCamera.ts` |
-| Look at a level: scene, fixed lights, warm-up, streamed rock and props | `LevelView` (`LevelView.open`) | `src/render/LevelView.ts` |
+| Look at a level: scene, fixed lights, warm-up, streamed rock and props; switch to another level | `LevelView` (`LevelView.open`, `view.go(level)`) | `src/render/LevelView.ts` |
 | The player's figure | `Nobody` (Scale's human in rags, posed from the `Body`) | `src/render/humans/nobody.ts` |
 | A human: body, skeleton, materials, clothes, animation | `Humanoid` (`Humanoid.create(look, { wardrobe })`, `dress`, `update`) | `@futuremagic/humanoid/three` |
 | A human's look (race, age, hair, skin) from a seed | `randomAppearance(race, seed, opts)` | `@futuremagic/humanoid` |
@@ -61,6 +61,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
 | What the miners left in a tile (rails, carts, lamps, shacks), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
 | Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`) | `src/gen/propMesh.ts` |
+| Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |
+| Where does a player arrive on a level? | `level.arrival` | `src/gen/level.ts` |
 | Sample the field on a grid fast | `level.sampleGrid` (one column pass per x, z) | `src/gen/level.ts` |
 | Turn a grid of distances into a mesh | `surfaceNets` | `src/gen/surfaceNets.ts` |
 | Mesh one chunk of a level | `meshChunk` (skips chunks far from any surface) | `src/gen/chunkMesh.ts` |

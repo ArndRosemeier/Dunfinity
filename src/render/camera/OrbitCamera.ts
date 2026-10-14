@@ -18,7 +18,8 @@ export class OrbitCamera {
   /** Actual distance this frame (shorter where rock is in the way). */
   private current = 4;
 
-  constructor(readonly camera: PerspectiveCamera, private readonly level: Level) {}
+  /** `level`: the rock that pulls the camera in (changes on the way down). */
+  constructor(readonly camera: PerspectiveCamera, public level: Level) {}
 
   get firstPerson(): boolean { return this.current < FIRST_PERSON; }
 

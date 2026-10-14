@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.007 — The way down
+
+- Mine shafts: the Quarry's ways down. Round shafts 40 m deep, cut into the floor of intact workings, with a timber headframe, a pulley and a rope, a burning lamp, a railing round the rim and an iron ladder down one wall. None near where you arrive, more and more of them further out (the Territories rule): the nearest is usually 400–700 m away.
+- Find one by the draft: within 600 m the HUD says where cold air comes from (ahead, to the left, behind-right…), stronger when close.
+- At the ladder, E climbs down: a fade to black, and you come out on the next level with the health you had. Falling into a shaft is fatal. R after a death starts the next grandchild at the top again.
+- `level.descents` and `level.arrival`; the level field carries the shafts, so meshing, collision and the camera all know them. `LevelView.go(level)` swaps the streamed rock and props without touching shaders (0 builds on the way down).
+
 ## v0.006 — The nobody is a person
 
 - The box stand-in is gone: the nobody is Scale's human (decision D1), a grandchild with a face, hair and a body of their own from the seed, in rags (a patched tunic, worn trousers, foot wraps). Motion-captured animation follows the body: standing idle, walking, sprinting, jumping, falling, climbing, swimming and dying; the feet find the rock.
