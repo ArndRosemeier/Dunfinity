@@ -18,8 +18,8 @@ const problems = [];
 try {
   const page = await browser.newPage({ viewport: { width: 960, height: 600 } });
   page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
-  await page.goto(server.resolvedUrls.local[0] + '?seed=1&gl');
-  await page.waitForFunction(() => window.__labReady === true, null, { timeout: 120000 });
+  await page.goto(server.resolvedUrls.local[0] + '?lab&seed=1&gl');
+  await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 });
 
   const steady = await page.evaluate(async () => {
     const lab = window.__lab; const { camera } = lab;

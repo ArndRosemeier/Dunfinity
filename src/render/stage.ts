@@ -34,7 +34,10 @@ export class Stage {
     // shaders are keyed by, and builds the renderer's own output pass.
     this.renderer.render(this.scene, this.camera);
     const standIns = allKinds().map((k) => standIn(k));
-    for (const m of standIns) m.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z - 2);
+    for (const m of standIns) {
+      m.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z - 2);
+      m.frustumCulled = false; // compileAsync skips what is out of view, wherever the camera looks
+    }
     const group = new Group();
     for (const m of standIns) group.add(m);
     await this.renderer.compileAsync(group, this.camera, this.scene);
@@ -69,6 +72,13 @@ export class Stage {
   remove(obj: Object3D): void {
     this.pending.delete(obj);
     obj.removeFromParent();
+  }
+
+  /** One HUD line on the shader policy (plus any renderer hooks that could not be installed). */
+  hudLine(): string {
+    const s = this.monitor.summary();
+    return `shaders ${s.warmup} warm-up + ${s.run} later · worst ${s.worstMs.toFixed(0)} ms · ${s.violations ? `${s.violations} POLICY VIOLATIONS (shaders.report())` : 'policy ok'}`
+      + (this.missingHooks.length ? `\nshader hooks missing: ${this.missingHooks.join(', ')}` : '');
   }
 
   /** Once per frame, before rendering. */

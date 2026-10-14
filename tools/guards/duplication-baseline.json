@@ -34,5 +34,13 @@
   {
     "key": "same name: dunfinity/render/props/Props.ts#update + dunfinity/render/props/lamps.ts#update",
     "reason": "per-frame update methods of two different things (tile streaming vs light assignment); Props calls the lamps' one"
+  },
+  {
+    "key": "same name: dunfinity/lab/FlyCamera.ts#update + dunfinity/render/props/Props.ts#update",
+    "reason": "per-frame update methods of unrelated things (fly camera input vs tile streaming vs light assignment); the shared name is the frame-loop convention, not shared logic"
+  },
+  {
+    "key": "same name: dunfinity/lab/FlyCamera.ts#update + dunfinity/render/props/lamps.ts#update",
+    "reason": "per-frame update methods of unrelated things (fly camera input vs tile streaming vs light assignment); the shared name is the frame-loop convention, not shared logic"
   }
 ]
