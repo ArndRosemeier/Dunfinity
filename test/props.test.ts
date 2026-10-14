@@ -1,0 +1,65 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Level } from '../src/gen/level';
+import { quarryProps, PROP_TILE } from '../src/gen/quarryProps';
+import { PropBuilder } from '../src/gen/propMesh';
+
+const level = new Level(1, 1);
+// A 6 × 6 tile patch around the seed-1 spawn (an intact grand hall with tracks, carts and a shack).
+const [sx, , sz] = level.spawn();
+const tiles = [] as ReturnType<typeof quarryProps>[];
+for (let tz = -3; tz < 3; tz++) for (let tx = -3; tx < 3; tx++) tiles.push(quarryProps(level, Math.floor(sx / PROP_TILE) + tx, Math.floor(sz / PROP_TILE) + tz));
+const total = (k: keyof (typeof tiles)[0]['counts']) => tiles.reduce((s, t) => s + t.counts[k], 0);
+
+test('props are deterministic per seed', () => {
+  const a = quarryProps(new Level(1, 1), -9, 1), b = quarryProps(new Level(1, 1), -9, 1);
+  assert.deepEqual(a.counts, b.counts);
+  assert.deepEqual(a.solid?.positions, b.solid?.positions);
+  assert.deepEqual(a.lamps, b.lamps);
+});
+
+test('the quarry around the spawn has tracks, carts, lamps and a shack', () => {
+  assert.ok(total('sleepers') > 100, `sleepers ${total('sleepers')}`);
+  assert.ok(total('carts') >= 1);
+  assert.ok(total('shacks') >= 1);
+  const lit = total('lit');
+  assert.ok(lit >= 3 && lit < 200, `lit lamps ${lit}`);
+  assert.ok(lit <= total('lamps'));
+});
+
+test('props stand on the floor, not inside rock, and burning lamps hang in open air', () => {
+  for (const t of tiles) {
+    for (const m of [t.solid, t.glow]) {
+      if (!m) continue;
+      for (let i = 0; i < m.positions.length; i += 3) {
+        const d = level.sdf(m.positions[i], m.positions[i + 1], m.positions[i + 2]);
+        assert.ok(d > -1, `prop vertex ${d.toFixed(2)} m inside rock`);
+      }
+    }
+    for (let i = 0; i < t.lamps.length; i += 3) assert.ok(level.sdf(t.lamps[i], t.lamps[i + 1], t.lamps[i + 2]) > 0.3);
+  }
+});
+
+test('a tile only places what lies inside it', () => {
+  const tx = Math.floor(sx / PROP_TILE) - 2, tz = Math.floor(sz / PROP_TILE);
+  const t = quarryProps(level, tx, tz);
+  for (let i = 0; i < t.lamps.length; i += 3) {
+    // A lamp hangs within a metre or so of the point that placed it.
+    assert.ok(t.lamps[i] > tx * PROP_TILE - 2 && t.lamps[i] < (tx + 1) * PROP_TILE + 2);
+    assert.ok(t.lamps[i + 2] > tz * PROP_TILE - 2 && t.lamps[i + 2] < (tz + 1) * PROP_TILE + 2);
+  }
+});
+
+test('prop boxes wind outwards', () => {
+  const b = new PropBuilder();
+  b.upright(0, 0, 0, 0.7, 1, 2, 3, [1, 1, 1]);
+  b.beam(0, 0, 0, 3, 1, 2, 0.2, 0.3, [1, 1, 1]);
+  const m = b.build()!;
+  for (let i = 0; i < m.indices.length; i += 3) {
+    const [a, c, d] = [m.indices[i], m.indices[i + 1], m.indices[i + 2]].map((k) => [m.positions[3 * k], m.positions[3 * k + 1], m.positions[3 * k + 2]]);
+    const e1 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]], e2 = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
+    const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    const k = 3 * m.indices[i];
+    assert.ok(n[0] * m.normals[k] + n[1] * m.normals[k + 1] + n[2] * m.normals[k + 2] > 0, 'face winds against its normal');
+  }
+});

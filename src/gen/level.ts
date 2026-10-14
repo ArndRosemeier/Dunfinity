@@ -47,6 +47,26 @@ export class Level {
     return this.field.column(x, z, this.col).floor;
   }
 
+  /** The y-independent part of the field at column (x, z): working, floor, pillars, border, rubble. Reused: copy what you keep. */
+  columnAt(x: number, z: number): Column {
+    return this.field.column(x, z, this.col);
+  }
+
+  /**
+   * Height of the rock surface under (x, z) on open floor, roughness included (where props stand).
+   * Starts at the floor and steps along the field, at most a metre; under a pillar or a wall the answer means little.
+   */
+  groundAt(x: number, z: number): number {
+    const f = this.floorAt(x, z);
+    let y = f;
+    for (let i = 0; i < 3; i++) {
+      const d = this.sdf(x, y, z);
+      if (Math.abs(d) < 0.01) break;
+      y = Math.min(f + 1, Math.max(f - 1, y - d)); // roughness is under half a metre
+    }
+    return y;
+  }
+
   /** Sample an n×n×n grid starting at origin with spacing `step` (one column pass per (x, z)). */
   sampleGrid(ox: number, oy: number, oz: number, step: number, n: number): SampledGrid {
     const d = new Float32Array(n * n * n);

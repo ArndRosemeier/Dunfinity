@@ -3,13 +3,14 @@
  * worker pool, and puts them on the Stage. Old chunks stay until every chunk of the new set is ready,
  * so moving never opens holes; the swap happens in one frame.
  */
-import { BufferGeometry, Float32BufferAttribute, Uint32BufferAttribute, Mesh, type Group } from 'three/webgpu';
+import type { Group, Mesh } from 'three/webgpu';
 import { chunksAround, CELLS, DEFAULT_VIEW, type ChunkKey, type ChunkView } from '../../world/chunks';
 import type { ColorMode } from '../../gen/level';
 import type { ChunkMesh } from '../../gen/chunkMesh';
 import { createMeshPool, type WorkerPool } from '../../workers/pool';
 import type { MeshJob } from '../../workers/mesh.worker';
 import { VERTEX_COLOR_SOLID } from '../materials';
+import { meshFromData } from '../meshes';
 import type { Stage } from '../stage';
 
 interface Shown {
@@ -88,7 +89,7 @@ export class Terrain {
     const job: MeshJob = { seed: this.seed, depth: this.depth, ox: k.ix * k.size, oy: k.iy * k.size, oz: k.iz * k.size, step: k.step, cells: CELLS, lod: k.lod, colorMode: this.colorMode, overlap: k.overlap };
     void this.pool.run(job).then(async (data) => {
       if (gen !== this.generation || !this.wantedIds.has(k.id)) { this.requested.delete(k.id); return; }
-      const shown: Shown = { key: k, mesh: data ? meshOf(data) : null };
+      const shown: Shown = { key: k, mesh: data ? meshFromData(data, VERTEX_COLOR_SOLID) : null };
       if (shown.mesh) await this.stage.prepare(shown.mesh);
       this.requested.delete(k.id);
       if (gen !== this.generation || !this.wantedIds.has(k.id)) { this.drop(shown); return; }
@@ -126,16 +127,4 @@ export class Terrain {
     for (const s of this.shown.values()) this.drop(s);
     for (const s of this.ready.values()) this.drop(s);
   }
-}
-
-function meshOf(d: ChunkMesh): Mesh {
-  const g = new BufferGeometry();
-  g.setAttribute('position', new Float32BufferAttribute(d.positions, 3));
-  g.setAttribute('normal', new Float32BufferAttribute(d.normals, 3));
-  g.setAttribute('color', new Float32BufferAttribute(d.colors, 3));
-  g.setIndex(new Uint32BufferAttribute(d.indices, 1));
-  g.computeBoundingSphere();
-  const m = new Mesh(g, VERTEX_COLOR_SOLID.make());
-  m.matrixAutoUpdate = false;
-  return m;
 }

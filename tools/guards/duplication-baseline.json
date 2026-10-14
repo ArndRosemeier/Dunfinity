@@ -14,5 +14,25 @@
   {
     "key": "same name: dunfinity/render/terrain/Terrain.ts#dispose + dunfinity/workers/pool.ts#dispose",
     "reason": "each frees its own resources (meshes vs workers); the pool is one of the terrain's resources"
+  },
+  {
+    "key": "same name: dunfinity/render/props/Props.ts#dispose + dunfinity/render/terrain/Terrain.ts#dispose",
+    "reason": "Terrain swaps whole chunk sets at once (no holes while the octree changes); Props shows independent tiles one by one. Same streaming vocabulary, different lifecycle; fold into one streamer if a third streamed layer appears."
+  },
+  {
+    "key": "same name: dunfinity/render/props/Props.ts#drop + dunfinity/render/terrain/Terrain.ts#drop",
+    "reason": "Terrain swaps whole chunk sets at once (no holes while the octree changes); Props shows independent tiles one by one. Same streaming vocabulary, different lifecycle; fold into one streamer if a third streamed layer appears."
+  },
+  {
+    "key": "same name: dunfinity/render/props/Props.ts#request + dunfinity/render/terrain/Terrain.ts#request",
+    "reason": "Terrain swaps whole chunk sets at once (no holes while the octree changes); Props shows independent tiles one by one. Same streaming vocabulary, different lifecycle; fold into one streamer if a third streamed layer appears."
+  },
+  {
+    "key": "same name: dunfinity/render/props/Props.ts#settled + dunfinity/render/terrain/Terrain.ts#settled",
+    "reason": "Terrain swaps whole chunk sets at once (no holes while the octree changes); Props shows independent tiles one by one. Same streaming vocabulary, different lifecycle; fold into one streamer if a third streamed layer appears."
+  },
+  {
+    "key": "same name: dunfinity/render/props/Props.ts#update + dunfinity/render/props/lamps.ts#update",
+    "reason": "per-frame update methods of two different things (tile streaming vs light assignment); Props calls the lamps' one"
   }
 ]

@@ -52,10 +52,17 @@ export interface Column {
   working: Working;
   /** 0..1, how much of this column is rubble (for colour). */
   rubble: number;
+  /** Distance to the border of the working, metres. */
+  border: number;
+  /** Collapse here, blended across the border like the floor. */
+  collapse: number;
 }
 
+/** Whether a pillar stands at a grid position: not at all, whole, or broken. */
+export type PillarState = 'none' | 'whole' | 'broken';
+
 export function newColumn(): Column {
-  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0 };
+  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0 };
 }
 
 function workingFrom(id: number, cx: number, cz: number): Working {
@@ -126,6 +133,8 @@ export class QuarryField {
     const floor = lerp(nb.floor, w.floor, t);
     const height = lerp(nb.height, w.height, t);
     const collapse = lerp(nb.collapse, w.collapse, t);
+    col.border = border;
+    col.collapse = collapse;
 
     // Walls between workings: natural rock, broken through where the opening noise is high.
     const thick = 7 + 5 * n.n2(x / 90 + 31.7, z / 90);
@@ -156,9 +165,7 @@ export class QuarryField {
     col.ceiling = floor + height + n.n2(x / 50, z / 50) * 1.2 + Math.max(0, dome);
 
     // Pillars: a rotated square grid; some missing, in collapsed workings many broken.
-    const ca = Math.cos(w.angle), sa = Math.sin(w.angle);
-    const lx = x - w.cx, lz = z - w.cz;
-    const u = lx * ca - lz * sa, v = lx * sa + lz * ca;
+    const [u, v] = this.toGrid(w, x, z);
     const s = w.spacing;
     const iu = Math.floor(u / s), iv = Math.floor(v / s);
     // The nearest standing pillar among the 3 × 3 grid cells around (missing ones are skipped, so the
@@ -167,21 +174,18 @@ export class QuarryField {
     col.stumpTop = Infinity;
     col.stubBottom = -Infinity;
     const half = w.pillar / 2;
+    const near = border < half * Math.SQRT2 + 3 + 2.2 * s; // only then can a pillar be cut by the border
     for (let dv = -1; dv <= 1; dv++) {
       for (let du = -1; du <= 1; du++) {
-        const ph = hash2i(this.pillarSeed ^ w.id, iu + du, iv + dv);
-        const roll = hashToFloat(ph);
-        if (roll < 0.04 + 0.45 * w.collapse) continue; // missing
-        const pu = (iu + du + 0.5) * s, pv = (iv + dv + 0.5) * s;
-        // Crews left no pillar standing across the border of their working.
-        if (border < half * Math.SQRT2 + 3 + 2.2 * s && !this.pillarInside(w, iu + du, iv + dv, pu * ca + pv * sa, -pu * sa + pv * ca, half)) continue;
-        const fu = u - pu, fv = v - pv;
-        const qx = Math.abs(fu) - half, qz = Math.abs(fv) - half;
+        const state = this.pillarAt(w, iu + du, iv + dv, near);
+        if (state === 'none') continue;
+        const qx = Math.abs(u - (iu + du + 0.5) * s) - half, qz = Math.abs(v - (iv + dv + 0.5) * s) - half;
         const d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0);
         if (d >= col.pillarD) continue;
         col.pillarD = d;
-        if (roll < 0.04 + 0.9 * w.collapse) {
-          // Broken: a stump from the floor and a stub from the ceiling.
+        if (state === 'broken') {
+          // A stump from the floor and a stub from the ceiling.
+          const ph = hash2i(this.pillarSeed ^ w.id, iu + du, iv + dv);
           col.stumpTop = w.floor + 1 + hashToFloat(ph * 13 + 5) * w.height * 0.45;
           col.stubBottom = w.floor + w.height * (0.7 + 0.25 * hashToFloat(ph * 13 + 6));
         } else {
@@ -195,13 +199,39 @@ export class QuarryField {
     return col;
   }
 
-  /** Whether pillar (iu, iv), centred at (lx, lz) from the working's centre, stands clear of its border. */
-  private pillarInside(w: Working, iu: number, iv: number, lx: number, lz: number, half: number): boolean {
+  /** World (x, z) to the working's pillar-grid coordinates (u, v), metres from its centre. */
+  toGrid(w: Working, x: number, z: number): [number, number] {
+    const ca = Math.cos(w.angle), sa = Math.sin(w.angle);
+    const lx = x - w.cx, lz = z - w.cz;
+    return [lx * ca - lz * sa, lx * sa + lz * ca];
+  }
+
+  /** Pillar-grid (u, v) back to world (x, z). */
+  fromGrid(w: Working, u: number, v: number): [number, number] {
+    const ca = Math.cos(w.angle), sa = Math.sin(w.angle);
+    return [w.cx + u * ca + v * sa, w.cz - u * sa + v * ca];
+  }
+
+  /**
+   * Pillar (iu, iv) of working w (centred at grid ((iu + 0.5)·s, (iv + 0.5)·s)). `nearBorder: false`
+   * skips the border check, for callers that know the pillar is far inside the working.
+   */
+  pillarAt(w: Working, iu: number, iv: number, nearBorder = true): PillarState {
+    const roll = hashToFloat(hash2i(this.pillarSeed ^ w.id, iu, iv));
+    if (roll < 0.04 + 0.45 * w.collapse) return 'none';
+    // Crews left no pillar standing across the border of their working.
+    if (nearBorder && !this.pillarInside(w, iu, iv)) return 'none';
+    return roll < 0.04 + 0.9 * w.collapse ? 'broken' : 'whole';
+  }
+
+  /** Whether pillar (iu, iv) stands clear of its working's border (cached). */
+  private pillarInside(w: Working, iu: number, iv: number): boolean {
     const key = hash2i(w.id, iu, iv);
     let inside = this.pillarCache.get(key);
     if (inside === undefined) {
-      const c = cellular2(this.cellSeed, (w.cx + lx) / WORKING, (w.cz + lz) / WORKING, 0.85, this.probe);
-      inside = c.id === w.id && cellBorder(c) * WORKING > half * Math.SQRT2 + 3;
+      const [x, z] = this.fromGrid(w, (iu + 0.5) * w.spacing, (iv + 0.5) * w.spacing);
+      const c = cellular2(this.cellSeed, x / WORKING, z / WORKING, 0.85, this.probe);
+      inside = c.id === w.id && cellBorder(c) * WORKING > (w.pillar / 2) * Math.SQRT2 + 3;
       if (this.pillarCache.size > 65536) this.pillarCache.clear();
       this.pillarCache.set(key, inside);
     }

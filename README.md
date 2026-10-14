@@ -24,9 +24,10 @@ Already cloned without submodules: `git submodule update --init`.
 | `pos=x,y,z` | Start position of the camera (default: in a grand hall near the origin) |
 | `look=yaw,pitch` | Start view direction in degrees |
 | `color=` | `rock`, `working` (each working its own colour) or `lod` (detail level) |
+| `dark` | Start in headlamp darkness, lit by the headlamp and the miners' lamps |
 | `gl` | Force the WebGL 2 backend instead of WebGPU |
 
-Controls: click for mouse look, WASD to move, Space and C for up and down, Shift for fast, mouse wheel for speed, V to cycle colours, F to switch between survey fog and headlamp darkness.
+Controls: click for mouse look, WASD to move, Space and C for up and down, Shift for fast, mouse wheel for speed, V to cycle colours, F to switch between the survey view and headlamp darkness.
 
 ## Checks
 
