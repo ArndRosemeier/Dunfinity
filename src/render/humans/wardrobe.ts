@@ -48,20 +48,27 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
  * the edge towards -x): a dark wooden handle with two rivets, a steel blade with a curved belly.
  */
 function kitchenKnife(): Object3D {
+  // Built blade up (+Y, out of the thumb side of the fist), edge along +Z, then turned about the
+  // fist's x so the blade carries on the line of the forearm: held for a thrust, not like a hammer.
   const steel = new PropBuilder(), wood = new PropBuilder();
-  wood.upright(0, 0, 0, 0, 0.011, 0.055, 0.008, [0.12, 0.07, 0.04]);
-  for (const y of [-0.025, 0.025]) wood.upright(0, y, 0, 0, 0.004, 0.004, 0.0085, [0.5, 0.48, 0.45]);
-  steel.upright(0.001, 0.059, 0, 0, 0.012, 0.004, 0.006, [0.55, 0.56, 0.58]); // bolster
-  // The blade: the spine straight along +x, the belly narrowing to the tip.
+  wood.upright(0, 0, 0, 0, 0.008, 0.055, 0.011, [0.12, 0.07, 0.04]);
+  for (const y of [-0.025, 0.025]) wood.upright(0, y, 0, 0, 0.0085, 0.004, 0.004, [0.5, 0.48, 0.45]);
+  steel.upright(0, 0.059, 0.001, 0, 0.006, 0.004, 0.012, [0.55, 0.56, 0.58]); // bolster
+  // The blade: the spine straight along -z, the belly narrowing to the tip.
   const blade: [number, number, number][] = [[0.063, 0.16, 0.017], [0.16, 0.2, 0.0125], [0.2, 0.222, 0.0065], [0.222, 0.232, 0.0025]];
-  for (const [y0, y1, hw] of blade) steel.box(0.011 - hw, (y0 + y1) / 2, 0, [hw, 0, 0], [0, (y1 - y0) / 2, 0], [0, 0, 0.0012], [0.62, 0.63, 0.65]);
+  for (const [y0, y1, hw] of blade) steel.box(0, (y0 + y1) / 2, -0.011 + hw, [0.0012, 0, 0], [0, (y1 - y0) / 2, 0], [0, 0, hw], [0.62, 0.63, 0.65]);
   const g = new Group();
   for (const [b, kind] of [[wood, VERTEX_COLOR_SOLID], [steel, METAL]] as const) {
     const m: Mesh = meshFromData(b.build()!, kind);
+    m.rotation.x = KNIFE_TILT;
+    m.matrixAutoUpdate = true;
     g.add(m);
   }
   return g;
 }
+
+/** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
+const KNIFE_TILT = 2.7;
 
 export const WARDROBE: Wardrobe = {
   resolve,

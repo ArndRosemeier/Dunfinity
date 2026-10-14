@@ -30,8 +30,14 @@ export class Controls {
   /** Is the key (a KeyboardEvent.code) held? */
   held(code: string): boolean { return this.keys.has(code); }
 
-  /** Was the key pressed since the last call for it? */
+  /** Was the key pressed this frame (since the last `endFrame`)? */
   tap(code: string): boolean { return this.pressed.delete(code); }
+
+  /**
+   * End of a frame: presses nobody asked about are dropped, so a key pressed where it meant nothing
+   * (E away from a ladder, R while alive) does not fire later when it would.
+   */
+  endFrame(): void { this.pressed.clear(); }
 
   /** Mouse movement since the last call, pixels. */
   takeLook(): [number, number] {

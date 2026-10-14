@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.012 — Finds
+
+- Things to find: what the miners left on the floor of the Quarry (old Pfennigs, brass tally tokens, chisels, clay pipes, tobacco tins, a carbide lamp now and then) and what the rats dragged into their nests (rats hoard shiny things: silver spoons, medals, a pocket watch, gold rings only there). A faint twinkle gives a find away in the dark.
+- E picks up the find at your feet (the nobody stoops for it). The HUD says what you carry and what the pawn shop up top might pay for it. A dead nobody's pack stays down there; a find once taken is gone from the level for the next grandchild too.
+- The knife is held for a thrust now: the blade carries on the line of the arm instead of pointing back.
+- Fix: a key pressed where it meant nothing no longer fires later. E pressed during a climb used to send you straight back down the next shaft you came out at; R pressed while alive used to skip the death screen.
+- Health comes back slowly once nothing has hurt you for ten seconds.
+- `Finds`, `Pack`, `FindView`, `meshOf`, `Controls.endFrame`.
+
 ## v0.011 — Rats and the kitchen knife
 
 - Rats: the first enemy. Fat quarry rats, about 40 cm with the tail, with glowing eyes; they live in nests a few to a nest on the dry floor of the workings (none near where you arrive, a few more on each level down). They sniff about the nest; get close and the nest notices, and they run at you, spread round you and bite. Badly hurt ones bolt for a moment. They scramble up knee-high ledges, but not up walls.
