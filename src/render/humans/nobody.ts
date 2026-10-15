@@ -9,7 +9,7 @@ import { deriveSeed } from '@futuremagic/core';
 import type { Body } from '../../world/traverse/body';
 import type { Level } from '../../gen/level';
 import { WARDROBE, rags } from './wardrobe';
-import { moveOf } from './move';
+import { moveOf, SWIM, swimLift } from './move';
 
 /** Where Vite serves the package's assets (vite.config.ts). */
 setHumanAssetBase(`${import.meta.env.BASE_URL}humanoid/`);
@@ -53,6 +53,9 @@ export class Nobody {
 
   private lid_ = false;
 
+  /** How far the figure is drawn over the body's feet now (`swimLift` while swimming, else 0, eased). */
+  lift = 0;
+
   private constructor(readonly human: Humanoid, level: Level, private readonly seed: number) {
     this.level = level;
     this.root = human.object;
@@ -80,7 +83,13 @@ export class Nobody {
    */
   pose(b: Body, dt: number, time: number, action?: ActionAnim, combat = false, move: MoveState = moveOf(b)): void {
     const yaw = b.mode === 'climb' ? Math.atan2(b.wall[0], b.wall[2]) : b.facing;
-    this.human.update({ pos: [b.x, b.y, b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move, action }, combat, sneaking: b.sneaking }, dt, time, this.ground);
+    this.human.update({ pos: [b.x, b.y + this.lifted(b, dt), b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move, action }, combat, sneaking: b.sneaking }, dt, time, this.ground);
+  }
+
+  /** Ease `lift` towards the swim pose's water line while swimming, else to the feet; its new value. */
+  private lifted(b: Body, dt: number): number {
+    const to = b.mode === 'swim' ? swimLift(this.human.height) : 0;
+    return (this.lift += Math.max(-SWIM.rate * dt, Math.min(SWIM.rate * dt, to - this.lift)));
   }
 
   /** A blow landed on the nobody from direction (dx, dz) (towards them), strength 0..1: they flinch. */

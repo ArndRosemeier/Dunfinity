@@ -20,6 +20,7 @@ import { dryAbove, type Band } from './bands';
 import { Envelope } from './envelope';
 import { Grain, grainOf } from './grainLines';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 
 export const ELVEN = {
@@ -84,6 +85,8 @@ interface ElvenColumn {
 
 export class Elven implements Style {
   readonly id: StyleId = 'elven';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ marble: 0.6, limestone: 0.3, slate: 0.1 });
   /** Pale silver on the map (M). */
   readonly mapFloor = [0.62, 0.66, 0.7] as const;
   private readonly noise: Noise;

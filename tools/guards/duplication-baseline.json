@@ -68,6 +68,18 @@
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
   },
   {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "per-style column data read back from its WeakMap<Column, Own> (the Style contract's one way of keeping private column data); surfaced when new gen files (genes.ts) shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts",
+    "reason": "per-style column data read back from its WeakMap<Column, Own> (the Style contract's one way of keeping private column data); surfaced when new gen files (genes.ts) shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts",
+    "reason": "per-style column data read back from its WeakMap<Column, Own> (the Style contract's one way of keeping private column data); surfaced when new gen files (genes.ts) shifted the idiom finder's corpus"
+  },
+  {
     "key": "idiom: [.ceiling .floor .get .own] in dunfinity/gen/dungeon.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts",
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
@@ -2088,6 +2100,10 @@
     "reason": "Figure.pose: the interface every drawn creature implements; rigged.ts holds the one for Blender-made creatures"
   },
   {
+    "key": "same name: dunfinity/render/humans/ladderClimb.ts#pose + dunfinity/render/humans/nobody.ts#pose",
+    "reason": "both hand the nobody's humanoid one frame (Humanoid.update): Nobody.pose from the Body, the ladder climb from its script; the posing itself is the package's animator"
+  },
+  {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
     "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
   },
@@ -2490,5 +2506,17 @@
   {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back (this.own.get(col)): the Style contract's one way of keeping private column data. The finder regroups these as files are added"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back (this.own.get(col)): the Style contract's one way of keeping private column data. The finder regroups these as files are added"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back (this.own.get(col)): the Style contract's one way of keeping private column data. The finder regroups these as files are added"
   }
 ]

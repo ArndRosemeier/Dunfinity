@@ -4,7 +4,7 @@
  * `npm run strip -- <seed> [depths, default 1,11,21,41,61,100,200,500] out.png [extra query, e.g. "&gl&light"]`
  * (run `npm run build` first; in the cloud container add `&gl`). The single shots land next to the
  * sheet as `<out>-<depth>.png`. SwiftShader is slow: a deep level can take minutes, so a whole strip
- * takes a while.
+ * takes a while: `SHOT_TIMEOUT=900000` gives each level longer. A level that fails is left out of the sheet.
  */
 import { readFileSync } from 'node:fs';
 import { strangeLabel } from '../../src/gen/genome.ts';
@@ -28,7 +28,13 @@ const tiles = [];
 for (const d of depths) {
   const file = out.replace(/\.png$/, `-${d}.png`);
   console.log(`level ${d}...`);
-  await shooter.shoot(`?seed=${encodeURIComponent(seed)}&depth=${d}${extra}`, file);
+  try {
+    await shooter.shoot(`?seed=${encodeURIComponent(seed)}&depth=${d}${extra}`, file);
+  } catch (e) {
+    shooter.failed = true;
+    console.error(`  level ${d}: ${e.message.split('\n')[0]}`);
+    continue;
+  }
   const label = `level ${d} · ${bandOf(d).name} · ${strangeLabel(n, d)}`;
   console.log(`  ${label}`);
   tiles.push({ label, src: `data:image/png;base64,${readFileSync(file).toString('base64')}` });

@@ -3,9 +3,13 @@
  * first) and renders in Chromium with SwiftShader (no GPU needed), so it works in the cloud container.
  * `shoot(query, out)` waits for the page to report ready (plus `SHOT_WAIT` ms), saves a screenshot and
  * returns the HUD's first line and the shader report; it prints the page's console errors.
+ * `SHOT_TIMEOUT=<ms>` gives SwiftShader longer to report ready and to take the screenshot (deep levels
+ * can need 900000).
  */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
+
+const TIMEOUT = Number(process.env.SHOT_TIMEOUT ?? 300000);
 
 export async function openShooter() {
   const server = await preview({ preview: { port: 5191, strictPort: false }, logLevel: 'silent' });
@@ -21,9 +25,9 @@ export async function openShooter() {
       page.on('console', (m) => { if (m.type() === 'error') { console.error(`[page] ${m.text()}`); } });
       page.on('pageerror', (e) => { shooter.failed = true; console.error(`[page error] ${e.message}`); });
       await page.goto(base + (query.startsWith('?') ? query : '?' + query));
-      await page.waitForFunction(() => (window).__ready === true, null, { timeout: 300000 }).catch(() => { shooter.failed = true; console.error('page did not report ready'); });
+      await page.waitForFunction(() => (window).__ready === true, null, { timeout: TIMEOUT }).catch(() => { shooter.failed = true; console.error('page did not report ready'); });
       await page.waitForTimeout(Number(process.env.SHOT_WAIT ?? 0));
-      await page.screenshot({ path: out, timeout: 240000 });
+      await page.screenshot({ path: out, timeout: TIMEOUT });
       const hud = (await page.textContent('#hud'))?.split('\n')[0];
       const shaders = (await page.evaluate(() => ({ report: (window).shaders?.report() }))).report ?? 'shaders: no monitor';
       await page.close();

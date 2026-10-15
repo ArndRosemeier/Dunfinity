@@ -44,7 +44,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later; `power` from `band.lamplight`) | `src/render/props/lamps.ts` |
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
-| Where on screen is a world point? | `screen.toScreen` *(planned; guarded already)* | `src/render/screen.ts` |
+| Where on screen is a world point? | `toScreen(camera, x, y, z)` | `src/render/screen.ts` |
 | A third-person camera that stays out of the rock | `OrbitCamera` (pulls in along `level.trace`) | `src/render/camera/OrbitCamera.ts` |
 | Look at a level: scene, fixed lights, warm-up, streamed rock and props; switch to another level | `LevelView` (`LevelView.open`, `view.go(level)`) | `src/render/LevelView.ts` |
 | The player's figure | `Nobody` (Scale's human in rags, posed from the `Body`) | `src/render/humans/nobody.ts` |
@@ -67,7 +67,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Which style owns a point, and how much of each style is there (the region map; a level's `Mix` of styles and weights is on its band) | `Regions` (`styleAt`, `regionAt`, `sharesAt`); a style's own share is `style.share(x, z)`; a level's mix is `mixOf(seed, depth)` (`src/gen/bands.ts`), a style's share of a whole mix `shareOf(mix, id)` | `src/gen/regions.ts` |
 | Below level 10: which stratum a depth is in, and the styles a world draws for it | `stratumOf(depth)`, `genome(seed, stratum)`, `STRATA` (read through `mixOf` and `bandOf`) | `src/gen/genome.ts` |
 | How strange a level is: how far from our world, separate from difficulty (the trend with depth, its stratum's lean, how far a deviation may go, how many laws hold) | `strangeness(seed, depth)` (a `Strangeness`), `STRANGE_CAP`, `strangeLabel` for a HUD; plan: `docs/design/generative-depth.md` | `src/gen/genome.ts` |
-| A creature's kin in a deeper stratum: one species' look per stratum, drawn from its strangeness (coat hue, saturation, lightness, stripes or spots; body stretched; head, tail, ears scaled) | `kinOf(seed, depth, species)` (a `Kin`; `OURS` above level 11), worn through `Rigged.kinOn(seed, depth)` when a level is shown: the coat kind's `look` uniforms, the figure's proportions | `src/creatures/kin.ts`, `src/render/creatures/rigged.ts` |
+| A generator's knob that may stray from our world's standard with strangeness (a style's dome height, a rock's hue, a creature's legs): its standard, safe and strange ranges, and its value on a level (a stratum strays coherently) | `gene(name, standard, safe, strange)`, `express(gene, seed, depth)` | `src/gen/genes.ts` |
+| A creature's kin in a deeper stratum: one species' look per stratum, its knobs genes (`gene`/`express`) (coat hue, saturation, lightness, stripes or spots; body stretched; head, tail, ears scaled) | `kinOf(seed, depth, species)` (a `Kin`; `OURS` above level 11), worn through `Rigged.kinOn(seed, depth)` when a level is shown: the coat kind's `look` uniforms, the figure's proportions | `src/creatures/kin.ts`, `src/render/creatures/rigged.ts` |
 | Screenshots of one seed at many depths side by side, labelled with band and strangeness | `npm run strip -- <seed> <depths,...> out.png` | `tools/shot/strip.mjs` |
 | Whether a style's own things (pillars, props, dens, ways down) may stand at a point (E5) | `owns(style, x, z)` (share ≥ `SHARE_OWN`; there the field is exactly the style's) | `src/gen/style.ts` |
 | Distance to a box from a point's offsets beyond its half-sizes (a style's rooms, blocks, niches, pillars) | `boxDist2(qx, qz)`, `boxDist3(qx, qy, qz)` | `src/gen/shapes.ts` |
@@ -185,9 +186,13 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Salt the creatures will not cross (grandma's Salt Line, poured; her circles round the Tall One's lair) | `SaltLine` (`whyNot`, `pour`, `pouring`, `keeping(now)`, `shown`), `fauna.salt = …` → `Steer.salt` (no step further in; a kind opts out with `heedsSalt = false`); drawn by `SaltLineView` | `src/world/saltLine.ts`, `src/creatures/steer.ts`, `src/render/props/saltLine.ts` |
 | Grandma's recipe cards: what each is and costs, what a grandchild has cooked, and what that does to the numbers (knife, resting, climbing) | `CARDS` (a card's depth gate `opens`), `CHAPTERS`, `card(id)`; `Cooked` (`rank`, `costOf`, `cantCook`, `cook`, lost cards `has`/`find`, and the effects `knife`, `helpings`, `duck`, `candles`, `soup`, `climbing`) | `src/loot/recipes.ts` |
 | Practice: what a grandchild got better at by doing it, and what that does to the numbers | `Practice` (`use(skill, n)`, `tier`, `more`, `less`), `SKILLS`, `TIERS` | `src/loot/practice.ts` |
+| Which cooked cards are used by a key (the ability bar's slots, their keys, the passives) | `ABILITIES`, `SLOT_KEYS`, `barOf(cooked)`, `passivesOf(cooked)` | `src/game/abilities.ts` |
+| Show the ability bar (a slot per ability: number, key, how soon it is ready; a click uses it) | `AbilityBar` (`paint(bar, states, passives, hide)`) | `src/app/abilityBar.ts` |
+| Tab targeting: which foe Tab picks next, when it is let go, the yaw to it | `nextTarget`, `candidates`, `keeps`, `yawTo`, `TARGET` | `src/game/target.ts` |
+| Mark the Tab target on screen (chevron and health) | `TargetMark` (`paint(camera, x, y, z, left)`) | `src/app/targetMark.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
 | Remember what a grandchild has seen of each level (exploration memory) | `Explored` (`see(level, x, y, z)`, `has(depth, i, j)`, `cells`, `data`/`from`), `EXPLORE` | `src/world/explored.ts` |
-| A DOM panel of the game (its stylesheet and element) | `panel(host, tag, id, css)`, `addStyle(css)` | `src/app/panel.ts` |
+| A DOM panel of the game (its stylesheet and element), and an element in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)` | `src/app/panel.ts` |
 | Show the map of what was seen (M) | `MapView` (`toggle`, `draw(level, explored, x, y, z, yaw, fire, now)`); a style's floor colour there is `Style.mapFloor` (default `MAP_FLOOR`) | `src/app/mapView.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
@@ -209,7 +214,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
-| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel | `Controls` | `src/input/controls.ts` |
+| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's 1–8) | `Controls` | `src/input/controls.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 
 ## Layers

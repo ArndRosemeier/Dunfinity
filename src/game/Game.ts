@@ -66,6 +66,10 @@ import { SaltDrift } from '../render/loot/saltDrift';
 import { Thrown } from '../combat/thrown';
 import { GameSounds } from '../audio/gameSounds';
 import { ThrownView } from '../render/humans/thrownView';
+import { AbilityBar, type SlotState } from '../app/abilityBar';
+import { ABILITIES, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
+import { TargetMark } from '../app/targetMark';
+import { keeps, nextTarget, yawTo } from './target';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -260,6 +264,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const tinView = new TinView(document.body);
   const readView = new ReadView(document.body);
   const mapView = new MapView(document.body);
+  // The ability bar: a click uses a slot (a held one, the lid or tiptoeing, stays held until the next click).
+  const abilityBar = new AbilityBar(document.body, (i) => {
+    const a = barOf(cooked)[i];
+    if (!a) return;
+    if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
+    else controls.press(a.key);
+  });
+  /** At Kemal's counter (last frame): 1, 2, 3 buy there, not use the bar. */
+  let atCounter = false;
+  /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
+  let target: Foe | null = null, targetFull = 1;
+  const targetMark = new TargetMark(document.body);
   /** The debug menu (`): every ability, invulnerable, tireless, any level, anything worth checking out. */
   let debugPlaces: Place[] = [];
   /** Put the nobody down at (x, y, z) facing `yaw` on the level shown, as they were (health, stamina), fading in. */
@@ -382,8 +398,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     stabDone = false;
     striking = how;
     sounds.play(how === 'pound' ? 'throw' : 'knife_swing', null, 0.8, how === 'pound' ? 0.8 : 1);
-    // Turn to the nearest foe roughly where the camera looks, else where it looks.
+    // Turn to the Tab target if it is in reach; else to the nearest foe roughly where the camera looks, else where it looks.
     stabYaw = cam.yaw;
+    if (target && Math.hypot(target.x - body.x, target.z - body.z) < STAB.aim && Math.abs(target.y - body.y) < 1.5) { stabYaw = yawTo(target, body.x, body.z); return; }
     let best = STAB.aim;
     for (const r of foes()) {
       if (r.dead) continue;
@@ -460,7 +477,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Dress the creatures as the kin of another depth (a look at them without going down). */
@@ -500,6 +517,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
     if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
     if (controls.tap('Backquote')) debug.toggle();
+    // The bar's slots answer to 1–8 too (not at Kemal's counter); a dead grandchild holds nothing.
+    const bar = barOf(cooked);
+    controls.alias(atCounter ? [] : bar.map((a, i) => [SLOT_KEYS[i], a.key] as const));
+    if (body.dead) for (const a of ABILITIES) controls.latch(a.key, false);
+    // Tab targeting: Tab picks (and then goes round) the foes near where the camera looks; Escape lets go.
+    if (controls.tap('Tab') && !body.dead) {
+      target = nextTarget(foes(), target, body.x, body.y, body.z, cam.yaw);
+      targetFull = target ? Math.max(1, target.health) : 1;
+    }
+    if (target && (!keeps(target, body.x, body.z) || body.dead || (!tinView.open && controls.held('Escape')))) target = null;
     body.invulnerable = debug.invulnerable;
     if (debug.tireless) body.stamina = MOVE.stamina;
     if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; saltLine.circle = null; }
@@ -550,6 +577,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       return Math.hypot(d.x - body.x, d.z - body.z) < PAWN.reach;
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
+    atCounter = nearKemal;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
     const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : level.inscriptions.find((i) => canRead(i, body.x, body.y, body.z));
     if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
@@ -644,13 +672,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       const stabbing = now - stabAt < stabDur, throwing = now - throwAt < THROWING.dur;
       if (stabbing) body.facing = stabYaw;
-      if (throwing || body.guarding) body.facing = cam.yaw;
+      // Knives go at the Tab target, if there is one.
+      const aim = target ? yawTo(target, body.x, body.z) : cam.yaw;
+      if (body.guarding) body.facing = cam.yaw;
+      if (throwing) body.facing = aim;
       if (!released && now - throwAt >= THROWING.release) {
         released = true;
-        const hx = body.x - Math.sin(cam.yaw) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(cam.yaw) * 0.3;
+        const hx = body.x - Math.sin(aim) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(aim) * 0.3;
         sounds.play('throw', null, 0.8, tossing === 'knife' ? 1.1 : 0.85);
-        if (tossing === 'knife') thrown.throw(hx, hy, hz, cam.yaw, foes());
-        else thrown.toss(hx, hy, hz, cam.yaw);
+        if (tossing === 'knife') thrown.throw(hx, hy, hz, aim, foes());
+        else thrown.toss(hx, hy, hz, aim);
       }
       thrown.power = practice.more('throwing');
       const hit = thrown.fly(level, foes(), blows, dt);
@@ -790,10 +821,30 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (debug.invulnerable || debug.tireless) lines.push(`debug: ${[debug.invulnerable && 'invulnerable', debug.tireless && 'tireless'].filter(Boolean).join(', ')}`);
     lines.push(...fauna.tally(), `infused salt in grandma's tin: ${tin.salt}`, euros ? `euros in grandma's purse: €${euros}` : '');
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
+    // The ability bar: how soon each slot is ready again, and what is on.
+    const slot = (a: Ability): SlotState => {
+      const ready = (t0: number, dur: number) => Math.min(1, (now - t0) / dur);
+      switch (a.card) {
+        case 'tenderising': return { ready: striking === 'pound' ? ready(stabAt, POUND.dur) : 1, on: false, dim: body.stamina < POUND.stamina };
+        case 'helpings': return { ready: ready(throwAt, Math.max(THROWING.dur, every ?? 0)), on: false, dim: false };
+        case 'duck': return { ready: body.rolling ? ready(rollAt, MOVE.roll.dur) : 1, on: body.rolling, dim: body.stamina < (duck?.stamina ?? 0) };
+        case 'pot-lid': return { ready: 1, on: body.guarding, dim: false };
+        case 'tiptoe': return { ready: 1, on: !!input.sneak, dim: false };
+        case 'candle': return { ready: 1, on: false, dim: thrown.candles.length >= cooked.candles, count: `${thrown.candles.length}/${cooked.candles}` };
+        case 'salt-line': {
+          const c = saltLine.circle;
+          return { ready: c && saltLine.pouring(now) ? ready(c.at, SALT_LINE.pour) : 1, on: !!c && !saltLine.pouring(now), dim: false, count: c && !saltLine.pouring(now) ? `${Math.ceil(c.at + SALT_LINE.pour + c.keeps - now)} s` : '' };
+        }
+        case 'way-home': return { ready: homeTo !== null ? ready(homeAt, WAY_HOME.dur) : 1, on: homeTo !== null, dim: false };
+        default: return { ready: 1, on: false, dim: false };
+      }
+    };
+    targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
+    abilityBar.paint(bar, bar.map(slot), passivesOf(cooked), body.dead || tinView.open);
     if (hud) hud.textContent = hudText(body, backend, body.dead ? notaryList(fallen, heir + 1, params.seed) : []) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
-    view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.y + (body.mode === 'swim' ? 0.45 : 1.85), body.z - Math.cos(cam.yaw) * 0.4);
+    view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
     view.frame(body.x, body.y, body.z, timer.getElapsed());
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
@@ -838,6 +889,6 @@ function hudText(b: Body, backend: string, list: readonly string[]): string {
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
   if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
+  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · 1–8 or the bar: grandma's cards (Esc frees the mouse to click) · Tab target · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
   return lines.join('\n');
 }

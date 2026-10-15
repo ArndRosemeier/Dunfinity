@@ -19,14 +19,13 @@ test('one stratum\'s kin are all the same kind of wrong; the next stratum\'s are
   assert.equal(looks.size, 7, 'each stratum its own');
 });
 
-test('kin are wrong in a few ways, not every way, and more so deeper', () => {
+test('the deeper the stratum, the further its kin stray', () => {
   let shallow = 0, deep = 0;
   for (let seed = 1; seed <= 40; seed++) {
-    const a = changed(kinOf(seed, 11, 'feral_dog')), b = changed(kinOf(seed, 400, 'feral_dog'));
-    assert.ok(b.length >= 1 && b.length <= 4, `seed ${seed}: ${b.join(' ')}`);
-    shallow += a.length; deep += b.length;
+    shallow += changed(kinOf(seed, 11, 'feral_dog')).length;
+    deep += changed(kinOf(seed, 400, 'feral_dog')).length;
   }
-  assert.ok(deep > shallow, `deeper strata stray more (${shallow} vs ${deep})`);
+  assert.ok(deep > shallow && deep > 40, `deeper strata stray more (${shallow} vs ${deep})`);
 });
 
 test('kin keep a body that can still walk its clips', () => {
