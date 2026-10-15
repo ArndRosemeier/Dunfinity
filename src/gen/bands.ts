@@ -1,3 +1,4 @@
+import { deriveSeed, hash2i, hashToFloat } from '@futuremagic/core';
 import type { Mix } from './regions';
 
 /**
@@ -80,7 +81,7 @@ export const QUARRY: Band = {
   stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
   touched: 0, crickets: 0.22, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0.3,
   lamplight: 1,
-  styles: [['excavation', 0.8], ['karst', 0.2]],
+  styles: [['excavation', 0.7], ['collapse', 0.15], ['karst', 0.15]],
 };
 
 /** The salt mine proper (levels 3–5): cathedral chambers carved by miners, fluted pillars, brine lakes, the first veins of infused salt. */
@@ -97,7 +98,7 @@ export const SALT: Band = {
   stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
   touched: 0.35, crickets: 0.25, dogs: 0, eels: 0.5, scavengers: 0.3, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.65], ['karst', 0.15], ['rift', 0.1], ['collapse', 0.1]],
+  styles: [['excavation', 0.55], ['collapse', 0.25], ['karst', 0.1], ['rift', 0.1]],
 };
 
 /**
@@ -118,7 +119,7 @@ export const CISTERN: Band = {
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
   touched: 0.12, crickets: 0, dogs: 0.35, eels: 0.6, scavengers: 0.35, caverns: 0, ruins: 0, older: 0.14, uphill: 0.12, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.5], ['karst', 0.2], ['dungeon', 0.15], ['roots', 0.15]],
+  styles: [['excavation', 0.4], ['karst', 0.2], ['collapse', 0.1], ['dungeon', 0.15], ['roots', 0.15]],
 };
 
 /**
@@ -139,7 +140,7 @@ export const THRESHOLD: Band = {
   stone: [0.36, 0.33, 0.3], carvings: 0, hanging: 0.12, machines: 0,
   touched: 0.06, crickets: 0.3, dogs: 0, eels: 0.4, scavengers: 0.2, caverns: 0.5, ruins: 0.2, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.25], ['karst', 0.25], ['rift', 0.15], ['catacombs', 0.1], ['dungeon', 0.15], ['fungal', 0.1]],
+  styles: [['excavation', 0.2], ['karst', 0.2], ['rift', 0.15], ['collapse', 0.1], ['catacombs', 0.1], ['dungeon', 0.15], ['fungal', 0.1]],
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
@@ -151,6 +152,21 @@ export const CELLAR_BAND: Band = {
   lamplight: 0.12, // (bulbs in small brick rooms)
   styles: [['cellar', 1]],
 };
+
+/** How far each style's weight in a level's mix strays from its band's, either way (as a power of 2). */
+const MIX_VARY = 0.5;
+
+/**
+ * A level's mix of styles: its band's, each weight scaled by up to 2^MIX_VARY either way, drawn
+ * from (seed, depth), so no two levels of a band are alike: one Cisterns level mostly caves,
+ * the next mostly workings. The first style stays first (the home ground round the arrival).
+ */
+export function mixOf(seed: number, depth: number): Mix {
+  const b = bandOf(depth);
+  if (b.styles.length === 1) return b.styles;
+  const s = deriveSeed(seed, 'mix', depth);
+  return b.styles.map(([id, w], i) => [id, w * 2 ** (MIX_VARY * (2 * hashToFloat(hash2i(s, i, 0)) - 1))] as const);
+}
 
 export function bandOf(depth: number): Band {
   return depth <= 0 ? CELLAR_BAND : depth >= 9 ? THRESHOLD : depth >= 6 ? CISTERN : depth >= 3 ? SALT : QUARRY;

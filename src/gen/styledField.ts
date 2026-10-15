@@ -26,11 +26,14 @@ import { SHARE_OWN, type Style } from './style';
  * far-off rock of one style cannot outweigh the other's air in a blend, every style's answer is
  * held to the same limit on both sides of the band's outer edge (no jump), and where the limit is
  * what counts, the field changes by no more than 2·GROW per metre (blend distance changes at most
- * twice as fast as position: still 1-Lipschitz). It grows that fast so that big chunks of solid rock
- * or open air near an edge are still far enough from any surface to be skipped (src/gen/chunkMesh.ts);
- * further than the limit from a surface, nothing needs the exact distance.
+ * twice as fast as position). That can be steeper than the field's own bound, but only where it is
+ * at least CLAMP from zero, and there the limit only ever makes the distance smaller than it is:
+ * whoever trusts it (sphere tracing, bodies, chunk skipping) steps shorter, never through rock. It
+ * grows that fast so that big chunks of solid rock or open air near an edge are still far enough
+ * from any surface to be skipped (src/gen/chunkMesh.ts); further than the limit from a surface,
+ * nothing needs the exact distance.
  */
-const CLAMP = 4, GROW = 0.5, MAX = CLAMP + GROW * (REGIONS.edge + REGIONS.far);
+const CLAMP = 4, GROW = 1, MAX = CLAMP + GROW * (REGIONS.edge + REGIONS.far);
 /** The passages between styles' regions (E3): half width, height at the walls and in the middle, how far in from the border they start looking for open space, metres. */
 export const PASSAGE = { half: 5, wall: 3, crown: 5.5, into: 45 } as const;
 
