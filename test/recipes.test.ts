@@ -56,3 +56,16 @@ test('Chicken Soup: wounds close faster resting by the fire', () => {
   };
   assert.ok(Math.abs(rest(2) - 2 * rest(1)) < 1, `${rest(2)} vs ${rest(1)}`);
 });
+
+test('Way Home opens only at level 8, and its second rank is the way back', () => {
+  const c = new Cooked(), tin = new Tin();
+  tin.salt = 40;
+  assert.equal(c.wayHome, 0);
+  assert.match(c.cantCook('way-home', tin, 7)!, /Way Home divider/);
+  assert.equal(c.cantCook('way-home', tin, 8), null);
+  c.cook('way-home', tin);
+  assert.equal(c.wayHome, 1);
+  c.cook('way-home', tin);
+  assert.equal(c.wayHome, 2);
+  assert.equal(tin.salt, 40 - 12 - 20);
+});
