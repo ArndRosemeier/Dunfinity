@@ -8,7 +8,7 @@
  * A fixed pool of rats, built once and added with the Stage before play (the kinds are compiled in
  * the warm-up), so nothing is compiled or added to the scene later.
  */
-import { FigurePool, type Figure } from './figures';
+import { FigurePool, placeFigure, type Figure } from './figures';
 import { groundSpeed } from '../../creatures/creature';
 import { Group, type Object3D } from 'three/webgpu';
 import type { Rgb } from '../../gen/propMesh';
@@ -87,10 +87,7 @@ class RatFigure implements Figure<Rat> {
 
   pose(r: Rat, time: number): void {
     const R = this.root, B = this.body;
-    R.visible = true;
-    R.position.set(r.x, r.y, r.z);
-    R.rotation.y = r.yaw;
-    R.scale.setScalar(r.size);
+    placeFigure(R, r);
     const speed = groundSpeed(r);
     const moving = Math.min(1, speed / 1.5);
     const g = r.gait;

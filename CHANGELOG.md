@@ -9,6 +9,10 @@
 - Teleport on this level: in grandma's house her armchair, the notary's letter, the cellar door, her hall, the street, Ilse's, Kemal's, Frau Weber and the old shaft; below, the way up, the nearest way down, the Foreman (level 5), grandma's camp (level 9), the Tall One and a salt circle (level 10), and the nearest den of every creature living on the level (rats, Salt-Touched, crickets, both slimes, dogs, eels, scavengers).
 - What you do with it is kept in the save like anything else.
 
+## v0.069 — Tidying up
+
+- Behind the scenes: a sweep for repeated code. The dogs, rats, slimes and cave crickets now share one way of putting their figures where they stand. Nothing changes in play.
+
 ## v0.068 — The preview link, spelled right
 
 - Fix: the preview link has a capital D: https://arndrosemeier.github.io/Dunfinity/ (the small-d one shows "not found").

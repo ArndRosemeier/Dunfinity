@@ -112,6 +112,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Does a guard (grandma's pot lid) stop part of a blow? | `Fighter.shield(fromX, fromZ)`, asked by `damage` (`Body.shield` with `Body.lid`, `Body.guarding`); never scale damage at the attacker | `src/combat/combat.ts`, `src/world/traverse/body.ts` |
 | Does a blow, blast or effect reach someone? Who does it hit? | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
 | Rats: nests, waking, chasing, biting | `Rats` (a `Population`: `advance(dt, prey)`, `list`, `denAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
+| Place a drawn creature's figure (at its feet, turned, scaled) | `placeFigure(root, creature)` | `src/render/creatures/figures.ts` |
 | Draw the rats | `RatView` (a `FigurePool` added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
 | Walk a creature over the floor: steer to a goal round what is in the way, arrive without overshooting (no jitter), keep out of its prey's legs | `Steer` (`move`, `close` to close in on someone, `slide`, `walkable`) with the kind's `Gait` (`probe`: how high it looks for a wall) | `src/creatures/steer.ts` |
 | The Salt-Touched: where they work, noticing, chasing, the pick blow | `SaltTouched` (a `Population`: `advance(dt, prey)`, `list`, `denAt`) and its numbers `TOUCHED`; how many per band: `band.touched` | `src/creatures/touched.ts` |

@@ -10,7 +10,7 @@ import type { Rgb } from '../../gen/propMesh';
 import { meshOf as mesh } from '../meshes';
 import { GLOW, METAL, VERTEX_COLOR_SOLID } from '../materials';
 import { SLIME, type Faction, type Slime } from '../../creatures/slimes';
-import { FigurePool, type Figure } from './figures';
+import { FigurePool, placeFigure, type Figure } from './figures';
 
 /** How many of each faction can be drawn at once. */
 const POOL = 16;
@@ -50,10 +50,7 @@ class SlimeFigure implements Figure<Slime> {
 
   pose(s: Slime, time: number): void {
     const R = this.root, B = this.body;
-    R.visible = true;
-    R.position.set(s.x, s.y, s.z);
-    R.rotation.y = s.yaw;
-    R.scale.setScalar(s.size);
+    placeFigure(R, s);
     // Squash (down and out) and stretch (forward), the jelly's wobble on top.
     let squash = 0, stretch = 0;
     const wobble = Math.sin(time * 7 + s.id) * 0.03 + Math.max(0, 1 - s.hurtT / 0.4) * Math.sin(time * 40) * 0.12;

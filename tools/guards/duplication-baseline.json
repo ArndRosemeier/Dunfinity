@@ -208,10 +208,6 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "idiom: [.position .rotation .scale .set .setScalar .size .visible .x .y .yaw .z] in dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
-  },
-  {
     "key": "idiom: [.slide .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
@@ -406,10 +402,6 @@
   {
     "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
-  },
-  {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/slimeView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
-    "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
     "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/scavengers.ts#act",
@@ -626,5 +618,9 @@
   {
     "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
     "reason": "async factories of the human views (humans load their assets first)"
+  },
+  {
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
+    "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   }
 ]
