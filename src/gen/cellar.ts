@@ -19,10 +19,14 @@ import type { Shaft } from './descents';
 export const CELLAR = {
   /** The brick cellar: its walls, and its barrel vault (height at the walls, at the crown). */
   cellar: { x: [-4.5, 3.4], z: [-2.6, 2.6], spring: 1.9, crown: 2.6 },
-  /** The stairs up to the house, rising westwards to the door. */
-  stairs: { x: [-8.2, -4.4], z: [-0.65, 0.65], top: 2.7, head: 2.3 },
-  /** The low doorway from the cellar into the strange room. */
-  door: { x: [3.2, 4.6], z: [-0.5, 0.5], top: 1.95 },
+  /** The stairs up to the house, rising westwards to the door (their air reaches `join` on into the cellar). */
+  stairs: { x: [-8.2, -4.4], z: [-0.65, 0.65], top: 2.7, head: 2.3, join: 0.8 },
+  /**
+   * The low doorway from the cellar into the strange room. Its air reaches well into both (the
+   * spaces join as a union of boxes, and one that stops at the other's wall pinches the way to less
+   * than a body's width).
+   */
+  door: { x: [2.6, 5.2], z: [-0.5, 0.5], top: 1.95 },
   /** The strange small room: round, domed. */
   room: { x: 6.6, z: 0, r: 2.3, spring: 2.0, crown: 2.6 },
   /** The infused-salt circle on its floor (the one fire that is always safe), and the armchair inside it. */
@@ -30,8 +34,8 @@ export const CELLAR = {
   chair: { x: 6.2, z: -0.25, yaw: -1.9 },
   /** The notary's letter, on her side table (src/gen/notary.ts). */
   letter: { x: 5.94, y: 0.645, z: 0.62 },
-  /** The arch she bricked up, broken through: a round arch in the room's east wall. */
-  arch: { x: [8.6, 9.6], z: [-0.7, 0.7], spring: 1.4, crown: 2.0 },
+  /** The arch she bricked up, broken through: a round arch in the room's east wall (reaching into the room and the passage, as the doorway). */
+  arch: { x: [8.0, 10.2], z: [-0.7, 0.7], spring: 1.4, crown: 2.0 },
   /** The passage beyond, rough rock, and the chamber round the old shaft. */
   passage: { x: [9.4, 13.4], z: [-0.85, 0.85], top: 2.1 },
   chamber: { x: 15, z: 0, r: 2.9, top: 2.8 },
@@ -82,7 +86,7 @@ export class CellarField extends QuarryField {
     const C = CELLAR, rm = C.room, ch = C.chamber;
     return Math.max(
       plan(x, z, C.cellar.x, C.cellar.z),
-      plan(x, z, C.stairs.x, C.stairs.z),
+      plan(x, z, [C.stairs.x[0], C.stairs.x[1] + C.stairs.join], C.stairs.z),
       plan(x, z, C.door.x, C.door.z),
       rm.r - Math.hypot(x - rm.x, z - rm.z),
       plan(x, z, C.arch.x, C.arch.z),
@@ -112,7 +116,7 @@ export class CellarField extends QuarryField {
     const C = CELLAR, rm = C.room, ch = C.chamber, f = col.floor;
     const air = Math.max(
       Math.min(plan(x, z, C.cellar.x, C.cellar.z), y, vault(z, 2.6, C.cellar.spring, C.cellar.crown) - y),
-      Math.min(plan(x, z, C.stairs.x, C.stairs.z), y - f, f + C.stairs.head - y),
+      Math.min(plan(x, z, [C.stairs.x[0], C.stairs.x[1] + C.stairs.join], C.stairs.z), y - f, f + C.stairs.head - y),
       Math.min(plan(x, z, C.door.x, C.door.z), y, C.door.top - y),
       Math.min(rm.r - Math.hypot(x - rm.x, z - rm.z), y, vault(Math.hypot(x - rm.x, z - rm.z), rm.r, rm.spring, rm.crown) - y),
       Math.min(plan(x, z, C.arch.x, C.arch.z), y, vault(z, 0.7, C.arch.spring, C.arch.crown) - y),

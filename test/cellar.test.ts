@@ -5,6 +5,8 @@ import { CELLAR, CELLAR_SHAFT } from '../src/gen/cellar';
 import { quarryProps, PROP_TILE } from '../src/gen/quarryProps';
 import { heirName, notaryLetter, notaryList } from '../src/gen/notary';
 import { Campfire, type Rester } from '../src/world/fire';
+import { Blockers } from '../src/world/blockers';
+import { Body } from '../src/world/traverse/body';
 
 const level = new Level(1, 0);
 
@@ -26,6 +28,25 @@ test('one walks from the armchair through the doorway and the broken arch to the
   for (const [x, z] of [[0, 4], [6.6, 3.5], [11, 2.5], [-12, 0], [30, 0], [0, 30]]) assert.ok(level.sdf(x, 1.2, z) < 0, `rock at ${x}, ${z}`);
   // The stairs rise to the house door.
   assert.ok(level.groundAt(-7.8, 0) > 2.2);
+});
+
+test("a body fits through every way out of grandma's room: the doorway, the arch, on to the shaft and up the stairs", () => {
+  const blockers = new Blockers();
+  for (let tz = -1; tz <= 0; tz++) for (let tx = -1; tx <= 1; tx++) blockers.set(`${tx},${tz}`, quarryProps(level, tx, tz).blockers);
+  // Walk from the start along z = 0.9 (round her chair and table) to `x`, then along the middle.
+  const walk = (x: number): Body => {
+    const b = new Body(CELLAR.start.x, 0, CELLAR.start.z);
+    const dt = 1 / 120;
+    for (const [tx, tz] of [[CELLAR.start.x, 0.9], [x > CELLAR.start.x ? 7.5 : 4.5, x > CELLAR.start.x ? 0.9 : 0], [x, 0]]) {
+      for (let t = 0; t < 12 && Math.hypot(tx - b.x, tz - b.z) > 0.2; t += dt) {
+        b.step(level, { forward: 1, right: 0, yaw: Math.atan2(-(tx - b.x), -(tz - b.z)), sprint: false, jump: false }, dt, blockers);
+      }
+    }
+    return b;
+  };
+  assert.ok(walk(13).x > 12.7, `through the arch: stopped at x ${walk(13).x.toFixed(2)}`);
+  const west = walk(-6.5);
+  assert.ok(west.x < -6.2 && west.y > 0.8, `through the doorway and up the stairs: stopped at x ${west.x.toFixed(2)}, y ${west.y.toFixed(2)}`);
 });
 
 test('its one way down is the old shaft, and level 1 has its way up', () => {

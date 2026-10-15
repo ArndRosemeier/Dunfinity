@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.055 — Room to get out
+
+- The doorway out of grandma's room and the broken arch behind her chair were narrower than they looked: you could get stuck in them. Both are passable now, and so is the way from the cellar onto the stairs.
+
 ## v0.054 — Sweep
 
 - Tidying behind the scenes after the last ten versions, with nothing new to see. Things held in the hand (the knife, the pick, the crowbar, the pot lid) are now all built the same way.
