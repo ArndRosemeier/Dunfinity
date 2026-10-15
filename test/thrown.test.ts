@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Rng } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
-import { THROW, Thrown } from '../src/combat/thrown';
+import { CANDLE, THROW, Thrown } from '../src/combat/thrown';
 import type { Fighter } from '../src/combat/combat';
 
 const level = new Level(1, 1);
@@ -33,16 +33,27 @@ test('a thrown knife flies to the creature it is aimed at, hurts it as the knife
   assert.ok(hit, 'it hit');
   assert.ok(rat.health <= 50 - THROW.damage[0] && rat.cause === 'knife');
   for (let s = 0; s < 240; s++) t.fly(level, [rat], rng, 1 / 60);
-  assert.ok(t.knives.length === 0 || t.knives[0].landed >= 0, 'it came down');
+  assert.ok(t.missiles.length === 0 || t.missiles[0].landed >= 0, 'it came down');
   assert.ok(rat.health > 50 - 2 * THROW.damage[1], 'only once');
 });
 
 test('a knife that hits nothing lands, lies a while, and is gone', () => {
   const t = new Thrown(), rng = new Rng(1);
   t.throw(ax, g + 1.45, az, open(4), []);
-  for (let s = 0; s < 180 && t.knives[0].landed < 0; s++) t.fly(level, [], rng, 1 / 60);
-  const k = t.knives[0];
+  for (let s = 0; s < 180 && t.missiles[0].landed < 0; s++) t.fly(level, [], rng, 1 / 60);
+  const k = t.missiles[0];
   assert.ok(k.landed >= 0 && level.sdf(k.x, k.y, k.z) < 0.05, 'on the rock or the floor');
   for (let s = 0; s < (THROW.lies + 0.5) * 60; s++) t.fly(level, [], rng, 1 / 60);
-  assert.equal(t.knives.length, 0);
+  assert.equal(t.missiles.length, 0);
+});
+
+test('a Sunday candle tossed ahead lands on the floor, burns, and burns out', () => {
+  const t = new Thrown(), rng = new Rng(1);
+  t.toss(ax, g + 1.45, az, open(6));
+  for (let s = 0; s < 180 && t.candles.length === 0; s++) t.fly(level, [], rng, 1 / 60);
+  const c = t.candles[0];
+  assert.ok(c && Math.abs(c.y - level.groundAt(c.x, c.z)) < 0.05, 'standing on the floor');
+  assert.ok(Math.hypot(c.x - ax, c.z - az) > 2, 'a few metres ahead');
+  for (let s = 0; s < (CANDLE.burn + 1) * 10; s++) t.fly(level, [], rng, 0.1);
+  assert.equal(t.candles.length, 0);
 });

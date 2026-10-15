@@ -95,7 +95,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     touchedView.level = foremanView.level = scavengerView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
-    thrown.knives.length = 0;
+    thrown.missiles.length = 0;
     view.go(l);
     cam.level = l;
     nobody.level = l;
@@ -154,7 +154,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const thrown = new Thrown();
   const thrownView = new ThrownView();
   await view.stage.add(thrownView.root);
-  let throwAt = -9, released = true;
+  let throwAt = -9, released = true, tossing: 'knife' | 'candle' = 'knife';
   const tinView = new TinView(document.body);
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
   let tinSel: CardId = TinView.order()[0], cookAt = -9;
@@ -304,7 +304,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Mouse0') && !busy && !tinView.open && !body.rolling && now - stabAt > stabDur) stab(now);
     // Grandma's Second Helpings: the right mouse button throws a knife.
     const every = cooked.helpings;
-    if (controls.tap('Mouse2') && every !== null && !busy && !tinView.open && !body.rolling && now - throwAt > every) { throwAt = now; released = false; }
+    const canThrow = !busy && !tinView.open && !body.rolling && released && now - throwAt > THROWING.dur;
+    if (controls.tap('Mouse2') && every !== null && canThrow && now - throwAt > every) { throwAt = now; released = false; tossing = 'knife'; }
+    // Grandma's Sunday Candle: G tosses a lit candle (as many burning at once as the card's rank).
+    if (controls.tap('KeyG') && canThrow && thrown.candles.length < cooked.candles) { throwAt = now; released = false; tossing = 'candle'; }
     // Grandma's Duck card: Q rolls the way you are going (back, standing still).
     const duck = cooked.duck;
     if (controls.tap('KeyQ') && duck && !busy && !tinView.open && !body.rolling) {
@@ -370,9 +373,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (throwing) body.facing = cam.yaw;
       if (!released && now - throwAt >= THROWING.release) {
         released = true;
-        thrown.throw(body.x - Math.sin(cam.yaw) * 0.3, body.y + 1.45, body.z - Math.cos(cam.yaw) * 0.3, cam.yaw, foes());
+        const hx = body.x - Math.sin(cam.yaw) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(cam.yaw) * 0.3;
+        if (tossing === 'knife') thrown.throw(hx, hy, hz, cam.yaw, foes());
+        else thrown.toss(hx, hy, hz, cam.yaw);
       }
       thrown.fly(level, foes(), blows, dt);
+      const candles = thrown.candles;
+      fauna.glare = candles;
+      view.props.loose = new Float32Array(candles.flatMap((c) => [c.x, c.y + 0.35, c.z]));
       if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
         finds.take(picking);
         pack.add(picking);
@@ -435,7 +443,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
-    thrownView.place(thrown.knives);
+    thrownView.arrange(thrown.missiles, now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];

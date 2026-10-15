@@ -32,6 +32,8 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   readonly list: C[] = [];
   /** Killed by you (a knife) on this visit to the level. */
   killed = 0;
+  /** Lights the things of the dark keep away from (Sunday candles), set by the game; within CANDLE.shun of one is too near. */
+  glare: readonly { readonly x: number; readonly z: number }[] = [];
   /** Where the ones you killed fell, since the game last took them (`Fauna.fallen`). */
   readonly fallen: { x: number; y: number; z: number }[] = [];
   protected readonly seed: number;
@@ -76,6 +78,12 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     }
     for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (c.cause === 'knife') { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z }); } }
     return hits;
+  }
+
+  /** The glare (a Sunday candle) `c` is too near, if any. */
+  protected glaring(c: { readonly x: number; readonly z: number }, shun: number): { readonly x: number; readonly z: number } | null {
+    for (const g of this.glare) if (Math.hypot(c.x - g.x, c.z - g.z) < shun) return g;
+    return null;
   }
 
   /** Where in cell (i, j) a den is, if any. */

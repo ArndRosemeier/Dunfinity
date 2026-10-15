@@ -36,6 +36,8 @@ export class Props {
   stats = { tiles: 0, triangles: 0, lamps: 0, pending: 0 };
   /** The props in the way, for the tiles that are built (bodies and creatures ask it). */
   readonly blockers = new Blockers();
+  /** Lights that belong to no tile (a Sunday candle on the floor): x, y, z each, set by the game every frame. */
+  loose: Float32Array = new Float32Array(0);
 
   constructor(private readonly stage: Stage, private readonly group: Object3D, readonly seed: number, readonly depth: number, private readonly lights: LampLights) {
     this.pool = createPropsPool();
@@ -70,6 +72,7 @@ export class Props {
       if (t.watchers.length) this.watcherLists.push(t.watchers);
     }
     this.stats = { tiles, triangles, lamps, pending };
+    if (this.loose.length) this.lampLists.push(this.loose);
     this.lights.update(x, y, z, this.lampLists, time);
   }
 

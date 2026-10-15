@@ -1,10 +1,11 @@
 /**
- * Knives thrown (grandma's Second Helpings card): they fly on an arc, hit the first creature in
+ * Things thrown. Knives (grandma's Second Helpings card) fly on an arc, hit the first creature in
  * their way (a blow through combat's damage(), so a kill is the knife's and counts), and land: one
  * that hit drops at the creature's feet, one that missed sticks where it struck the rock. There are
- * always more knives in the block, so a landed one just fades after a while.
+ * always more knives in the block, so a landed one just fades after a while. Candles (her Sunday
+ * Candle) are tossed ahead, land and burn: a light the things of the dark keep away from.
  *
- * Pure: the knives are plain data, stepped against the level and the creatures.
+ * Pure: what flies is plain data, stepped against the level and the creatures.
  */
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from './combat';
@@ -26,7 +27,11 @@ export const THROW = {
   sub: 0.1,
 } as const;
 
-export interface Knife {
+/** A Sunday candle: tossed (speed and lift, m/s), seconds it burns once down, and how near the creatures of the dark will come to it, metres. */
+export const CANDLE = { speed: 8, lift: 3.5, burn: 40, shun: 6 } as const;
+
+export interface Missile {
+  readonly kind: 'knife' | 'candle';
   x: number; y: number; z: number;
   vx: number; vy: number; vz: number;
   /** Seconds since thrown, and since it landed (-1: still flying). */
@@ -37,13 +42,13 @@ export interface Knife {
 }
 
 export class Thrown {
-  readonly knives: Knife[] = [];
+  readonly missiles: Missile[] = [];
 
   /**
    * Throw a knife from (x, y, z): at the creature nearest where `yaw` looks (within THROW.aim and
    * THROW.arc), on an arc that reaches it, else straight along `yaw`, a little upwards.
    */
-  throw(x: number, y: number, z: number, yaw: number, foes: readonly Fighter[]): Knife {
+  throw(x: number, y: number, z: number, yaw: number, foes: readonly Fighter[]): Missile {
     let target: Fighter | null = null, best: number = THROW.aim;
     for (const f of foes) {
       if (f.dead) continue;
@@ -51,7 +56,7 @@ export class Thrown {
       const off = Math.abs(Math.atan2(Math.sin(a - yaw), Math.cos(a - yaw)));
       if (d < best && off < THROW.arc) { best = d; target = f; }
     }
-    const k: Knife = { x, y, z, vx: 0, vy: 0, vz: 0, t: 0, landed: -1, spent: false };
+    const k: Missile = { kind: 'knife', x, y, z, vx: 0, vy: 0, vz: 0, t: 0, landed: -1, spent: false };
     if (target) {
       const dx = target.x - x, dz = target.z - z, d = Math.hypot(dx, dz) || 1, dy = target.y + target.height * 0.5 - y;
       const t = d / THROW.speed;
@@ -60,22 +65,34 @@ export class Thrown {
     } else {
       k.vx = -Math.sin(yaw) * THROW.speed; k.vz = -Math.cos(yaw) * THROW.speed; k.vy = 2;
     }
-    this.knives.push(k);
+    this.missiles.push(k);
     return k;
   }
 
-  /** Step every knife by dt; `rng` rolls the damage. Returns the creatures hit. */
+  /** Toss a candle from (x, y, z) along `yaw`: it lands a few metres ahead and burns. */
+  toss(x: number, y: number, z: number, yaw: number): Missile {
+    const c: Missile = { kind: 'candle', x, y, z, vx: -Math.sin(yaw) * CANDLE.speed, vy: CANDLE.lift, vz: -Math.cos(yaw) * CANDLE.speed, t: 0, landed: -1, spent: true };
+    this.missiles.push(c);
+    return c;
+  }
+
+  /** The candles burning where they landed. */
+  get candles(): Missile[] {
+    return this.missiles.filter((m) => m.kind === 'candle' && m.landed >= 0);
+  }
+
+  /** Step everything thrown by dt; `rng` rolls the damage. Returns the creatures hit. */
   fly(level: Level, foes: readonly Fighter[], rng: Rng, dt: number): Fighter[] {
     const hits: Fighter[] = [];
-    for (let i = this.knives.length - 1; i >= 0; i--) {
-      const k = this.knives[i];
+    for (let i = this.missiles.length - 1; i >= 0; i--) {
+      const k = this.missiles[i];
       k.t += dt;
       if (k.landed >= 0) {
         k.landed += dt;
-        if (k.landed > THROW.lies) this.knives.splice(i, 1);
+        if (k.landed > (k.kind === 'candle' ? CANDLE.burn : THROW.lies)) this.missiles.splice(i, 1);
         continue;
       }
-      if (k.t > THROW.flies) { this.knives.splice(i, 1); continue; }
+      if (k.t > THROW.flies) { this.missiles.splice(i, 1); continue; }
       k.vy -= THROW.gravity * dt;
       const n = Math.max(1, Math.ceil((Math.hypot(k.vx, k.vy, k.vz) * dt) / THROW.sub)), h = dt / n;
       for (let s = 0; s < n && k.landed < 0; s++) {
@@ -91,7 +108,11 @@ export class Thrown {
             break;
           }
         }
-        if (level.sdf(k.x, k.y, k.z) < 0.02) k.landed = 0;
+        if (level.sdf(k.x, k.y, k.z) < 0.02) {
+          k.landed = 0;
+          // A candle stands up where it comes down (just above the floor, not in it).
+          if (k.kind === 'candle') k.y = level.groundAt(k.x, k.z);
+        }
       }
     }
     return hits;
