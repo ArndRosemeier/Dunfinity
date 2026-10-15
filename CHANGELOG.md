@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.103 — Dwarven halls
+
+- A new level style for the Old Halls (levels 21–40): vast carved halls of dark granite, all lying the same way, their roofs carried on two rows of massive square columns, with deep panels cut in the walls and gold-brown inlay lines.
+- Halls stand at different heights, joined end to end by great gates and side to side by narrow passages, with real half-metre stairs between them.
+- Many halls are crossed by a chasm that drops forty metres to the glowing forges below, with a stone bridge over it.
+
 ## v0.102 — Flooded galleries
 
 - A new kind of place: half-drowned tubes where the water nearly meets the roof. Most of them you swim, with your head in a gap of a metre or so under the rock. Every 30 to 60 m you come up into an air bell, a domed chamber with a little beach to stand on. Some tubes are higher galleries with a ledge along one wall, just over the water, to walk on. The rock is dark and wet, with a pale band of calcite where the water stood for a long time. Try `?style=flooded&depth=7`.
