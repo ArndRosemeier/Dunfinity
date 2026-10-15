@@ -2490,5 +2490,17 @@
   {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back (this.own.get(col)): the Style contract's one way of keeping private column data. The finder regroups these as files are added"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back (this.own.get(col)): the Style contract's one way of keeping private column data. The finder regroups these as files are added"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back (this.own.get(col)): the Style contract's one way of keeping private column data. The finder regroups these as files are added"
   }
 ]

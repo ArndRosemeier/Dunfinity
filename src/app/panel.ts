@@ -23,3 +23,12 @@ export function panel<K extends keyof HTMLElementTagNameMap>(host: HTMLElement, 
   host.appendChild(el);
   return el;
 }
+
+/** A `tag` element of class `cls` (and text `text`) appended to `parent`. */
+export function child<K extends keyof HTMLElementTagNameMap>(parent: HTMLElement, tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (text) el.textContent = text;
+  parent.appendChild(el);
+  return el;
+}
