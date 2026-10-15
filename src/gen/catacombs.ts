@@ -13,6 +13,7 @@
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
+import { Grain, grainOf } from './grainLines';
 import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
@@ -61,17 +62,14 @@ export class Catacombs implements Style {
   private readonly noise: Noise;
   private readonly rough: Noise;
   private readonly cells: number;
-  private readonly cos: number;
-  private readonly sin: number;
+  private readonly grain: Grain;
   private readonly own = new WeakMap<Column, CryptColumn>();
 
   constructor(readonly seed: number, readonly band: Band) {
     this.noise = new Noise(deriveSeed(seed, 'catacombs', 'shape'));
     this.rough = new Noise(deriveSeed(seed, 'catacombs', 'rough'));
     this.cells = deriveSeed(seed, 'catacombs', 'cells');
-    const a = hashToFloat(deriveSeed(seed, 'catacombs', 'grain')) * Math.PI;
-    this.cos = Math.cos(a);
-    this.sin = Math.sin(a);
+    this.grain = new Grain(grainOf(seed, 'catacombs'));
   }
 
   /** Whether the stretch of gallery from node (i, j) one step along u (axis 0) or v (axis 1) was dug. */
@@ -88,7 +86,7 @@ export class Catacombs implements Style {
 
   column(x: number, z: number, col: Column): Column {
     const K = CATACOMBS, G = K.grid;
-    const u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos;
+    const u = this.grain.u(x, z), v = this.grain.v(x, z);
     let o = this.own.get(col);
     if (!o) { o = { gallery: 0, chapel: 0, dome: 0, dist: [0, 0], along: [0, 0], across: [0, 0], ends: [0, 0] }; this.own.set(col, o); }
     // The galleries round the column: stretches along u on the lines v = j G, and along v on u = i G; the two nearest kept.
@@ -177,7 +175,7 @@ export class Catacombs implements Style {
 
   /** A passage from another style ends at the dug grid node nearest (x, z) (E3). */
   portal(x: number, z: number): [number, number] {
-    const G = CATACOMBS.grid, u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos;
+    const G = CATACOMBS.grid, u = this.grain.u(x, z), v = this.grain.v(x, z);
     const i0 = Math.round(u / G), j0 = Math.round(v / G);
     let bi = i0, bj = j0, bd = Infinity;
     for (let j = j0 - 2; j <= j0 + 2; j++) for (let i = i0 - 2; i <= i0 + 2; i++) {
@@ -186,7 +184,7 @@ export class Catacombs implements Style {
       if (open && d < bd) { bd = d; bi = i; bj = j; }
     }
     const pu = bi * G, pv = bj * G;
-    return [pu * this.cos - pv * this.sin, pu * this.sin + pv * this.cos];
+    return this.grain.xz(pu, pv);
   }
 
   /** What was left on the galleries' floors: piles of bones, a skull, burnt-down candles. */

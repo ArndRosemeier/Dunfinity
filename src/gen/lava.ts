@@ -17,7 +17,7 @@
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
-import { GrainLines } from './grainLines';
+import { GrainLines, grainOf } from './grainLines';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
 import { roofOver, scatter, type Dress } from './styleProps';
@@ -72,7 +72,7 @@ export class Lava implements Style {
   constructor(readonly seed: number, readonly band: Band) {
     this.noise = new Noise(deriveSeed(seed, 'lava', 'shape'));
     this.cells = deriveSeed(seed, 'lava', 'cells');
-    this.lines = new GrainLines(this.noise, this.cells, hashToFloat(deriveSeed(seed, 'lava', 'grain')) * Math.PI, LAVA.spacing, LAVA.jitter, LAVA.meander);
+    this.lines = new GrainLines(this.noise, this.cells, grainOf(seed, 'lava'), LAVA.spacing, LAVA.jitter, LAVA.meander);
     this.hot = hashToFloat(deriveSeed(seed, 'lava', 'hot')) < LAVA.hot;
   }
 

@@ -5,20 +5,19 @@
  *
  * Pure, like every style.
  */
-import { hash2i, hashToFloat, type Noise } from '@futuremagic/core';
+import { deriveSeed, hash2i, hashToFloat, type Noise } from '@futuremagic/core';
 
-export class GrainLines {
+/** A style's grain on a level: the angle its frame is turned by, from the level's seed and the style's name. */
+export function grainOf(seed: number, style: string): number {
+  return hashToFloat(deriveSeed(seed, style, 'grain')) * Math.PI;
+}
+
+/** The frame turned by a grain angle: u along the grain, v across it (the built styles' grids, the lines below). */
+export class Grain {
   readonly cos: number;
   readonly sin: number;
 
-  constructor(
-    private readonly noise: Noise,
-    private readonly cells: number,
-    grain: number,
-    readonly spacing: number,
-    private readonly jitter: number,
-    private readonly meander: readonly [number, number],
-  ) {
+  constructor(grain: number) {
     this.cos = Math.cos(grain);
     this.sin = Math.sin(grain);
   }
@@ -31,6 +30,24 @@ export class GrainLines {
   /** Across the grain, at (x, z). */
   v(x: number, z: number): number {
     return -x * this.sin + z * this.cos;
+  }
+
+  /** The point (u, v) of the frame, as (x, z). */
+  xz(u: number, v: number): [number, number] {
+    return [u * this.cos - v * this.sin, u * this.sin + v * this.cos];
+  }
+}
+
+export class GrainLines extends Grain {
+  constructor(
+    private readonly noise: Noise,
+    private readonly cells: number,
+    grain: number,
+    readonly spacing: number,
+    private readonly jitter: number,
+    private readonly meander: readonly [number, number],
+  ) {
+    super(grain);
   }
 
   /** The middle of line k at u (its v). */
@@ -46,6 +63,6 @@ export class GrainLines {
       const c = this.line(k, u);
       if (Math.abs(v - c) < bd) { bd = Math.abs(v - c); best = c; }
     }
-    return [u * this.cos - best * this.sin, u * this.sin + best * this.cos];
+    return this.xz(u, best);
   }
 }
