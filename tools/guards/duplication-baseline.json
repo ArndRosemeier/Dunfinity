@@ -78,5 +78,13 @@
   {
     "key": "same name: dunfinity/render/creatures/touchedView.ts#draw + dunfinity/render/loot/findView.ts#draw",
     "reason": "each view draws its own list from a pool built before the warm-up; same per-frame vocabulary as RatView"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/touchedView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "each view draws its own list from a pool built before the warm-up; the per-frame draw vocabulary of RatView, FindView and TouchedView"
+  },
+  {
+    "key": "same name: dunfinity/render/loot/findView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "each view draws its own list from a pool built before the warm-up; the per-frame draw vocabulary of RatView, FindView and TouchedView"
   }
 ]

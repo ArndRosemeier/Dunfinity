@@ -68,6 +68,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
 | What the miners left in a tile (rails, carts, lamps, shacks, things left against the rock, derricks, loose stones; in the Salt Works statues, chapels and hanging lamps, as much as `level.band` asks for), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
+| Carve a salt miner (statues, and the watchers' figures) | `carveMiner(builder, x, top, z, yaw, pose, colour)` | `src/gen/quarryProps.ts` |
+| Draw the watcher statues (turn to you while unseen) | `Watchers` (`draw(props.watcherLists, x, z, camera, dt)`, in `LevelView.frame`); the tiles list them in `PropTile.watchers` | `src/render/props/watchers.ts` |
 | Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts, `cylinder` for barrels and buckets) | `src/gen/propMesh.ts` |
 | One thing per grid cell (shafts, rat nests), decided once per cell | `CellMemo` (`at(i, j)`) | `src/gen/cellMemo.ts` |
 | Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |

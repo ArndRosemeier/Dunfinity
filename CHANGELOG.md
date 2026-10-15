@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.022 — Watchers
+
+- Some of the salt miners on their plinths are watchers. Look away from one for a moment, and when you look back it is facing you. It never moves while you look.
+
 ## v0.021 — The Salt-Touched
 
 - In the Salt Works you are no longer alone. The lost miners are still down there, changed: grey skin crusted with salt crystals, pale glowing eyes, salt-white hair, in their salt-stiff work clothes. Each one still works the rock where it stood, and you hear the pick before you see it.

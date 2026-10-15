@@ -30,7 +30,9 @@ export interface PropTile {
   lamps: Float32Array;
   /** What one cannot walk through: upright boxes, BLOCKER_STRIDE numbers each (src/world/blockers.ts). */
   blockers: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; chapels: number; hanging: number };
+  /** Statues whose figure the view draws (and turns): x, top of the plinth, z, yaw, pose, each. */
+  watchers: Float32Array;
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -77,7 +79,8 @@ class TileBuilder {
   private readonly stones = new PropBuilder();
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, chapels: 0, hanging: 0 };
+  private readonly watchers: number[] = [];
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -107,7 +110,7 @@ class TileBuilder {
     }
     this.nooks();
     this.debris();
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), counts: this.counts };
   }
 
   /** Stones and chippings over the floor of the tile (see DEBRIS). */
@@ -494,54 +497,21 @@ class TileBuilder {
   }
 
   /**
-   * A miner carved in salt, on a plinth against the rock at (x, z), facing out along (ox, oz): leaning
-   * on his pick, praying, or holding up a lamp.
+   * A miner carved in salt, on a plinth against the rock at (x, z), facing out along (ox, oz). Some of
+   * them are watchers: only the plinth is part of the tile, and the figure on it is drawn by the view
+   * (src/render/props/watchers.ts), which turns it to face you while you are not looking.
    */
   private statue(x: number, z: number, ox: number, oz: number, r: (k: number) => number): void {
     const px = x + ox * 0.5, pz = z + oz * 0.5;
     if (this.level.sdf(px, this.level.groundAt(px, pz) + 2.2, pz) < 0.45) return;
-    const gy = this.level.groundAt(px, pz), yaw = Math.atan2(ox, oz), ca = Math.cos(yaw), sa = Math.sin(yaw);
-    const salt = this.tone(1.1 + 0.1 * r(40));
-    // (side, out, up) on the figure to world: out is where it faces, up from the top of the plinth.
-    const top = gy + 0.62;
-    const at = (side: number, out: number): [number, number] => [px + ca * side + ox * out, pz - sa * side + oz * out];
-    const limb = (a: readonly [number, number, number], b: readonly [number, number, number], half: number) => {
-      const [ax, az] = at(a[0], a[1]), [bx, bz] = at(b[0], b[1]);
-      this.stones.beam(ax, top + a[2], az, bx, top + b[2], bz, half, half, salt);
-    };
+    const gy = this.level.groundAt(px, pz), yaw = Math.atan2(ox, oz), top = gy + 0.62;
     this.stones.upright(px, gy + 0.28, pz, yaw, 0.42, 0.34, 0.42, this.tone(0.95));
     this.block(px, pz, yaw, 0.42, 0.42, gy - 0.3, top + 1.8);
-    for (const sd of [-0.11, 0.11]) {
-      const [lx, lz] = at(sd, 0), [bx, bz] = at(sd, 0.05);
-      this.stones.cylinder(lx, top + 0.45, lz, 0.085, 0.43, salt, 8, 0, 0.25);
-      this.stones.upright(bx, top + 0.06, bz, yaw, 0.07, 0.06, 0.13, salt);
-    }
-    this.stones.cylinder(px, top + 1.17, pz, 0.2, 0.32, salt, 10, 0.1, 0.15);
-    this.stones.ellipsoid(px, top + 1.62, pz, 0.11, 0.13, 0.11, salt, 10);
-    this.stones.cylinder(px, top + 1.72, pz, 0.125, 0.05, salt, 10);
-    this.stones.cylinder(px, top + 1.68, pz, 0.17, 0.012, salt, 12);
-    const pose = Math.floor(r(41) * 3);
-    if (pose === 0) {
-      // Leaning on his pick: the handle from the right hand to the plinth, the head across it.
-      limb([-0.25, 0, 1.42], [-0.29, 0.04, 0.86], 0.05);
-      limb([0.25, 0, 1.42], [0.3, 0.12, 1.12], 0.05);
-      limb([0.3, 0.12, 1.12], [0.24, 0.24, 0.98], 0.045);
-      limb([0.24, 0.26, 1.0], [0.3, 0.32, 0.05], 0.025);
-      limb([0.06, 0.32, 0.05], [0.54, 0.32, 0.08], 0.03);
-    } else if (pose === 1) {
-      // Praying: the hands together in front of the chest.
-      for (const sd of [-1, 1]) {
-        limb([0.25 * sd, 0, 1.42], [0.2 * sd, 0.14, 1.12], 0.05);
-        limb([0.2 * sd, 0.14, 1.12], [0.03 * sd, 0.24, 1.3], 0.045);
-      }
-    } else {
-      // Holding a lamp up into the dark.
-      limb([-0.25, 0, 1.42], [-0.29, 0.04, 0.86], 0.05);
-      limb([0.25, 0, 1.42], [0.32, 0.1, 1.72], 0.05);
-      limb([0.32, 0.1, 1.72], [0.3, 0.2, 2.02], 0.045);
-      const [lx, lz] = at(0.3, 0.2);
-      this.stones.cylinder(lx, top + 2.14, lz, 0.07, 0.1, salt, 8, 0.2);
-    }
+    const pose = Math.floor(r(41) * MINER_POSES);
+    if (r(46) < WATCHERS) {
+      this.watchers.push(px, top, pz, yaw, pose);
+      this.counts.watchers++;
+    } else carveMiner(this.stones, px, top, pz, yaw, pose, this.tone(1.1 + 0.1 * r(40)));
     this.counts.statues++;
   }
 
@@ -682,6 +652,54 @@ class TileBuilder {
       this.block(cx, cz, cyaw, size, size, cy - 0.3, cy + size * 2);
     }
     this.counts.shacks++;
+  }
+}
+
+/** How many ways a carved miner stands (`carveMiner`), and the share of the statues that are watchers. */
+export const MINER_POSES = 3;
+const WATCHERS = 0.3;
+
+/**
+ * A miner carved in salt, into `b`: standing at (px, top, pz) (the top of its plinth) facing along
+ * (sin yaw, cos yaw); pose 0 leans on his pick, 1 prays, 2 holds a lamp up into the dark.
+ */
+export function carveMiner(b: PropBuilder, px: number, top: number, pz: number, yaw: number, pose: number, salt: Rgb): void {
+  const ca = Math.cos(yaw), sa = Math.sin(yaw), ox = sa, oz = ca;
+  // (side, out, up) on the figure to world: out is where it faces, up from the top of the plinth.
+  const at = (side: number, out: number): [number, number] => [px + ca * side + ox * out, pz - sa * side + oz * out];
+  const limb = (p: readonly [number, number, number], q: readonly [number, number, number], half: number) => {
+    const [ax, az] = at(p[0], p[1]), [bx, bz] = at(q[0], q[1]);
+    b.beam(ax, top + p[2], az, bx, top + q[2], bz, half, half, salt);
+  };
+  for (const sd of [-0.11, 0.11]) {
+    const [lx, lz] = at(sd, 0), [fx, fz] = at(sd, 0.05);
+    b.cylinder(lx, top + 0.45, lz, 0.085, 0.43, salt, 8, 0, 0.25);
+    b.upright(fx, top + 0.06, fz, yaw, 0.07, 0.06, 0.13, salt);
+  }
+  b.cylinder(px, top + 1.17, pz, 0.2, 0.32, salt, 10, 0.1, 0.15);
+  b.ellipsoid(px, top + 1.62, pz, 0.11, 0.13, 0.11, salt, 10);
+  b.cylinder(px, top + 1.72, pz, 0.125, 0.05, salt, 10);
+  b.cylinder(px, top + 1.68, pz, 0.17, 0.012, salt, 12);
+  if (pose === 0) {
+    // Leaning on his pick: the handle from the right hand to the plinth, the head across it.
+    limb([-0.25, 0, 1.42], [-0.29, 0.04, 0.86], 0.05);
+    limb([0.25, 0, 1.42], [0.3, 0.12, 1.12], 0.05);
+    limb([0.3, 0.12, 1.12], [0.24, 0.24, 0.98], 0.045);
+    limb([0.24, 0.26, 1.0], [0.3, 0.32, 0.05], 0.025);
+    limb([0.06, 0.32, 0.05], [0.54, 0.32, 0.08], 0.03);
+  } else if (pose === 1) {
+    // Praying: the hands together in front of the chest.
+    for (const sd of [-1, 1]) {
+      limb([0.25 * sd, 0, 1.42], [0.2 * sd, 0.14, 1.12], 0.05);
+      limb([0.2 * sd, 0.14, 1.12], [0.03 * sd, 0.24, 1.3], 0.045);
+    }
+  } else {
+    // Holding a lamp up into the dark.
+    limb([-0.25, 0, 1.42], [-0.29, 0.04, 0.86], 0.05);
+    limb([0.25, 0, 1.42], [0.32, 0.1, 1.72], 0.05);
+    limb([0.32, 0.1, 1.72], [0.3, 0.2, 2.02], 0.045);
+    const [lx, lz] = at(0.3, 0.2);
+    b.cylinder(lx, top + 2.14, lz, 0.07, 0.1, salt, 8, 0.2);
   }
 }
 

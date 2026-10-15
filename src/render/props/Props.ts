@@ -22,6 +22,7 @@ interface Tile {
   /** Null while it is built (or when the tile is empty). */
   group: Group | null;
   lamps: Float32Array;
+  watchers: Float32Array;
   triangles: number;
   done: boolean;
 }
@@ -30,6 +31,8 @@ export class Props {
   private readonly pool: WorkerPool<PropsJob, PropTile>;
   private readonly tiles = new Map<string, Tile>();
   private readonly lampLists: Float32Array[] = [];
+  /** The watcher statues of the built tiles (`PropTile.watchers`), for the view that draws them. */
+  readonly watcherLists: Float32Array[] = [];
   stats = { tiles: 0, triangles: 0, lamps: 0, pending: 0 };
   /** The props in the way, for the tiles that are built (bodies and creatures ask it). */
   readonly blockers = new Blockers();
@@ -58,11 +61,13 @@ export class Props {
       if (Math.hypot((t.tx + 0.5) * PROP_TILE - x, (t.tz + 0.5) * PROP_TILE - z) > RADIUS + PROP_TILE * 1.5) this.drop(id, t);
     }
     this.lampLists.length = 0;
+    this.watcherLists.length = 0;
     let tiles = 0, triangles = 0, lamps = 0, pending = 0;
     for (const t of this.tiles.values()) {
       if (!t.done) { pending++; continue; }
       tiles++; triangles += t.triangles; lamps += t.lamps.length / 3;
       if (t.lamps.length) this.lampLists.push(t.lamps);
+      if (t.watchers.length) this.watcherLists.push(t.watchers);
     }
     this.stats = { tiles, triangles, lamps, pending };
     this.lights.update(x, y, z, this.lampLists, time);
@@ -74,7 +79,7 @@ export class Props {
   }
 
   private request(id: string, tx: number, tz: number): void {
-    const tile: Tile = { tx, tz, group: null, lamps: new Float32Array(0), triangles: 0, done: false };
+    const tile: Tile = { tx, tz, group: null, lamps: new Float32Array(0), watchers: new Float32Array(0), triangles: 0, done: false };
     this.tiles.set(id, tile);
     void this.pool.run({ seed: this.seed, depth: this.depth, tx, tz }).then(async (data) => {
       if (this.tiles.get(id) !== tile) return;
@@ -88,6 +93,7 @@ export class Props {
       if (this.tiles.get(id) !== tile) { dispose(group); return; }
       if (group.children.length) { tile.group = group; this.group.add(group); }
       tile.lamps = data.lamps;
+      tile.watchers = data.watchers;
       this.blockers.set(id, data.blockers);
       tile.done = true;
     }, (err: unknown) => {
