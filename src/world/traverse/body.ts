@@ -70,6 +70,8 @@ export class Body {
   grounded = false;
   stamina: number = MOVE.stamina;
   health: number = MOVE.maxHealth;
+  /** What climbing costs in stamina, a share of the plain cost (grandma's Kneading card lowers it). */
+  climbCost = 1;
   /** Facing, radians (same convention as the camera yaw). */
   facing = 0;
   /** The wall being climbed: its normal. */
@@ -188,14 +190,14 @@ export class Body {
     const hl = Math.hypot(n[0], n[2]) || 1;
     const sx = -n[2] / hl, sz = n[0] / hl; // (-n) × up, horizontal
     const moving = Math.abs(input.forward) > 0.1 || Math.abs(input.right) > 0.1;
-    if (input.jump && this.stamina > 2) {
-      this.stamina -= 2;
+    if (input.jump && this.stamina > 2 * this.climbCost) {
+      this.stamina -= 2 * this.climbCost;
       if (input.forward > 0) { this.vx = ux * 5; this.vy = uy * 5; this.vz = uz * 5; return; } // a lunge up
       this.mode = 'walk'; // push off the wall
       this.vx = n[0] * 4; this.vy = 3; this.vz = n[2] * 4;
       return;
     }
-    this.stamina = Math.max(0, this.stamina - (moving ? 1 : 0.35) * dt);
+    this.stamina = Math.max(0, this.stamina - (moving ? 1 : 0.35) * this.climbCost * dt);
     const v = MOVE.climb;
     // Stay snug against the rock.
     const snug = (d - MOVE.radius - 0.04) * 6;

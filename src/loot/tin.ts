@@ -42,6 +42,8 @@ export interface Gain {
 
 export class Tin {
   salt = SALT.start;
+  /** The deepest level any of the family has reached (chapters of recipes open with it). */
+  deepest = 0;
   private readonly times = new Map<string, number>();
 
   /** A kill of `kind` (a population name). */
@@ -52,6 +54,7 @@ export class Tin {
 
   /** Arriving at `depth`: salt only the first time anyone of the family gets there. */
   reached(depth: number): Gain | null {
+    this.deepest = Math.max(this.deepest, depth);
     if (depth <= 0 || this.nth(`depth:${depth}`) > 1) return null;
     return this.add(Math.round(SALT.depth[0] + SALT.depth[1] * depth), `Level ${depth}: deeper than any of you has been.`);
   }
