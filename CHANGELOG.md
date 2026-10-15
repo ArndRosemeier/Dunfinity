@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.085 — Things for the new places
+
+- Props are modelled for the new kinds of place and ready to set out. For the crypts there are skulls, heaps of bones for the niches, candles standing in their own wax and an iron gate to close a gallery. For the rifts, a coil of old rope on its piton and plank bridges with rope rails. For the root hollows, ferns, moss cushions, hanging vines and pale flowers. For the geodes, crystal clusters and great single spars. For the lava tubes, drips of cooled lava and a fallen basalt block.
+
 ## v0.084 — Carts and shacks
 
 - The ore carts on the rails are modelled now: a riveted iron tub on four flanged wheels, some still heaped with ore.
