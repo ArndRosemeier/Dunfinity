@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.091 — Real cave crickets
+
+- The cave crickets are new: sculpted, rigged and animated in Blender like the dogs and rats. Each one is a pale, humped cave cricket with banded plates, great chevroned hind legs with spined shins, and feelers longer than its body that never stop sweeping (fast and twitchy once it is after you).
+- Every move shows: the six-legged scuttle and the hops along the floor, the crouch before a leap, the hind legs kicked out straight behind in the air, the bite with the mandibles working, a flinch when hit, and over onto its back with its legs folding when it dies. On the rock it still clings head down.
+- Dogs and rats: their teeth and eyes now stay put when they move (a few were tied to the wrong bone).
+
 ## v0.090 — Geodes
 
 - An eleventh kind of place, and a wonder: hollow shells in the rock, 20 to 70 m across, lined all over with a crust of glittering crystal in one hue each (amethyst, celestine, rose or emerald). Big crystals stand in from the walls, longest overhead, and a few rise out of the pale crystal sand underfoot to climb round. Pale agate rings show where the shell breaks open. Short cracks in the rock, the only ways in, join each hollow to its neighbours. Try `?style=geode`.

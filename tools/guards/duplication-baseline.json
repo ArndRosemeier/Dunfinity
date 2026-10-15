@@ -32,7 +32,7 @@
     "reason": "empty out-objects for two different scans (style shares vs Voronoi neighbours); same factory shape, different fields"
   },
   {
-    "key": "clone: dunfinity/render/creatures/dogView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
+    "key": "clone: dunfinity/render/creatures/cricketView.ts#clipFor + dunfinity/render/creatures/dogView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
@@ -74,6 +74,14 @@
   {
     "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts + dunfinity/render/creatures/rigged.ts",
     "reason": "Object.entries over a record, a language idiom (parsing a manifest, walking ambience levels, practice and recipe tables); nothing to share."
+  },
+  {
+    "key": "idiom: [.faster .mode] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
+  },
+  {
+    "key": "idiom: [.fetch .gait Promise] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts",
+    "reason": "the RiggedFigure overrides and the Rigged.fetch loader, one per species view: each species turns its own gait phase into metres for RiggedFigure (rigged.ts), the seam these override"
   },
   {
     "key": "idiom: [.gait .move .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts",
@@ -1036,16 +1044,28 @@
     "reason": "a getter/setter for the level each view stands on; the Foreman's hands it on to his HumanPool"
   },
   {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#parts + dunfinity/render/creatures/eelView.ts#parts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#clipFor + dunfinity/render/creatures/dogView.ts#clipFor",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#parts + dunfinity/render/creatures/slimeView.ts#parts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#pose + dunfinity/render/creatures/eelView.ts#pose",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#create + dunfinity/render/creatures/dogView.ts#create",
+    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#create + dunfinity/render/creatures/ratView.ts#create",
+    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#travelled + dunfinity/render/creatures/dogView.ts#travelled",
+    "reason": "each species turns its own gait phase into metres for RiggedFigure (rigged.ts), the seam these override"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#travelled + dunfinity/render/creatures/ratView.ts#travelled",
+    "reason": "each species turns its own gait phase into metres for RiggedFigure (rigged.ts), the seam these override"
   },
   {
     "key": "same name: dunfinity/render/creatures/dogView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
