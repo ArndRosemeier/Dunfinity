@@ -89,6 +89,8 @@ const WARN = ['"Keep away from our fire."', '"That\'s close enough. Go round."',
 const ROB = ['"Your pack. Put it down."', '"Look, one of the grandchildren. Get it."', '"Nice and slow now. Give us the pack."'];
 
 export class Scavengers extends Population<Camp, Scavenger> {
+  /** Salt does not stop them (src/world/saltLine.ts). */
+  protected override heedsSalt = false;
   /** The last thing one of them called out, and how many calls so far (the game shows each new one). */
   said = '';
   calls = 0;

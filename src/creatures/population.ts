@@ -7,6 +7,7 @@
 import { Rng, deriveSeed, hash3f } from '@futuremagic/core';
 import type { Blockers } from '../world/blockers';
 import type { Level } from '../gen/level';
+import type { SaltCircle } from '../gen/lair';
 import type { Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
 import { Steer, brake, type Gait } from './steer';
@@ -34,6 +35,8 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   killed = 0;
   /** Lights the things of the dark keep away from (Sunday candles), set by the game; within CANDLE.shun of one is too near. */
   glare: readonly { readonly x: number; readonly z: number }[] = [];
+  /** Whether they keep out of poured salt (`salt`); the Salt-Touched and people do not. */
+  protected heedsSalt = true;
   /** Where the ones you killed fell, since the game last took them (`Fauna.fallen`). */
   readonly fallen: { x: number; y: number; z: number }[] = [];
   protected readonly seed: number;
@@ -55,6 +58,10 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
 
   /** The props in the way (src/world/blockers.ts): they walk round them. */
   set blockers(b: Blockers | null) { this.steer.blockers = b; }
+
+  /** The salt poured on this level (src/world/saltLine.ts), set by the game: they will not step in, if they heed it. */
+  get salt(): readonly SaltCircle[] { return this.steer.salt; }
+  set salt(c: readonly SaltCircle[]) { this.steer.salt = this.heedsSalt ? c : []; }
 
   /** The den of cell (i, j), if there is one. */
   denAt(i: number, j: number): D | null {

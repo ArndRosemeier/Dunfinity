@@ -93,6 +93,8 @@ export interface Hall extends Den {
 }
 
 export class Foreman extends Population<Hall, Boss, SaltTouched> {
+  /** Salt does not stop them (src/world/saltLine.ts). */
+  protected override heedsSalt = false;
   /** The cell of his hall, if this level has one. */
   private readonly at: readonly [number, number] | null;
 

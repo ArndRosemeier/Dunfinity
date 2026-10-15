@@ -40,9 +40,9 @@ export class TinView {
     return this.el.classList.contains('open');
   }
 
-  /** The cards the tin shows, in its order (only chapters that have cards). */
-  static order(): CardId[] {
-    return CHAPTERS.flatMap(([ch]) => CARDS.filter((c) => c.chapter === ch).map((c) => c.id));
+  /** The cards the tin shows, in its order (only chapters that have cards; lost cards once found). */
+  static order(cooked: Cooked): CardId[] {
+    return CHAPTERS.flatMap(([ch]) => CARDS.filter((c) => c.chapter === ch && cooked.has(c.id)).map((c) => c.id));
   }
 
   /** Open (or redraw) the tin with card `sel` chosen; `why`: why it could not be cooked, if that was tried. */
@@ -50,7 +50,7 @@ export class TinView {
     const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     let html = `<h2>Grandma's tin <span class="salt">· ${tin.salt} ${tin.salt === 1 ? 'pinch' : 'pinches'} of infused salt</span></h2><div class="cols"><div>`;
     for (const [ch, opens] of CHAPTERS) {
-      const cards = CARDS.filter((c) => c.chapter === ch);
+      const cards = CARDS.filter((c) => c.chapter === ch && cooked.has(c.id));
       const shut = tin.deepest < opens;
       if (!cards.length && !shut) continue;
       html += `<div class="divider${shut ? ' shut' : ''}">${esc(ch)}${shut ? ` · opens at level ${opens}` : ''}</div>`;

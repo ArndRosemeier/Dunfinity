@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.072 — Salt Line
+
+- Grandma's first lost card. Read her note at the camp on level 9 and you find a card torn out of her tin, tucked under the thermos: Salt Line. It shows up in the tin once found and is cooked at a fire like the others.
+- Cooked, press L: you kneel and pour a circle of salt round you, and it shows going round as you pour. For a minute nothing that is an animal will cross it: rats, crickets, slimes and dogs stop at the line. The Salt-Touched and people walk straight over it. The Tall One won't cross it, just like grandma's own circles. Its crystals go dull one by one before it gives out. Rank 2: a wider circle that keeps for two minutes.
+- A found lost card belongs to the grandchild who found it. The next one has to find it again.
+
 ## v0.071 — Sound and music
 
 - The game has sound. Footsteps on stone (and splashing in water), landings, the knife's swish and the thud when it lands, getting hurt, dying, ladders, doors creaking open and shut, picking things up, Ilse's coins, striking a match for a fire and the fire crackling.

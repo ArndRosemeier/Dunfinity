@@ -7,6 +7,7 @@
  *
  * It will not cross infused salt. Grandma laid circles of it round its cavern in 1966 (src/gen/lair.ts):
  * it walks round them, and in one you are safe from its reach and its stare. It waits at the edge.
+ * A circle you pour yourself (grandma's Salt Line, src/world/saltLine.ts) is the same to it.
  *
  * Pure, like the other kinds: one per level 10, fixed by the seed; dead, it stays dead on this visit.
  */
@@ -101,7 +102,7 @@ export class TallOnes extends Population<Haunt, TallOne> {
     const level = !prey.dead && Math.abs(prey.y - t.y) < 5;
     if (level && noticed(prey, d, T.notice)) t.hunting = true;
     if (t.hunting && (prey.dead || d > T.forget || Math.hypot(t.x - L.x, t.z - L.z) > T.leash)) t.hunting = false;
-    const safe = inCircle(L.circles, prey.x, prey.z, -prey.radius * 0.5);
+    const safe = inCircle(this.circles(t), prey.x, prey.z, -prey.radius * 0.5);
     if (!t.hunting && (t.mode === 'stalk' || t.mode === 'balk')) t.mode = 'home';
     if (t.hunting && (t.mode === 'stand' || t.mode === 'home')) t.mode = 'stalk';
 
@@ -152,11 +153,16 @@ export class TallOnes extends Population<Haunt, TallOne> {
     return hit;
   }
 
+  /** The salt it will not cross: grandma's circles round its lair, and any poured on the level. */
+  private circles(t: TallOne): readonly SaltCircle[] {
+    return this.salt.length ? [...t.lair.circles, ...this.salt] : t.lair.circles;
+  }
+
   /** The circle in its way to (gx, gz), if any (it will not walk through one). */
   private blocking(t: TallOne, gx: number, gz: number): SaltCircle | null {
     const ex = gx - t.x, ez = gz - t.z, len = Math.hypot(ex, ez) || 1;
     let best: SaltCircle | null = null, bestS = Infinity;
-    for (const c of t.lair.circles) {
+    for (const c of this.circles(t)) {
       const s = ((c.x - t.x) * ex + (c.z - t.z) * ez) / len;
       if (s < 0 || s > len) continue;
       const off = Math.abs((c.x - t.x) * ez - (c.z - t.z) * ex) / len;
@@ -186,7 +192,7 @@ export class TallOnes extends Population<Haunt, TallOne> {
 
   /** It never stands in the salt: out to the edge if a step took it in. */
   private keepOut(t: TallOne): void {
-    for (const c of t.lair.circles) {
+    for (const c of this.circles(t)) {
       const dx = t.x - c.x, dz = t.z - c.z, d = Math.hypot(dx, dz), min = c.r + t.radius + TALL.shy * 0.5;
       if (d < min && d > 1e-6) { t.x = c.x + (dx / d) * min; t.z = c.z + (dz / d) * min; }
     }

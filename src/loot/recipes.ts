@@ -4,18 +4,23 @@
  * works, and grandma adds a line. Chapters open with depth: the tin will not open past a divider
  * until one of the family has been that deep.
  *
+ * Lost cards (recipe-box.md §7) are not in the tin: torn-out pages found down there. Found, one is
+ * the grandchild's and is cooked like any other; the next grandchild has to find it again.
+ *
  * What a grandchild has cooked is theirs: the next one starts with none (the salt in the tin stays).
  * Pure: the cards are data, `Cooked` is a grandchild's ranks, and the effects are numbers the game
  * reads.
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'salt-line';
 
 export interface Card {
   readonly id: CardId;
   readonly title: string;
   readonly chapter: string;
+  /** A lost card: cooked only once found (`Cooked.find`). */
+  readonly lost?: true;
   /** "You'll need", the method, and the line she adds at each rank after the first. */
   readonly need: string;
   readonly method: string;
@@ -107,13 +112,25 @@ export const CARDS: readonly Card[] = [
     cost: [8, 14],
     does: ['hold X: raise the lid; blows from in front do 30% and knock you less; each one costs 1.5 stamina', 'blows from in front do 10%; each costs 1 stamina'],
   },
+  {
+    id: 'salt-line', title: 'Salt Line', chapter: 'Lost Cards', lost: true,
+    need: 'the good salt, a steady hand, and nerve.',
+    method: 'Pour it round you in one go, no gaps. They won\'t cross it. Mostly. (Smudged:) Except the tall one. Must find out about the tall one.',
+    ranks: ['Wider. Thicker. It keeps longer if you don\'t skimp.'],
+    cost: [6, 11],
+    does: ['L: kneel and pour a circle of salt round you (2.2 m) that lasts 60 s; animals will not cross it, the Salt-Touched and people will; one at a time', 'a 3 m circle that lasts 120 s'],
+  },
 ];
 
 /** The chapters in the tin's order, and the depth each opens at (recipe-box.md §6). */
 export const CHAPTERS: readonly (readonly [string, number])[] = [
   ['Kitchen Work', 0], ['Throwing', 0], ['Footwork', 0], ['Climbing & Water', 0], ['Light', 0], ['Grandma\'s Remedies', 0],
   ['Heavy Things', 5], ['Quiet', 5], ['Way Home', 8], ['Guard', 10], ['Fire & Frost', 15], ['Force', 25],
+  ['Lost Cards', 0],
 ];
+
+/** Grandma's Salt Line at each rank: the circle's radius, metres, and how long it keeps once closed, seconds. */
+export const SALT_RINGS = [{ r: 2.2, keeps: 60 }, { r: 3, keeps: 120 }] as const;
 
 export function card(id: CardId): Card {
   return CARDS.find((c) => c.id === id)!;
@@ -122,19 +139,38 @@ export function card(id: CardId): Card {
 /** What one grandchild has cooked. */
 export class Cooked {
   private readonly ranks = new Map<CardId, number>();
+  /** The lost cards found (cooked or not). */
+  private readonly found = new Set<CardId>();
 
   rank(id: CardId): number {
     return this.ranks.get(id) ?? 0;
   }
 
-  /** The ranks cooked, to keep (src/persist/save.ts); `Cooked.from` puts them back (unknown cards are dropped). */
+  /** Whether this grandchild has `id` in hand: every card of the tin, a lost card once found. */
+  has(id: CardId): boolean {
+    return !card(id).lost || this.found.has(id);
+  }
+
+  /** A lost card found. Returns false if it was already. */
+  find(id: CardId): boolean {
+    if (this.found.has(id)) return false;
+    this.found.add(id);
+    return true;
+  }
+
+  /** The ranks cooked, to keep (src/persist/save.ts), a lost card found but not cooked as rank 0; `Cooked.from` puts them back (unknown cards are dropped). */
   get data(): Partial<Record<CardId, number>> {
-    return Object.fromEntries(this.ranks);
+    return { ...Object.fromEntries([...this.found].map((id) => [id, 0])), ...Object.fromEntries(this.ranks) };
   }
 
   static from(d: Partial<Record<string, number>>): Cooked {
     const c = new Cooked();
-    for (const [id, r] of Object.entries(d)) if (CARDS.some((k) => k.id === id) && r) c.ranks.set(id as CardId, r);
+    for (const [id, r] of Object.entries(d)) {
+      const k = CARDS.find((x) => x.id === id);
+      if (!k || r === undefined) continue;
+      if (k.lost) c.found.add(k.id);
+      if (r) c.ranks.set(k.id, r);
+    }
     return c;
   }
 
@@ -146,6 +182,7 @@ export class Cooked {
   /** Why `id` cannot be cooked now (null: it can). `deepest`: the deepest level the family has reached. */
   cantCook(id: CardId, tin: Tin, deepest: number): string | null {
     const c = card(id), cost = this.costOf(id), opens = CHAPTERS.find(([n]) => n === c.chapter)?.[1] ?? 0;
+    if (!this.has(id)) return 'That card is not in the tin.';
     if (deepest < opens) return `The tin won't open past the ${c.chapter} divider yet.`;
     if (cost === null) return 'Nothing more to learn from that card.';
     if (tin.salt < cost) return `Not enough salt: it needs ${cost} pinches.`;
@@ -206,6 +243,11 @@ export class Cooked {
   /** Grandma's Pot Lid (hold X), if cooked: the share of a blow from in front that gets through, and the stamina each costs. */
   get lid(): { through: number; cost: number } | null {
     return [null, { through: 0.3, cost: 1.5 }, { through: 0.1, cost: 1 }][this.rank('pot-lid')];
+  }
+
+  /** Grandma's Salt Line (L), if cooked: the circle's radius, metres, and how long it keeps, seconds. */
+  get saltLine(): { readonly r: number; readonly keeps: number } | null {
+    return SALT_RINGS[this.rank('salt-line') - 1] ?? null;
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */

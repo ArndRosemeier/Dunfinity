@@ -588,16 +588,12 @@
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
   },
   {
-    "key": "same name: dunfinity/loot/practice.ts#data + dunfinity/loot/recipes.ts#data",
+    "key": "same name: dunfinity/loot/recipes.ts#data + dunfinity/world/explored.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin, Cooked and Practice each know their own fields"
   },
   {
     "key": "same name: dunfinity/gen/cellar.ts#at + dunfinity/render/humans/ladderClimb.ts#at",
     "reason": "the field's density at a point (QuarryField override) vs a climber's pose at a time; same short name, unrelated"
-  },
-  {
-    "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/gen/quarryProps.ts + dunfinity/world/fire.ts",
-    "reason": "each asks the level whether a spot is dry for its own rule (a cricket's landing, a prop, a fire); level.dry is the one seam"
   },
   {
     "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
@@ -620,7 +616,7 @@
     "reason": "async factories of the human views (humans load their assets first)"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {

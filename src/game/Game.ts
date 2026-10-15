@@ -47,9 +47,11 @@ import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
 import { Tin, type Gain } from '../loot/tin';
-import { CARDS, Cooked, card, type CardId } from '../loot/recipes';
+import { CARDS, Cooked, SALT_RINGS, card, type CardId } from '../loot/recipes';
 import { DebugMenu } from '../app/debugMenu';
 import { placesOn, type Place } from './debugPlaces';
+import { SALT_LINE, SaltLine } from '../world/saltLine';
+import { SaltLineView } from '../render/props/saltLine';
 import { TinView } from '../app/tinView';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { Thrown } from '../combat/thrown';
@@ -100,6 +102,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
   let fauna: Fauna;
+  const saltLine = new SaltLine();
   /** Finds taken so far, per level: they stay taken for every grandchild (D13). */
   const taken = new Map<number, Set<number>>(saved?.taken.map(([d, ids]) => [d, new Set(ids)]) ?? []);
   let finds: Finds;
@@ -125,6 +128,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const show = (l: Level) => {
     level = l;
     fauna = new Fauna(l);
+    saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
     doorView.hang(doors.list);
@@ -234,6 +238,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const thrownView = new ThrownView();
   await view.stage.add(thrownView.root);
   let throwAt = -9, released = true, tossing: 'knife' | 'candle' = 'knife';
+  /** Grandma's Salt Line, poured (one at a time; it stays on the level it was poured on). */
+  const saltLineView = new SaltLineView(SALT_RINGS.map((k) => k.r));
+  await view.stage.add(saltLineView.root);
   const tinView = new TinView(document.body);
   const mapView = new MapView(document.body);
   /** The debug menu (`): every ability, invulnerable, tireless, any level, anything worth checking out. */
@@ -277,7 +284,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     depth: () => level.depth,
   });
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
-  let tinSel: CardId = TinView.order()[0], cookAt = -9;
+  let tinSel: CardId = TinView.order(cooked)[0], cookAt = -9;
   /** When the last roll began (grandma's Duck card). */
   let rollAt = -9;
   /** Way Home under way: when it began, and the level it goes to (null: none). */
@@ -410,7 +417,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, debug,
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -450,7 +457,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Backquote')) debug.toggle();
     body.invulnerable = debug.invulnerable;
     if (debug.tireless) body.stamina = MOVE.stamina;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; }
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; saltLine.circle = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, pound = cooked.tenderising;
@@ -482,6 +489,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (why) say(why, 2.5);
       else { homeAt = now; homeMote = now; homeTo = back ? reached : 0; say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', WAY_HOME.dur); }
     }
+    // Grandma's Salt Line: L, kneeling, pours a circle of salt round you.
+    const line = cooked.saltLine;
+    if (controls.tap('KeyL') && line && !busy && !tinView.open && !body.rolling && homeTo === null && !saltLine.pouring(now)) {
+      const why = saltLine.whyNot(level, body.x, body.z, line.r, body.grounded);
+      if (why) say(why, 2.5);
+      else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); }
+    }
     const nearLadder = climb.active ? null : atLadder();
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
@@ -505,7 +519,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (tinView.open) {
       if (controls.tap('KeyT') || controls.tap('Escape') || !campfire.resting || body.dead) tinView.hide();
       else {
-        const order = TinView.order(), at = order.indexOf(tinSel);
+        const order = TinView.order(cooked), at = order.indexOf(tinSel);
         let why: string | null = null, redraw = false;
         if (controls.tap('KeyW')) { tinSel = order[(at + order.length - 1) % order.length]; redraw = true; }
         if (controls.tap('KeyS')) { tinSel = order[(at + 1) % order.length]; redraw = true; }
@@ -521,7 +535,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
         }
         if (tinView.open && (redraw || why)) tinView.show(cooked, tin, tinSel, why, practice);
       }
-    } else if (controls.tap('KeyT') && campfire.resting) tinView.show(cooked, tin, tinSel, null, practice);
+    } else if (controls.tap('KeyT') && campfire.resting) {
+      if (!cooked.has(tinSel)) tinSel = TinView.order(cooked)[0];
+      tinView.show(cooked, tin, tinSel, null, practice);
+    }
     if (controls.tap('KeyE')) {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
@@ -535,7 +552,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
         const line = doors.toggle(nearDoor, now);
         if (line) say(line, 4);
       } else if (nearNote) {
-        readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`, 20);
+        const found = writing!.kind !== 'letter' && cooked.find('salt-line');
+        readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}`, 20);
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
       }
     }
@@ -544,7 +562,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const why = campfire.whyNot(body, body.facing, fauna.after(body), now);
       if (why) say(why, 2.5); else { campfire.light(body, body.facing, now); sounds.play('fire_light'); }
     }
-    const stirring = now - cookAt < COOK.dur;
+    const stirring = now - cookAt < COOK.dur || saltLine.pouring(now);
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
     // Grandma's Pot Lid: hold X to keep it up between you and whatever it is.
     const lid = cooked.lid;
@@ -586,6 +604,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (hit.length) practised('throwing', hit.length);
       const candles = thrown.candles;
       fauna.glare = candles;
+      fauna.salt = saltLine.keeping(now);
       view.props.loose = new Float32Array(candles.flatMap((c) => [c.x, c.y + 0.35, c.z]));
       if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
         finds.take(picking);
@@ -658,7 +677,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const lighting = campfire.kindling(now);
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.resting || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
@@ -690,6 +709,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
     thrownView.arrange(thrown.missiles, now);
+    saltLineView.draw(saltLine, level, now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     // The map: mark the floor round the nobody seen, now and then; draw it while open.

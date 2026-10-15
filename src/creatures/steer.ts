@@ -8,6 +8,7 @@
  */
 import { angleDiff } from '@futuremagic/core';
 import type { Blockers } from '../world/blockers';
+import type { SaltCircle } from '../gen/lair';
 import type { Level } from '../gen/level';
 import type { Fighter } from '../combat/combat';
 
@@ -46,6 +47,8 @@ export interface Gait {
 export class Steer {
   /** The props in the way (src/world/blockers.ts). */
   blockers: Blockers | null = null;
+  /** Circles of infused salt the walkers will not cross (src/world/saltLine.ts): none step further in. */
+  salt: readonly SaltCircle[] = [];
   /** Whom the walkers are after: they stop at their legs instead of pushing into them. */
   keepOff: Fighter | null = null;
 
@@ -54,6 +57,11 @@ export class Steer {
   /** Steer w towards (gx, gz) at `speed` over the floor, round what is in the way; face `face` if given. Returns the distance moved. */
   move(w: Walker, gx: number, gz: number, speed: number, dt: number, face: number | null): number {
     const G = this.gait;
+    // A goal over a salt line it is outside of: as near as it may come, on its side of the line (it stands there, not pressing at it).
+    for (const c of this.salt) {
+      const min = c.r + w.radius + 0.05, ox = w.x - c.x, oz = w.z - c.z, od = Math.hypot(ox, oz);
+      if (od >= min - 0.05 && Math.hypot(gx - c.x, gz - c.z) < min && od > 1e-4) { gx = c.x + (ox / od) * min; gz = c.z + (oz / od) * min; }
+    }
     let ddx = gx - w.x, ddz = gz - w.z;
     const dist = Math.hypot(ddx, ddz);
     // Arrive: ease off near the goal and stand still on it, so it never overshoots and comes back.
@@ -120,6 +128,10 @@ export class Steer {
     const l = this.level;
     if (l.sdf(x, w.y + w.height * (this.gait.probe ?? 0.5625), z) < w.radius * 0.8) return false;
     if (this.blockers?.hits(x, z, w.radius * 0.8, w.y + 0.05, w.y + 0.3)) return false;
+    for (const c of this.salt) {
+      const d = Math.hypot(x - c.x, z - c.z);
+      if (d < c.r + w.radius && d < Math.hypot(w.x - c.x, w.z - c.z)) return false;
+    }
     const g = l.groundAt(x, z);
     if (g - w.y > this.gait.step || w.y - g > this.gait.drop) return false;
     return l.waterAt(x, z) < g + 0.2;
