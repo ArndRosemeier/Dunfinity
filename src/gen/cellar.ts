@@ -1,7 +1,7 @@
 /**
  * Grandma's cellar (depth 0; docs/design/town-and-first-strata.md §1 and §3, dunfinity-plan.md §4.1):
- * where every grandchild starts. A vaulted brick cellar under the house, the stairs up to the house
- * door at its west end; through a low doorway in the east wall, the strange small room (her
+ * where every grandchild starts. A vaulted brick cellar under the house, the stairs up into the
+ * house at its west end (the ground floor: hall, kitchen, her bedroom, the living room); through a low doorway in the east wall, the strange small room (her
  * armchair, her lamp, the circle of infused salt on the floor); and in the room's far wall the arch
  * she bricked up in 1966, broken through now. Behind it, a rough passage to the old shaft, its
  * ladder going down into the Quarry.
@@ -19,7 +19,7 @@ import type { Shaft } from './descents';
 export const CELLAR = {
   /** The brick cellar: its walls, and its barrel vault (height at the walls, at the crown). */
   cellar: { x: [-4.5, 3.4], z: [-2.6, 2.6], spring: 1.9, crown: 2.6 },
-  /** The stairs up to the house, rising westwards to the door (their air reaches `join` on into the cellar). */
+  /** The stairs up to the house, rising westwards into its hall (their air reaches `join` on into the cellar and the hall). */
   stairs: { x: [-8.2, -4.4], z: [-0.65, 0.65], top: 2.7, head: 2.3, join: 0.8 },
   /**
    * The low doorway from the cellar into the strange room. Its air reaches well into both (the
@@ -39,6 +39,12 @@ export const CELLAR = {
   /** The passage beyond, rough rock, and the chamber round the old shaft. */
   passage: { x: [9.4, 13.4], z: [-0.85, 0.85], top: 2.1 },
   chamber: { x: 15, z: 0, r: 2.9, top: 2.8 },
+  /**
+   * The house's ground floor, over the cellar's west end: one space under the field's thick walls,
+   * floor level with the stairs' top, split into rooms by thin walls that are furniture (a wall
+   * thinner than the mesh's metre cells would not show). The stairs come up through its floor.
+   */
+  house: { x: [-15, -7.4], z: [-4.4, 4.4], floor: 2.7, height: 2.5 },
   /** Where a grandchild comes to: by the armchair, facing the arch. */
   start: { x: 4.8, z: 0.2, yaw: -Math.PI / 2 },
 } as const;
@@ -75,9 +81,10 @@ export class CellarField extends QuarryField {
     return HOME;
   }
 
-  /** The floor: level everywhere but the stairs. */
-  private floorOf(x: number): number {
-    const S = CELLAR.stairs;
+  /** The floor: the cellar's, the stairs rising to the house's, the house's. */
+  private floorOf(x: number, z: number): number {
+    const S = CELLAR.stairs, H = CELLAR.house;
+    if (x <= S.x[0] || (x < H.x[1] && Math.abs(z) > S.z[1] + 0.2)) return x < -4.5 ? H.floor : 0;
     return x < S.x[1] ? Math.min(S.top, ((S.x[1] - x) / (S.x[1] - S.x[0])) * S.top) : 0;
   }
 
@@ -86,7 +93,8 @@ export class CellarField extends QuarryField {
     const C = CELLAR, rm = C.room, ch = C.chamber;
     return Math.max(
       plan(x, z, C.cellar.x, C.cellar.z),
-      plan(x, z, [C.stairs.x[0], C.stairs.x[1] + C.stairs.join], C.stairs.z),
+      plan(x, z, C.house.x, C.house.z),
+      plan(x, z, [C.stairs.x[0] - C.stairs.join, C.stairs.x[1] + C.stairs.join], C.stairs.z),
       plan(x, z, C.door.x, C.door.z),
       rm.r - Math.hypot(x - rm.x, z - rm.z),
       plan(x, z, C.arch.x, C.arch.z),
@@ -97,7 +105,7 @@ export class CellarField extends QuarryField {
 
   column(x: number, z: number, col: Column): Column {
     col.working = HOME;
-    col.floor = this.floorOf(x);
+    col.floor = this.floorOf(x, z);
     col.ceiling = col.floor + 2.4;
     col.pillarD = Infinity;
     col.stumpTop = Infinity;
@@ -113,10 +121,11 @@ export class CellarField extends QuarryField {
   }
 
   at(col: Column, x: number, y: number, z: number): number {
-    const C = CELLAR, rm = C.room, ch = C.chamber, f = col.floor;
+    const C = CELLAR, rm = C.room, ch = C.chamber, H = C.house, f = col.floor;
     const air = Math.max(
       Math.min(plan(x, z, C.cellar.x, C.cellar.z), y, vault(z, 2.6, C.cellar.spring, C.cellar.crown) - y),
-      Math.min(plan(x, z, [C.stairs.x[0], C.stairs.x[1] + C.stairs.join], C.stairs.z), y - f, f + C.stairs.head - y),
+      Math.min(plan(x, z, H.x, H.z), y - H.floor, H.floor + H.height - y),
+      Math.min(plan(x, z, [C.stairs.x[0] - C.stairs.join, C.stairs.x[1] + C.stairs.join], C.stairs.z), y - f, f + C.stairs.head - y),
       Math.min(plan(x, z, C.door.x, C.door.z), y, C.door.top - y),
       Math.min(rm.r - Math.hypot(x - rm.x, z - rm.z), y, vault(Math.hypot(x - rm.x, z - rm.z), rm.r, rm.spring, rm.crown) - y),
       Math.min(plan(x, z, C.arch.x, C.arch.z), y, vault(z, 0.7, C.arch.spring, C.arch.crown) - y),
@@ -135,6 +144,12 @@ export class CellarField extends QuarryField {
       const band = 0.5 + 0.5 * Math.sin(y * 1.3 + x * 0.2);
       r = 0.42 + 0.05 * band; g = 0.38 + 0.045 * band; b = 0.32 + 0.035 * band;
       if (y < 0.3) { r += 0.06; g += 0.055; b += 0.05; }
+    } else if (y > CELLAR.house.floor - 0.1 && x < -7) {
+      // The house: floorboards, faded striped wallpaper, a yellowed ceiling.
+      const H = CELLAR.house, k = this.grain.n2(x * 3.1, z * 3.1) * 0.02;
+      if (y - H.floor < 0.04) { const plank = 0.5 + 0.5 * Math.sin(z * 14); r = 0.26 + k + 0.03 * plank; g = 0.17 + k + 0.02 * plank; b = 0.1 + k; }
+      else if (y > H.floor + H.height - 0.05) { r = 0.5 + k; g = 0.47 + k; b = 0.38 + k; }
+      else { const stripe = 0.5 + 0.5 * Math.sin((x + z) * 9); r = 0.4 + k + 0.04 * stripe; g = 0.38 + k + 0.03 * stripe; b = 0.27 + k; }
     } else if (y - col.floor < 0.04) {
       // Flagstones, worn.
       const k = this.grain.n2(x * 1.7, z * 1.7) * 0.03;
