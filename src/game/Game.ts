@@ -12,6 +12,7 @@ import { MapView } from '../app/mapView';
 import { CELLAR } from '../gen/cellar';
 import { shopDoor } from '../gen/town';
 import { PAWN, sell } from '../loot/pawn';
+import { GEAR, GEAR_ORDER, Gear } from '../loot/hardware';
 import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { Level } from '../gen/level';
 import { CAMP, NOTE } from '../gen/grandmasCamp';
@@ -100,6 +101,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!);
   };
   let pack = new Pack();
+  let gear = new Gear(saved?.child?.gear ?? []);
   for (const f of saved?.child?.pack ?? []) pack.add(f);
   /** Grandma's tin: the infused salt outlives every grandchild. */
   const tin = saved ? Tin.from(saved.tin) : new Tin();
@@ -168,7 +170,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, practice: practice.data, pack: [...pack.items], explored: explored.data,
+      cooked: cooked.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data,
     };
     writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros });
   };
@@ -377,7 +379,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
     if (controls.tap('KeyM')) mapView.toggle();
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; }
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, pound = cooked.tenderising;
@@ -412,7 +414,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const nearLadder = climb.active ? null : atLadder();
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
-    const pawn = level.depth === 0 ? shopDoor('pawn') : null, nearPawn = !busy && !nearLadder && !nearFind && !nearNote && body.grounded && !!pawn && Math.hypot(pawn.x - body.x, pawn.z - body.z) < PAWN.reach;
+    const atShop = (shop: 'pawn' | 'hardware') => {
+      if (level.depth !== 0 || busy || nearLadder || nearFind || nearNote || !body.grounded) return false;
+      const d = shopDoor(shop);
+      return Math.hypot(d.x - body.x, d.z - body.z) < PAWN.reach;
+    };
+    const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
+    // Kemal's counter: 1, 2, 3 buy what is on it.
+    if (nearKemal) GEAR_ORDER.forEach((k, i) => {
+      if (!controls.tap(`Digit${i + 1}`)) return;
+      const r = gear.buy(k, euros);
+      if (r.euros !== euros) readAt = now; // (stooping over his counter)
+      euros = r.euros;
+      say(r.line, 6);
+    });
     // Grandma's tin, open by the fire: choose a card, cook it.
     if (tinView.open) {
       if (controls.tap('KeyT') || controls.tap('Escape') || !campfire.resting || body.dead) tinView.hide();
@@ -499,11 +514,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
         if (striking === 'pound' && pound) {
           const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
           const struck = pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : [];
-          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
+          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * gear.edge * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
           if (struck.length) practised('knife');
         } else {
           const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
-          if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
+          if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * gear.edge * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
           if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
         }
       }
@@ -522,7 +537,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
-      body.climbCost = cooked.climbing * practice.less('climbing');
+      body.climbCost = cooked.climbing * practice.less('climbing') * gear.climb;
+      body.armour = gear.armour;
       // Practice: metres climbed, and blows the lid stopped.
       if (body.mode === 'climb') climbed += Math.max(0, body.y - climbY);
       climbY = body.y;
@@ -591,6 +607,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : 'E: read the note');
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}. T: open grandma's tin (${tin.salt} salt)`);

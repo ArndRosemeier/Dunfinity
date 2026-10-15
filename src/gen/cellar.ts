@@ -27,7 +27,7 @@ export const CELLAR = {
    * spaces join as a union of boxes, and one that stops at the other's wall pinches the way to less
    * than a body's width).
    */
-  door: { x: [2.6, 5.2], z: [-0.5, 0.5], top: 1.95 },
+  door: { x: [2.6, 5.2], z: [-0.65, 0.65], top: 1.95 },
   /** The strange small room: round, domed. */
   room: { x: 6.6, z: 0, r: 2.3, spring: 2.0, crown: 2.6 },
   /** The infused-salt circle on its floor (the one fire that is always safe), and the armchair inside it. */
@@ -36,9 +36,9 @@ export const CELLAR = {
   /** The notary's letter, on her side table (src/gen/notary.ts). */
   letter: { x: 5.94, y: 0.645, z: 0.62 },
   /** The arch she bricked up, broken through: a round arch in the room's east wall (reaching into the room and the passage, as the doorway). */
-  arch: { x: [8.0, 10.2], z: [-0.7, 0.7], spring: 1.4, crown: 2.0 },
+  arch: { x: [8.0, 10.2], z: [-0.85, 0.85], spring: 1.4, crown: 2.05 },
   /** The passage beyond, rough rock, and the chamber round the old shaft. */
-  passage: { x: [9.4, 13.4], z: [-0.85, 0.85], top: 2.1 },
+  passage: { x: [9.4, 13.4], z: [-0.95, 0.95], top: 2.4 },
   chamber: { x: 15, z: 0, r: 2.9, top: 2.8 },
   /**
    * The house's ground floor, over the cellar's west end: one space under the field's thick walls,
@@ -123,6 +123,18 @@ export class CellarField extends QuarryField {
     return col;
   }
 
+  /**
+   * Her bricks and plaster, and the houses' walls, are not climbed (walking into them at a slant
+   * slides one along them, into the doorway one was making for); the mine's rock beyond the arch and
+   * the hill and valley round the town are.
+   */
+  climbable(x: number, y: number, z: number): boolean {
+    if (x >= CELLAR.passage.x[0]) return true;
+    if (this.planAir(x, z) > -1) return false;
+    const g = townGround(x, z);
+    return nearestHouse(x, y, z).d > (y - g.y) / g.steep + 0.2;
+  }
+
   at(col: Column, x: number, y: number, z: number): number {
     return Math.max(this.inside(col, x, y, z), townAir(x, y, z));
   }
@@ -137,12 +149,12 @@ export class CellarField extends QuarryField {
       Math.min(plan(x, z, [C.stairs.x[0] - C.stairs.join, C.stairs.x[1] + C.stairs.join], C.stairs.z), y - f, f + C.stairs.head - y),
       Math.min(plan(x, z, C.door.x, C.door.z), y, C.door.top - y),
       Math.min(rm.r - Math.hypot(x - rm.x, z - rm.z), y, vault(Math.hypot(x - rm.x, z - rm.z), rm.r, rm.spring, rm.crown) - y),
-      Math.min(plan(x, z, C.arch.x, C.arch.z), y, vault(z, 0.7, C.arch.spring, C.arch.crown) - y),
+      Math.min(plan(x, z, C.arch.x, C.arch.z), y, vault(z, C.arch.z[1], C.arch.spring, C.arch.crown) - y),
       Math.min(plan(x, z, C.passage.x, C.passage.z), y, C.passage.top - y),
       Math.min(ch.r - Math.hypot(x - ch.x, z - ch.z), y, ch.top - y),
     );
     // Beyond the arch it is the mine's rock, not her bricks: rough.
-    const wild = smoothstep(9.2, 10.2, x);
+    const wild = smoothstep(10.0, 11.0, x);
     return air + wild * (this.grain.n3(x / 1.6, y / 1.6, z / 1.6) * 0.22 + this.grain.n3(x / 0.6, y / 0.6, z / 0.6) * 0.05) * smoothstep(0.1, 0.6, y);
   }
 

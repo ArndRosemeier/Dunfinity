@@ -45,7 +45,7 @@ export interface House {
 }
 
 /** The shops of the street (town-and-first-strata.md §3). */
-export type Shop = 'pawn';
+export type Shop = 'pawn' | 'hardware';
 
 const SEED = 1931;
 
@@ -82,15 +82,15 @@ const GROUND_EAVES = TOWN.ground + 3.2;
 /** Every house of the street, grandma's first. */
 export const HOUSES: readonly House[] = [
   { x0: TOWN.grandma.x[0], x1: TOWN.grandma.x[1], z0: TOWN.grandma.z[0], z1: TOWN.grandma.z[1], eaves: TOWN.grandma.eaves, pitch: TOWN.grandma.pitch, faces: -1, look: 0.5, door: 0 },
-  ...shops(row(TOWN.across.x[0], TOWN.across.x[1], 1, 0, 3)), // a lane west, opposite her door
-  ...row(TOWN.side.x[0], TOWN.side.x[1], -1, 1, TOWN.grandma.z[1]),
+  ...shop(row(TOWN.across.x[0], TOWN.across.x[1], 1, 0, 3), 'pawn'), // a lane west, opposite her door
+  ...shop(row(TOWN.side.x[0], TOWN.side.x[1], -1, 1, TOWN.grandma.z[1]), 'hardware'),
 ];
 
-/** Ilse's pawn shop: the first house up the street across from grandma's, its door in the middle of its front. */
-function shops(across: House[]): House[] {
-  const i = across.findIndex((h) => h.z0 > 0);
-  across[i] = { ...across[i], shop: 'pawn', door: (across[i].z0 + across[i].z1) / 2 };
-  return across;
+/** The first house of a row up the street (north) is a shop, its door in the middle of its front: Ilse's pawn shop across from grandma's, Kemal's hardware store next door to her. */
+function shop(houses: House[], what: Shop): House[] {
+  const i = houses.findIndex((h) => h.z0 > 0);
+  houses[i] = { ...houses[i], shop: what, door: (houses[i].z0 + houses[i].z1) / 2 };
+  return houses;
 }
 
 /** The shop's house, and where one stands at its door to deal (on the street, before its step). */

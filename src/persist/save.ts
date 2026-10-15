@@ -22,6 +22,8 @@ export interface GrandchildData {
   readonly cooked: Partial<Record<string, number>>;
   readonly practice: Partial<Record<string, number>>;
   readonly pack: readonly Find[];
+  /** What they bought at Kemal's (src/loot/hardware.ts). */
+  readonly gear?: readonly string[];
   /** What they have seen of each level (src/world/explored.ts). */
   readonly explored?: Record<string, readonly number[]>;
 }

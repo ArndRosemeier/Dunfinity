@@ -47,7 +47,7 @@ export function furnishTown(f: Furnish): void {
       s.upright(fx + H.faces * 0.03, y - 0.6, z, Math.PI / 2, 0.5, 0.04, 0.06, STONE); // the sill
     };
     const doorZ = H.door;
-    if (H.shop === 'pawn') pawnFront(f, H, fx);
+    if (H.shop) shopFront(f, H, fx);
     s.upright(fx, G + 1.05, doorZ, Math.PI / 2, 0.5, 1.05, 0.03, DOOR);
     s.upright(fx + H.faces * 0.25, G + 0.08, doorZ, Math.PI / 2, 0.7, 0.08, 0.25, STONE); // the step
     f.block(fx + H.faces * 0.25, doorZ, Math.PI / 2, 0.7, 0.26, G, G + 0.16);
@@ -121,13 +121,14 @@ function shell(f: Furnish, H: House, door: boolean): void {
   }
 }
 
-const SIGN: Rgb = [0.12, 0.09, 0.06], BRASS: Rgb = [0.6, 0.47, 0.2];
+const SIGN: Rgb = [0.12, 0.09, 0.06], BRASS: Rgb = [0.6, 0.47, 0.2], PAINT: Rgb = [0.18, 0.3, 0.22];
+const CRATE: Rgb = [0.38, 0.27, 0.15], ROPE: Rgb = [0.55, 0.47, 0.3], WOOD_HANDLE: Rgb = [0.3, 0.2, 0.1];
 
 /**
- * Ilse's pawn shop front: a wide lit window either side of the door, the sign board over the door
- * with its three brass balls, and a lantern by the door.
+ * A shop's front: a wide lit window either side of the door, the sign board over it, a lantern by
+ * the door; and its sign: Ilse's three brass balls, or Kemal's crates and coil of rope out front.
  */
-function pawnFront(f: Furnish, H: House, fx: number): void {
+function shopFront(f: Furnish, H: House, fx: number): void {
   const s = f.solid, G = TOWN.ground, out = H.faces;
   for (const side of [-1, 1]) {
     const z = H.door + side * 1.6;
@@ -135,11 +136,23 @@ function pawnFront(f: Furnish, H: House, fx: number): void {
     s.upright(fx + out * 0.01, G + 1.45, z, Math.PI / 2, 0.04, 0.7, 0.02, FRAME);
     s.upright(fx + out * 0.06, G + 0.72, z, Math.PI / 2, 0.92, 0.04, 0.1, STONE);
   }
-  // The sign board, the three brass balls hung from it.
   s.upright(fx + out * 0.1, G + 2.75, H.door, Math.PI / 2, 1.1, 0.28, 0.04, SIGN);
-  s.upright(fx + out * 0.12, G + 2.75, H.door, Math.PI / 2, 1.0, 0.2, 0.02, BRASS);
-  s.upright(fx + out * 0.55, G + 3.25, H.door, 0, 0.5, 0.02, 0.02, IRON);
-  for (const [dz, dy] of [[-0.12, 0], [0.12, 0], [0, -0.2]]) s.ellipsoid(fx + out * 0.95, G + 3.0 + dy, H.door + dz, 0.09, 0.09, 0.09, BRASS, 10);
+  s.upright(fx + out * 0.12, G + 2.75, H.door, Math.PI / 2, 1.0, 0.2, 0.02, H.shop === 'pawn' ? BRASS : PAINT);
+  if (H.shop === 'pawn') {
+    // The three brass balls, hung from an iron arm.
+    s.upright(fx + out * 0.55, G + 3.25, H.door, 0, 0.5, 0.02, 0.02, IRON);
+    for (const [dz, dy] of [[-0.12, 0], [0.12, 0], [0, -0.2]]) s.ellipsoid(fx + out * 0.95, G + 3.0 + dy, H.door + dz, 0.09, 0.09, 0.09, BRASS, 10);
+  } else {
+    // Kemal's goods out on the pavement: crates, a coil of rope, a shovel leant on the wall.
+    const cz = H.door - 2.4, px = fx + out * 0.75;
+    s.upright(px, G + 0.25, cz, 0.15, 0.3, 0.25, 0.3, CRATE);
+    s.upright(px, G + 0.66, cz + 0.05, -0.1, 0.24, 0.16, 0.24, CRATE);
+    f.block(px, cz, 0.15, 0.34, 0.34, G, G + 0.82);
+    s.cylinder(px, G + 0.09, H.door + 2.4, 0.3, 0.09, ROPE, 14);
+    s.cylinder(px, G + 0.09, H.door + 2.4, 0.12, 0.1, SIGN, 10);
+    s.beam(fx + out * 0.3, G + 0.05, H.door + 1.0, fx + out * 0.08, G + 1.3, H.door + 1.0, 0.03, 0.02, WOOD_HANDLE);
+    s.upright(fx + out * 0.31, G + 0.15, H.door + 1.0, Math.PI / 2, 0.11, 0.14, 0.015, IRON);
+  }
   // The lantern by the door, lit.
   const lz = H.door + 0.85;
   s.upright(fx + out * 0.15, G + 2.25, lz, 0, 0.12, 0.02, 0.06, IRON);
