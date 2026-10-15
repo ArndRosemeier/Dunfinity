@@ -52,26 +52,6 @@
     "reason": "both implement Fighter (src/combat/combat.ts): the interface needs these names on every fighter."
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/render/creatures/ratView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
-    "reason": "one three.js call putting a drawn thing where its sim object is; nothing to fold"
-  },
-  {
-    "key": "same name: dunfinity/creatures/rats.ts#advance + dunfinity/creatures/touched.ts#advance",
-    "reason": "Two creature sims (rats in nests, Salt-Touched at the rock) with one vocabulary on purpose: the game drives each the same way (advance(dt, prey), blockers), and each has its own waking and thinking. The shared parts are folded (Creature, Steer); fold the drivers into one Creatures registry when a third kind arrives."
-  },
-  {
-    "key": "same name: dunfinity/creatures/rats.ts#blockers + dunfinity/creatures/touched.ts#blockers",
-    "reason": "Two creature sims (rats in nests, Salt-Touched at the rock) with one vocabulary on purpose: the game drives each the same way (advance(dt, prey), blockers), and each has its own waking and thinking. The shared parts are folded (Creature, Steer); fold the drivers into one Creatures registry when a third kind arrives."
-  },
-  {
-    "key": "same name: dunfinity/creatures/rats.ts#think + dunfinity/creatures/touched.ts#think",
-    "reason": "Two creature sims (rats in nests, Salt-Touched at the rock) with one vocabulary on purpose: the game drives each the same way (advance(dt, prey), blockers), and each has its own waking and thinking. The shared parts are folded (Creature, Steer); fold the drivers into one Creatures registry when a third kind arrives."
-  },
-  {
-    "key": "same name: dunfinity/creatures/rats.ts#wake + dunfinity/creatures/touched.ts#wake",
-    "reason": "Two creature sims (rats in nests, Salt-Touched at the rock) with one vocabulary on purpose: the game drives each the same way (advance(dt, prey), blockers), and each has its own waking and thinking. The shared parts are folded (Creature, Steer); fold the drivers into one Creatures registry when a third kind arrives."
-  },
-  {
     "key": "same name: dunfinity/render/creatures/touchedView.ts#create + dunfinity/render/humans/nobody.ts#create",
     "reason": "async factories (humans load their assets); the nobody is one human following the body, the view a pool of humans following the Salt-Touched"
   },
@@ -86,5 +66,53 @@
   {
     "key": "same name: dunfinity/render/loot/findView.ts#draw + dunfinity/render/props/watchers.ts#draw",
     "reason": "each view draws its own list from a pool built before the warm-up; the per-frame draw vocabulary of RatView, FindView and TouchedView"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/rats.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/touched.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#act + dunfinity/creatures/touched.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#denIn + dunfinity/creatures/rats.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#denIn + dunfinity/creatures/touched.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/touched.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#hatch + dunfinity/creatures/rats.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#parts + dunfinity/render/creatures/ratView.ts#parts",
+    "reason": "each kind's own part of the FigurePool seam (src/render/creatures/figures.ts): its parts and how one is posed"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#pose + dunfinity/render/creatures/ratView.ts#pose",
+    "reason": "each kind's own part of the FigurePool seam (src/render/creatures/figures.ts): its parts and how one is posed"
+  },
+  {
+    "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/creatures/rats.ts + dunfinity/gen/quarryProps.ts",
+    "reason": "calls of the one seam (level.dry), not copies of it"
+  },
+  {
+    "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/crickets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/touched.ts",
+    "reason": "each creature's state machine entering a mode for a seeded random while; the modes and their timings differ per kind"
+  },
+  {
+    "key": "idiom: [.position .set .visible .x .y .z] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/loot/findView.ts",
+    "reason": "each pooled figure shown at its thing's place; one line per figure, nothing to fold"
   }
 ]

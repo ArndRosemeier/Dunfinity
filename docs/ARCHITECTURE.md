@@ -59,6 +59,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Is this point rock or air, how far to rock? | `level.sdf(x, y, z)`: the single density function (positive in air) | `src/gen/level.ts` |
 | Where is the floor under a point? | `level.floorAt(x, z)` (the working's floor; ignores pillars) | `src/gen/level.ts` |
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
+| Is a spot dry ground? How far to the rock beside a column? | `level.dry(x, z, margin)`; `rockDistance(col)` | `src/gen/level.ts`, `src/gen/quarry.ts` |
 | Which band (Quarry, Salt Works, ...) a depth belongs to, and how it looks: rock colours, pillar fluting, water, glowing veins, its name | `bandOf(depth)`, `level.band` (passed to `QuarryField`) | `src/gen/bands.ts` |
 | Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |
 | Where exactly is the rock surface under a point (where props stand)? | `level.groundAt(x, z)` | `src/gen/level.ts` |
@@ -98,11 +99,17 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Does a blow, blast or effect reach someone? Who does it hit? | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
-| Rats: nests, waking, chasing, biting | `Rats` (`advance(dt, prey)`, `list`, `nestAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
-| Draw the rats | `RatView` (a pool added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
+| Rats: nests, waking, chasing, biting | `Rats` (a `Population`: `advance(dt, prey)`, `list`, `denAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
+| Draw the rats | `RatView` (a `FigurePool` added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
 | Walk a creature over the floor: steer to a goal round what is in the way, arrive without overshooting (no jitter), keep out of its prey's legs | `Steer` (`move`, `slide`, `walkable`) with the kind's `Gait` | `src/creatures/steer.ts` |
-| The Salt-Touched: where they work, noticing, chasing, the pick blow | `SaltTouched` (`advance(dt, prey)`, `list`, `spotAt`) and its numbers `TOUCHED`; how many per band: `band.touched` | `src/creatures/touched.ts` |
+| The Salt-Touched: where they work, noticing, chasing, the pick blow | `SaltTouched` (a `Population`: `advance(dt, prey)`, `list`, `denAt`) and its numbers `TOUCHED`; how many per band: `band.touched` | `src/creatures/touched.ts` |
 | Draw the Salt-Touched | `TouchedView` (a pool of humans built before the warm-up: `figures` go to `view.start`; `draw(list, x, z, dt, time)`) | `src/render/creatures/touchedView.ts` |
+| Cave crickets: perches on the rock, leaps, bites, scattering from the headlamp | `Crickets` (a `Population`: `advance(dt, prey, lamp)`, `list`, `denAt`), numbers `CRICKET`, how many per band `band.crickets` | `src/creatures/crickets.ts` |
+| Draw the cave crickets | `CricketView` (a `FigurePool` added once with the Stage; `draw(crickets, time)`) | `src/render/creatures/cricketView.ts` |
+| What every creature is (health, hurt, death, `provoked`) | `Creature`; `groundSpeed(v)` | `src/creatures/creature.ts` |
+| A kind of creature on a level: dens per cell, waking near you, sleeping far off, the dead staying dead, stepping | `Population` (subclass: `denIn`, `hatch`, `act`; callers: `advance(dt, prey, ctx)`, `list`, `denAt`, `killed`, `blockers`) | `src/creatures/population.ts` |
+| Draw a pool of creature figures | `FigurePool` (a `Figure` per creature: `root`, `pose`) | `src/render/creatures/figures.ts` |
+| Slow a walker down | `brake(w, rate, dt)` | `src/creatures/steer.ts` |
 | What lies about to be found (floor finds, rat hoards), what is in reach, what is taken | `Finds` (`near`, `inReach`, `take`), kinds and values in `FINDS` | `src/loot/finds.ts` |
 | What the nobody carries up | `Pack` (`items`, `worth`) | `src/loot/finds.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |

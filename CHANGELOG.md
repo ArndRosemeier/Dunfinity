@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.023 — Cave crickets
+
+- Pale cave crickets the size of a dog cling to the pillars and walls a few metres up, in little groups, feelers sweeping. Come near and they drop on you one after another: each sinks onto its long hind legs (that is your warning), leaps, lands on you with a knock, bites, and leaps off to come again from another side.
+- They hate light. One that your headlamp is on will not leap at you, and one caught in the beam on the floor scatters into the dark and waits there before it tries again. Keep your light on them and they come at you from the sides.
+- From level 1, and in the Salt Works too.
+
 ## v0.022 — Watchers
 
 - Some of the salt miners on their plinths are watchers. Look away from one for a moment, and when you look back it is facing you. It never moves while you look.

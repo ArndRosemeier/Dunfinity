@@ -70,6 +70,11 @@ export interface Column {
 /** Whether a pillar stands at a grid position: not at all, whole, or broken. */
 export type PillarState = 'none' | 'whole' | 'broken';
 
+/** How far it is from a column to the rock beside it (a pillar or a wall; not the floor or the roof), metres. */
+export function rockDistance(col: Column): number {
+  return Math.min(col.pillarD, col.wall);
+}
+
 export function newColumn(): Column {
   return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0 };
 }

@@ -12,7 +12,7 @@ function setup(away: number): { st: SaltTouched; me: Fighter & { taken: number; 
   const [ax, , az] = salt.arrival;
   let spot: { x: number; z: number } | null = null, best = Infinity;
   for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) {
-    const s = st.spotAt(Math.floor(ax / TOUCHED.cell) + i, Math.floor(az / TOUCHED.cell) + j);
+    const s = st.denAt(Math.floor(ax / TOUCHED.cell) + i, Math.floor(az / TOUCHED.cell) + j);
     if (!s) continue;
     // Room in front of it to stand.
     const [ox, oz] = out(s as never);
@@ -32,7 +32,7 @@ const out = (s: { yaw: number }): [number, number] => [Math.sin(s.yaw), Math.cos
 test('the Salt-Touched work the salt, not the quarry', () => {
   const q = new SaltTouched(new Level(1, 1)), s = new SaltTouched(salt);
   let inQuarry = 0, inSalt = 0;
-  for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) { if (q.spotAt(i, j)) inQuarry++; if (s.spotAt(i, j)) inSalt++; }
+  for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) { if (q.denAt(i, j)) inQuarry++; if (s.denAt(i, j)) inSalt++; }
   assert.equal(inQuarry, 0);
   assert.ok(inSalt > 10, `${inSalt} in the salt`);
 });
