@@ -54,7 +54,10 @@ import { FindView } from '../render/loot/findView';
 import { Tin, type Gain } from '../loot/tin';
 import { CARDS, Cooked, SALT_RINGS, card, type CardId } from '../loot/recipes';
 import { DebugMenu } from '../app/debugMenu';
-import { placesOn, type Place } from './debugPlaces';
+import { DEBUG_STYLES, depthWithStyle, placesOn, styleSpot, type Place } from './debugPlaces';
+import type { StyleId } from '../gen/style';
+import { positionReport, readPosition } from './report';
+import { VERSION } from '../app/whatsNew';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
 import { TinView } from '../app/tinView';
@@ -293,6 +296,32 @@ export async function startGame(host: HTMLElement): Promise<void> {
       debug.toggle();
     },
     depth: () => level.depth,
+    position: () => positionReport(VERSION, location.origin + location.pathname, level, body, { yaw: cam.yaw, pitch: cam.pitch, distance: cam.distance }, view.props.blockers),
+    goTo: (text) => {
+      const p = readPosition(text);
+      if (!p?.pos) return 'No position in that (it needs the link with ?pos=).';
+      if (p.seed !== params.seed) { location.search = /\?\S*/.exec(text)![0]; return 'Another seed: loading it.'; }
+      if (!canGo()) return 'Not now (climbing, going home or dead).';
+      if (p.depth !== level.depth || p.style !== level.style) show(new Level(params.seed, p.depth, p.style));
+      const yaw = p.look ? (p.look[0] * Math.PI) / 180 : cam.yaw;
+      putDown(p.pos[0], p.pos[1] - 0.2, p.pos[2], yaw);
+      if (p.look) cam.pitch = (p.look[1] * Math.PI) / 180;
+      debug.refresh();
+      return `There: level ${p.depth}, ${p.pos.map((v) => v.toFixed(1)).join(' ')}.`;
+    },
+    styles: DEBUG_STYLES,
+    toStyle: (s) => {
+      if (!canGo()) return;
+      const id = s as StyleId;
+      // Here, else on the nearest level that has it, else on a level all of it (as ?style= makes).
+      let p = level.depth > 0 ? styleSpot(level, id, body.x, body.z) : null;
+      const d = p ? level.depth : depthWithStyle(params.seed, Math.max(1, level.depth), id);
+      if (!p && d !== null) { show(new Level(params.seed, d, params.style)); p = styleSpot(level, id, level.arrival[0], level.arrival[2]); }
+      if (!p) { show(new Level(params.seed, Math.max(1, level.depth), id)); p = styleSpot(level, id, level.arrival[0], level.arrival[2]); }
+      const [ax, , az] = level.arrival;
+      if (p) putDown(p.x, p.y, p.z, p.yaw); else putDown(ax, level.groundAt(ax, az), az, cam.yaw);
+      say(`${levelName(level)}\n${p ? p.name : `no ${id} found: at the arrival`}`, 5);
+    },
   });
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
   let tinSel: CardId = TinView.order(cooked)[0], cookAt = -9;

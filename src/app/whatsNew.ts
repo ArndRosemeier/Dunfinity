@@ -6,6 +6,9 @@ import changelog from '../../CHANGELOG.md?raw';
 import { noteHtml, parseChangelog } from './changelog';
 import { addStyle } from './panel';
 
+/** The version this build is (the newest in CHANGELOG.md). */
+export const VERSION = parseChangelog(changelog)[0]?.version ?? 'v?';
+
 /** The version button (top right) and its panel. */
 export function mountWhatsNew(host: HTMLElement): void {
   const releases = parseChangelog(changelog);

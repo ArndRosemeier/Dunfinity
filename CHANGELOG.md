@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.111 — Elven vaults, and the dwarven halls furnished
+
+- A new level style for the Old Halls (levels 21–40): elven vaults, long naves under pointed vaults 25–35 m high, with a lower aisle each side behind an arcade of slender clustered columns, ribs across the vault at every bay and transepts crossing between the naves. Pale silver-grey stone, the ribs and columns paler still, and a dark polished floor.
+- The dwarven halls are furnished: a stern dwarf king before some wall panels and a burning forge before others, braziers by the columns (half of them lit) and heavy chains hanging over the nave. The forges and lit braziers light the halls.
+- The dwarven halls and elven vaults keep their floors clear of the water table, so you no longer swim down a nave or wade into a hall.
+
+## v0.110 — Debug menu: level styles, copy position, invulnerable for real
+
+- "Copy position" in the debug menu (the key left of 1) puts a small block on the clipboard to paste into the chat: the version, a link straight back to the spot (seed, level, position, where the camera looks), the level style and region underfoot, what the body is doing, and how far the rock and any props are. "Go there" takes such a block, or just the link, and puts you back on that spot.
+- A button for every level style (karst, rift, collapse, catacombs, dungeon, roots, fungal, lava, geode, basalt, flooded, dwarven and the excavation halls) puts you inside the nearest region of that style: on this level if it has one, else on the nearest level that does. Lava first turns up very deep, so that button goes a long way down.
+- Invulnerable now means nothing touches you at all: no red flash, flinch or cry, no knockback, no "a rat bites: -0", and falls do nothing either. Health never actually dropped before, but every other sign of a hit still showed.
+- The places listed on a level now include the nearest toadstools and puffcaps.
+
+## v0.109 — Each place its own rock
+
+- Level styles can now say which rock they are cut through, as a mix of rock types the walls show in patches and beds; where two styles meet, their rock blends across the edge like their colour. Styles that don't say keep their band's rock.
+- Three new kinds of rock: black basalt with pale specks, white marble with grey veins, and blue-grey slate split along its cleavage. The Threshold now shows slate between its granite and shale.
+- Broad colour changes across a cave are a little less orange.
+
 ## v0.108 — Every way of playing starts at level 0
 
 - Every chapter of grandma's tin is open from the start; depth now opens a chapter's stronger cards (`Card.opens`), not whole chapters.

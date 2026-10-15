@@ -1,6 +1,7 @@
 import { deriveSeed, hash2i, hashToFloat } from '@futuremagic/core';
 import type { Mix } from './regions';
 import { genome, stratumOf, type Stratum } from './genome';
+import type { RockType } from './rockTypes';
 
 /**
  * The bands of levels 1–10 (docs/design/town-and-first-strata.md §4): which kind of place a depth is,
@@ -39,12 +40,16 @@ export interface Band {
   /** How much of the rock was cut by hand: the miners' pick marks on its walls (1: every wall; 0: natural or built). */
   readonly tooled: number;
   /**
-   * The finish of its rock (the rock shader, src/render/materials.ts `ROCK_FINISH`): which rock it is
-   * cut through, as weights of the types that show in patches and beds 5-30 m across (`rocks`:
-   * limestone, sandstone, shale, granite; `salt`: rock salt, with its colours, cutting rings and glints),
-   * worked walls cast in concrete against board shuttering, how wet it runs (0–1 each).
+   * Which rock it is cut through (src/gen/rockTypes.ts): weights of the rock types, which the rock
+   * shader shows in patches and beds 5-30 m across. Styles that do not name their own rock
+   * (`Style.rocks`) are cut through this.
    */
-  readonly finish: { readonly rocks: readonly [number, number, number, number]; readonly salt: number; readonly formwork: number; readonly wet: number };
+  readonly rocks: Partial<Record<RockType, number>>;
+  /**
+   * The finish of its rock (the rock shader, src/render/materials.ts `ROCK_FINISH`): worked walls cast
+   * in concrete against board shuttering, how wet it runs (0–1 each).
+   */
+  readonly finish: { readonly formwork: number; readonly wet: number };
   /** Loose stones, cut blocks and carvings: their colour. */
   readonly stone: readonly [number, number, number];
   /** What the miners left (src/gen/quarryProps.ts): the share of things against the rock that are carvings (statues of miners, chapels), and the chance per open spot of an electric lamp hanging from the roof. */
@@ -85,7 +90,7 @@ export const QUARRY: Band = {
   flutes: 0, fluteCount: 0,
   water: [-3.7, 1.3],
   rock: [0.46, 0.42, 0.35], layers: [0.05, 0.045, 0.035], dust: [0.08, 0.075, 0.065], natural: [0.82, 0.82, 0.85],
-  veins: 0, tooled: 1, finish: { rocks: [1, 0.6, 0.45, 0], salt: 0, formwork: 0, wet: 0.15 },
+  veins: 0, tooled: 1, rocks: { limestone: 1, sandstone: 0.6, shale: 0.45 }, finish: { formwork: 0, wet: 0.15 },
   stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
   touched: 0, crickets: 0.22, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0.3,
   lamplight: 1,
@@ -102,7 +107,7 @@ export const SALT: Band = {
   flutes: 0.35, fluteCount: 4,
   water: [-2.4, 1.6],
   rock: [0.31, 0.32, 0.34], layers: [0.12, 0.12, 0.125], dust: [0.1, 0.1, 0.1], natural: [0.7, 0.72, 0.76],
-  veins: 1, tooled: 0.7, finish: { rocks: [0.25, 0.3, 0.9, 0], salt: 1, formwork: 0, wet: 0 },
+  veins: 1, tooled: 0.7, rocks: { salt: 1, shale: 0.9, limestone: 0.25, sandstone: 0.3 }, finish: { formwork: 0, wet: 0 },
   stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
   touched: 0.35, crickets: 0.25, dogs: 0, eels: 0.5, scavengers: 0.3, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
@@ -123,7 +128,7 @@ export const CISTERN: Band = {
   flutes: 0, fluteCount: 0,
   water: [-0.5, 0.6],
   rock: [0.37, 0.36, 0.33], layers: [0.025, 0.025, 0.022], dust: [0.06, 0.06, 0.055], natural: [0.62, 0.6, 0.56],
-  veins: 0.1, tooled: 0.15, finish: { rocks: [0.6, 0.35, 0.8, 0.25], salt: 0, formwork: 1, wet: 0.7 },
+  veins: 0.1, tooled: 0.15, rocks: { limestone: 0.6, sandstone: 0.35, shale: 0.8, granite: 0.25 }, finish: { formwork: 1, wet: 0.7 },
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
   touched: 0.12, crickets: 0, dogs: 0.35, eels: 0.6, scavengers: 0.35, caverns: 0, ruins: 0, older: 0.14, uphill: 0.12, chalk: 0,
   lamplight: 1,
@@ -144,7 +149,7 @@ export const THRESHOLD: Band = {
   flutes: 0, fluteCount: 0,
   water: [-2.8, 1.8],
   rock: [0.33, 0.3, 0.27], layers: [0.06, 0.05, 0.04], dust: [0.07, 0.065, 0.055], natural: [0.78, 0.76, 0.74],
-  veins: 0.5, tooled: 0.1, finish: { rocks: [0.2, 0.3, 0.6, 1], salt: 0, formwork: 0, wet: 0.45 },
+  veins: 0.5, tooled: 0.1, rocks: { granite: 1, shale: 0.6, slate: 0.4, sandstone: 0.3, limestone: 0.2 }, finish: { formwork: 0, wet: 0.45 },
   stone: [0.36, 0.33, 0.3], carvings: 0, hanging: 0.12, machines: 0,
   touched: 0.06, crickets: 0.3, dogs: 0, eels: 0.4, scavengers: 0.2, caverns: 0.5, ruins: 0.2, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
@@ -155,10 +160,15 @@ export const THRESHOLD: Band = {
 export const CELLAR_BAND: Band = {
   ...QUARRY,
   id: 'cellar', name: 'Grandma\'s cellar',
-  touched: 0, crickets: 0, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0, carvings: 0, hanging: 0, machines: 0, veins: 0, tooled: 0, finish: { rocks: [1, 0.7, 0.2, 0], salt: 0, formwork: 0, wet: 0.1 },
+  touched: 0, crickets: 0, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0, carvings: 0, hanging: 0, machines: 0, veins: 0, tooled: 0, rocks: { limestone: 1, sandstone: 0.7, shale: 0.2 }, finish: { formwork: 0, wet: 0.1 },
   lamplight: 0.12, // (bulbs in small brick rooms)
   styles: [['cellar', 1]],
 };
+
+/** A floor height over the highest the band's water table reaches (`water`: base plus all its wander), with a metre to spare: the built styles keep their floors dry from here up. */
+export function dryAbove(band: Band): number {
+  return band.water[0] + band.water[1] + 1;
+}
 
 /** How far each style's weight in a level's mix strays from its band's, either way (as a power of 2). */
 const MIX_VARY = 0.5;
