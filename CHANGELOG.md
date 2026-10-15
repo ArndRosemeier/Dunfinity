@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.026 — The Foreman
+
+- Level 5 has a boss. In a salt cathedral, beside an old mine bell on its timber frame, waits the Foreman: a Salt-Touched three metres tall. Rouse him and he strikes the bell with his pick, and every Salt-Touched of his crew working the rock round the hall comes for you, however far off. Then he comes himself: slow, with a long wind-up, and a blow that takes nearly half your health.
+- His chest is crusted with salt, so a knife from in front mostly skids off. Get behind him. Badly hurt, he goes back and rings the bell once more, and that is your chance.
+- His health shows at the top of the screen while he is after you.
+- The tally of the killed now counts only what you killed (slimes kill each other too).
+
 ## v0.025 — Slimes
 
 - From level 2 the floors have slimes, in colonies of three to five, and they come in two kinds at war. Lumen are pale jelly with glowing motes in them; Murk are black and oily. Where a Lumen colony and a Murk colony meet, they fight.

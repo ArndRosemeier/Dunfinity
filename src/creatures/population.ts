@@ -30,7 +30,7 @@ export interface Spread {
 export abstract class Population<D extends Den, C extends Creature<string> & { readonly id: number }, Ctx = null> {
   /** The ones near you (the dead included, while their den is awake). */
   readonly list: C[] = [];
-  /** Killed on this visit to the level. */
+  /** Killed by you (a knife) on this visit to the level. */
   killed = 0;
   protected readonly seed: number;
   protected readonly rng: Rng;
@@ -38,6 +38,8 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   /** Keep the living this far apart, as a share of their radii added (0: they may overlap). */
   protected apart = 0;
   private readonly dens = new CellMemo<D | null>((i, j, key) => this.denIn(key, i, j));
+  /** Dens off the grid, placed by something else (the Foreman's crew); negative keys. */
+  protected readonly placed: D[] = [];
   private readonly awake = new Map<D, C[]>();
   private readonly dead = new Set<number>();
 
@@ -66,7 +68,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
       for (const c of this.list) hits += this.act(c, prey, ctx, h);
       this.settle();
     }
-    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); this.killed++; }
+    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (c.cause === 'knife') this.killed++; }
     return hits;
   }
 
@@ -130,9 +132,13 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   private rouse(px: number, pz: number): void {
     const S = this.spread, c = S.cell, m = Math.ceil(S.wake / c);
     const ci = Math.floor(px / c), cj = Math.floor(pz / c);
+    const near: D[] = [];
     for (let j = cj - m; j <= cj + m; j++) for (let i = ci - m; i <= ci + m; i++) {
       const den = this.dens.at(i, j);
-      if (!den || this.awake.has(den) || Math.hypot(den.x - px, den.z - pz) > S.wake) continue;
+      if (den) near.push(den);
+    }
+    for (const den of [...near, ...this.placed]) {
+      if (this.awake.has(den) || Math.hypot(den.x - px, den.z - pz) > S.wake) continue;
       const born = this.hatch(den, (id) => this.dead.has(id));
       this.awake.set(den, born);
       this.list.push(...born);

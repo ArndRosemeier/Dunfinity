@@ -153,10 +153,7 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
         if ((sl.t -= dt) <= 0 || Math.hypot(sl.tx - sl.x, sl.tz - sl.z) < 0.2) { sl.mode = 'rest'; sl.t = this.rng.range(1, 4); }
         break;
       case 'go': {
-        // To just short of the foe, on the line from it to the slime (it does not turn as it goes).
-        const dx = f!.x - sl.x, dz = f!.z - sl.z, d = Math.hypot(dx, dz), stand = f!.radius + sl.radius + 0.05;
-        const gx = f!.x - (dx / (d || 1)) * stand, gz = f!.z - (dz / (d || 1)) * stand;
-        this.steer.move(sl, gx, gz, C.rush * flow, dt, d - stand < 0.4 ? Math.atan2(-dx, -dz) : null);
+        const d = this.steer.close(sl, f!, f!.radius + sl.radius + 0.05, C.rush * flow, dt, 0.4);
         if (d - f!.radius - sl.radius < C.reach && sl.blowT > C.every) { sl.mode = 'blow'; sl.blowT = 0; }
         break;
       }
