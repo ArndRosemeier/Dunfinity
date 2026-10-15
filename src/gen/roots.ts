@@ -14,7 +14,7 @@
  */
 import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
-import { CaveThings, THING_REACH, type Chamber } from './caveThings';
+import { CaveThings, THING_REACH, karstChambers, taperDist, taperPlan, type Chamber, type Taper } from './caveThings';
 import { Karst } from './karst';
 import type { Column } from './quarry';
 import type { Style, StyleId } from './style';
@@ -38,15 +38,8 @@ export const ROOTS = {
 } as const;
 
 
-/** Segments a curved root is made of. */
+/** Taperments a curved root is made of. */
 const SEGS = 4;
-
-/** One straight piece of root: from a to b, radius ra to rb. */
-interface Seg {
-  ax: number; ay: number; az: number;
-  bx: number; by: number; bz: number;
-  ra: number; rb: number;
-}
 
 export class Roots implements Style {
   readonly id: StyleId = 'roots';
@@ -54,13 +47,13 @@ export class Roots implements Style {
   readonly mapFloor = [0.42, 0.55, 0.32] as const;
   private readonly cave: Karst;
   private readonly noise: Noise;
-  private readonly roots: CaveThings<Seg>;
+  private readonly roots: CaveThings<Taper>;
 
   constructor(readonly seed: number, readonly band: Band) {
     this.cave = new Karst(deriveSeed(seed, 'roots', 'cave'), band);
     this.noise = new Noise(deriveSeed(seed, 'roots', 'shape'));
     // (No root reaches further than 1.15 radii from its chamber's middle, plus its own thickness.)
-    this.roots = new CaveThings(this.cave, deriveSeed(seed, 'roots', 'roots'), { make: rootsOf, plan, dist: rootDist, radii: 1.2, pad: ROOTS.top[0] + ROOTS.top[1] });
+    this.roots = new CaveThings(karstChambers(this.cave), deriveSeed(seed, 'roots', 'roots'), { make: rootsOf, plan: taperPlan, dist: taperDist, radii: 1.2, pad: ROOTS.top[0] + ROOTS.top[1] });
   }
 
   column(x: number, z: number, col: Column): Column {
@@ -108,8 +101,8 @@ export class Roots implements Style {
 }
 
 /** The roots of chamber `c`, as straight pieces. */
-function rootsOf(c: Chamber, f: () => number): Seg[] {
-  const R = ROOTS, segs: Seg[] = [];
+function rootsOf(c: Chamber, f: () => number): Taper[] {
+  const R = ROOTS, segs: Taper[] = [];
   const foot = (reach: number): [number, number] => {
     const a = f() * Math.PI * 2, d = Math.sqrt(f()) * reach * c.r;
     return [c.x + Math.cos(a) * d, c.z + Math.sin(a) * d];
@@ -150,16 +143,3 @@ function rootsOf(c: Chamber, f: () => number): Seg[] {
   return segs;
 }
 
-/** Plan distance from (x, z) to a piece of root's outside (a lower bound on the 3D distance). */
-function plan(s: Seg, x: number, z: number): number {
-  const ex = s.bx - s.ax, ez = s.bz - s.az, l2 = ex * ex + ez * ez;
-  const t = l2 > 1e-9 ? Math.max(0, Math.min(1, ((x - s.ax) * ex + (z - s.az) * ez) / l2)) : 0;
-  return Math.hypot(x - s.ax - ex * t, z - s.az - ez * t) - Math.max(s.ra, s.rb);
-}
-
-/** Distance from a point to a piece of root: a capsule thinning from one end to the other. */
-function rootDist(s: Seg, x: number, y: number, z: number): number {
-  const ex = s.bx - s.ax, ey = s.by - s.ay, ez = s.bz - s.az, l2 = ex * ex + ey * ey + ez * ez;
-  const t = Math.max(0, Math.min(1, ((x - s.ax) * ex + (y - s.ay) * ey + (z - s.az) * ez) / l2));
-  return Math.hypot(x - s.ax - ex * t, y - s.ay - ey * t, z - s.az - ez * t) - (s.ra + (s.rb - s.ra) * t);
-}

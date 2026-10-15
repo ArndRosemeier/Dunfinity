@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.090 — Geodes
+
+- An eleventh kind of place, and a wonder: hollow shells in the rock, 20 to 70 m across, lined all over with a crust of glittering crystal in one hue each (amethyst, celestine, rose or emerald). Big crystals stand in from the walls, longest overhead, and a few rise out of the pale crystal sand underfoot to climb round. Pale agate rings show where the shell breaks open. Short cracks in the rock, the only ways in, join each hollow to its neighbours. Try `?style=geode`.
+- They belong to the deep strata, which aren't built yet, so for now they only appear when asked for by name.
+
 ## v0.089 — Lava tubes
 
 - A tenth kind of place: tunnels where molten rock once ran and drained away. They are long and round, 8–18 m across, and meander side by side for hundreds of metres. Their floors are the last flow's flat glassy crust with ropes of pahoehoe bowed downstream. Benches along the walls show where the flow once stood. Smaller tubes branch across to the next, and here and there a skylight rises from the roof into a dome where the crust fell in. The basalt is black with rust-red crusts, and on hot levels the floor still glows through its cracks. Try `?style=lava`.
