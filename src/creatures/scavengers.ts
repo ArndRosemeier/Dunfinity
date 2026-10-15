@@ -10,7 +10,7 @@
  */
 import { angleDiff, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import type { Fighter } from '../combat/combat';
+import { noticed, type Fighter } from '../combat/combat';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { rockDistance } from '../gen/quarry';
@@ -152,7 +152,7 @@ export class Scavengers extends Population<Camp, Scavenger> {
     const seen = !prey.dead && Math.abs(prey.y - s.y) < 3;
     const fromFire = Math.hypot(prey.x - c.x, prey.z - c.z);
     if (seen && !c.robbers && fromFire < S.camp) c.angry = true;
-    const after = s.hostile && seen && d < (s.mode === 'chase' || s.mode === 'swing' ? S.forget : S.notice);
+    const after = s.hostile && seen && (s.mode === 'chase' || s.mode === 'swing' ? d < S.forget : noticed(prey, d, S.notice));
     const watching = !s.hostile && seen && d < S.warn;
     if ((watching || (after && c.robbers)) && !c.warned) {
       c.warned = true;

@@ -12,7 +12,7 @@
  */
 import { angleDiff, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import type { Fighter } from '../combat/combat';
+import { noticed, type Fighter } from '../combat/combat';
 import { closeIn, pickSwing } from './pick';
 import { Population, type Den } from './population';
 import { rockDistance } from '../gen/quarry';
@@ -154,7 +154,7 @@ export class Foreman extends Population<Hall, Boss, SaltTouched> {
     if (f.provoked) { f.provoked = false; f.angry = true; }
     if (f.dead) return this.lieDead(f, dt, 5);
     const near = !prey.dead && Math.abs(prey.y - f.y) < 4;
-    if (near && d < F.notice) f.angry = true;
+    if (near && noticed(prey, d, F.notice)) f.angry = true;
     if (f.angry && (prey.dead || d > F.forget || Math.hypot(f.x - h.x, f.z - h.z) > F.leash || Math.abs(prey.y - f.y) > 6)) f.angry = false;
     // He rings when first roused, and once more when badly hurt.
     const rings = !f.angry ? f.rung : f.health < F.health * F.ring.again ? 2 : 1;

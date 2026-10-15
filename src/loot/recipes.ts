@@ -10,7 +10,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe';
 
 export interface Card {
   readonly id: CardId;
@@ -74,6 +74,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['Knead from the shoulders, not the wrists.'],
     cost: [5, 9],
     does: ['climbing tires you 35% less', 'climbing tires you 60% less'],
+  },
+  {
+    id: 'tiptoe', title: 'Tiptoe', chapter: 'Quiet',
+    need: 'soft soles, or socks. Shoes in your hand.',
+    method: 'Like coming home late in 1962. My mother never found out. Neither will they.',
+    ranks: ['Heel last. Breathe through your nose.'],
+    cost: [6, 10],
+    does: ['hold Z: tiptoe at 1.6 m/s; things notice you from half as far', 'tiptoe at 2.2 m/s; from a third as far'],
   },
 ];
 
@@ -142,6 +150,11 @@ export class Cooked {
   /** How much faster wounds close resting by a fire. */
   get soup(): number {
     return [1, 2, 3][this.rank('soup')];
+  }
+
+  /** Tiptoeing (hold Z), if cooked: its speed, m/s, and how far off things notice you then (a share). */
+  get tiptoe(): { speed: number; hush: number } | null {
+    return [null, { speed: 1.6, hush: 0.5 }, { speed: 2.2, hush: 0.33 }][this.rank('tiptoe')];
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */

@@ -12,7 +12,7 @@
  */
 import { Rng, deriveSeed, hash3f, angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import { damage, type Fighter } from '../combat/combat';
+import { damage, type Fighter, noticed } from '../combat/combat';
 import { CANDLE } from '../combat/thrown';
 import { Population, type Den } from './population';
 import { brake } from './steer';
@@ -182,7 +182,7 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
     if (c.provoked) { c.provoked = false; c.angry = true; }
     if (c.dead) return this.fall(c, dt);
     const dx = prey.x - c.x, dz = prey.z - c.z, d = Math.hypot(dx, dz);
-    if (!prey.dead && d < C.notice && prey.y < c.y + 1.5 && prey.y > c.y - 7) c.angry = true;
+    if (!prey.dead && noticed(prey, d, C.notice) && prey.y < c.y + 1.5 && prey.y > c.y - 7) c.angry = true;
     if (c.angry && (prey.dead || d > C.forget)) c.angry = false;
     const lit = this.lit(c, lamp);
     let hurt = 0;

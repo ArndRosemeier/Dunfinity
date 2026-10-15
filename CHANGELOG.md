@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.047 — Tiptoe
+
+- A new card in grandma's tin: **Tiptoe** (Quiet). Its divider opens once one of the family has been down to level 5. Once it is cooked, hold Z to creep along slowly, crouched. While you do, creatures notice you only from half as far, or from a third as far at rank 2, when you also creep a little faster.
+- The camera no longer looks through the rock when you climb a wall under a low ceiling.
+
 ## v0.046 — The salt circle and the notary's letter
 
 - Grandma's ring of infused salt in her strange room is a fire that never goes out. Stand still in it to rest and heal, and press T to open her tin and cook, with no fire to light.

@@ -50,6 +50,8 @@ export interface BodyInput {
   /** Camera yaw, radians (forward is (-sin yaw, -cos yaw)). */
   yaw: number;
   sprint: boolean;
+  /** Tiptoe (grandma's Tiptoe card, if cooked: see `Body.tiptoe`). */
+  sneak?: boolean;
   /** Jump pressed (consumed by the step). */
   jump: boolean;
 }
@@ -79,6 +81,10 @@ export class Body {
   private rollX = 0;
   private rollZ = 0;
   private safe: readonly [number, number] = [0, 0];
+  /** Grandma's Tiptoe card, if cooked: speed tiptoeing, m/s, and how far off things notice you then (a share). */
+  tiptoe: { readonly speed: number; readonly hush: number } | null = null;
+  /** Tiptoeing this step. */
+  sneaking = false;
   /** Facing, radians (same convention as the camera yaw). */
   facing = 0;
   /** The wall being climbed: its normal. */
@@ -104,6 +110,9 @@ export class Body {
   }
 
   get dead(): boolean { return this.health <= 0; }
+
+  /** How far off things notice the nobody, a share of their usual (`Fighter.hush`). */
+  get hush(): number { return this.sneaking ? this.tiptoe!.hush : 1; }
 
   /** Mid-roll. */
   get rolling(): boolean { return this.rollT < MOVE.roll.dur; }
@@ -142,6 +151,7 @@ export class Body {
     const depth = water - this.y;
     if (this.mode !== 'climb') this.mode = depth > 1.3 || (this.mode === 'swim' && depth > 1.1) ? 'swim' : 'walk';
 
+    this.sneaking = false;
     if (this.mode === 'climb') this.climb(level, input, dt);
     else if (this.mode === 'swim') this.swim(input, mx, mz, water, dt);
     else this.walk(input, mx, mz, depth, dt);
@@ -183,7 +193,8 @@ export class Body {
       return;
     }
     const sprint = input.sprint && this.stamina > 0;
-    const speed = depth > 0.5 ? MOVE.wade : sprint ? MOVE.sprint : MOVE.walk;
+    this.sneaking = !!input.sneak && !!this.tiptoe && !sprint && depth <= 0.5 && this.grounded;
+    const speed = depth > 0.5 ? MOVE.wade : sprint ? MOVE.sprint : this.sneaking ? this.tiptoe!.speed : MOVE.walk;
     if (sprint && this.grounded && Math.hypot(mx, mz) > 0.1) this.stamina = Math.max(0, this.stamina - 0.5 * dt);
     const accel = this.grounded ? 30 : 5;
     this.vx += clampStep(mx * speed - this.vx, accel * dt);

@@ -304,6 +304,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.forward = (controls.held('KeyW') ? 1 : 0) - (controls.held('KeyS') ? 1 : 0);
     input.right = (controls.held('KeyD') ? 1 : 0) - (controls.held('KeyA') ? 1 : 0);
     input.sprint = controls.held('ShiftLeft') || controls.held('ShiftRight');
+    input.sneak = controls.held('KeyZ'); // (not Ctrl: Ctrl+W closes the tab)
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
@@ -419,6 +420,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
       body.climbCost = cooked.climbing;
+      body.tiptoe = cooked.tiptoe;
       campfire.soup = cooked.soup;
       campfire.step(body, threat, now, dt);
       const lighting = campfire.kindling(now);

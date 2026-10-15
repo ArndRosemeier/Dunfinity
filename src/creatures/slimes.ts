@@ -11,7 +11,7 @@
  */
 import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import { damage, type Fighter } from '../combat/combat';
+import { damage, type Fighter, noticed } from '../combat/combat';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { brake } from './steer';
@@ -180,7 +180,7 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
       const d = dist(e);
       if (!e.dead && d < C.enemies && d < bd) { best = e; bd = d; }
     }
-    if (hostile && !prey.dead && dist(prey) < C.notice && dist(prey) < bd) best = prey;
+    if (hostile && !prey.dead && noticed(prey, dist(prey), C.notice) && dist(prey) < bd) best = prey;
     return best;
   }
 }
