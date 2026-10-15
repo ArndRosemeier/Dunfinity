@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.069 — Tidying up
+
+- Behind the scenes: a sweep for repeated code. The dogs, rats, slimes and cave crickets now share one way of putting their figures where they stand. Nothing changes in play.
+
 ## v0.068 — The preview link, spelled right
 
 - Fix: the preview link has a capital D: https://arndrosemeier.github.io/Dunfinity/ (the small-d one shows "not found").

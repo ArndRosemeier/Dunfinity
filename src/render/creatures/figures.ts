@@ -10,6 +10,14 @@ export interface Figure<T> {
   pose(t: T, time: number): void;
 }
 
+/** Show a figure's root at a creature: at its feet, turned by its yaw (unless `yaw` is null: the pose turns it), scaled by its size. */
+export function placeFigure(root: Object3D, c: { readonly x: number; readonly y: number; readonly z: number; readonly yaw: number; readonly size: number }, yaw: number | null = c.yaw): void {
+  root.visible = true;
+  root.position.set(c.x, c.y, c.z);
+  if (yaw !== null) root.rotation.y = yaw;
+  root.scale.setScalar(c.size);
+}
+
 export class FigurePool<T extends { readonly x: number; readonly z: number }> {
   /** Put into the scene once (Stage.add), after the warm-up. */
   readonly root = new Group();

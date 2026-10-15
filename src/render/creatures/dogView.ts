@@ -7,7 +7,7 @@
  *
  * A fixed pool, built once and added with the Stage before play.
  */
-import { FigurePool, type Figure } from './figures';
+import { FigurePool, placeFigure, type Figure } from './figures';
 import { Group, type Object3D } from 'three/webgpu';
 import type { Rgb } from '../../gen/propMesh';
 import { meshOf as mesh } from '../meshes';
@@ -82,10 +82,7 @@ class DogFigure implements Figure<Dog> {
 
   pose(g: Dog, time: number): void {
     const R = this.root, B = this.body, H = this.head;
-    R.visible = true;
-    R.position.set(g.x, g.y, g.z);
-    R.rotation.y = g.yaw;
-    R.scale.setScalar(g.size);
+    placeFigure(R, g);
     B.position.set(0, 0, 0);
     B.rotation.set(0, 0, 0);
     H.rotation.set(0, 0, 0);

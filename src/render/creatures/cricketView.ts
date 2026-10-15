@@ -7,7 +7,7 @@
  *
  * A fixed pool, built once and added with the Stage before play.
  */
-import { FigurePool, type Figure } from './figures';
+import { FigurePool, placeFigure, type Figure } from './figures';
 import { Group, Matrix4, Vector3, type Object3D } from 'three/webgpu';
 import type { Rgb } from '../../gen/propMesh';
 import { meshOf as mesh } from '../meshes';
@@ -80,9 +80,7 @@ class CricketFigure implements Figure<Cricket> {
 
   pose(c: Cricket, time: number): void {
     const R = this.root, B = this.body;
-    R.visible = true;
-    R.position.set(c.x, c.y, c.z);
-    R.scale.setScalar(c.size);
+    placeFigure(R, c, null);
     // Orientation: up off the surface it is on; forward along its yaw, or head down on a wall.
     _y.set(c.up[0], c.up[1], c.up[2]).normalize();
     if (_y.y > 0.7) _f.set(-Math.sin(c.yaw), 0, -Math.cos(c.yaw));
