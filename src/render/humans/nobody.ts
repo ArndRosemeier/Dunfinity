@@ -41,10 +41,19 @@ export class Nobody {
   static async create(seed: number, level: Level): Promise<Nobody> {
     const h = await Humanoid.create(nobodyLook(seed), { wardrobe: WARDROBE, expressions: true });
     h.dress(rags(seed));
-    return new Nobody(h, level);
+    return new Nobody(h, level, seed);
   }
 
-  private constructor(readonly human: Humanoid, level: Level) {
+  /** Grandma's pot lid on the arm (the Pot Lid card), or not. Re-dresses only when it changes. */
+  set lid(on: boolean) {
+    if (on === this.lid_) return;
+    this.lid_ = on;
+    this.human.dress(rags(this.seed, on));
+  }
+
+  private lid_ = false;
+
+  private constructor(readonly human: Humanoid, level: Level, private readonly seed: number) {
     this.level = level;
     this.root = human.object;
     this.head.position.y = human.height - 0.1;
