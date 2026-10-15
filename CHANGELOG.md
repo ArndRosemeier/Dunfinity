@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.088 — Real cave crickets
+
+- The cave crickets are new: sculpted, rigged and animated in Blender like the dogs and rats. Each one is a pale, humped cave cricket with banded plates, great chevroned hind legs with spined shins, and feelers longer than its body that never stop sweeping (fast and twitchy once it is after you).
+- Every move shows: the six-legged scuttle and the hops along the floor, the crouch before a leap, the hind legs kicked out straight behind in the air, the bite with the mandibles working, a flinch when hit, and over onto its back with its legs folding when it dies. On the rock it still clings head down.
+- Dogs and rats: their teeth and eyes now stay put when they move (a few were tied to the wrong bone).
+
 ## v0.087 — Real rats
 
 - The quarry rats are new: sculpted, rigged and animated in Blender like the dogs. Each one is a fat, grizzled sewer rat with a darker back, naked pink ears and feet, a long ringed tail, orange front teeth and eyes that catch your light.
