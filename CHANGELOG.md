@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.046 — The salt circle and the notary's letter
+
+- Grandma's ring of infused salt in her strange room is a fire that never goes out. Stand still in it to rest and heal, and press T to open her tin and cook, with no fire to light.
+- The notary's letter lies on her side table. E reads it. Herr Brüggemann writes to each new grandchild, and he grows wearier with every heir.
+
 ## v0.045 — Grandma's cellar
 
 - Every grandchild now starts in grandma's cellar, under her house. It is a vaulted brick cellar with shelves of jars, crates, a barrel and a bare bulb, and the stairs go up to the house door (shut).

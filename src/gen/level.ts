@@ -30,6 +30,20 @@ export interface SampledGrid extends Grid {
   columns: Column[];
 }
 
+/** Something to read, and where it lies. */
+export interface Writing {
+  readonly kind: 'note' | 'letter';
+  readonly at: readonly [number, number, number];
+}
+
+/** A round place to rest in that needs no fire. */
+export interface Haven {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly r: number;
+}
+
 export class Level {
   readonly field: QuarryField;
   /** What kind of place this level is. */
@@ -54,6 +68,19 @@ export class Level {
   get camp(): GrandmasCamp | null {
     if (this.camp_ === undefined) this.camp_ = grandmasCamp(this);
     return this.camp_;
+  }
+
+  /** Something to read on this level, where it lies: grandma's note at her camp, or the notary's letter in the cellar. */
+  get writing(): Writing | null {
+    if (this.depth === 0) return { kind: 'letter', at: [CELLAR.letter.x, CELLAR.letter.y, CELLAR.letter.z] };
+    const c = this.camp;
+    return c && { kind: 'note', at: c.note };
+  }
+
+  /** A place always safe to rest in, as by a fire: grandma's salt circle in the cellar. */
+  get haven(): Haven | null {
+    const c = CELLAR.circle;
+    return this.depth === 0 ? { x: c.x, y: 0, z: c.z, r: c.r } : null;
   }
 
   /** The Tall One's lair and grandma's salt circles round it, if they are on this level (level 10). */
