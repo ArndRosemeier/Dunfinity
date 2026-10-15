@@ -8,7 +8,9 @@ import { hash3f, smoothstep } from '@futuremagic/core';
 
 /** Lamps further than this get no light, metres. */
 const RANGE = 60;
-const INTENSITY = 70;
+/** A lamp's brightness and how fast its light falls off: gentle, so the rock beside a lamp glows warm instead of burning out to white, and its light still reaches across the hall. */
+const INTENSITY = 9;
+const DECAY = 1.2;
 
 export class LampLights {
   readonly lights: PointLight[] = [];
@@ -18,7 +20,7 @@ export class LampLights {
 
   constructor(parent: Object3D, count = 8) {
     for (let i = 0; i < count; i++) {
-      const l = new PointLight(0xffa860, 0, 26, 1.5);
+      const l = new PointLight(0xffa860, 0, 26, DECAY);
       this.lights.push(l);
       parent.add(l);
     }
