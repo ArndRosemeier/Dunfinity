@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.054 — Sweep
+
+- Tidying behind the scenes after the last ten versions, with nothing new to see. Things held in the hand (the knife, the pick, the crowbar, the pot lid) are now all built the same way.
+
 ## v0.053 — The notary's list
 
 - When a grandchild dies, Herr Brüggemann crosses out their name. The death screen shows his list: the fallen crossed out, each with where it happened and what did it, and at the bottom the name of the next heir, whose letter is already on its way. The list is kept with the save.

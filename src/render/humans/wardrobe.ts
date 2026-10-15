@@ -44,27 +44,39 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
 }
 
 /**
+ * A held thing in grip space, from its parts: wood (or anything plain) and metal, built by `build`
+ * into two PropBuilders, turned `tilt` radians about the fist's x.
+ */
+function held(build: (wood: PropBuilder, metal: PropBuilder) => void, tilt = 0): Object3D {
+  const wood = new PropBuilder(), metal = new PropBuilder();
+  build(wood, metal);
+  const g = new Group();
+  for (const [b, kind] of [[wood, VERTEX_COLOR_SOLID], [metal, METAL]] as const) {
+    const data = b.build();
+    if (!data) continue;
+    const m: Mesh = meshFromData(data, kind);
+    m.rotation.x = tilt;
+    m.matrixAutoUpdate = true;
+    g.add(m);
+  }
+  return g;
+}
+
+/**
  * Grandma's kitchen knife, in grip space (the fist round the handle at the origin, the blade up +y,
  * the edge towards -x): a dark wooden handle with two rivets, a steel blade with a curved belly.
  */
 export function kitchenKnife(): Object3D {
   // Built blade up (+Y, out of the thumb side of the fist), edge along +Z, then turned about the
   // fist's x so the blade carries on the line of the forearm: held for a thrust, not like a hammer.
-  const steel = new PropBuilder(), wood = new PropBuilder();
-  wood.upright(0, 0, 0, 0, 0.008, 0.055, 0.011, [0.12, 0.07, 0.04]);
-  for (const y of [-0.025, 0.025]) wood.upright(0, y, 0, 0, 0.0085, 0.004, 0.004, [0.5, 0.48, 0.45]);
-  steel.upright(0, 0.059, 0.001, 0, 0.006, 0.004, 0.012, [0.55, 0.56, 0.58]); // bolster
-  // The blade: the spine straight along -z, the belly narrowing to the tip.
-  const blade: [number, number, number][] = [[0.063, 0.16, 0.017], [0.16, 0.2, 0.0125], [0.2, 0.222, 0.0065], [0.222, 0.232, 0.0025]];
-  for (const [y0, y1, hw] of blade) steel.box(0, (y0 + y1) / 2, -0.011 + hw, [0.0012, 0, 0], [0, (y1 - y0) / 2, 0], [0, 0, hw], [0.62, 0.63, 0.65]);
-  const g = new Group();
-  for (const [b, kind] of [[wood, VERTEX_COLOR_SOLID], [steel, METAL]] as const) {
-    const m: Mesh = meshFromData(b.build()!, kind);
-    m.rotation.x = KNIFE_TILT;
-    m.matrixAutoUpdate = true;
-    g.add(m);
-  }
-  return g;
+  return held((wood, steel) => {
+    wood.upright(0, 0, 0, 0, 0.008, 0.055, 0.011, [0.12, 0.07, 0.04]);
+    for (const y of [-0.025, 0.025]) wood.upright(0, y, 0, 0, 0.0085, 0.004, 0.004, [0.5, 0.48, 0.45]);
+    steel.upright(0, 0.059, 0.001, 0, 0.006, 0.004, 0.012, [0.55, 0.56, 0.58]); // bolster
+    // The blade: the spine straight along -z, the belly narrowing to the tip.
+    const blade: [number, number, number][] = [[0.063, 0.16, 0.017], [0.16, 0.2, 0.0125], [0.2, 0.222, 0.0065], [0.222, 0.232, 0.0025]];
+    for (const [y0, y1, hw] of blade) steel.box(0, (y0 + y1) / 2, -0.011 + hw, [0.0012, 0, 0], [0, (y1 - y0) / 2, 0], [0, 0, hw], [0.62, 0.63, 0.65]);
+  }, KNIFE_TILT);
 }
 
 /**
@@ -72,20 +84,14 @@ export function kitchenKnife(): Object3D {
  * fist), the iron head across the top with a point at each end.
  */
 function minersPick(): Object3D {
-  const iron = new PropBuilder(), wood = new PropBuilder();
-  wood.upright(0, 0.28, 0, 0, 0.017, 0.38, 0.022, [0.3, 0.22, 0.14]);
-  iron.upright(0, 0.64, 0, 0, 0.05, 0.03, 0.028, [0.2, 0.19, 0.18]); // the eye round the handle
-  for (const s of [-1, 1]) {
-    iron.beam(0, 0.64, 0, s * 0.2, 0.62, 0, 0.022, 0.024, [0.22, 0.21, 0.2]);
-    iron.beam(s * 0.2, 0.62, 0, s * 0.31, 0.585, 0, 0.012, 0.012, [0.3, 0.29, 0.28]);
-  }
-  const g = new Group();
-  for (const [b, kind] of [[wood, VERTEX_COLOR_SOLID], [iron, METAL]] as const) {
-    const m: Mesh = meshFromData(b.build()!, kind);
-    m.matrixAutoUpdate = true;
-    g.add(m);
-  }
-  return g;
+  return held((wood, iron) => {
+    wood.upright(0, 0.28, 0, 0, 0.017, 0.38, 0.022, [0.3, 0.22, 0.14]);
+    iron.upright(0, 0.64, 0, 0, 0.05, 0.03, 0.028, [0.2, 0.19, 0.18]); // the eye round the handle
+    for (const s of [-1, 1]) {
+      iron.beam(0, 0.64, 0, s * 0.2, 0.62, 0, 0.022, 0.024, [0.22, 0.21, 0.2]);
+      iron.beam(s * 0.2, 0.62, 0, s * 0.31, 0.585, 0, 0.012, 0.012, [0.3, 0.29, 0.28]);
+    }
+  });
 }
 
 /**
@@ -93,15 +99,11 @@ function minersPick(): Object3D {
  * the top (up +y from the fist).
  */
 function crowbar(): Object3D {
-  const iron = new PropBuilder();
-  iron.tube(0, -0.08, 0, 0, 0.5, 0, 0.014, [0.24, 0.16, 0.12]);
-  iron.tube(0, 0.5, 0, 0.035, 0.58, 0, 0.014, [0.24, 0.16, 0.12]);
-  iron.tube(0.035, 0.58, 0, 0.1, 0.6, 0, 0.012, [0.3, 0.29, 0.28]); // the claw, worn bright
-  const m: Mesh = meshFromData(iron.build()!, METAL);
-  m.matrixAutoUpdate = true;
-  const g = new Group();
-  g.add(m);
-  return g;
+  return held((_, iron) => {
+    iron.tube(0, -0.08, 0, 0, 0.5, 0, 0.014, [0.24, 0.16, 0.12]);
+    iron.tube(0, 0.5, 0, 0.035, 0.58, 0, 0.014, [0.24, 0.16, 0.12]);
+    iron.tube(0.035, 0.58, 0, 0.1, 0.6, 0, 0.012, [0.3, 0.29, 0.28]); // the claw, worn bright
+  });
 }
 
 /**
@@ -109,19 +111,13 @@ function crowbar(): Object3D {
  * face out along +z): dented blue enamel, a black rim and a wooden knob.
  */
 function potLid(): Object3D {
-  const enamel = new PropBuilder(), wood = new PropBuilder();
-  enamel.cylinder(0, 0, 0, 0.17, 0.008, [0.16, 0.24, 0.38], 20);
-  enamel.cylinder(0, 0, 0, 0.175, 0.004, [0.05, 0.05, 0.06], 20);
-  enamel.ellipsoid(0.06, 0.012, 0.03, 0.04, 0.006, 0.035, [0.12, 0.17, 0.26], 6); // the dent
-  wood.cylinder(0, 0.025, 0, 0.022, 0.015, [0.2, 0.12, 0.06], 8);
-  const g = new Group();
-  for (const [b, kind] of [[wood, VERTEX_COLOR_SOLID], [enamel, METAL]] as const) {
-    const m: Mesh = meshFromData(b.build()!, kind);
-    m.rotation.x = Math.PI / 2; // built face up (+y); the shield's face is +z
-    m.matrixAutoUpdate = true;
-    g.add(m);
-  }
-  return g;
+  // Built face up (+y); the shield's face is +z.
+  return held((wood, enamel) => {
+    enamel.cylinder(0, 0, 0, 0.17, 0.008, [0.16, 0.24, 0.38], 20);
+    enamel.cylinder(0, 0, 0, 0.175, 0.004, [0.05, 0.05, 0.06], 20);
+    enamel.ellipsoid(0.06, 0.012, 0.03, 0.04, 0.006, 0.035, [0.12, 0.17, 0.26], 6); // the dent
+    wood.cylinder(0, 0.025, 0, 0.022, 0.015, [0.2, 0.12, 0.06], 8);
+  }, Math.PI / 2);
 }
 
 /** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
