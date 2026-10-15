@@ -1,0 +1,68 @@
+/**
+ * Grandma's first camp (docs/design/town-and-first-strata.md §4, the Threshold): where she camped in
+ * 1963, the furthest she had come looking for her father. A tent, a cold fire, her thermos, and a
+ * note on a stone. One on level 9, on dry, level floor a good walk from the arrival, in a cavern if
+ * one will do.
+ *
+ * Pure: found from the level's seed; the props are built with the tile it falls in.
+ */
+import { hash3f } from '@futuremagic/core';
+import type { Level } from './level';
+import { local } from './propMesh';
+
+export const CAMP = {
+  depth: 9,
+  /** How far from the arrival it is looked for, metres. */
+  near: 90,
+  far: 320,
+  /** How far one can be from the note to read it, metres. */
+  reach: 1.6,
+} as const;
+
+export interface GrandmasCamp {
+  /** The tent's door, on the floor; the camp faces along `yaw` (out of the tent, towards the fire). */
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly yaw: number;
+  /** Where the note lies. */
+  readonly note: readonly [number, number, number];
+}
+
+/** What she wrote. */
+export const NOTE = [
+  '14 March 1963. Third night at this camp.',
+  'The halls stop here and the caves begin, and the caves were here first. I found steps cut for someone twice my height. Papa\'s lamp was on the bottom one. He came this far.',
+  'I go on tomorrow. The tea is for the way back. Don\'t you dare.',
+  'If you are reading this, I never came back for my thermos, and you should go home.',
+];
+
+/** The camp on `level`, or null (only on level 9, and only where the floor allows). */
+export function grandmasCamp(level: Level): GrandmasCamp | null {
+  if (level.depth !== CAMP.depth) return null;
+  const [ax, , az] = level.arrival, turn = hash3f(level.seed, 9, 63, 1) * Math.PI * 2;
+  for (const caveOnly of [true, false]) {
+    for (let r = CAMP.near; r < CAMP.far; r += 6) {
+      for (let a = 0; a < 24; a++) {
+        const t = turn + (a / 24) * Math.PI * 2, x = ax + Math.cos(t) * r, z = az + Math.sin(t) * r;
+        const col = level.columnAt(x, z);
+        if ((caveOnly && col.cavern < 0.9) || col.collapse > 0 || col.rubble > 0.02 || col.border < 6) continue;
+        const camp = campAt(level, x, z, t + Math.PI); // the tent's back to the far side, facing the way she came
+        if (camp) return camp;
+      }
+    }
+  }
+  return null;
+}
+
+/** The camp at (x, z) facing `yaw`, if the floor is dry and level round it, with headroom and no way down near. */
+function campAt(level: Level, x: number, z: number, yaw: number): GrandmasCamp | null {
+  if (level.descents.at(x, z, 8) || !level.dry(x, z, 0.3)) return null;
+  const g = level.groundAt(x, z), at = local(x, z, yaw);
+  for (const [sd, fw] of [[0, -1.2], [-1.2, -1.2], [1.2, -1.2], [-1.4, 1.2], [1.4, 1.2], [0, 2.8], [1.2, 2], [-1, 3.6]]) {
+    const [px, pz] = at(sd, fw);
+    if (!level.dry(px, pz, 0.3) || Math.abs(level.groundAt(px, pz) - g) > 0.25 || level.sdf(px, g + 2, pz) < 1.2) return null;
+  }
+  const [nx, nz] = at(1.2, 2);
+  return { x, y: g, z, yaw, note: [nx, level.groundAt(nx, nz) + 0.24, nz] };
+}

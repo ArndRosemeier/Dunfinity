@@ -8,6 +8,7 @@ import { deriveSeed } from '@futuremagic/core';
 import { bandOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
+import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -36,11 +37,18 @@ export class Level {
   private readonly col = newColumn();
   private arrival_: [number, number, number] | null = null;
   private ascent_: Shaft | null | undefined;
+  private camp_: GrandmasCamp | null | undefined;
 
   constructor(readonly seed: number, readonly depth: number) {
     this.band = bandOf(depth);
     this.field = new QuarryField(deriveSeed(seed, 'level', depth), this.band);
     this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent);
+  }
+
+  /** Grandma's first camp, if it is on this level (level 9). */
+  get camp(): GrandmasCamp | null {
+    if (this.camp_ === undefined) this.camp_ = grandmasCamp(this);
+    return this.camp_;
   }
 
   /** The way up, where one arrives from the level above (null on the first level, or if no pillar there will do). */

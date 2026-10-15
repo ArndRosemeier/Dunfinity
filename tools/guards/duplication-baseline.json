@@ -530,5 +530,9 @@
   {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and poses; same per-frame verb"
+  },
+  {
+    "key": "idiom: [.collapse .rubble] in dunfinity/gen/descents.ts + dunfinity/gen/grandmasCamp.ts + dunfinity/gen/quarryProps.ts",
+    "reason": "each placement (shafts, props, grandma's camp) reads the column's collapse and rubble against its own thresholds; the column (QuarryField.column) is the seam"
   }
 ]
