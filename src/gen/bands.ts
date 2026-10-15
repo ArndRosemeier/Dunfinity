@@ -165,6 +165,11 @@ export const CELLAR_BAND: Band = {
   styles: [['cellar', 1]],
 };
 
+/** A floor height over the highest the band's water table reaches (`water`: base plus all its wander), with a metre to spare: the built styles keep their floors dry from here up. */
+export function dryAbove(band: Band): number {
+  return band.water[0] + band.water[1] + 1;
+}
+
 /** How far each style's weight in a level's mix strays from its band's, either way (as a power of 2). */
 const MIX_VARY = 0.5;
 

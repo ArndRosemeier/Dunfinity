@@ -16,6 +16,7 @@ import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
 import { CELLAR, CELLAR_SHAFT, CellarField } from './cellar';
+import { inscriptionsAt, type Inscription } from './inscriptions';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -96,6 +97,11 @@ export class Level {
     if (this.depth === 0) return { kind: 'letter', at: [CELLAR.letter.x, CELLAR.letter.y, CELLAR.letter.z] };
     const c = this.camp;
     return c && { kind: 'note', at: c.note };
+  }
+
+  /** Writing in the old scripts on this level (docs/design/lore.md): the ward round grandma's salt circle. */
+  get inscriptions(): readonly Inscription[] {
+    return inscriptionsAt(this.depth);
   }
 
   /** A place always safe to rest in, as by a fire: grandma's salt circle in the cellar. */

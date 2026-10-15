@@ -22,6 +22,8 @@ export const MOVE = {
   /** Walking with the pot lid up. */
   guarded: 2,
   swim: 2.4,
+  /** A swimmer's feet float this far under the water: the capsule stands upright, its top just out (a sump's 0.5 m of air is enough). The figure is drawn higher, lying in the water (src/render/humans/nobody.ts `SWIM`). */
+  float: 1.4,
   jump: 6.2,
   gravity: 18,
   climb: 1.7,
@@ -258,7 +260,7 @@ export class Body {
 
   private swim(input: BodyInput, mx: number, mz: number, water: number, dt: number): void {
     // Float with the head out of the water.
-    const target = water - 1.4;
+    const target = water - MOVE.float;
     this.vy += ((target - this.y) * 8 - this.vy * 3) * dt;
     this.vx += clampStep(mx * MOVE.swim - this.vx, 6 * dt);
     this.vz += clampStep(mz * MOVE.swim - this.vz, 6 * dt);

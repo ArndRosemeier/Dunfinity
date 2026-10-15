@@ -10,6 +10,7 @@
  */
 import { hash3f } from '@futuremagic/core';
 import { CELLAR } from './cellar';
+import { inscribeRing, inscriptionsAt } from './inscriptions';
 import { local, type PropBuilder, type Rgb } from './propMesh';
 import { furnishTown } from './townProps';
 
@@ -29,7 +30,7 @@ export interface Furnish {
 
 const WOOD: Rgb = [0.2, 0.13, 0.075], DARK: Rgb = [0.12, 0.08, 0.05], BRICK: Rgb = [0.4, 0.2, 0.14];
 const PLUSH: Rgb = [0.17, 0.21, 0.12], TIN: Rgb = [0.16, 0.24, 0.38], GOLD: Rgb = [0.55, 0.42, 0.18];
-const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], SALT: Rgb = [0.45, 0.8, 1.1], STEEL: Rgb = [0.55, 0.56, 0.58];
+const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], SALT: Rgb = [0.45, 0.8, 1.1], WARD: Rgb = [0.3, 0.55, 0.78], STEEL: Rgb = [0.55, 0.56, 0.58];
 const JARS: readonly Rgb[] = [[0.45, 0.28, 0.08], [0.2, 0.3, 0.12], [0.5, 0.12, 0.1], [0.55, 0.45, 0.2]];
 
 export function furnishCellar(f: Furnish): void {
@@ -89,6 +90,8 @@ export function furnishCellar(f: Furnish): void {
       const a = (k / n) * Math.PI * 2, x = ci.x + Math.cos(a) * ci.r, z = ci.z + Math.sin(a) * ci.r;
       f.glow.upright(x, 0.006, z, -a, 0.035, 0.006, (Math.PI * ci.r) / n + 0.01, SALT);
     }
+    // Round it, traced in the same salt, the ward she copied (src/gen/inscriptions.ts).
+    for (const ins of inscriptionsAt(0)) inscribeRing(f.glow, ins, 0.022, WARD);
     // Her armchair, the tin on its seat.
     const ch = C.chair, p = local(ch.x, ch.z, ch.yaw);
     const box = (side: number, fwd: number, y: number, hx: number, hy: number, hz: number, c: Rgb) => {

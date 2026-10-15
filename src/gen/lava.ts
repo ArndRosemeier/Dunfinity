@@ -18,6 +18,7 @@ import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
 import { GrainLines, grainOf } from './grainLines';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
 import { roofOver, scatter, type Dress } from './styleProps';
@@ -61,6 +62,8 @@ interface TubeColumn {
 
 export class Lava implements Style {
   readonly id: StyleId = 'lava';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ basalt: 0.8, slate: 0.2 });
   /** Rust on the map (M). */
   readonly mapFloor = [0.5, 0.32, 0.26] as const;
   private readonly noise: Noise;

@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.115 — The ability bar and Tab targeting
+
+- A bar along the bottom of the screen shows every cooked card that is used by a key: its number, its key, how soon it is ready again, and whether it is on (the lid up, tiptoeing, a salt circle keeping).
+- The slots answer to 1–8 as well as their own keys (not at Kemal's counter, where 1–3 still buy). With the mouse free (Esc), a click on a slot uses it; a click on the lid or Tiptoe holds it until the next click.
+- The cards that work by themselves (Hold It Properly, Chicken Soup, Kneading) are listed under the bar as always on.
+- Tab targeting (optional): Tab picks the foe nearest where the camera looks, and each further Tab the next one. A red mark with its health shows over it. Stabs, the Pound and thrown knives turn to it; Escape (with the mouse free), its death or 30 m of distance let it go.
+
+## v0.114 — Every level style cut through its own mix of rock
+
+- Each of the thirteen level styles now names the rocks it is cut through, so no area is one stone: the karst is limestone with beds of shale and sandstone, the rift shale, sandstone, granite and slate, the catacombs limestone and clay-dark shale, the lava tubes and basalt columns basalt with slate, the geodes and flooded galleries limestone with marble, the dwarven halls granite with marble and slate, the elven vaults marble with limestone, and so on.
+
+## v0.113 — Swimming with the head out of the water
+
+- The swimmer was drawn completely under water: the body floats with its feet 1.4 m down, but the swim pose lies flat at hip height, so head and back sat about a quarter metre under the surface.
+- The figure is now lifted to the swim pose's water line while swimming (eased in and out), so the head rides at the surface with the face out, treading or crawling. The body's float, and so sumps and the reachability check, are unchanged.
+- The headlamp sits just over the water while swimming instead of a metre under it.
+- `tools/shot/swim-probe.mjs` puts the nobody in deep water headless and reports how high the head rides.
+
+## v0.112 — The rift's story and two old scripts
+
+- The background story is written down: the dungeon is a rift through buried worlds down to the first one (docs/design/lore.md).
+- The dwarves' Kerf runes and the elves' Thread script are real alphabets you can learn to read.
+- Round grandma's salt circle in the cellar, traced in the same blue salt, runs a line of elven writing. Press E near it to read the marks; each new inscription you read teaches you one letter, pencilled into the key in her tin, and the next grandchild finds it there.
+
+## v0.111 — Elven vaults, and the dwarven halls furnished
+
+- A new level style for the Old Halls (levels 21–40): elven vaults, long naves under pointed vaults 25–35 m high, with a lower aisle each side behind an arcade of slender clustered columns, ribs across the vault at every bay and transepts crossing between the naves. Pale silver-grey stone, the ribs and columns paler still, and a dark polished floor.
+- The dwarven halls are furnished: a stern dwarf king before some wall panels and a burning forge before others, braziers by the columns (half of them lit) and heavy chains hanging over the nave. The forges and lit braziers light the halls.
+- The dwarven halls and elven vaults keep their floors clear of the water table, so you no longer swim down a nave or wade into a hall.
+
 ## v0.110 — Debug menu: level styles, copy position, invulnerable for real
 
 - "Copy position" in the debug menu (the key left of 1) puts a small block on the clipboard to paste into the chat: the version, a link straight back to the spot (seed, level, position, where the camera looks), the level style and region underfoot, what the body is doing, and how far the rock and any props are. "Go there" takes such a block, or just the link, and puts you back on that spot.

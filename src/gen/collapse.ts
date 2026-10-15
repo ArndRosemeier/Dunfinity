@@ -15,6 +15,7 @@
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { blendShare, newNear, voronoiNear, type Near } from './voronoi';
 import { boxDist2, boxDist3 } from './shapes';
@@ -92,6 +93,8 @@ const newPlan = (): Plan => ({ inside: 0, floor: 0, dome: 0 });
 
 export class Collapse implements Style {
   readonly id: StyleId = 'collapse';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ limestone: 0.35, shale: 0.3, sandstone: 0.2, granite: 0.15 });
   /** Pale broken stone on the map (M). */
   readonly mapFloor = [0.66, 0.6, 0.52] as const;
   private readonly noise: Noise;

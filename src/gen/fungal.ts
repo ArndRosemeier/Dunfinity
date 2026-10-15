@@ -16,6 +16,7 @@ import type { Band } from './bands';
 import { CaveThings, THING_REACH, karstChambers, type Chamber } from './caveThings';
 import { Karst } from './karst';
 import type { Column } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { propModel, type ModelName } from './models';
 import { scatter, type Dress } from './styleProps';
@@ -51,6 +52,8 @@ interface Shroom {
 
 export class Fungal implements Style {
   readonly id: StyleId = 'fungal';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ shale: 0.45, limestone: 0.35, slate: 0.2 });
   /** Violet on the map (M). */
   readonly mapFloor = [0.55, 0.42, 0.62] as const;
   private readonly cave: Karst;

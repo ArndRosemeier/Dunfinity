@@ -160,7 +160,7 @@ class TileBuilder {
     furnishCellar({
       solid: this.solid, glow: this.glow, rock: this.stones,
       inTile: (x, z) => this.inTile(x, z),
-      light: (x, y, z) => { this.lamps.push(x, y, z); this.counts.lit++; },
+      light: (x, y, z) => this.light(x, y, z),
       block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
     });
     return this.done();
@@ -173,8 +173,15 @@ class TileBuilder {
       seed: deriveSeed(this.seed, st.id),
       mine: (x, z) => this.inTile(x, z) && owns(st, x, z) && !this.byCamp(x, z),
       block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
+      light: (x, y, z) => this.light(x, y, z),
       placed: () => { this.counts.dressed++; },
     };
+  }
+
+  /** A burning light at (x, y, z): the renderer lights the nearest few (src/render/props/lamps.ts). */
+  private light(x: number, y: number, z: number): void {
+    this.lamps.push(x, y, z);
+    this.counts.lit++;
   }
 
   private done(): PropTile {
