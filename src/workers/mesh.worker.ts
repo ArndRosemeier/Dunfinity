@@ -9,5 +9,5 @@ export interface MeshJob extends ChunkRequest {
 
 serve<MeshJob, ChunkMesh | null>((job) => {
   const result = meshChunk(levelFor(job.level), job);
-  return { result, transfer: result ? [result.positions.buffer, result.normals.buffer, result.indices.buffer, result.colors.buffer] : [] };
+  return { result, transfer: result ? [result.positions.buffer, result.normals.buffer, result.indices.buffer, result.colors.buffer, result.surfaces.buffer] : [] };
 });

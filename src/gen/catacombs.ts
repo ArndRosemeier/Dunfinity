@@ -155,6 +155,11 @@ export class Catacombs implements Style {
     return d + this.rough.n3(x / 1.8, y / 1.8, z / 1.8) * 0.06 * up;
   }
 
+  /** Soft tuff cut with chisels: tool marks, fainter than the miners' picks. */
+  surface(_col: Column, _x: number, _y: number, _z: number, out: Float32Array, o: number): void {
+    out[o] = 0.45; out[o + 1] = 0; out[o + 2] = 0; out[o + 3] = 0;
+  }
+
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     const B = this.band, own = this.own.get(col), h = y - col.floor, n = this.noise;
     // Pale yellowish tuff; soot from lamps high up; the niches hold bones.

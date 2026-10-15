@@ -129,6 +129,7 @@ function standIn(kind: MaterialKind): Mesh {
   g.setIndex([0, 1, 2]); // part of the shader's cache key: every kind's meshes are indexed
   if (kind.attributes.includes('normal')) g.setAttribute('normal', new Float32BufferAttribute([0, 0, 1, 0, 0, 1, 0, 0, 1], 3));
   if (kind.attributes.includes('color')) g.setAttribute('color', new Float32BufferAttribute([1, 1, 1, 1, 1, 1, 1, 1, 1], 3));
+  if (kind.attributes.includes('surface')) g.setAttribute('surface', new Float32BufferAttribute(new Array(12).fill(0), 4));
   if (kind.attributes.includes('uv')) g.setAttribute('uv', new Float32BufferAttribute([0, 0, 1, 0, 0, 1], 2));
   const m = new Mesh(g, kind.make());
   m.castShadow = kind.shadow.cast;

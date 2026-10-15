@@ -14,7 +14,7 @@
  */
 import { QUARRY, type Band } from './bands';
 import { Noise, hash2i, hashToFloat, deriveSeed, smoothstep, clamp } from '@futuremagic/core';
-import { owns, type Style, type StyleId } from './style';
+import { owns, putSurface, type Style, type StyleId, type Surface } from './style';
 import { blendShare, newNear, voronoiNear, type Near } from './voronoi';
 import { boxDist2 } from './shapes';
 
@@ -24,6 +24,8 @@ import { boxDist2 } from './shapes';
  * courses and the depth of the worn joints between them, metres, and its stone's tint.
  */
 export const OLDER = { drum: 1.55, top: [2.5, 4] as const, course: 1.1, joint: 0.07, stone: [0.62, 0.7, 0.6] as const };
+/** The older drums' stone: dressed blocks in half-courses. */
+const OLDER_DRUMS: Surface = [0, 1, 0, OLDER.course / 2];
 
 /** Flutes across a pillar side: 0 on the ridges, 1 deep in a flute; none near the corners. */
 function fluting(along: number, half: number, count: number): number {
@@ -385,6 +387,17 @@ export class QuarryField implements Style {
     // A cavern is all natural rock: rough everywhere above the floor (which stays walkable).
     if (col.cavern > 0) r += col.cavern * smoothstep(0.8, 3, y - col.floor) * (this.rough.n3(x / 10 + 3, y / 10, z / 10) * 1.8 + this.rough.n3(x / 3.5, y / 3.5, z / 3.5) * 0.45);
     return d + r;
+  }
+
+  /**
+   * Worked rock in the halls (pick marks as much as the band's `tooled`), natural rock between the
+   * workings and in caverns (partly flowstone there), the older pillar drums of dressed blocks.
+   */
+  surface(col: Column, _x: number, y: number, _z: number, out: Float32Array, o: number): void {
+    const B = this.band, up = y - col.floor;
+    if (y < col.olderTop + 0.05 && col.pillarD < 1.5 && up > 0.15) { putSurface(OLDER_DRUMS, out, o); return; }
+    const wild = (col.wall < 1.5 || col.cavern > 0.5) && up > 0.5 ? 1 : 0;
+    out[o] = wild ? 0 : Math.max(0.05, B.tooled); out[o + 1] = 0; out[o + 2] = col.cavern * 0.5; out[o + 3] = 0;
   }
 
   /** Limestone colour at a surface point (linear RGB, written into out). */
