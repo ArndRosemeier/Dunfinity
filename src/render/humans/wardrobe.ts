@@ -88,6 +88,22 @@ function minersPick(): Object3D {
   return g;
 }
 
+/**
+ * A crowbar, in grip space: a bent iron bar held near its straight end, the claw hooked over at
+ * the top (up +y from the fist).
+ */
+function crowbar(): Object3D {
+  const iron = new PropBuilder();
+  iron.tube(0, -0.08, 0, 0, 0.5, 0, 0.014, [0.24, 0.16, 0.12]);
+  iron.tube(0, 0.5, 0, 0.035, 0.58, 0, 0.014, [0.24, 0.16, 0.12]);
+  iron.tube(0.035, 0.58, 0, 0.1, 0.6, 0, 0.012, [0.3, 0.29, 0.28]); // the claw, worn bright
+  const m: Mesh = meshFromData(iron.build()!, METAL);
+  m.matrixAutoUpdate = true;
+  const g = new Group();
+  g.add(m);
+  return g;
+}
+
 /** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
 const KNIFE_TILT = 2.7;
 
@@ -97,6 +113,7 @@ export const WARDROBE: Wardrobe = {
   buildItem: (defId) => {
     if (defId === 'knife') return kitchenKnife();
     if (defId === 'pick') return minersPick();
+    if (defId === 'crowbar') return crowbar();
     throw new Error(`no held item "${defId}"`);
   },
   disposeItem: (o) => o.traverse((m) => (m as Mesh).geometry?.dispose()),
@@ -123,6 +140,13 @@ const MINER: Outfit = {
   hand: ['pick', [0.22, 0.21, 0.2], [0.3, 0.22, 0.14], 0.6],
 };
 
+/** What the scavengers wear (three looks: patched work clothes, a dyed coat, tarpaulin), and their crowbars. */
+const SCAVENGERS: readonly Outfit[] = [
+  { clothes: [['chest', 'tunic', [0.3, 0.33, 0.22], [0.22, 0.2, 0.15], 0.75], ['legs', 'trousers', [0.18, 0.2, 0.24], [0.13, 0.14, 0.16], 0.7], ['feet', 'footwraps', [0.22, 0.16, 0.1], [0.15, 0.11, 0.07], 0.6]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
+  { clothes: [['chest', 'tunic', [0.42, 0.16, 0.12], [0.2, 0.12, 0.1], 0.7], ['legs', 'trousers', [0.16, 0.15, 0.13], [0.12, 0.11, 0.1], 0.75], ['feet', 'footwraps', [0.12, 0.1, 0.08], [0.1, 0.08, 0.06], 0.6]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
+  { clothes: [['chest', 'tunic', [0.16, 0.24, 0.3], [0.12, 0.16, 0.18], 0.8], ['legs', 'trousers', [0.26, 0.24, 0.18], [0.18, 0.16, 0.12], 0.8], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.65]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
+];
+
 function dressIn(o: Outfit, seed: number): EquipmentVisuals {
   const eq: EquipmentVisuals = {};
   o.clothes.forEach(([slot, defId, a, b, wear], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear) }; });
@@ -133,3 +157,4 @@ function dressIn(o: Outfit, seed: number): EquipmentVisuals {
 
 export const rags = (seed: number): EquipmentVisuals => dressIn(RAGS, seed);
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
+export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
