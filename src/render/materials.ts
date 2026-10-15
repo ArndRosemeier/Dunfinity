@@ -117,7 +117,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   // partings, and rings of fine grooves where the miners' cutting machines stopped.
   const saltBed = mx_noise_float(vec3(p.x.mul(0.03), p.y.mul(1.4).add(mottle.mul(0.25)), p.z.mul(0.03)));
   const saltStreak = mx_noise_float(vec3(p.x.mul(0.35), p.y.mul(6.5).add(mottle.mul(0.6)), p.z.mul(0.35)));
-  const saltPale = smoothstep(0.25, 0.45, saltBed).mul(0.8).add(smoothstep(0.35, 0.55, saltStreak).mul(0.6)).add(blotch.mul(0.15)).clamp(0, 1);
+  const saltPale = smoothstep(0.25, 0.45, saltBed).mul(0.8).add(smoothstep(0.35, 0.55, saltStreak).mul(steep.mul(0.45).add(0.15))).add(blotch.mul(0.15)).clamp(0, 1);
   const saltHue = mix(mix(vec3(0.5, 0.46, 0.42), vec3(1.55, 1.52, 1.46), saltPale), vec3(1.05, 0.88, 0.74), smoothstep(-0.45, -0.25, saltBed).mul(smoothstep(-0.05, -0.25, saltBed)));
   const clay = thinLine(saltBed.sub(-0.45).abs().mul(0.4), float(0.01)).mul(steep);
   const ringCell = vec3(u.div(1.7).floor(), p.y.div(1.3).floor(), 2.9), ringJ = mx_cell_noise_float(ringCell).sub(0.5);
@@ -163,6 +163,11 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   // darker still, rust-brown streaks down the walls, damp darker floors.
   const tint = mx_fractal_noise_float(p.mul(0.3).add(17.0), 2, 2.0, 0.5); // a few metres across: one wall shows both
   const hue = mix(mix(vec3(1, 1, 1), vec3(1.14, 0.96, 0.78), smoothstep(0.0, 0.5, tint)), vec3(0.86, 0.92, 1.0), smoothstep(0.0, -0.5, tint));
+  // Across the cave: whole stretches of wall tens of metres long run lighter or darker, ochre or
+  // grey-brown, so no two walls look alike.
+  const broad = mx_fractal_noise_float(p.mul(0.07).add(vec3(-31.0, 5.5, 12.0)), 2, 2.0, 0.5), broadHue = mx_noise_float(p.mul(0.05).add(44.0));
+  const region = mix(mix(vec3(1, 1, 1), vec3(1.2, 0.98, 0.72), smoothstep(0.05, 0.45, broadHue)), vec3(0.8, 0.82, 0.86), smoothstep(-0.05, -0.45, broadHue))
+    .mul(broad.mul(0.55).add(1).clamp(0.62, 1.3));
   const natShade = float(0.9).add(mottle.mul(0.22)).add(strata.mul(0.16).mul(steep)).add(grain.mul(0.07)).add(grit.mul(0.1)).add(speck)
     .sub(seam.mul(0.4)).sub(tool.mul(0.1)).sub(crack.mul(0.65)).sub(damp.mul(0.3)).sub(clay.mul(0.4).add(ring.mul(0.05)).mul(ROCK_FINISH.salt));
   const masShade = float(0.72).add(block.mul(0.4)).add(fleck.mul(0.1)).add(mottle.mul(0.14)).add(grain.mul(0.08)).add(grit.mul(0.06)).sub(joint.mul(0.4)).sub(edge.mul(0.06)).sub(damp.mul(0.2));
@@ -175,7 +180,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const cream = mix(vec3(1, 1, 1), mix(vec3(1.08, 1.0, 0.86), vec3(1.12, 0.9, 0.7), flowBand.mul(steep)), flow);
   const blockHue = mix(vec3(1, 1, 1), mix(vec3(1.05, 1.0, 0.92), vec3(0.94, 0.98, 1.04), block), masonry);
   const salt = mix(vec3(1, 1, 1), saltHue, ROCK_FINISH.salt.mul(natural));
-  m.colorNode = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(salt).mul(hue).mul(rust).mul(cream).mul(blockHue);
+  m.colorNode = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(salt).mul(hue).mul(region).mul(rust).mul(cream).mul(blockHue);
   // Wet sheen: some stretches of rock run with water and shine in the lamps; flowstone is always damp.
   const wetMask = smoothstep(0.1, 0.5, mx_noise_float(p.mul(vec3(0.3, 0.05, 0.3)).add(-9.4))).mul(ROCK_FINISH.wet).add(flow.mul(0.6)).add(damp.mul(ROCK_FINISH.wet)).clamp(0, 1);
   m.roughnessNode = float(0.9).add(grain.mul(0.06)).sub(wetMask.mul(0.55));
