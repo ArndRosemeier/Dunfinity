@@ -588,10 +588,6 @@
     "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
   },
   {
-    "key": "same name: dunfinity/gen/cellar.ts#at + dunfinity/gen/quarry.ts#at",
-    "reason": "CellarField overrides QuarryField's field method: the same seam, the cellar's own shape (one density function per level)."
-  },
-  {
     "key": "same name: dunfinity/gen/cellar.ts#color + dunfinity/gen/quarry.ts#color",
     "reason": "CellarField overrides QuarryField's field method: the same seam, the cellar's own shape (one density function per level)."
   },
