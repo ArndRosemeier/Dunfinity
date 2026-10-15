@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.108 — Every way of playing starts at level 0
+
+- Every chapter of grandma's tin is open from the start; depth now opens a chapter's stronger cards (`Card.opens`), not whole chapters.
+- Tenderising, Tiptoe, Way Home and Pot Lid can be cooked from the first fire.
+- Plan: the salt-worker path starts in the kitchen (Stove Flame, Cold Larder, Rolling Pin) in docs/design/recipe-box.md §6.
+
 ## v0.107 — Stone of every kind
 
 - The rock is no longer one flat colour. The stone itself now has colour texture at several sizes: fine grain, mineral flecks, iron and grey stains, and lighter and darker patches and warmer and cooler stretches a few metres across, on floors as well as walls; across the cave, whole stretches of wall tens of metres long run lighter or darker, ochre or grey-brown.
