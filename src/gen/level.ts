@@ -281,7 +281,7 @@ export class Level {
 
   /**
    * The rock's surface at mesh positions inside a sampled grid, `SURFACE_STRIDE` numbers per vertex:
-   * how it is worked (`Surface`, four), which rock it is (`RockMix`, eight), what covers it (`Cover`, four).
+   * how it is worked (`Surface`, four), which rock it is (`RockMix`, eight), what covers it (`Cover`, two).
    */
   surfaces(grid: SampledGrid, positions: Float32Array): Float32Array {
     const out = new Float32Array((positions.length / 3) * SURFACE_STRIDE);

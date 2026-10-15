@@ -17,7 +17,7 @@
  */
 import { newColumn, type Column, type ColumnMix, type QuarryField } from './quarry';
 import { REGIONS, Regions, newShares, type Mix, type Shares } from './regions';
-import { BARE, NATURAL, SHARE_OWN, putSurface, type Style } from './style';
+import { BARE, NATURAL, SHARE_OWN, type Style } from './style';
 import { putRocks, rockMix, type RockMix } from './rockTypes';
 
 /**
@@ -209,15 +209,15 @@ export class StyledField {
     this.blend(col, out, o, 8, (st) => putRocks(st.rocks ?? this.bandRocks, out, o));
   }
 
-  /** What covers the rock at a surface point (`Cover`: moss, bark, plaster, tiles), blended across edges like the colour. */
+  /** What covers the rock at a surface point (`Cover`: moss, bark), blended across edges like the colour. */
   cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     this.record('cover', BARE, col, x, y, z, out, o);
   }
-  /** A style's four-number record at a point (its `surface` or `cover`, else `none`), blended across edges. */
-  private record(key: 'surface' | 'cover', none: readonly [number, number, number, number], col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
-    this.blend(col, out, o, 4, (st, c) => { const f = st[key]; if (f) f.call(st, c, x, y, z, out, o); else putSurface(none, out, o); });
-  }
 
+  /** A style's record at a point (its `surface` or `cover`, else `none`), blended across edges. */
+  private record(key: 'surface' | 'cover', none: readonly number[], col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    this.blend(col, out, o, none.length, (st, c) => { const f = st[key]; if (f) f.call(st, c, x, y, z, out, o); else for (let k = 0; k < none.length; k++) out[o + k] = none[k]; });
+  }
 
   /** `size` numbers at out[o] written by `one` for the column's style, or weighted over its mix of styles. */
   private blend(col: Column, out: Float32Array, o: number, size: number, one: (style: Style, col: Column) => void): void {

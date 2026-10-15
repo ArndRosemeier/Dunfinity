@@ -18,8 +18,8 @@ import { furnishTown } from './townProps';
 export interface Furnish {
   readonly solid: PropBuilder;
   readonly glow: PropBuilder;
-  /** Drawn as rock: shapes `dressed` with a surface record (the town's plastered walls and tiled roofs). */
-  readonly rock: PropBuilder;
+  /** Drawn as a house (src/render/materials.ts `HOUSE`): the town's plastered walls and tiled roofs. */
+  readonly house: PropBuilder;
   /** Whether (x, z) is in the tile being built. */
   inTile(x: number, z: number): boolean;
   /** A burning lamp's light at (x, y, z). */

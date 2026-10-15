@@ -4,7 +4,6 @@
  */
 
 import type { Model } from './models';
-import { SURFACE_STRIDE } from './style';
 
 /** One merged mesh: positions, normals and colours (3 floats per vertex) and triangle indices. */
 export interface PropMesh {
@@ -12,8 +11,6 @@ export interface PropMesh {
   normals: Float32Array;
   colors: Float32Array;
   indices: Uint32Array;
-  /** The rock's surface record per vertex (src/gen/style.ts `SURFACE_STRIDE`), when any shape was `dressed`. */
-  surfaces?: Float32Array;
 }
 
 /** A direction or half-axis, metres. */
@@ -29,10 +26,6 @@ export class PropBuilder {
   private n: number[] = [];
   private c: number[] = [];
   private i: number[] = [];
-  /** Surface records, SURFACE_STRIDE per vertex so far, once any shape is `dressed`. */
-  private s: number[] | null = null;
-  /** The record of the shapes being `dressed` now. */
-  private rec: readonly number[] | null = null;
 
   get empty(): boolean { return this.i.length === 0; }
 
@@ -216,35 +209,13 @@ export class PropBuilder {
     for (const j of m.indices) this.i.push(base + j);
   }
 
-  /**
-   * The shapes `add` makes carry the rock's surface record `rec` (src/gen/style.ts: a `Surface`, a
-   * `RockMix`, a `Cover`; SURFACE_STRIDE numbers) for a builder drawn as rock: a plastered wall, a
-   * tiled roof (a shape dressed inside another's `add` takes its own). Shapes made outside it are plain rock.
-   */
-  dressed(rec: readonly number[], add: () => void): void {
-    this.pad();
-    const outer = this.rec;
-    this.rec = rec;
-    add();
-    this.pad();
-    this.rec = outer;
-  }
-
-  /** Records up to the last vertex: the one being `dressed` with, else plain rock's (zeros). */
-  private pad(): void {
-    const s = (this.s ??= []);
-    while (s.length < (this.p.length / 3) * SURFACE_STRIDE) for (let k = 0; k < SURFACE_STRIDE; k++) s.push(this.rec?.[k] ?? 0);
-  }
-
   build(): PropMesh | null {
     if (this.empty) return null;
-    if (this.s) this.pad();
     return {
       positions: new Float32Array(this.p),
       normals: new Float32Array(this.n),
       colors: new Float32Array(this.c),
       indices: new Uint32Array(this.i),
-      ...(this.s ? { surfaces: new Float32Array(this.s) } : {}),
     };
   }
 }

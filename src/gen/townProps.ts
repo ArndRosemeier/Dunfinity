@@ -6,22 +6,10 @@
 import { hash3f } from '@futuremagic/core';
 import { HOUSES, TOWN, houseColors, townGround, type House } from './town';
 import type { Furnish } from './cellarProps';
-import type { PropBuilder, Rgb } from './propMesh';
-import { SURFACE_STRIDE } from './style';
+import type { Rgb } from './propMesh';
 
 const IRON: Rgb = [0.08, 0.08, 0.09], DOOR: Rgb = [0.18, 0.11, 0.07], FRAME: Rgb = [0.3, 0.26, 0.2], STONE: Rgb = [0.36, 0.34, 0.31];
 const LIT: Rgb = [0.95, 0.68, 0.36], DARK_PANE: Rgb = [0.04, 0.05, 0.09], LANTERN: Rgb = [1, 0.85, 0.55];
-
-/** The rock shader's surface records (src/gen/style.ts) of a plastered wall (smooth render), a tiled roof, a plinth of dressed stone in courses. */
-const PLASTERED = surfaceRecord([0, 0, 0.4, 0], [0, 0, 1, 0]), TILED = surfaceRecord([0, 0, 0, 0], [0, 0, 0, 1]), DRESSED = surfaceRecord([0, 1, 0, 0.3], [0, 0, 0, 0]);
-
-/** A surface record: `surface`, no rock types, `cover`. */
-function surfaceRecord(surface: readonly number[], cover: readonly number[]): number[] {
-  const r = new Array<number>(SURFACE_STRIDE).fill(0);
-  r.splice(0, 4, ...surface);
-  r.splice(SURFACE_STRIDE - 4, 4, ...cover);
-  return r;
-}
 
 /** How far the houses' walls and roofs stand out of the field's (rounder) surface, metres: they hide it. */
 const SHELL = 0.15;
@@ -91,13 +79,7 @@ export function furnishTown(f: Furnish): void {
  * its corners at the mesh's metre cells), the gables filled. Grandma's keeps her front door open.
  */
 function shell(f: Furnish, H: House, door: boolean): void {
-  f.rock.dressed(PLASTERED, () => walls(f, H, door));
-  f.rock.dressed(TILED, () => roofOf(f.rock, H));
-}
-
-/** The walls, plinth and gables of `shell`. */
-function walls(f: Furnish, H: House, door: boolean): void {
-  const s = f.rock, G = TOWN.ground, { wall } = houseColors(H);
+  const s = f.house, G = TOWN.ground, { wall, roof } = houseColors(H); // (plaster and tiles: src/render/materials.ts `HOUSE`)
   const cz = (H.z0 + H.z1) / 2, half = (H.z1 - H.z0) / 2, hx = (H.x1 - H.x0) / 2, cx = (H.x0 + H.x1) / 2;
   const y0 = G - 0.4, cy = (y0 + H.eaves) / 2, hy = (H.eaves - y0) / 2;
   // The long walls (along x) and the ends (along z), the end to the street with her doorway cut out.
@@ -117,7 +99,7 @@ function walls(f: Furnish, H: House, door: boolean): void {
   // A stone plinth round the foot, over the field's fillet where its ground meets its walls.
   const P = { out: SHELL + 0.4, top: G + 0.55 }, py = (y0 + P.top) / 2, ph = (P.top - y0) / 2;
   const plinth = (x: number, z: number, hx: number, hz: number) => {
-    f.rock.dressed(DRESSED, () => f.rock.upright(x, py, z, 0, hx, ph, hz, STONE));
+    f.solid.upright(x, py, z, 0, hx, ph, hz, STONE);
     f.block(x, z, 0, hx, hz, G, P.top);
   };
   for (const z of [H.z0, H.z1]) plinth(cx, z, hx + P.out, P.out);
@@ -136,12 +118,8 @@ function walls(f: Furnish, H: House, door: boolean): void {
     s.ribbon(a, b, [n, n], [wall, wall]);
     s.ribbon(b, a, [n, n], [wall, wall]);
   }
-}
-
-/** The roof of `shell`: a slab down each side from the ridge, out over the walls. */
-function roofOf(s: PropBuilder, H: House): void {
-  const { roof } = houseColors(H), cz = (H.z0 + H.z1) / 2, half = (H.z1 - H.z0) / 2, hx = (H.x1 - H.x0) / 2, cx = (H.x0 + H.x1) / 2;
-  const ridge = H.eaves + half * H.pitch, over = 0.35, lift = SHELL + 0.06;
+  // The roof: a slab down each side from the ridge, out over the walls.
+  const over = 0.35, lift = SHELL + 0.06;
   for (const side of [-1, 1]) {
     const ez = cz + side * (half + over), ey = H.eaves - over * H.pitch;
     const half_v: [number, number, number] = side < 0 ? [0, (ey - ridge) / 2, (ez - cz) / 2] : [0, (ridge - ey) / 2, (cz - ez) / 2];

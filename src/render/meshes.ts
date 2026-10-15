@@ -12,18 +12,23 @@ export interface IndexedData {
   normals: Float32Array;
   colors: Float32Array;
   indices: Uint32Array;
-  /** The rock's surface (`SURFACE_STRIDE` numbers per vertex: src/gen/style.ts `Surface`, then a `RockMix`), for kinds that read it; plain natural rock if left out. */
+  /** The rock's surface (`SURFACE_STRIDE` numbers per vertex: src/gen/style.ts `Surface`, then a `RockMix`, then a `Cover`), for kinds that read it; plain natural rock if left out. */
   surfaces?: Float32Array;
 }
 
-/** The rock's surface record, split into the shader's attributes: `surface` (vec4), `rocks` and `rocks2` (the eight rock-type weights), `cover`. */
+/** The surface record's attributes, in order, and their sizes (adding up to SURFACE_STRIDE). */
+const SURFACE_ATTRIBUTES = [['surface', 4], ['rocks', 4], ['rocks2', 4], ['cover', 2]] as const;
+
+/** The rock's surface record, split into the shader's attributes: `surface` (vec4), `rocks` and `rocks2` (the eight rock-type weights), `cover` (vec2). */
 export function surfaceAttributes(g: BufferGeometry, data: Float32Array): void {
-  const n = data.length / SURFACE_STRIDE, parts = [0, 1, 2, 3].map(() => new Float32Array(n * 4));
-  for (let i = 0; i < n; i++) for (let k = 0; k < SURFACE_STRIDE; k++) parts[k >> 2][i * 4 + (k & 3)] = data[i * SURFACE_STRIDE + k];
-  g.setAttribute('surface', new Float32BufferAttribute(parts[0], 4));
-  g.setAttribute('rocks', new Float32BufferAttribute(parts[1], 4));
-  g.setAttribute('rocks2', new Float32BufferAttribute(parts[2], 4));
-  g.setAttribute('cover', new Float32BufferAttribute(parts[3], 4));
+  const n = data.length / SURFACE_STRIDE;
+  let at = 0;
+  for (const [name, size] of SURFACE_ATTRIBUTES) {
+    const part = new Float32Array(n * size);
+    for (let i = 0; i < n; i++) for (let k = 0; k < size; k++) part[i * size + k] = data[i * SURFACE_STRIDE + at + k];
+    g.setAttribute(name, new Float32BufferAttribute(part, size));
+    at += size;
+  }
 }
 
 /** A static mesh (no per-frame matrix update) of `kind` from position, normal, colour and index arrays. */
