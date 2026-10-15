@@ -1,6 +1,6 @@
 /**
  * Everything that lives on a level, together: the rats, the Salt-Touched, the cave crickets, the
- * two slime factions, the feral dogs, the brine eels and, on level 5, the Foreman and his crew. Made in one go for a level (or a
+ * two slime factions, the feral dogs, the brine eels, the scavengers and, on level 5, the Foreman and his crew. Made in one go for a level (or a
  * new grandchild), stepped in one go, and asked in one place whom a blow can hit and whether
  * something is after you.
  *
@@ -16,8 +16,9 @@ import { Slimes, type Slime } from './slimes';
 import { Foreman, FOREMAN, type Boss } from './foreman';
 import { Dogs, type Dog } from './dogs';
 import { Eels, type Eel } from './eels';
+import { Scavengers, type Scavenger } from './scavengers';
 
-export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel;
+export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel | Scavenger;
 
 /** Something after you this close counts (the knife comes out). */
 const THREAT = 14;
@@ -31,6 +32,7 @@ export class Fauna {
   readonly foreman: Foreman;
   readonly dogs: Dogs;
   readonly eels: Eels;
+  readonly scavengers: Scavengers;
 
   constructor(level: Level) {
     this.rats = new Rats(level);
@@ -41,19 +43,20 @@ export class Fauna {
     this.foreman = new Foreman(level);
     this.dogs = new Dogs(level);
     this.eels = new Eels(level);
+    this.scavengers = new Scavengers(level);
     const hall = this.foreman.hall;
     if (hall) this.touched.gather(hall.x, hall.z, FOREMAN.crew, 5);
   }
 
   /** The props in the way: they all walk round them. */
   set blockers(b: Blockers | null) {
-    this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = b;
+    this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = b;
   }
 
-  /** Step them all by dt; `lamp`: your headlamp (the crickets shun it); `facing`: which way you face (the dogs go for your back). Returns whether a heavy blow (a pick) landed on you. */
+  /** Step them all by dt; `lamp`: your headlamp (the crickets shun it); `facing`: which way you face (the dogs go for your back). Returns whether a heavy blow (a pick, a crowbar) landed on you. */
   advance(dt: number, prey: Fighter, lamp: Lamp, facing: number): boolean {
     this.rats.advance(dt, prey);
-    const struck = this.touched.advance(dt, prey) + this.foreman.advance(dt, prey, this.touched) > 0;
+    const struck = this.touched.advance(dt, prey) + this.foreman.advance(dt, prey, this.touched) + this.scavengers.advance(dt, prey) > 0;
     this.crickets.advance(dt, prey, lamp);
     this.lumen.advance(dt, prey, this.murk.list);
     this.murk.advance(dt, prey, this.lumen.list);
@@ -64,7 +67,7 @@ export class Fauna {
 
   /** Everyone a blow can hit (the dead included). */
   foes(): Foe[] {
-    return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list];
+    return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list, ...this.scavengers.list];
   }
 
   /** Whether something near is after `prey`. */
@@ -75,6 +78,7 @@ export class Fauna {
       || this.crickets.list.some((c) => c.angry && near(c))
       || this.dogs.list.some((g) => g.hunting && near(g))
       || this.eels.list.some((e) => e.mode !== 'cruise' && near(e))
+      || this.scavengers.list.some((s) => (s.hostile || s.mode === 'stand') && near(s))
       || [...this.lumen.list, ...this.murk.list].some((s) => s.foe === prey && near(s));
   }
 
@@ -86,6 +90,7 @@ export class Fauna {
     if (this.crickets.killed) lines.push(`cave crickets killed: ${this.crickets.killed}`);
     if (this.dogs.killed) lines.push(`feral dogs killed: ${this.dogs.killed}`);
     if (this.eels.killed) lines.push(`brine eels killed: ${this.eels.killed}`);
+    if (this.scavengers.killed) lines.push(`scavengers killed: ${this.scavengers.killed}`);
     if (this.touched.killed) lines.push(`Salt-Touched laid to rest: ${this.touched.killed}`);
     if (this.foreman.killed) lines.push('The Foreman is dead.');
     return lines;

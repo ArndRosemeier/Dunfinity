@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.030 — Scavengers
+
+- From level 4 you are not the only living person down here. Scavengers camp in twos and threes round small fires, sitting on crates. Most want to be left alone: they get up as you come near, one of them warns you off, and they let you pass at a distance. Walk into their camp or stab one and they all come for you with crowbars.
+- Some camps are robbers. They want your pack and come for you as soon as they see you.
+- A badly hurt scavenger drops everything and runs.
+
 ## v0.029 — Brine eels
 
 - From level 5 there is something in the water. Pale brine eels, three metres long, lie deep in the brine lakes of the Salt Works and the flooded halls of the Cisterns. Wade into their water, or stand at its edge, and one comes for you, its back breaking the surface. It rears its head out of the water (your warning), strikes, and sinks back to come round again. They never leave the water: get out of it.
