@@ -28,9 +28,9 @@ export class LevelView {
    * from where it is carried (the nobody's head; the camera in the Lab). Off the camera, so the
    * shadows show from behind.
    */
-  readonly headlamp = new SpotLight(0xffe9cc, 160, 160, HEADLAMP.angle, HEADLAMP.penumbra, 1.4);
+  readonly headlamp = new SpotLight(0xfff0dc, 60, 160, HEADLAMP.angle, HEADLAMP.penumbra, HEADLAMP.decay);
   /** A little of its light all round the carrier (the cone's spill). */
-  private readonly spill = new PointLight(0xffe9cc, 0, 30, 1.4);
+  private readonly spill = new PointLight(0xfff0dc, 0, 30, HEADLAMP.decay);
   /** Where the headlamp is carried (null: on the camera). */
   carrier: Vector3 | null = null;
   private readonly ambient = new HemisphereLight(0x9aa6b4, 0x2a2218, 0.7);
@@ -44,7 +44,7 @@ export class LevelView {
   private props_: Props | null = null;
   private dark_ = false;
   /** Headlamp intensity in the survey view and in the dark (a lamp carried close to the body wants less). */
-  headlampPower = { survey: 160, dark: 45 };
+  headlampPower = { survey: 60, dark: 17 };
 
   /** A canvas filling `host`, its renderer, and a view of `level` that follows the window size. */
   static async open(host: HTMLElement, level: Level, opts: { forceWebGL: boolean }): Promise<{ view: LevelView; canvas: HTMLCanvasElement; backend: string }> {
@@ -155,8 +155,12 @@ export class LevelView {
   }
 }
 
-/** The headlamp: half the cone's angle and its soft edge, its shadow map size and reach, and the share of its light spilt all round. */
-const HEADLAMP = { angle: 0.95, penumbra: 0.6, map: 1024, shadowFar: 60, spill: 0.3 };
+/**
+ * The headlamp: half the cone's angle and its soft edge, its shadow map size and reach, the share of
+ * its light spilt all round, and how fast it falls off. A gentle falloff (1, not the physical 2): the
+ * rock an arm's length away must not burn out to white while the far end of a hall still shows.
+ */
+const HEADLAMP = { angle: 0.95, penumbra: 0.6, map: 1024, shadowFar: 60, spill: 0.15, decay: 1 };
 
 function need<T>(v: T | null): T {
   if (!v) throw new Error('LevelView.start() has not finished');

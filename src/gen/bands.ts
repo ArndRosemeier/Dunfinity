@@ -1,5 +1,6 @@
 import { deriveSeed, hash2i, hashToFloat } from '@futuremagic/core';
 import type { Mix } from './regions';
+import { genome, stratumOf, type Stratum } from './genome';
 
 /**
  * The bands of levels 1–10 (docs/design/town-and-first-strata.md §4): which kind of place a depth is,
@@ -143,7 +144,6 @@ export const THRESHOLD: Band = {
   styles: [['excavation', 0.2], ['karst', 0.2], ['rift', 0.15], ['collapse', 0.1], ['catacombs', 0.1], ['dungeon', 0.15], ['fungal', 0.1]],
 };
 
-/** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
 /** Grandma's cellar (depth 0, src/gen/cellar.ts): hand-built, nothing generated in it. */
 export const CELLAR_BAND: Band = {
   ...QUARRY,
@@ -162,12 +162,22 @@ const MIX_VARY = 0.5;
  * the next mostly workings. The first style stays first (the home ground round the arrival).
  */
 export function mixOf(seed: number, depth: number): Mix {
-  const b = bandOf(depth);
-  if (b.styles.length === 1) return b.styles;
+  const stratum = stratumOf(depth), styles = stratum ? genome(seed, stratum) : bandOf(depth).styles;
+  if (styles.length === 1) return styles;
   const s = deriveSeed(seed, 'mix', depth);
-  return b.styles.map(([id, w], i) => [id, w * 2 ** (MIX_VARY * (2 * hashToFloat(hash2i(s, i, 0)) - 1))] as const);
+  return styles.map(([id, w], i) => [id, w * 2 ** (MIX_VARY * (2 * hashToFloat(hash2i(s, i, 0)) - 1))] as const);
 }
 
+/** The bands below level 10, one per stratum (src/gen/genome.ts): the Threshold's workings under the stratum's name; its styles are the world's genome (`mixOf`). */
+const DEEPER = new Map<Stratum, Band>();
+
+/** The band a depth belongs to: the cellar, the four of levels 1–10, then one per stratum. */
 export function bandOf(depth: number): Band {
+  const stratum = stratumOf(depth);
+  if (stratum) {
+    let b = DEEPER.get(stratum);
+    if (!b) DEEPER.set(stratum, (b = { ...THRESHOLD, name: stratum.name }));
+    return b;
+  }
   return depth <= 0 ? CELLAR_BAND : depth >= 9 ? THRESHOLD : depth >= 6 ? CISTERN : depth >= 3 ? SALT : QUARRY;
 }
