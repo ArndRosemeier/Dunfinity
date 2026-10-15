@@ -1,7 +1,7 @@
 /**
  * Third-person camera (decision D9): orbits a target with the mouse, the wheel zooms in down to first
  * person. It never goes through rock: it pulls in along its ray to the target (level.trace) at once,
- * and eases back out.
+ * and eases back out. A target in the rock (a head under a low vault, climbing) is first moved out of it.
  */
 import type { PerspectiveCamera } from 'three/webgpu';
 import type { Level } from '../../gen/level';
@@ -9,6 +9,8 @@ import type { Level } from '../../gen/level';
 /** Closer than this the camera is in first person. */
 const FIRST_PERSON = 0.6;
 const MAX_DISTANCE = 12;
+/** The target is kept this far out of the rock, metres. */
+const CLEAR = 0.25;
 
 export class OrbitCamera {
   yaw = 0;
@@ -17,6 +19,8 @@ export class OrbitCamera {
   distance = 4;
   /** Actual distance this frame (shorter where rock is in the way). */
   private current = 4;
+
+  private readonly n: [number, number, number] = [0, 0, 0];
 
   /** `level`: the rock that pulls the camera in (changes on the way down). */
   constructor(readonly camera: PerspectiveCamera, public level: Level) {}
@@ -35,6 +39,12 @@ export class OrbitCamera {
 
   /** Place the camera behind the target (x, y, z): an eye or a head. */
   follow(x: number, y: number, z: number, dt: number): void {
+    for (let i = 0; i < 3; i++) {
+      const d = this.level.sdf(x, y, z);
+      if (d >= CLEAR) break;
+      const n = this.level.normal(x, y, z, this.n);
+      x += n[0] * (CLEAR - d); y += n[1] * (CLEAR - d); z += n[2] * (CLEAR - d);
+    }
     const cp = Math.cos(this.pitch);
     const bx = Math.sin(this.yaw) * cp, by = -Math.sin(this.pitch), bz = Math.cos(this.yaw) * cp; // backwards
     const reach = this.distance > 0 ? this.level.trace(x, y, z, bx, by, bz, this.distance, 0.3) : 0;

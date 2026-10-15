@@ -10,7 +10,7 @@
  */
 import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import { damage, type Fighter } from '../combat/combat';
+import { damage, type Fighter, noticed } from '../combat/combat';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 
@@ -133,7 +133,7 @@ export class Eels extends Population<Pool, Eel> {
     // It can get at you if you are in water it can swim, or at the edge of it.
     const sx = prey.x - (dx / (d || 1)) * (E.reach * 0.7), sz = prey.z - (dz / (d || 1)) * (E.reach * 0.7);
     const reachable = !prey.dead && Math.abs(prey.y - water) < 1.6 && this.depthAt(sx, sz) >= E.wet;
-    if (e.mode === 'cruise' && reachable && d < E.notice) e.mode = 'hunt';
+    if (e.mode === 'cruise' && reachable && noticed(prey, d, E.notice)) e.mode = 'hunt';
     if ((e.mode === 'hunt') && (!reachable || d > E.forget)) { e.mode = 'cruise'; e.t = 0; }
 
     let bit = 0, rise = 0;

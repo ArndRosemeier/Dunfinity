@@ -10,7 +10,7 @@
  */
 import { hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import type { Fighter } from '../combat/combat';
+import { noticed, type Fighter } from '../combat/combat';
 import { closeIn, pickSwing } from './pick';
 import { Population, type Den } from './population';
 import { rockDistance } from '../gen/quarry';
@@ -136,7 +136,7 @@ export class SaltTouched extends Population<Spot, Touched> {
     const T = TOUCHED, S = T.swing;
     const dx = prey.x - t.x, dz = prey.z - t.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     const near = !prey.dead && Math.abs(prey.y - t.y) < 3;
-    if (near && d < T.notice) t.angry = true;
+    if (near && noticed(prey, d, T.notice)) t.angry = true;
     if (t.angry && (prey.dead || (d > T.forget && !t.called) || Math.abs(prey.y - t.y) > 5)) t.angry = false;
     if (t.angry && (t.mode === 'work' || t.mode === 'home')) { t.mode = 'alert'; t.t = T.alert; }
     if (!t.angry && (t.mode === 'alert' || t.mode === 'chase')) t.mode = 'home';

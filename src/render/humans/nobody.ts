@@ -71,7 +71,7 @@ export class Nobody {
    */
   pose(b: Body, dt: number, time: number, action?: ActionAnim, combat = false, move: MoveState = moveOf(b)): void {
     const yaw = b.mode === 'climb' ? Math.atan2(b.wall[0], b.wall[2]) : b.facing;
-    this.human.update({ pos: [b.x, b.y, b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move, action }, combat }, dt, time, this.ground);
+    this.human.update({ pos: [b.x, b.y, b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move, action }, combat, sneaking: b.sneaking }, dt, time, this.ground);
   }
 
   /** A blow landed on the nobody from direction (dx, dz) (towards them), strength 0..1: they flinch. */

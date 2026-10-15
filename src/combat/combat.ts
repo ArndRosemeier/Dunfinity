@@ -19,8 +19,15 @@ export interface Fighter {
   readonly dead: boolean;
   /** Out of the way of blows just now (the nobody mid-roll): a blow misses, and pushes nothing. */
   readonly evading?: boolean;
+  /** How far off things notice it, a share of their usual (the nobody tiptoeing: grandma's Tiptoe card). */
+  readonly hush?: number;
   /** Take `amount` of health; `cause` says what for (the death screen tells it). */
   hurt(amount: number, cause: string): void;
+}
+
+/** Whether something that notices prey `notice` metres off notices `prey`, `d` metres away (hushed if it tiptoes). */
+export function noticed(prey: Fighter, d: number, notice: number): boolean {
+  return d < notice * (prey.hush ?? 1);
 }
 
 /** A blow from (x, y, z) (the attacker's feet) facing `yaw` (forward is (-sin yaw, -cos yaw)). */

@@ -13,7 +13,7 @@
 import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { inCircle, type Lair, type SaltCircle } from '../gen/lair';
-import { damage, type Fighter } from '../combat/combat';
+import { damage, type Fighter, noticed } from '../combat/combat';
 import { closeIn, pickSwing } from './pick';
 import { Population, type Den } from './population';
 import { Creature } from './creature';
@@ -99,7 +99,7 @@ export class TallOnes extends Population<Haunt, TallOne> {
     if (t.dead) return this.lieDead(t, dt, 4);
     const dx = prey.x - t.x, dz = prey.z - t.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     const level = !prey.dead && Math.abs(prey.y - t.y) < 5;
-    if (level && d < T.notice) t.hunting = true;
+    if (level && noticed(prey, d, T.notice)) t.hunting = true;
     if (t.hunting && (prey.dead || d > T.forget || Math.hypot(t.x - L.x, t.z - L.z) > T.leash)) t.hunting = false;
     const safe = inCircle(L.circles, prey.x, prey.z, -prey.radius * 0.5);
     if (!t.hunting && (t.mode === 'stalk' || t.mode === 'balk')) t.mode = 'home';

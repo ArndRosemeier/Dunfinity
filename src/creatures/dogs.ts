@@ -10,7 +10,7 @@
  */
 import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import { damage, type Fighter } from '../combat/combat';
+import { damage, type Fighter, noticed } from '../combat/combat';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { brake } from './steer';
@@ -142,7 +142,7 @@ export class Dogs extends Population<Pack, Dog, number> {
     if (g.provoked) { g.provoked = false; p.hunting = true; }
     if (g.dead) return this.lieDead(g, dt, 6);
     const dx = prey.x - g.x, dz = prey.z - g.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
-    if (!prey.dead && d < D.notice && Math.abs(prey.y - g.y) < 2.5) p.hunting = true;
+    if (!prey.dead && noticed(prey, d, D.notice) && Math.abs(prey.y - g.y) < 2.5) p.hunting = true;
     if (p.hunting && (prey.dead || d > D.forget || Math.abs(prey.y - g.y) > 4)) p.hunting = false;
     const pack = this.living(p), k = pack.indexOf(g);
     if (k === 0 && p.hunting) this.lead(p, pack, prey, facing, dt);

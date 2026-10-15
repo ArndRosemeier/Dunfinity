@@ -12,7 +12,7 @@ import { angleDiff } from '@futuremagic/core';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 import type { Level } from '../gen/level';
-import { damage, type Fighter } from '../combat/combat';
+import { damage, type Fighter, noticed } from '../combat/combat';
 import { CANDLE } from '../combat/thrown';
 
 export const RAT = {
@@ -127,7 +127,7 @@ export class Rats extends Population<Nest, Rat> {
     if (provoked) r.nest.alarmed = true;
     if (r.dead) return this.lieDead(r, dt, 6);
     const dx = prey.x - r.x, dz = prey.z - r.z, d = Math.hypot(dx, dz);
-    const sees = !prey.dead && d < RAT.notice && Math.abs(prey.y - r.y) < 2.5;
+    const sees = !prey.dead && noticed(prey, d, RAT.notice) && Math.abs(prey.y - r.y) < 2.5;
     if (sees && r.mode !== 'chase' && r.mode !== 'bite' && r.mode !== 'flee') r.nest.alarmed = true;
     const hunting = r.nest.alarmed && !prey.dead && d < RAT.forget && Math.abs(prey.y - r.y) < 4;
     if (!hunting && (r.mode === 'chase' || r.mode === 'bite')) { r.mode = 'scurry'; r.t = 0; r.nest.alarmed = r.nest.alarmed && !prey.dead && d < RAT.forget; }
