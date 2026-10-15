@@ -227,18 +227,7 @@ class TileBuilder {
   private uphill(): void {
     const U = UPHILL, n = Math.round(PROP_TILE / U.cell), s = deriveSeed(this.seed, 'uphill'), l = this.level;
     const nrm: [number, number, number] = [0, 0, 0];
-    // (x, y, z) moved onto the rock at height y; its outward normal in nrm. Null where there is no upright face.
-    const onto = (x: number, y: number, z: number): [number, number, number] | null => {
-      for (let k = 0; k < 4; k++) {
-        const d = l.sdf(x, y, z);
-        l.normal(x, y, z, nrm);
-        x -= nrm[0] * d; z -= nrm[2] * d;
-      }
-      const h = Math.hypot(nrm[0], nrm[2]);
-      if (Math.abs(l.sdf(x, y, z)) > 0.06 || h < 0.8) return null;
-      nrm[0] /= h; nrm[1] = 0; nrm[2] /= h;
-      return [x, y, z];
-    };
+    const onto = (x: number, y: number, z: number) => l.ontoRock(x, y, z, nrm);
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const r = (k: number) => hashToFloat(hash3i(s, this.x0 / U.cell + i, this.z0 / U.cell + j, k));
       if (r(0) > l.band.uphill) continue;
@@ -447,6 +436,7 @@ class TileBuilder {
     if (!shaft) return;
     const n = Math.min(99, Math.max(1, Math.ceil(Math.hypot(shaft.x - fx, shaft.z - fz) / 10)));
     const digits = String(n), C = CHALK, tx = nz, tz = -nx; // (tx, tz): to the right, seen from in front
+    const out: [number, number, number] = [nx, 0, nz];
     const r = (k: number) => this.roll(w, 60 + k, iu, iv);
     const y0 = this.level.groundAt(ox, oz) + C.at[0] + r(0) * C.at[1], slant = (r(1) - 0.5) * C.slant;
     const width = digits.length * C.size[0] + (digits.length - 1) * C.gap;
@@ -465,10 +455,8 @@ class TileBuilder {
       const v = [(-nz * hy) / len * C.thick, ((nz * tx - nx * tz) * hx) / len * C.thick, (nx * hy) / len * C.thick] as const;
       for (let q = 0; q < pieces; q++) {
         const mx = ax + (2 * q + 1) * hx - width / 2 + shift, my = ay + (2 * q + 1) * hy;
-        let px = fx + tx * mx + nx * 0.3, py = y0 + my, pz = fz + tz * mx + nz * 0.3;
-        for (let i = 0; i < 4; i++) { const d = this.level.sdf(px, py, pz); px -= nx * d; pz -= nz * d; }
-        if (Math.abs(this.level.sdf(px, py, pz)) > 0.05) continue;
-        this.solid.box(px, py, pz, u, v, [nx * C.out, 0, nz * C.out], CHALK_WHITE);
+        const p = this.level.ontoRock(fx + tx * mx + nx * 0.3, y0 + my, fz + tz * mx + nz * 0.3, out, true);
+        if (p) this.solid.box(p[0], p[1], p[2], u, v, [nx * C.out, 0, nz * C.out], CHALK_WHITE);
       }
     };
     let x = 0;
