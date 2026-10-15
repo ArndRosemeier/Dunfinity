@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.038 — Chalk numbers
+
+- Here and there in the Quarry someone has chalked a number on a pillar, underlined now and then. It is how far it is to the nearest way down, in tens of metres. Walk towards the shaft and the numbers count down.
+
 ## v0.037 — The Cisterns are wrong
 
 - In places in the Cisterns, water runs up the rock. A thin, glossy sheet leaves a pool and climbs a pillar or a wall for a few metres, rippling upwards, with a faint cold shimmer on it.
