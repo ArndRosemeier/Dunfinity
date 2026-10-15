@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.049 — Tenderising
+
+- A new card in grandma's tin: **Tenderising** (Heavy Things). Its divider opens once one of the family has reached level 5. Once it is cooked, V turns the knife round and brings the handle down overhead with both hands. It is slower than a stab but hits harder (14–20) and knocks things far back, and it costs a little stamina. At rank 2 it hits harder still and strikes everything in reach.
+
 ## v0.048 — Way Home
 
 - A new card in grandma's tin: **Way Home**. Its divider opens once one of the family has reached level 8. Once it is cooked, press H with nothing after you. You kneel and shut your eyes while the salt in the floor rises round you, and after four seconds you are back by her armchair. Anything that comes for you in the meantime breaks it.

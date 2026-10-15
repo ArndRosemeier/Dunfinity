@@ -69,3 +69,14 @@ test('Way Home opens only at level 8, and its second rank is the way back', () =
   assert.equal(c.wayHome, 2);
   assert.equal(tin.salt, 40 - 12 - 20);
 });
+
+test('Tenderising opens at level 5: one blow, then everything in reach', () => {
+  const c = new Cooked(), tin = new Tin();
+  tin.salt = 20;
+  assert.equal(c.tenderising === null, true);
+  assert.notEqual(c.cantCook('tenderising', tin, 4), null);
+  c.cook('tenderising', tin);
+  assert.deepEqual(c.tenderising, { damage: [14, 20], all: false });
+  c.cook('tenderising', tin);
+  assert.equal(c.tenderising!.all, true);
+});

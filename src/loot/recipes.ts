@@ -10,7 +10,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising';
 
 export interface Card {
   readonly id: CardId;
@@ -91,6 +91,14 @@ export const CARDS: readonly Card[] = [
     cost: [12, 20],
     does: ['H: after 4 s still, with nothing after you, you are back by her armchair', 'and H in her salt circle takes you back to the deepest level you reached'],
   },
+  {
+    id: 'tenderising', title: 'Tenderising', chapter: 'Heavy Things',
+    need: 'the knife, turned round. The handle end. Both hands.',
+    method: 'Like a schnitzel. Not the pointy end, the other one, and put your back into it. They go flat and they go far.',
+    ranks: ['Everything on the board gets it, not just the one piece.'],
+    cost: [5, 9],
+    does: ['V: an overhead blow with the knife\'s handle, 14–20 damage, knocks it far back; costs 3 stamina', '18–26 damage to everything in reach'],
+  },
 ];
 
 /** The chapters in the tin's order, and the depth each opens at (recipe-box.md §6). */
@@ -168,6 +176,12 @@ export class Cooked {
   /** Grandma's Way Home: 0 not cooked, 1 home to the armchair, 2 and back down again. */
   get wayHome(): number {
     return this.rank('way-home');
+  }
+
+  /** Grandma's Tenderising (V), if cooked: its damage range, and whether it hits everything in reach. */
+  get tenderising(): { damage: readonly [number, number]; all: boolean } | null {
+    const r = this.rank('tenderising');
+    return r === 0 ? null : r === 1 ? { damage: [14, 20], all: false } : { damage: [18, 26], all: true };
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */
