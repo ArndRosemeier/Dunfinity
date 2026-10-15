@@ -15,15 +15,14 @@ import { parseViewParams } from '../app/params';
 import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
 import { DRAFT_RANGE, draftLine } from './draft';
-import { Rats, type Rat } from '../creatures/rats';
+import { Fauna, type Foe } from '../creatures/fauna';
 import { RatView } from '../render/creatures/ratView';
-import { SaltTouched, type Touched } from '../creatures/touched';
 import { TouchedView } from '../render/creatures/touchedView';
-import { Crickets, type Cricket, type Lamp } from '../creatures/crickets';
+import { ForemanView } from '../render/creatures/foremanView';
+import type { Lamp } from '../creatures/crickets';
 import { CricketView } from '../render/creatures/cricketView';
-import { Slimes, type Slime } from '../creatures/slimes';
 import { SlimeView } from '../render/creatures/slimeView';
-import { damage, nearestReached, type Blow } from '../combat/combat';
+import { blowFrom, damage, nearestReached } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
@@ -58,25 +57,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const [x, , z] = pos ?? level.arrival;
     return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
-  let rats: Rats;
-  let touched: SaltTouched;
-  let crickets: Crickets;
-  let lumen: Slimes, murk: Slimes;
+  let fauna: Fauna;
   /** Finds taken so far, per level: they stay taken for every grandchild (D13). */
   const taken = new Map<number, Set<number>>();
   let finds: Finds;
   const findsOf = (l: Level): Finds => {
     if (!taken.has(l.depth)) taken.set(l.depth, new Set());
-    return new Finds(l, (i, j) => rats.denAt(i, j), taken.get(l.depth)!);
+    return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!);
   };
   let pack = new Pack();
   const show = (l: Level) => {
     level = l;
-    rats = new Rats(l);
-    touched = new SaltTouched(l);
-    crickets = new Crickets(l);
-    lumen = new Slimes(l, 'lumen'); murk = new Slimes(l, 'murk');
-    touchedView.level = l;
+    fauna = new Fauna(l);
+    touchedView.level = foremanView.level = l;
     finds = findsOf(l);
     view.go(l);
     cam.level = l;
@@ -86,23 +79,23 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
     return arrive();
   };
-  rats = new Rats(level);
-  touched = new SaltTouched(level);
-  crickets = new Crickets(level);
-  lumen = new Slimes(level, 'lumen'); murk = new Slimes(level, 'murk');
+  fauna = new Fauna(level);
   finds = findsOf(level);
   // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
   const touchedView = await TouchedView.create(params.seed);
   touchedView.level = level;
+  const foremanView = await ForemanView.create(params.seed);
+  foremanView.level = level;
   let body = nextGrandchild();
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
   const nobody = await Nobody.create(params.seed, level);
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
+  await view.stage.add(foremanView.root);
   const ratView = new RatView();
   await view.stage.add(ratView.root);
   const cricketView = new CricketView();
@@ -139,7 +132,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     body.facing = Math.atan2(-(f.x - body.x), -(f.z - body.z));
   };
   /** Everyone the knife can hit. */
-  const foes = (): (Rat | Touched | Cricket | Slime)[] => [...rats.list, ...touched.list, ...crickets.list, ...lumen.list, ...murk.list];
+  const foes = (): Foe[] => fauna.foes();
   const stab = (now: number): void => {
     stabAt = now;
     stabDone = false;
@@ -154,6 +147,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   /** A line to show for a while (arriving on a level), and until when. */
   let notice = levelName(level), noticeUntil = 5;
+  /** Times the Foreman's bell has rung (each ringing gets a notice). */
+  let bells = 0;
   const ladder: [number, number] = [0, 0];
   /** The shaft whose ladder the nobody stands at (a way down or the way up), or null. */
   const atLadder = (): Shaft | null => {
@@ -211,7 +206,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return rats; }, get touched() { return touched; }, get crickets() { return crickets; }, get slimes() { return [lumen, murk]; }, get finds() { return finds; }, get pack() { return pack; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get finds() { return finds; }, get pack() { return pack; },
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -237,7 +232,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); rats = new Rats(level); touched = new SaltTouched(level); crickets = new Crickets(level); lumen = new Slimes(level, 'lumen'); murk = new Slimes(level, 'murk'); pack = new Pack(); picking = null; }
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); pack = new Pack(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     if (controls.tap('Mouse0') && !busy && now - stabAt > STAB.dur) stab(now);
@@ -273,34 +268,24 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (picking && (now - pickAt >= PICKUP.dur || body.dead)) picking = null;
       if (!stabDone && now - stabAt >= STAB.hit) {
         stabDone = true;
-        const blow: Blow = { x: body.x, y: body.y, z: body.z, yaw: stabYaw, range: STAB.range, arc: STAB.arc, low: STAB.low, high: STAB.high };
-        const r = nearestReached(blow, foes());
+        const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
         if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]), body.x, body.z, STAB.knock, 'knife');
+        if (r && 'took' in r && r.took < 1) { notice = 'The knife skids off the salt on his chest.'; noticeUntil = now + 2; }
       }
       const health = body.health;
-      rats.blockers = view.props.blockers;
-      rats.advance(dt, body);
-      touched.blockers = view.props.blockers;
-      const struck = touched.advance(dt, body) > 0;
-      crickets.blockers = view.props.blockers;
+      fauna.blockers = view.props.blockers;
       view.camera.getWorldDirection(lampDir);
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
-      crickets.advance(dt, body, lamp);
-      lumen.blockers = murk.blockers = view.props.blockers;
-      lumen.advance(dt, body, murk.list);
-      murk.advance(dt, body, lumen.list);
+      const struck = fauna.advance(dt, body, lamp);
       if (body.health < health) {
         // Flinch away from the nearest foe (thrown back by a pick).
-        let near: Rat | Touched | Cricket | Slime | undefined, nd = Infinity;
+        let near: Foe | undefined, nd = Infinity;
         for (const r of foes()) { const d = Math.hypot(r.x - body.x, r.z - body.z); if (!r.dead && d < nd) { nd = d; near = r; } }
         if (near) nobody.hit(body.x - near.x, body.z - near.z, struck ? 1 : 0.5);
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
-      const threat = rats.list.some((r) => (r.mode === 'chase' || r.mode === 'bite') && Math.hypot(r.x - body.x, r.z - body.z) < 14)
-        || touched.list.some((t) => t.angry && !t.dead && Math.hypot(t.x - body.x, t.z - body.z) < 14)
-        || crickets.list.some((c) => c.angry && !c.dead && Math.hypot(c.x - body.x, c.z - body.z) < 14)
-        || [...lumen.list, ...murk.list].some((s) => s.foe === body && !s.dead);
+      const threat = fauna.after(body);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
       const action = stooping ? { id: 'pickup', t0: pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping);
@@ -308,15 +293,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
 
-    ratView.draw(rats.list, now);
-    touchedView.draw(touched.list, body.x, body.z, dt, now);
-    cricketView.draw(crickets.list, now);
-    slimeView.lumen.draw(lumen.list, now);
-    slimeView.murk.draw(murk.list, now);
+    ratView.draw(fauna.rats.list, now);
+    touchedView.draw(fauna.touched.list, body.x, body.z, dt, now);
+    foremanView.draw(fauna.foreman.list[0] ?? null, fauna.foreman.hall, dt, now);
+    const rung = fauna.foreman.list[0]?.rung ?? 0;
+    if (rung > bells) { notice = 'A bell rings out through the halls. Something answers it.'; noticeUntil = now + 4; }
+    bells = rung;
+    cricketView.draw(fauna.crickets.list, now);
+    slimeView.lumen.draw(fauna.lumen.list, now);
+    slimeView.murk.draw(fauna.murk.list, now);
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
-    const lines = [timer.getElapsed() < noticeUntil ? notice : ''];
+    const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : ''];
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
     else if (!body.dead && !climb.active) {
@@ -324,10 +313,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (draft) lines.push(draft);
     }
-    if (rats.killed) lines.push(`rats killed: ${rats.killed}`);
-    if (lumen.killed + murk.killed) lines.push(`slimes killed: ${lumen.killed + murk.killed}`);
-    if (crickets.killed) lines.push(`cave crickets killed: ${crickets.killed}`);
-    if (touched.killed) lines.push(`Salt-Touched laid to rest: ${touched.killed}`);
+    lines.push(...fauna.tally());
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
     if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
@@ -355,6 +341,7 @@ const HURT: Record<string, [string, string]> = {
   lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
   murk: ['a Murk slime burns', 'The Murk swallowed you.'],
   'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],
+  foreman: ['the Foreman strikes', 'The Foreman brought his pick down on you.'],
   fall: ['a hard landing', 'You fell to your death.'],
 };
 

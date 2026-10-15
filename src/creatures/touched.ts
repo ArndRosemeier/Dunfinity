@@ -8,9 +8,10 @@
  * Pure: positions on the level's floor (walked with src/creatures/steer.ts), blows through
  * src/combat. Where they stand is fixed by the seed; the ones you killed stay dead on this visit.
  */
-import { hash3f, angleDiff } from '@futuremagic/core';
+import { hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
-import { damage, reach, type Blow, type Fighter } from '../combat/combat';
+import type { Fighter } from '../combat/combat';
+import { pickSwing } from './pick';
 import { Population, type Den } from './population';
 import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
@@ -46,6 +47,8 @@ export const TOUCHED = {
   sleep: 80,
   /** How far from the rock it works, metres. */
   atRock: 0.75,
+  /** Called by the Foreman's bell: seconds it comes for you from however far. */
+  called: 25,
 } as const;
 
 export type TouchedMode = 'work' | 'alert' | 'chase' | 'swing' | 'home' | 'dead';
@@ -58,6 +61,8 @@ export class Touched extends Creature<TouchedMode> {
   strokeT = 9;
   /** It was hurt, or saw you: it is after you. */
   angry = false;
+  /** Seconds left of answering the bell (it does not give up on you meanwhile). */
+  called = 0;
 
   /** Where it works, facing the rock. */
   constructor(readonly id: number, readonly homeX: number, readonly homeZ: number, readonly homeYaw: number, y: number, readonly look: number) {
@@ -87,21 +92,39 @@ export class SaltTouched extends Population<Spot, Touched> {
 
   /** Where in cell (i, j) one of them works, if any: dry floor against a pillar or a wall, away from the arrival. */
   protected denIn(key: number, i: number, j: number): Spot | null {
-    const l = this.level;
-    for (const [x, z] of this.sites(i, j, l.band.touched, 6, 0.1)) {
-      const col = l.columnAt(x, z), d = rockDistance(col);
-      if (d < 0.4 || d > 3 || col.rubble > 0.05 || col.collapse > 0) continue;
-      const g = l.groundAt(x, z);
-      l.normal(x, g + 1.3, z, this.n);
-      const h = Math.hypot(this.n[0], this.n[2]);
-      if (h < 0.6) continue;
-      // Stand off the rock, facing it.
-      const ox = this.n[0] / h, oz = this.n[2] / h, sx = x + ox * (TOUCHED.atRock - d), sz = z + oz * (TOUCHED.atRock - d);
-      const y = l.groundAt(sx, sz);
-      if (!l.dry(sx, sz, 0.1) || l.sdf(sx, y + 1.2, sz) < 0.45 || l.sdf(sx, y + 2.4, sz) < 0.3 || l.descents.at(sx, sz, 4)) continue;
-      return { key, x: sx, z: sz, y, yaw: Math.atan2(ox, oz) };
+    for (const [x, z] of this.sites(i, j, this.level.band.touched, 6, 0.1)) {
+      const s = this.spotNear(key, x, z);
+      if (s) return s;
     }
     return null;
+  }
+
+  /** `n` of them working the rock within `r` metres of (x, z) (the Foreman's crew), wherever there is rock to work. */
+  gather(x: number, z: number, r: number, n: number): void {
+    for (let k = 0; k < n * 40 && this.placed.length < n; k++) {
+      const a = hash3f(this.seed, k, 0, 50) * Math.PI * 2, d = r * Math.sqrt(hash3f(this.seed, k, 0, 51));
+      const s = this.spotNear(-1 - this.placed.length, x + Math.cos(a) * d, z + Math.sin(a) * d);
+      if (s && this.placed.every((p) => Math.hypot(p.x - s.x, p.z - s.z) > 4)) this.placed.push(s);
+    }
+  }
+
+  /** A spot near (x, z) to work the rock from: dry floor against a pillar or a wall, standing off it and facing it. */
+  private spotNear(key: number, x: number, z: number): Spot | null {
+    const l = this.level, col = l.columnAt(x, z), d = rockDistance(col);
+    if (d < 0.4 || d > 3 || col.rubble > 0.05 || col.collapse > 0) return null;
+    const g = l.groundAt(x, z);
+    l.normal(x, g + 1.3, z, this.n);
+    const h = Math.hypot(this.n[0], this.n[2]);
+    if (h < 0.6) return null;
+    const ox = this.n[0] / h, oz = this.n[2] / h, sx = x + ox * (TOUCHED.atRock - d), sz = z + oz * (TOUCHED.atRock - d);
+    const y = l.groundAt(sx, sz);
+    if (!l.dry(sx, sz, 0.1) || l.sdf(sx, y + 1.2, sz) < 0.45 || l.sdf(sx, y + 2.4, sz) < 0.3 || l.descents.at(sx, sz, 4)) return null;
+    return { key, x: sx, z: sz, y, yaw: Math.atan2(ox, oz) };
+  }
+
+  /** A bell rung at (x, z): the living ones within `r` metres come for you, however far you are. */
+  call(x: number, z: number, r: number): void {
+    for (const t of this.list) if (!t.dead && Math.hypot(t.x - x, t.z - z) < r) { t.angry = true; t.called = TOUCHED.called; }
   }
 
   /** One step of one of them; returns 1 if its blow landed. */
@@ -109,6 +132,7 @@ export class SaltTouched extends Population<Spot, Touched> {
     t.swingT += dt;
     t.strokeT += dt;
     t.hurtT += dt;
+    t.called = Math.max(0, t.called - dt);
     if (t.provoked) { t.provoked = false; t.angry = true; }
     if (t.dead) {
       t.deadT += dt;
@@ -120,7 +144,7 @@ export class SaltTouched extends Population<Spot, Touched> {
     const dx = prey.x - t.x, dz = prey.z - t.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     const near = !prey.dead && Math.abs(prey.y - t.y) < 3;
     if (near && d < T.notice) t.angry = true;
-    if (t.angry && (prey.dead || d > T.forget || Math.abs(prey.y - t.y) > 5)) t.angry = false;
+    if (t.angry && (prey.dead || (d > T.forget && !t.called) || Math.abs(prey.y - t.y) > 5)) t.angry = false;
     if (t.angry && (t.mode === 'work' || t.mode === 'home')) { t.mode = 'alert'; t.t = T.alert; }
     if (!t.angry && (t.mode === 'alert' || t.mode === 'chase')) t.mode = 'home';
 
@@ -138,30 +162,14 @@ export class SaltTouched extends Population<Spot, Touched> {
         this.steer.move(t, t.x, t.z, 0, dt, toYou);
         if ((t.t -= dt) <= 0) t.mode = 'chase';
         break;
-      case 'chase': {
-        // To a place just short of you, on the line from you to it: it does not turn as it walks
-        // (a goal that swings round as one moves is chased round and round).
-        const stand = prey.radius + t.radius + S.start * 0.5;
-        const gx = prey.x - (dx / (d || 1)) * stand, gz = prey.z - (dz / (d || 1)) * stand;
-        this.steer.move(t, gx, gz, T.chase, dt, d - stand < 0.8 ? toYou : null);
+      case 'chase':
+        this.steer.close(t, prey, prey.radius + t.radius + S.start * 0.5, T.chase, dt, 0.8);
         if (d - prey.radius - t.radius < S.start && t.swingT > S.dur + S.rest) { t.mode = 'swing'; t.swingT = 0; }
         break;
-      }
-      case 'swing': {
-        // The wind-up: it stands and turns to you; then it is committed, and the pick comes down.
-        const aim = t.swingT < S.hit - 0.25 ? toYou : null;
-        this.steer.move(t, t.x, t.z, 0, dt, null);
-        if (aim !== null) t.yaw += angleDiff(t.yaw, aim) * Math.min(1, dt * T.aim);
-        if (t.swingT >= S.hit && t.swingT - dt < S.hit) {
-          const blow: Blow = { x: t.x, y: t.y, z: t.z, yaw: t.yaw, range: S.range, arc: S.arc, low: S.low, high: S.high };
-          if (reach(blow, prey)) {
-            damage(prey, this.rng.range(S.damage[0], S.damage[1]), t.x, t.z, S.knock, 'salt-touched');
-            hit = 1;
-          }
-        }
+      case 'swing':
+        hit = pickSwing(t, t.swingT, S, prey, T.aim, this.steer, this.rng, 'salt-touched', dt);
         if (t.swingT >= S.dur) t.mode = t.angry ? 'chase' : 'home';
         break;
-      }
     }
     return hit;
   }

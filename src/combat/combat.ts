@@ -36,6 +36,14 @@ export interface Blow {
   high: number;
 }
 
+/** How far a blow reaches: range, arc and heights (as in Blow). */
+export type Swing = Pick<Blow, 'range' | 'arc' | 'low' | 'high'>;
+
+/** The blow `s` struck by someone standing at `at` facing `yaw`. */
+export function blowFrom(at: { readonly x: number; readonly y: number; readonly z: number }, yaw: number, s: Swing): Blow {
+  return { x: at.x, y: at.y, z: at.z, yaw, range: s.range, arc: s.arc, low: s.low, high: s.high };
+}
+
 /** Whether `b` reaches `t`: within range of its surface, inside the arc, at a height the blow covers. */
 export function reach(b: Blow, t: Fighter): boolean {
   if (t.dead) return false;

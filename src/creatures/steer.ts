@@ -85,6 +85,17 @@ export class Steer {
     return this.slide(w, dt);
   }
 
+  /**
+   * Close in on `f` at `speed`: to just short of it, `stand` metres from its centre, on the line from
+   * it to w (a goal that does not swing round as w goes, or w is led round and round). w turns to
+   * face it within `face` metres of there. Returns how far w is from f, centre to centre.
+   */
+  close(w: Walker, f: { readonly x: number; readonly z: number }, stand: number, speed: number, dt: number, face: number): number {
+    const dx = f.x - w.x, dz = f.z - w.z, d = Math.hypot(dx, dz);
+    this.move(w, f.x - (dx / (d || 1)) * stand, f.z - (dz / (d || 1)) * stand, speed, dt, d - stand < face ? Math.atan2(-dx, -dz) : null);
+    return d;
+  }
+
   /** Move w by its velocity where the floor allows (not into the legs of `keepOff`: a lunge stops there), settle on the ground. Returns the distance moved. */
   slide(w: Walker, dt: number): number {
     const p = this.keepOff;
