@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hash3f } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
+import { bandOf } from '../src/gen/bands';
 import { newColumn } from '../src/gen/quarry';
 import { PASSAGE } from '../src/gen/styledField';
 import { MAP_FLOOR } from '../src/gen/style';
@@ -27,15 +28,19 @@ const atEdge = (l: Level, x: number, z: number) => {
 
 test('each level is made of its band\'s styles; the cellar is one', () => {
   assert.deepEqual(new Level(7, 0).field.styles.map((s) => s.id), ['cellar']);
-  for (const d of MIXED) assert.deepEqual(new Level(7, d).field.styles.map((s) => s.id), ['excavation', 'karst']);
+  for (const d of MIXED) assert.deepEqual(new Level(7, d).field.styles.map((s) => s.id), bandOf(d).styles.map(([id]) => id));
+  assert.ok(MIXED.some((d) => bandOf(d).styles.some(([id]) => id === 'rift')), 'the rift is in some mix');
 });
 
 test('the styles cover about their share of a level, and the arrival is in the first', () => {
   for (const d of MIXED) {
-    const l = new Level(3, d), want = l.band.styles[1][1] / l.band.styles.reduce((a, [, w]) => a + w, 0);
-    let karst = 0, all = 0;
-    for (let z = -4000; z <= 4000; z += 80) for (let x = -4000; x <= 4000; x += 80) { all++; if (l.field.regions.styleAt(x, z) === 1) karst++; }
-    assert.ok(Math.abs(karst / all - want) < 0.12, `level ${d}: karst ${((karst / all) * 100).toFixed(0)}% of the area, want ${(want * 100).toFixed(0)}%`);
+    const l = new Level(3, d), total = l.band.styles.reduce((a, [, w]) => a + w, 0), area = l.band.styles.map(() => 0);
+    let all = 0;
+    for (let z = -4000; z <= 4000; z += 80) for (let x = -4000; x <= 4000; x += 80) { all++; area[l.field.regions.styleAt(x, z)]++; }
+    l.band.styles.forEach(([id, w], i) => {
+      if (i === 0) return; // (the first also has the arrival's region)
+      assert.ok(Math.abs(area[i] / all - w / total) < 0.12, `level ${d}: ${id} ${((area[i] / all) * 100).toFixed(0)}% of the area, want ${((w / total) * 100).toFixed(0)}%`);
+    });
     const [ax, , az] = l.arrival;
     assert.equal(l.field.regions.styleAt(ax, az), 0, `level ${d}: the arrival is in the excavation`);
   }
@@ -190,4 +195,26 @@ test('on the map, the caves show apart from the worked stone', () => {
   const [ex, karst] = new Level(1, 9).field.styles;
   assert.equal(ex.mapFloor, undefined);
   assert.ok(karst.mapFloor && karst.mapFloor.join() !== MAP_FLOOR.join());
+});
+
+test('the rift is neither: tall, narrow canyons with rock between, no pillars', () => {
+  for (const d of [4, 9]) {
+    const l = new Level(1, d), [ax, , az] = l.arrival;
+    const st: Record<string, { n: number; open: number; tall: number }> = {};
+    let pillars = 0;
+    for (let k = 0; k < 20000; k++) {
+      const x = ax + (hash3f(19, k, d, 0) - 0.5) * 3000, z = az + (hash3f(19, k, d, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20) continue;
+      const id = l.field.styles[c.style].id, s = (st[id] ??= { n: 0, open: 0, tall: 0 });
+      s.n++;
+      if (id === 'rift' && c.pillarD < 50) pillars++;
+      // Open: room to stand. Tall: of that, air 22 m over the floor too.
+      if (l.sdf(x, c.floor + 1.5, z) > 0.3) { s.open++; if (l.sdf(x, c.floor + 22, z) > 0) s.tall++; }
+    }
+    const open = (id: string) => st[id].open / st[id].n, tall = (id: string) => st[id].tall / st[id].open;
+    assert.ok(st.rift.n > 500, `level ${d}: ${st.rift.n} rift columns`);
+    assert.equal(pillars, 0);
+    assert.ok(tall('rift') > 0.5, `level ${d}: ${(tall('rift') * 100).toFixed(0)}% of the rift's floor has air 22 m up`);
+    assert.ok(open('rift') < open('karst') / 2 && open('rift') < open('excavation') / 3, `level ${d}: the rift's open floor ${(open('rift') * 100).toFixed(0)}%, karst ${(open('karst') * 100).toFixed(0)}%, excavation ${(open('excavation') * 100).toFixed(0)}%`);
+  }
 });

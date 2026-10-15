@@ -14,7 +14,7 @@
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
-import { noPillar, type Column, type Working } from './quarry';
+import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
 
 export const KARST = {
@@ -116,15 +116,10 @@ export class Karst implements Style {
       }
     }
     const floor = fsum / wsum;
-    col.working = CAVE;
     col.floor = floor + n.fbm2(x / 22, z / 22, 3) * 0.5;
     col.ceiling = col.floor + roof + n.n2(x / 30, z / 30) * 0.8 * smoothstep(2, 8, roof);
     col.wall = inside;
-    noPillar(col);
-    col.rubble = 0;
-    col.border = 1000;
-    col.collapse = 0;
-    col.cavern = 1;
+    unworked(col, CAVE, 1000, 1);
     return col;
   }
 
