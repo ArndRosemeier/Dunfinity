@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.095 — Wet slimes
+
+- The slimes shine wet now, and Murk is properly black and oily instead of grey.
+
 ## v0.094 — Real slimes
 
 - The slimes are new: sculpted, rigged and animated in Blender. Lumen is a pale, glossy jelly with glowing motes in its skin; Murk is black, lumpy and oily.

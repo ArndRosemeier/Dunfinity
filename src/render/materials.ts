@@ -169,13 +169,13 @@ export interface CoatKind extends MaterialKind {
  * arrive with the glb (a new image is not a new shader). The skinned meshes compile their own
  * variant when the creature's pool is added with the Stage.
  */
-function defineCoat(name: string): CoatKind {
+function defineCoat(name: string, roughness = 0.85): CoatKind {
   const maps: CoatMaps = { colour: new Texture(), normal: new Texture() };
   maps.colour.colorSpace = SRGBColorSpace;
   maps.normal.colorSpace = NoColorSpace;
   for (const t of [maps.colour, maps.normal]) t.flipY = false; // glTF's uvs
   const kind = defineKind(name, ['position', 'normal', 'uv'], () => {
-    const m = new MeshStandardNodeMaterial({ roughness: 0.85, metalness: 0 });
+    const m = new MeshStandardNodeMaterial({ roughness, metalness: 0 });
     m.colorNode = texture(maps.colour);
     m.normalNode = normalMap(texture(maps.normal));
     return m;
@@ -192,9 +192,9 @@ export const RAT_COAT = defineCoat('ratCoat');
 /** The cave crickets' shell (AssetGenerator spec creature_cave_cricket). */
 export const CRICKET_COAT = defineCoat('cricketCoat');
 
-/** The slimes' skins (AssetGenerator specs creature_lumen_slime, creature_murk_slime). */
-export const LUMEN_COAT = defineCoat('lumenCoat');
-export const MURK_COAT = defineCoat('murkCoat');
+/** The slimes' skins (AssetGenerator specs creature_lumen_slime, creature_murk_slime): wet, so glossy. */
+export const LUMEN_COAT = defineCoat('lumenCoat', 0.25);
+export const MURK_COAT = defineCoat('murkCoat', 0.18);
 
 /** Where the headlamp is and which way it shines (world), for the dust in its beam: set every frame by `Dust`. */
 export const DUST_LAMP = { at: uniform(new Vector3()), dir: uniform(new Vector3(0, 0, -1)) };
