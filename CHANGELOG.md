@@ -1,8 +1,13 @@
 # Changelog
 
-## v0.094 — Rock you can see
+## v0.095 — Rock you can see
 
 - The rock no longer burns out to flat white near a light. The burning lamps were far too bright close up and the screen simply clipped everything over full white, so the walls round every lamp, and the floor at your feet in your headlamp, read as blank white. Now the picture is tone-mapped like a film camera (bright light rolls off into warm highlights instead of clipping), the lamps and the headlamp fall off more gently, and the headlamp is a touch whiter. The stone's colour, cracks and tool marks show right up to the light.
+
+## v0.094 — Real slimes
+
+- The slimes are new: sculpted, rigged and animated in Blender. Lumen is a pale, glossy jelly with glowing motes in its skin; Murk is black, lumpy and oily.
+- Every move shows: they slump and tremble at rest, crawl in pulses (heaping up, then pouring forward, the front lobe first), squash down before a blow and throw themselves at you with it, quiver when hit, and melt into a puddle when they die.
 
 ## v0.093 — Up from the fire
 

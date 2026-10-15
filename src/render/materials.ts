@@ -192,6 +192,10 @@ export const RAT_COAT = defineCoat('ratCoat');
 /** The cave crickets' shell (AssetGenerator spec creature_cave_cricket). */
 export const CRICKET_COAT = defineCoat('cricketCoat');
 
+/** The slimes' skins (AssetGenerator specs creature_lumen_slime, creature_murk_slime). */
+export const LUMEN_COAT = defineCoat('lumenCoat');
+export const MURK_COAT = defineCoat('murkCoat');
+
 /** Where the headlamp is and which way it shines (world), for the dust in its beam: set every frame by `Dust`. */
 export const DUST_LAMP = { at: uniform(new Vector3()), dir: uniform(new Vector3(0, 0, -1)) };
 /** The dust box: motes fill a cube this many metres wide that travels with the camera. */
