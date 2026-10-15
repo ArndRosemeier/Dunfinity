@@ -9,6 +9,7 @@
  */
 import type { TinData } from '../loot/tin';
 import type { Find } from '../loot/finds';
+import type { Fallen } from '../gen/notary';
 
 export interface GrandchildData {
   readonly depth: number;
@@ -30,6 +31,8 @@ export interface SaveData {
   /** Finds taken, per depth. */
   readonly taken: readonly (readonly [number, readonly number[]])[];
   readonly child: GrandchildData | null;
+  /** The notary's list: the grandchildren who did not come back. */
+  readonly fallen?: readonly Fallen[];
 }
 
 const key = (seed: number) => `dunfinity:save:${seed}`;

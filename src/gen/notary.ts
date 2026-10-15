@@ -8,9 +8,34 @@ import { hash3f } from '@futuremagic/core';
 const NAMES = ['Okafor-Lindqvist', 'Brandt', 'Kowalczyk', 'Haddad', 'Ferreira', 'Nakamura', 'Lindgren', 'Moreau', 'Petrović', 'Yilmaz', 'Schulte', 'Andersson', 'Rossi', 'Novak', 'Mensah', 'Weber'];
 const TITLES = ['Ms.', 'Mr.'];
 
+/** The `heir`-th grandchild's name as the notary writes it ("Ms. Nakamura"), for the game seeded `seed`. */
+export function heirName(heir: number, seed: number): string {
+  return `${TITLES[Math.floor(hash3f(seed, heir, 1, 0) * TITLES.length)]} ${NAMES[Math.floor(hash3f(seed, heir, 2, 0) * NAMES.length)]}`;
+}
+
+/** A grandchild who went down and did not come back: which heir, how deep, and what of. */
+export interface Fallen {
+  readonly heir: number;
+  readonly depth: number;
+  /** What it was, as the death screen says it ("a rat"). */
+  readonly what: string;
+}
+
+/**
+ * His list of the heirs (the death counter, town-and-first-strata.md §2): one line each, the
+ * fallen crossed out with where it happened, the last line the grandchild down there now.
+ */
+export function notaryList(fallen: readonly Fallen[], heir: number, seed: number, shown = 6): string[] {
+  const strike = (t: string) => [...t].map((ch) => `${ch}\u0336`).join('');
+  const lines = fallen.slice(-shown).map((f) => `${strike(heirName(f.heir, seed))}  (${f.depth ? `level ${f.depth}` : 'in the cellar'}, ${f.what})`);
+  if (fallen.length > shown) lines.unshift(`… and ${fallen.length - shown} more, crossed out`);
+  lines.push(heirName(heir, seed));
+  return lines;
+}
+
 /** What he writes to the `heir`-th grandchild (1: the first), for the game seeded `seed`. */
 export function notaryLetter(heir: number, seed: number): string {
-  const name = `${TITLES[Math.floor(hash3f(seed, heir, 1, 0) * TITLES.length)]} ${NAMES[Math.floor(hash3f(seed, heir, 2, 0) * NAMES.length)]}`;
+  const name = heirName(heir, seed);
   const before = heir - 1;
   const body = heir === 1
     ? [
@@ -22,7 +47,7 @@ export function notaryLetter(heir: number, seed: number): string {
     : heir === 2
       ? [
         `Dear ${name},`,
-        'I regret to inform you that you have inherited a house. Your cousin, who inherited it before you, has not been seen since going down to look at the cellar.',
+        `I regret to inform you that you have inherited a house. Your cousin, ${heirName(1, seed)}, who inherited it before you, has not been seen since going down to look at the cellar.`,
         'I would ask you not to go into the cellar.',
       ]
       : heir < 6

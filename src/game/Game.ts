@@ -8,7 +8,7 @@ import { Timer, Vector3 } from 'three/webgpu';
 import { Practice, SKILLS, type Skill } from '../loot/practice';
 import { readSave, writeSave, type GrandchildData } from '../persist/save';
 import { CELLAR } from '../gen/cellar';
-import { notaryLetter } from '../gen/notary';
+import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { Level } from '../gen/level';
 import { CAMP, NOTE } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
@@ -121,6 +121,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   /** Which grandchild this is (1: the first); the notary writes to each. The deepest level this one has reached. */
   let heir = saved?.heir ?? 0, reached = saved?.child?.reached ?? 0;
+  /** The grandchildren who did not come back (the notary's list), and whether this one's death is on it yet. */
+  const fallen: Fallen[] = [...(saved?.fallen ?? [])];
+  let mourned = false;
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
     heir++;
@@ -158,7 +161,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
       cooked: cooked.data, practice: practice.data, pack: [...pack.items],
     };
-    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child });
+    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen });
   };
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
@@ -349,6 +352,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
+    // A death goes on the notary's list (once).
+    if (body.dead && !mourned) { mourned = true; fallen.push({ heir, depth: level.depth, what: HURT[body.lastCause]?.[0] ?? 'a fall' }); }
+    if (!body.dead) mourned = false;
     // Keep the game every few seconds (not mid-climb or mid-way home), and at once when the grandchild dies.
     if (!climb.active && homeTo === null && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
     const [mx, my] = controls.takeLook();
@@ -576,7 +582,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
     lines.push(...fauna.tally(), `infused salt in grandma's tin: ${tin.salt}`);
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
-    if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
+    if (hud) hud.textContent = hudText(body, backend, body.dead ? notaryList(fallen, heir + 1, params.seed) : []) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.y + (body.mode === 'swim' ? 0.45 : 1.85), body.z - Math.cos(cam.yaw) * 0.4);
@@ -608,13 +614,14 @@ const HURT: Record<string, [string, string]> = {
   fall: ['a hard landing', 'You fell to your death.'],
 };
 
-function hudText(b: Body, backend: string): string {
+/** The HUD; `list`: the notary's list, shown on the death screen (its last line the next heir). */
+function hudText(b: Body, backend: string, list: readonly string[]): string {
   const lines = [
     `health   ${bar(b.health, MOVE.maxHealth)}  ${b.health.toFixed(0)}`,
     `stamina  ${bar(b.stamina, MOVE.stamina)}${b.mode === 'climb' ? '  climbing' : b.mode === 'swim' ? '  swimming' : ''}`,
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
-  if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
+  if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
   lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light  ·  ${backend}`);
   return lines.join('\n');
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.053 — The notary's list
+
+- When a grandchild dies, Herr Brüggemann crosses out their name. The death screen shows his list: the fallen crossed out, each with where it happened and what did it, and at the bottom the name of the next heir, whose letter is already on its way. The list is kept with the save.
+- The second heir's letter now names the cousin who went down first.
+
 ## v0.052 — Saved between visits
 
 - The game now keeps itself in your browser every few seconds and when you leave. That covers grandma's tin and the salt in it, which grandchild is next, the finds already taken, and the grandchild now down there with where they stand, how hurt they are, their cards, their practice and their pack. Come back later and you carry on where you were.
