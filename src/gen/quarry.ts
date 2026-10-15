@@ -15,6 +15,13 @@
 import { QUARRY, type Band } from './bands';
 import { Noise, cellular2, cellBorder, hash2i, hashToFloat, deriveSeed, smoothstep, clamp, lerp, type CellResult } from '@futuremagic/core';
 
+/**
+ * Pillars older than the Cisterns (docs/design/town-and-first-strata.md §4): the drum's radius as a
+ * share of the pillar's half side, its top above the floor (min, extra up to 40% of the hall), its
+ * courses and the depth of the worn joints between them, metres, and its stone's tint.
+ */
+export const OLDER = { drum: 1.55, top: [2.5, 4] as const, course: 1.1, joint: 0.07, stone: [0.62, 0.7, 0.6] as const };
+
 /** Flutes across a pillar side: 0 on the ridges, 1 deep in a flute; none near the corners. */
 function fluting(along: number, half: number, count: number): number {
   const t = (along / half + 1) / 2; // 0..1 across the side
@@ -69,6 +76,12 @@ export interface Column {
   collapse: number;
   /** 0..1, how much this is a natural cavern (blended across the border like the floor). */
   cavern: number;
+  /**
+   * The nearest pillar stands on an older one (the Cisterns): up to `olderTop` it is a round drum of
+   * older stone (`pillarD` is the drum), above it the square pillar (`squareD`). -Infinity: not so.
+   */
+  olderTop: number;
+  squareD: number;
 }
 
 /** Whether a pillar stands at a grid position: not at all, whole, or broken. */
@@ -80,7 +93,7 @@ export function rockDistance(col: Column): number {
 }
 
 export function newColumn(): Column {
-  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0, cavern: 0 };
+  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0, cavern: 0, olderTop: -Infinity, squareD: Infinity };
 }
 
 function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Working {
@@ -198,6 +211,8 @@ export class QuarryField {
     col.pillarD = Infinity;
     col.stumpTop = Infinity;
     col.stubBottom = -Infinity;
+    col.olderTop = -Infinity;
+    col.squareD = Infinity;
     const half = w.pillar / 2;
     const near = border < half * Math.SQRT2 + 3 + 2.2 * s; // only then can a pillar be cut by the border
     for (let dv = -1; dv <= 1; dv++) {
@@ -209,11 +224,17 @@ export class QuarryField {
         let d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0);
         // Carved pillars: flutes down each side (the salt miners carved theirs like a church's).
         if (this.band.flutes > 0 && d > -1) d += this.band.flutes * fluting(qx > qz ? lv : lu, half, this.band.fluteCount);
+        // Some stand on something older: a round drum, wider than the pillar, up to a few metres.
+        const ph = hash2i(this.pillarSeed ^ w.id, iu + du, iv + dv);
+        const older = state === 'whole' && hashToFloat(ph * 13 + 7) < this.band.older;
+        const square = d;
+        if (older) d = Math.hypot(lu, lv) - half * OLDER.drum;
         if (d >= col.pillarD) continue;
         col.pillarD = d;
+        col.olderTop = older ? w.floor + OLDER.top[0] + hashToFloat(ph * 13 + 8) * Math.min(OLDER.top[1], w.height * 0.4) : -Infinity;
+        col.squareD = square;
         if (state === 'broken') {
           // A stump from the floor and a stub from the ceiling.
-          const ph = hash2i(this.pillarSeed ^ w.id, iu + du, iv + dv);
           col.stumpTop = w.floor + 1 + hashToFloat(ph * 13 + 5) * w.height * 0.45;
           col.stubBottom = w.floor + w.height * (0.7 + 0.25 * hashToFloat(ph * 13 + 6));
         } else {
@@ -228,6 +249,7 @@ export class QuarryField {
       const blob = (0.42 - n.n2(x / 26 - 21.7, z / 26 + 13.9)) * 14 + (1 - cavern) * 24;
       if (blob < col.pillarD) {
         col.pillarD = blob;
+        col.olderTop = -Infinity;
         const join = n.n2(x / 70 + 9.1, z / 70 - 4.4);
         if (join < 0.15) {
           const h = col.ceiling - col.floor;
@@ -297,6 +319,11 @@ export class QuarryField {
   at(col: Column, x: number, y: number, z: number): number {
     let pillar = col.pillarD;
     if (col.stumpTop !== Infinity) pillar = Math.min(Math.max(pillar, y - col.stumpTop), Math.max(pillar, col.stubBottom - y));
+    // An older drum (in courses, the joints worn into grooves) with the square pillar built on it.
+    if (col.olderTop !== -Infinity) {
+      const course = Math.abs(((y - col.working.floor) / OLDER.course) % 1 - 0.5) * 2;
+      pillar = Math.min(Math.max(col.squareD, col.olderTop - y), Math.max(pillar + OLDER.joint * smoothstep(0.75, 1, course), y - col.olderTop));
+    }
     // Natural rock between workings is rough in 3D; the cut stone is nearly smooth.
     const k = smoothstep(9, 3, col.wall);
     const wall = k > 0 ? col.wall + k * (this.rough.n3(x / 8, y / 8, z / 8) * 1.6 + this.rough.n3(x / 3, y / 3, z / 3) * 0.5) : col.wall;
@@ -317,6 +344,8 @@ export class QuarryField {
     if ((col.wall < 1.5 || col.cavern > 0.5) && y - col.floor > 0.5) { r *= B.natural[0]; g *= B.natural[1]; b *= B.natural[2]; } // natural rock between workings
     r += dust * B.dust[0]; g += dust * B.dust[1]; b += dust * B.dust[2];
     r += col.rubble * 0.04; g += col.rubble * 0.03;
+    // The older stone: darker, greener, nothing like the cistern's concrete.
+    if (y < col.olderTop + 0.05 && col.pillarD < 1.5 && y - col.floor > 0.15) { r *= OLDER.stone[0]; g *= OLDER.stone[1]; b *= OLDER.stone[2]; }
     const k = 1 - soot;
     out[o] = r * k; out[o + 1] = g * k; out[o + 2] = b * k;
   }

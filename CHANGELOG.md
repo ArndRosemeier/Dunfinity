@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.037 — The Cisterns are wrong
+
+- In places in the Cisterns, water runs up the rock. A thin, glossy sheet leaves a pool and climbs a pillar or a wall for a few metres, rippling upwards, with a faint cold shimmer on it.
+- Some of the Cisterns' pillars stand on something older: a wide, round drum of dark, greenish stone laid in courses, with the square concrete pillar built on top of it.
+
 ## v0.036 — A fire to rest by
 
 - Press C to kneel and light a small fire, anywhere dry, as long as nothing is after you. Stand still by it and you rest: your wounds close far faster than they do on their own and you get your breath back. The fire burns for two minutes, then dies down to ash. When you are badly hurt the game reminds you that you can.

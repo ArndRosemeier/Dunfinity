@@ -166,6 +166,25 @@ export class PropBuilder {
     this.i.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
 
+  /**
+   * A ribbon between two polylines `a` and `b` (same length, at least 2 points), one quad per step,
+   * facing along `normals` (one per step), coloured per step.
+   */
+  ribbon(a: readonly V3[], b: readonly V3[], normals: readonly V3[], colors: readonly Rgb[]): void {
+    const base = this.p.length / 3;
+    for (let k = 0; k < a.length; k++) {
+      for (const q of [a[k], b[k]]) {
+        this.p.push(q[0], q[1], q[2]);
+        this.n.push(normals[k][0], normals[k][1], normals[k][2]);
+        this.c.push(colors[k][0], colors[k][1], colors[k][2]);
+      }
+      if (k > 0) {
+        const i = base + 2 * k;
+        this.i.push(i - 2, i, i + 1, i - 2, i + 1, i - 1);
+      }
+    }
+  }
+
   build(): PropMesh | null {
     if (this.empty) return null;
     return {

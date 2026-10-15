@@ -14,7 +14,7 @@ import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
 import type { GrandmasCamp } from './grandmasCamp';
 import type { SaltCircle } from './lair';
-import { PropBuilder, local, type PropMesh, type Rgb } from './propMesh';
+import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
 
 /** Tile size, metres. */
 export const PROP_TILE = 64;
@@ -26,6 +26,8 @@ export interface PropTile {
   glow: PropMesh | null;
   /** Standing water, where the ground lies below the water table. */
   water: PropMesh | null;
+  /** Water running in a sheet up the rock (the Cisterns): drawn rippling upwards. */
+  flow: PropMesh | null;
   /** Loose stones on the floor: drawn as rock. */
   stones: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
@@ -34,7 +36,7 @@ export interface PropTile {
   blockers: Float32Array;
   /** Statues whose figure the view draws (and turns): x, top of the plinth, z, yaw, pose, each. */
   watchers: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -62,6 +64,15 @@ const DEEP: Rgb = [0.015, 0.03, 0.035];
 const ENAMEL: Rgb = [0.09, 0.13, 0.1];
 const BULB: Rgb = [1.0, 0.85, 0.6];
 const WAX: Rgb = [0.5, 0.47, 0.38];
+/** A sheet of water running over the rock: it catches more light than the pool. */
+const SHEET: Rgb = [0.3, 0.36, 0.36];
+/**
+ * Water running uphill: one try per `cell` metres; the pool must lap within `reach` metres of the
+ * rock; how high it climbs (min, extra), metres; the step up the sheet, its width at the pool and at
+ * the top, how far it wanders sideways, and how far it stands off the rock, metres.
+ */
+const UPHILL = { cell: 6, reach: 2.5, rise: [3, 4], step: 0.25, width: [0.55, 0.12], wiggle: 0.2, off: 0.03 } as const;
+
 /** The waterworks' and the bunker's paint: army green, and the canvas of the bunks. */
 const ARMY: Rgb = [0.07, 0.085, 0.05];
 const CANVAS: Rgb = [0.3, 0.28, 0.21];
@@ -81,11 +92,12 @@ class TileBuilder {
   private readonly solid = new PropBuilder();
   private readonly glow = new PropBuilder();
   private readonly water = new PropBuilder();
+  private readonly flow = new PropBuilder();
   private readonly stones = new PropBuilder();
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -117,8 +129,9 @@ class TileBuilder {
     if (camp && this.inTile(camp.x, camp.z)) this.grandmasCamp(camp);
     for (const c of this.level.lair?.circles ?? []) if (this.inTile(c.x, c.z)) this.saltCircle(c);
     this.nooks();
+    if (this.level.band.uphill > 0) this.uphill();
     this.debris();
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), counts: this.counts };
   }
 
   /** Stones and chippings over the floor of the tile (see DEBRIS). */
@@ -187,6 +200,64 @@ class TileBuilder {
         if (!wet) continue;
         if (start < 0) { start = i; depth = d; } else depth = Math.max(depth, d);
       }
+    }
+  }
+
+  /**
+   * Water that runs uphill (docs/design/town-and-first-strata.md §4, the Cisterns): one try per
+   * UPHILL.cell metres where a pool laps against a pillar or a wall. From the pool a thin sheet of
+   * water climbs the rock, wandering a little and narrowing as it goes, and ends a few metres up.
+   */
+  private uphill(): void {
+    const U = UPHILL, n = Math.round(PROP_TILE / U.cell), s = deriveSeed(this.seed, 'uphill'), l = this.level;
+    const nrm: [number, number, number] = [0, 0, 0];
+    // (x, y, z) moved onto the rock at height y; its outward normal in nrm. Null where there is no upright face.
+    const onto = (x: number, y: number, z: number): [number, number, number] | null => {
+      for (let k = 0; k < 4; k++) {
+        const d = l.sdf(x, y, z);
+        l.normal(x, y, z, nrm);
+        x -= nrm[0] * d; z -= nrm[2] * d;
+      }
+      const h = Math.hypot(nrm[0], nrm[2]);
+      if (Math.abs(l.sdf(x, y, z)) > 0.06 || h < 0.8) return null;
+      nrm[0] /= h; nrm[1] = 0; nrm[2] /= h;
+      return [x, y, z];
+    };
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const r = (k: number) => hashToFloat(hash3i(s, this.x0 / U.cell + i, this.z0 / U.cell + j, k));
+      if (r(0) > l.band.uphill) continue;
+      const x = this.x0 + (i + r(1)) * U.cell, z = this.z0 + (j + r(2)) * U.cell;
+      const col = l.columnAt(x, z), y0 = l.waterAt(x, z) - 0.05, d = rockDistance(col);
+      if (col.collapse > 0 || col.floor > y0 - 0.1 || d > U.reach || this.byCamp(x, z)) continue;
+      const top = Math.min(y0 + U.rise[0] + r(3) * U.rise[1], col.ceiling - 1.5);
+      const a: V3[] = [], b: V3[] = [], ns: V3[] = [], cs: Rgb[] = [];
+      // Find the face well above the pool (at the pool, the floor is nearer than the rock).
+      const face = onto(x, y0 + 1.5, z);
+      if (!face) continue;
+      const fn: V3 = [nrm[0], 0, nrm[2]];
+      let p: [number, number, number] | null = onto(face[0] + fn[0] * 0.2, y0, face[2] + fn[2] * 0.2);
+      if (!p) { p = [face[0], y0, face[2]]; nrm[0] = fn[0]; nrm[2] = fn[2]; }
+      // The pool must lap right against the face there.
+      if (l.groundAt(p[0] + nrm[0] * 0.6, p[2] + nrm[2] * 0.6) > y0 - 0.05) continue;
+      const steps = Math.floor((top - y0) / U.step), phase = r(4) * 6.283;
+      for (let k = 0; p && k <= steps; k++) {
+        const y = y0 + k * U.step, f = k / steps;
+        const tx = -nrm[2], tz = nrm[0];
+        const half = (U.width[0] + (U.width[1] - U.width[0]) * f) / 2, wig = U.wiggle * Math.sin(y * 1.3 + phase) * f;
+        const cx = p[0] + tx * wig + nrm[0] * U.off, cz = p[2] + tz * wig + nrm[2] * U.off;
+        a.push([cx - tx * half, y, cz - tz * half]);
+        b.push([cx + tx * half, y, cz + tz * half]);
+        ns.push([nrm[0], 0, nrm[2]]);
+        const c = 1 - 0.5 * f;
+        cs.push([SHEET[0] * c, SHEET[1] * c, SHEET[2] * c]);
+        const was: V3 = [nrm[0], 0, nrm[2]], px: number = p[0], pz: number = p[2];
+        p = onto(px + was[0] * 0.3, y + U.step, pz + was[2] * 0.3);
+        // Low down the foot of the rock may hide the face: keep to the line found above.
+        if (!p && y + U.step < y0 + 1.5) { p = [px, y + U.step, pz]; nrm[0] = was[0]; nrm[2] = was[2]; }
+      }
+      if (a.length < 6) continue;
+      this.flow.ribbon(a, b, ns, cs);
+      this.counts.uphill++;
     }
   }
 
@@ -328,7 +399,7 @@ class TileBuilder {
     const du = face === 0 ? 1 : face === 1 ? -1 : 0, dv = face === 2 ? 1 : face === 3 ? -1 : 0;
     const field = this.level.field;
     const [x, z] = field.fromGrid(w, (iu + 0.5) * s + du * (half + 0.05), (iv + 0.5) * s + dv * (half + 0.05));
-    if (!this.inTile(x, z) || field.pillarAt(w, iu, iv) !== 'whole') return;
+    if (!this.inTile(x, z) || field.pillarAt(w, iu, iv) !== 'whole' || this.level.columnAt(x, z).olderTop !== -Infinity) return; // (not on an older drum)
     const [ox, oz] = field.fromGrid(w, (iu + 0.5) * s + du * (half + 0.6), (iv + 0.5) * s + dv * (half + 0.6));
     const col = this.level.columnAt(ox, oz);
     if (col.working.id !== w.id || col.rubble > 0.05 || this.level.descents.at(ox, oz, 1)) return;
