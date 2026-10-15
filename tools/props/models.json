@@ -19,6 +19,22 @@
     "mush_morels",
     "mush_cave_pale",
     "mush_giant",
-    "mush_brackets"
+    "mush_brackets",
+    "prop_skull",
+    "prop_bone_pile",
+    "prop_niche_bones",
+    "prop_candles",
+    "prop_gate",
+    "prop_rope_coil",
+    "prop_plank_bridge",
+    "prop_plank_bridge_long",
+    "plant_fern",
+    "plant_moss",
+    "plant_vines",
+    "plant_pale_flowers",
+    "crystal_cluster",
+    "crystal_spar",
+    "lava_drips",
+    "basalt_block"
   ]
 }
