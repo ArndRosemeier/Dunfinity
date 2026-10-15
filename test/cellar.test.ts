@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { CELLAR, CELLAR_SHAFT } from '../src/gen/cellar';
 import { quarryProps, PROP_TILE } from '../src/gen/quarryProps';
-import { notaryLetter } from '../src/gen/notary';
+import { heirName, notaryLetter, notaryList } from '../src/gen/notary';
 import { Campfire, type Rester } from '../src/world/fire';
 
 const level = new Level(1, 0);
@@ -70,4 +70,14 @@ test("the notary's letter lies on her table, and he grows wearier with every hei
   assert.ok(last.length < first.length);
   assert.equal(notaryLetter(3, 9), notaryLetter(3, 9));
   assert.equal(new Level(1, 1).writing, null);
+});
+
+test("the notary's list: the fallen crossed out with where it happened, then the next heir", () => {
+  const list = notaryList([{ heir: 1, depth: 3, what: 'a rat' }, { heir: 2, depth: 7, what: 'a brine eel' }], 3, 5);
+  assert.equal(list.length, 3);
+  assert.match(list[0], /̶.*\(level 3, a rat\)$/);
+  assert.equal(list[2], heirName(3, 5));
+  assert.match(notaryLetter(2, 5), new RegExp(heirName(1, 5).replace('.', '\\.')));
+  const many = notaryList(Array.from({ length: 9 }, (_, k) => ({ heir: k + 1, depth: 1, what: 'a fall' })), 10, 5);
+  assert.match(many[0], /3 more/);
 });
