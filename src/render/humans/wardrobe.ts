@@ -125,7 +125,7 @@ const visual = (seed: number, primary: Rgb, secondary: Rgb, wear: number): ItemV
 /** An outfit: chest, legs and feet as (garment, primary, secondary, wear), and what is in the hand. */
 interface Outfit {
   clothes: readonly (readonly ['chest' | 'legs' | 'feet', string, Rgb, Rgb, number])[];
-  hand: readonly [string, Rgb, Rgb, number];
+  hand: readonly [string, Rgb, Rgb, number] | null;
 }
 
 /** What a grandchild goes down in, and Grandma's knife. */
@@ -147,14 +147,23 @@ const SCAVENGERS: readonly Outfit[] = [
   { clothes: [['chest', 'tunic', [0.16, 0.24, 0.3], [0.12, 0.16, 0.18], 0.8], ['legs', 'trousers', [0.26, 0.24, 0.18], [0.18, 0.16, 0.12], 0.8], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.65]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
 ];
 
+/** The Tall One's shroud: a long, dark, worn cloth, and nothing in the hand. */
+const SHROUD: Outfit = {
+  clothes: [['chest', 'tunic', [0.06, 0.06, 0.07], [0.04, 0.04, 0.05], 0.95], ['legs', 'trousers', [0.05, 0.05, 0.06], [0.04, 0.04, 0.05], 0.95]],
+  hand: null,
+};
+
 function dressIn(o: Outfit, seed: number): EquipmentVisuals {
   const eq: EquipmentVisuals = {};
   o.clothes.forEach(([slot, defId, a, b, wear], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear) }; });
-  const [defId, a, b, wear] = o.hand;
-  eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: defId, material: 'metal' } };
+  if (o.hand) {
+    const [defId, a, b, wear] = o.hand;
+    eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: defId, material: 'metal' } };
+  }
   return eq;
 }
 
 export const rags = (seed: number): EquipmentVisuals => dressIn(RAGS, seed);
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
+export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);

@@ -26,6 +26,7 @@ import { SlimeView } from '../render/creatures/slimeView';
 import { DogView } from '../render/creatures/dogView';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
+import { TallOneView } from '../render/creatures/tallOneView';
 import { blowFrom, damage, nearestReached } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -73,7 +74,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const show = (l: Level) => {
     level = l;
     fauna = new Fauna(l);
-    touchedView.level = foremanView.level = scavengerView.people.level = l;
+    touchedView.level = foremanView.level = scavengerView.people.level = tallView.level = l;
     finds = findsOf(l);
     view.go(l);
     cam.level = l;
@@ -92,18 +93,21 @@ export async function startGame(host: HTMLElement): Promise<void> {
   foremanView.level = level;
   const scavengerView = await ScavengerView.create(params.seed);
   scavengerView.people.level = level;
+  const tallView = await TallOneView.create(params.seed);
+  tallView.level = level;
   let body = nextGrandchild();
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
   const nobody = await Nobody.create(params.seed, level);
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
   await view.stage.add(scavengerView.people.root);
   await view.stage.add(scavengerView.camps.root);
+  await view.stage.add(tallView.root);
   const ratView = new RatView();
   await view.stage.add(ratView.root);
   const cricketView = new CricketView();
@@ -162,7 +166,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** A line to show for a while (arriving on a level), and until when. */
   let notice = levelName(level), noticeUntil = 5;
   /** Times the Foreman's bell has rung (each ringing gets a notice). */
-  let bells = 0, calls = 0;
+  let bells = 0, calls = 0, stares = 0;
   const ladder: [number, number] = [0, 0];
   /** The shaft whose ladder the nobody stands at (a way down or the way up), or null. */
   const atLadder = (): Shaft | null => {
@@ -220,7 +224,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get finds() { return finds; }, get pack() { return pack; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get pack() { return pack; },
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -323,6 +327,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     scavengerView.draw(fauna.scavengers.list, body.x, body.z, dt, now);
     if (fauna.scavengers.calls > calls) { notice = fauna.scavengers.said; noticeUntil = now + 3.5; }
     calls = fauna.scavengers.calls;
+    tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
+    if (fauna.tall.stares > stares) { notice = 'The Tall One looks at you, and the cold of it goes right through you.'; noticeUntil = now + 3; }
+    stares = fauna.tall.stares;
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);

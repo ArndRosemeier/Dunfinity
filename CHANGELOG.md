@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.035 — The Tall One
+
+- Level 10 has its guardian. In a cavern a long walk from where you arrive stands the Tall One: four metres, gaunt, grey, quiet, its eyes white. Once it has seen you it follows, never hurrying and never giving up while you are near. From a distance it opens its arms and stares, and the cold of it goes through you. Close up it reaches down with its long arm.
+- It will not cross infused salt. Round its cavern lie the circles of glowing salt grandma poured in 1966 to get away from it. Stand in one and it cannot touch you or stare at you: it waits at the edge.
+
 ## v0.034 — Tidying up
 
 - Nothing new to see: a sweep through the code for things written twice. The creatures now share how the dead lie, how a fighter closes in to swing, and the Foreman is drawn the same way as the other people down there.

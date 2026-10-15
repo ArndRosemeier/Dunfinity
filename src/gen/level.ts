@@ -9,6 +9,7 @@ import { bandOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
+import { lairOf, type Lair } from './lair';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -38,6 +39,7 @@ export class Level {
   private arrival_: [number, number, number] | null = null;
   private ascent_: Shaft | null | undefined;
   private camp_: GrandmasCamp | null | undefined;
+  private lair_: Lair | null | undefined;
 
   constructor(readonly seed: number, readonly depth: number) {
     this.band = bandOf(depth);
@@ -49,6 +51,12 @@ export class Level {
   get camp(): GrandmasCamp | null {
     if (this.camp_ === undefined) this.camp_ = grandmasCamp(this);
     return this.camp_;
+  }
+
+  /** The Tall One's lair and grandma's salt circles round it, if they are on this level (level 10). */
+  get lair(): Lair | null {
+    if (this.lair_ === undefined) this.lair_ = lairOf(this);
+    return this.lair_;
   }
 
   /** The way up, where one arrives from the level above (null on the first level, or if no pillar there will do). */

@@ -13,6 +13,7 @@ import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
 import type { GrandmasCamp } from './grandmasCamp';
+import type { SaltCircle } from './lair';
 import { PropBuilder, local, type PropMesh, type Rgb } from './propMesh';
 
 /** Tile size, metres. */
@@ -114,6 +115,7 @@ class TileBuilder {
     }
     const camp = this.level.camp;
     if (camp && this.inTile(camp.x, camp.z)) this.grandmasCamp(camp);
+    for (const c of this.level.lair?.circles ?? []) if (this.inTile(c.x, c.z)) this.saltCircle(c);
     this.nooks();
     this.debris();
     return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), counts: this.counts };
@@ -647,10 +649,24 @@ class TileBuilder {
     this.counts.chapels++;
   }
 
-  /** Whether (x, z) is in grandma's camp (nothing else lies there). */
+  /** Whether (x, z) is in grandma's camp or by one of her salt circles (nothing else lies there). */
   private byCamp(x: number, z: number): boolean {
-    const c = this.level.camp;
-    return !!c && Math.hypot(x - c.x, z - c.z) < 6;
+    const c = this.level.camp, within = (px: number, pz: number, r: number) => Math.hypot(x - px, z - pz) < r;
+    return (!!c && within(c.x, c.z, 6)) || (this.level.lair?.circles ?? []).some((s) => within(s.x, s.z, s.r + 2));
+  }
+
+  /**
+   * One of grandma's circles of infused salt (src/gen/lair.ts): a ring of pale crystals glowing
+   * faintly blue on a crust of white salt, poured in a careful line sixty years ago.
+   */
+  private saltCircle(c: SaltCircle): void {
+    const n = Math.round((c.r * Math.PI * 2) / 0.22);
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2, h = hashToFloat(hash3i(this.seed, c.x | 0, c.z | 0, k));
+      const x = c.x + Math.cos(a) * c.r, z = c.z + Math.sin(a) * c.r, g = this.level.groundAt(x, z);
+      this.solid.upright(x, g + 0.015, z, -a, 0.16, 0.03, 0.09, SALT_CRUST);
+      if (h < 0.7) this.glow.upright(x + (h - 0.35) * 0.1, g + 0.05 + h * 0.05, z, a + h * 3, 0.025 + h * 0.02, 0.05 + h * 0.07, 0.025, SALT_GLOW);
+    }
   }
 
   /**
@@ -909,6 +925,8 @@ const LEFT = { cell: 6, chance: 0.22, derricks: 0.006 };
 /** A doorway into darkness. */
 const VOID: Rgb = [0.008, 0.008, 0.01];
 /** Grandma's camp (her tent is CANVAS): the bedroll, ash and charred sticks, her thermos, the note. */
+/** Grandma's salt circles: the white crust and the crystals' glow. */
+const SALT_CRUST: Rgb = [0.62, 0.64, 0.66], SALT_GLOW: Rgb = [0.45, 0.7, 1.0];
 const BEDROLL: Rgb = [0.25, 0.1, 0.08], ASH: Rgb = [0.13, 0.125, 0.12], CHAR: Rgb = [0.04, 0.035, 0.03], THERMOS: Rgb = [0.12, 0.28, 0.18], PAPER: Rgb = [0.78, 0.75, 0.66];
 /** A hanging lamp's bulb height over the floor (low, high) and the longest chain it hangs on, m. */
 const HANG = { low: 3.6, high: 5, chain: 30 };
