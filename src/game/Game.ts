@@ -72,7 +72,7 @@ const COOK = { dur: 2.4 };
 
 export async function startGame(host: HTMLElement): Promise<void> {
   const params = parseViewParams(location.search);
-  // Kept between visits (src/app/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
+  // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth);

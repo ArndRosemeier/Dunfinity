@@ -10,6 +10,7 @@ test('the floor round the nobody is marked seen, not the rock, and comes back fr
   assert.ok(e.has(0, 0, 0) && e.has(0, Math.floor(-3 / c), 0), 'the cellar floor');
   assert.ok(!e.has(0, 0, Math.floor(6 / c)), 'not the rock beyond the wall');
   assert.ok(!e.has(1, 0, 0), 'not another level');
+  assert.ok(e.has(0, Math.floor(4 / c), Math.floor(0.2 / c)), 'the 1 m doorway east, though its edges fall on cell centres');
   const n = e.cells(0);
   assert.ok(n > 5);
   assert.equal(Explored.from(JSON.parse(JSON.stringify(e.data))).cells(0), n);
