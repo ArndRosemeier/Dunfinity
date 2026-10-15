@@ -10,6 +10,7 @@ import type { Band } from './bands';
 import type { QuarryField } from './quarry';
 import type { Mix } from './regions';
 import { Karst } from './karst';
+import { Rift } from './rift';
 import type { Style, StyleId } from './style';
 
 /** Makes the style for a level, from the level's seed and band. */
@@ -17,6 +18,7 @@ type Make = (seed: number, band: Band) => Style;
 
 const MAKE: Partial<Record<StyleId, Make>> = {
   karst: (seed, band) => new Karst(seed, band),
+  rift: (seed, band) => new Rift(seed, band),
 };
 
 /** The styles that can be asked for by name (`?style=`), the excavation and the cellar aside. */

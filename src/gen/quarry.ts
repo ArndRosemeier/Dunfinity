@@ -117,6 +117,16 @@ export function noPillar(col: Column): void {
   col.squareD = Infinity;
 }
 
+/** A column no crew worked (another style's): `working` stands for it, no pillar, no rubble or collapse, `border` metres from any working's border, `cavern` (0..1) natural. */
+export function unworked(col: Column, working: Working, border: number, cavern: number): void {
+  col.working = working;
+  noPillar(col);
+  col.rubble = 0;
+  col.border = border;
+  col.collapse = 0;
+  col.cavern = cavern;
+}
+
 export function newColumn(): Column {
   return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0, cavern: 0, style: 0, mix: null, passage: -Infinity, clamp: Infinity, olderTop: -Infinity, squareD: Infinity };
 }

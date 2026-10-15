@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.077 — Rifts
+
+- A third kind of place: rifts, where the rock was torn apart. Long canyons run side by side through the stone, all one way, a few metres wide at the bottom and thirty to eighty metres tall, their walls leaning in and out as they rise and pinching shut far overhead. Ledges run along both walls at different heights, broken in places; boulders hang wedged between the walls high up; now and then a low cut leads across to the next canyon. Between them, solid rock. The beds of the rock are tilted and banded, rust-stained low down. Try `?style=rift`.
+- You meet them in the Salt Works (a few) and in the Threshold (a quarter of the level). Where a mine or a cave meets a rift, a tunnel leads into the nearest canyon. On the map (M) the rifts show rust-grey.
+
 ## v0.076 — Caves on the map
 
 - The map (M) shows what kind of place you walked through: the miners' worked stone stays its warm brown, the natural caves show as pale flowstone. So you can see where the workings break into the caves and find your way back to them.
