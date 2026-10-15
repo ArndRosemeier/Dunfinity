@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.079 — Catacombs
+
+- A fifth kind of place, the first from the crypts: a warren of narrow vaulted galleries cut into soft pale stone, their walls lined floor to vault with rows of burial niches full of old bones, here and there opening into a round domed chapel. Not every stretch was dug, so it branches, loops and dead-ends. Soot blackens the vaults where lamps once burned. Try `?style=catacombs`.
+- A trace of them already lies in the Threshold, behind the crypt fronts. On the map (M) they show bone-pale.
+
 ## v0.078 — Collapses
 
 - A fourth kind of place: chambers whose roofs came down. Huge domed halls, walled off from each other by thick rock that is broken through here and there. Where slabs fell, the roof has angular scars reaching higher into the rock, and under each one the floor heaps up into a hill of fallen blocks: tilted, freshly broken and pale, a few standing on end. You climb over them or find the valleys between. Try `?style=collapse`.

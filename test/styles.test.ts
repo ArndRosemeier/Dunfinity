@@ -243,3 +243,22 @@ test('the collapse is neither: big open chambers whose floor is heaped with fall
     assert.ok(relief('collapse') > 1.8 * relief('excavation') && relief('collapse') > 2.5 * relief('karst'), `level ${d}: relief ${relief('collapse').toFixed(2)} m, excavation ${relief('excavation').toFixed(2)}, karst ${relief('karst').toFixed(2)}`);
   }
 });
+
+test('the catacombs are none of them: low, narrow galleries lined with niches, a few domed chapels', () => {
+  const l = new Level(1, 9), [ax, , az] = l.arrival;
+  const st: Record<string, { n: number; open: number; high: number }> = {};
+  let niches = 0, walls = 0;
+  for (let k = 0; k < 30000; k++) {
+    const x = ax + (hash3f(23, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(23, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+    if (c.mix || c.passage > -20) continue;
+    const id = l.field.styles[c.style].id, s = (st[id] ??= { n: 0, open: 0, high: 0 });
+    s.n++;
+    if (l.sdf(x, c.floor + 1.5, z) > 0.3) { s.open++; if (l.sdf(x, c.floor + 5, z) > 0) s.high++; }
+    // Just behind a gallery's wall at niche height: often a niche.
+    if (id === 'catacombs' && c.wall < -0.2 && c.wall > -0.6) { walls++; if (l.sdf(x, c.floor + 1.2, z) > 0) niches++; }
+  }
+  const high = (id: string) => st[id].high / st[id].open;
+  assert.ok(st.catacombs.n > 500, `${st.catacombs.n} catacombs columns`);
+  assert.ok(high('catacombs') < 0.25 && high('catacombs') < high('karst') / 2 && high('catacombs') < high('excavation') / 2, `room 5 m up over ${(high('catacombs') * 100).toFixed(0)}% of the catacombs' floor, karst ${(high('karst') * 100).toFixed(0)}%, excavation ${(high('excavation') * 100).toFixed(0)}%`);
+  assert.ok(niches / walls > 0.3, `niches behind ${((niches / walls) * 100).toFixed(0)}% of the walls`);
+});
