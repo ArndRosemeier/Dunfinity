@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.089 — Lava tubes
+
+- A tenth kind of place: tunnels where molten rock once ran and drained away. They are long and round, 8–18 m across, and meander side by side for hundreds of metres. Their floors are the last flow's flat glassy crust with ropes of pahoehoe bowed downstream. Benches along the walls show where the flow once stood. Smaller tubes branch across to the next, and here and there a skylight rises from the roof into a dome where the crust fell in. The basalt is black with rust-red crusts, and on hot levels the floor still glows through its cracks. Try `?style=lava`.
+- They belong to the deep magma strata, which aren't built yet, so for now they only appear when asked for by name.
+
 ## v0.088 — Rats that stop fidgeting
 
 - Rats (and every other walking creature) no longer jiggle on the spot when they cannot get where they want to be. Shoved back by a nest-mate, stuck behind a block of fallen rock, or under a ledge they cannot climb, a rat used to try this way and that, a few centimetres back and forth, again and again. Now one that gets no nearer for a moment stands still for about half a second, then tries again. Over 48 nests in four kinds of rock, back-and-forth twitches dropped from 429 to 49.

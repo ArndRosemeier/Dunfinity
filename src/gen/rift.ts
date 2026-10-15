@@ -16,6 +16,7 @@
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
+import { GrainLines } from './grainLines';
 import type { Style, StyleId } from './style';
 
 export const RIFT = {
@@ -71,23 +72,15 @@ export class Rift implements Style {
   private readonly noise: Noise;
   private readonly rough: Noise;
   private readonly cells: number;
-  private readonly cos: number;
-  private readonly sin: number;
+  private readonly lines: GrainLines;
   private readonly own = new WeakMap<Column, RiftColumn>();
 
   constructor(readonly seed: number, readonly band: Band) {
     this.noise = new Noise(deriveSeed(seed, 'rift', 'shape'));
     this.rough = new Noise(deriveSeed(seed, 'rift', 'rough'));
     this.cells = deriveSeed(seed, 'rift', 'cells');
-    const grain = hashToFloat(deriveSeed(seed, 'rift', 'grain')) * Math.PI;
-    this.cos = Math.cos(grain);
-    this.sin = Math.sin(grain);
-  }
-
-  /** The middle line of fault k at u (its v). */
-  private centre(k: number, u: number): number {
     const R = RIFT;
-    return k * R.spacing + (hashToFloat(hash2i(this.cells, k, 1)) - 0.5) * 2 * R.jitter + this.noise.n2(u / R.meander[1], k * 7.31) * R.meander[0];
+    this.lines = new GrainLines(this.noise, this.cells, hashToFloat(deriveSeed(seed, 'rift', 'grain')) * Math.PI, R.spacing, R.jitter, R.meander);
   }
 
   /** The envelope's floor at (x, z). */
@@ -98,7 +91,7 @@ export class Rift implements Style {
 
   column(x: number, z: number, col: Column): Column {
     const R = RIFT, n = this.noise;
-    const u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos;
+    const u = this.lines.u(x, z), v = this.lines.v(x, z);
     let o = this.own.get(col);
     if (!o) { o = { u: 0, k: [0, 0], dv: [0, 0], w0: [0, 0], phi: [0, 0], cross: 0 }; this.own.set(col, o); }
     o.u = u;
@@ -106,7 +99,7 @@ export class Rift implements Style {
     const k0 = Math.round(v / R.spacing), cs = CS;
     let a = 0, da = Infinity, b = 0, db = Infinity, lo = k0 - 2;
     for (let i = 0; i < 5; i++) {
-      const k = k0 - 2 + i, c = (cs[i] = this.centre(k, u)), d = Math.abs(v - c);
+      const k = k0 - 2 + i, c = (cs[i] = this.lines.line(k, u)), d = Math.abs(v - c);
       if (c <= v) lo = k;
       if (d < da) { b = a; db = da; a = k; da = d; } else if (d < db) { b = k; db = d; }
     }
@@ -192,7 +185,7 @@ export class Rift implements Style {
   /** Distance to the nearest wedged boulder of the column's faults (Infinity: none near). */
   private stones(o: RiftColumn, floor: number, height: number, x: number, y: number, z: number): number {
     const S = RIFT.stone, ci = Math.floor(o.u / S.cell);
-    const u = o.u, v = -x * this.sin + z * this.cos;
+    const u = o.u, v = this.lines.v(x, z);
     let d = Infinity;
     for (let i = 0; i < 2; i++) {
       const k = o.k[i];
@@ -200,7 +193,7 @@ export class Rift implements Style {
         const hs = hash2i(this.cells ^ 0x570e, k, c);
         if (hashToFloat(hs) >= S.chance) continue;
         const f = (m: number) => hashToFloat(hash2i(hs, m, 9));
-        const us = (c + 0.2 + 0.6 * f(1)) * S.cell, vs = this.centre(k, us);
+        const us = (c + 0.2 + 0.6 * f(1)) * S.cell, vs = this.lines.line(k, us);
         // Wedged: as wide as the canyon where it hangs, so it touches both walls.
         const w0 = RIFT.half[0] + RIFT.half[1] * (0.5 + 0.5 * this.noise.n2(us / 60, k * 3.7 + 100));
         const phi = k * 1.7 + this.noise.n2(us / 90, k * 5.3 - 40) * 1.5;
@@ -219,7 +212,7 @@ export class Rift implements Style {
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     const B = this.band, n = this.noise;
     // Tilted beds, banded light and dark, stained with iron low down where water ran.
-    const v = -x * this.sin + z * this.cos;
+    const v = this.lines.v(x, z);
     const bed = 0.5 + 0.5 * Math.sin((y + v * 0.35) / 2.6 + n.n2(x / 40, z / 40) * 2);
     const iron = smoothstep(6, 0, y - col.floor) * (0.5 + 0.5 * n.n2(x / 9, z / 9));
     const k = 0.78 + 0.3 * bed;
@@ -230,13 +223,7 @@ export class Rift implements Style {
 
   /** A passage from another style ends on the floor of the fault nearest (x, z) (E3). */
   portal(x: number, z: number): [number, number] {
-    const u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos, k0 = Math.round(v / RIFT.spacing);
-    let best = v, bd = Infinity;
-    for (let k = k0 - 2; k <= k0 + 2; k++) {
-      const c = this.centre(k, u);
-      if (Math.abs(v - c) < bd) { bd = Math.abs(v - c); best = c; }
-    }
-    return [u * this.cos - best * this.sin, u * this.sin + best * this.cos];
+    return this.lines.nearest(x, z);
   }
 
   climbable(): boolean {
