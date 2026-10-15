@@ -5,12 +5,14 @@
  * styles meet there is an edge band `REGIONS.edge` metres wide (in blend distance) on each side; in
  * it, each style's share comes in and goes out smoothly (`sharesAt`).
  *
- * The region round the origin, where the level's arrival and its way up are, is always the mix's
- * first style (the one that knows how to stand a ladder: the excavation's pillars).
+ * The home ground round the origin, where the level's arrival and its way up are (the region there
+ * and every region whose feature point is within `REGIONS.home`), is always the mix's first style
+ * (the one that knows how to stand a ladder: the excavation's pillars). One sets out from the
+ * familiar workings into the other kinds of place.
  *
  * Pure: everything from the seed.
  */
-import { deriveSeed, hashToFloat } from '@futuremagic/core';
+import { deriveSeed, hash2i, hashString, hashToFloat } from '@futuremagic/core';
 import { blendShare, newNear, voronoiNear } from './voronoi';
 import type { StyleId } from './style';
 
@@ -24,6 +26,8 @@ export const REGIONS = {
   reach: 200,
   /** How far off (blend distance, beyond the band) the nearest region of another style is still told (`Shares.edge`). */
   far: 900,
+  /** Regions whose feature point is this near the origin are the mix's first style: the home ground round the arrival, metres. */
+  home: 520,
 } as const;
 
 /** A level's styles and how much of it each covers (weights need not add up to 1). */
@@ -52,24 +56,40 @@ export const newShares = (): Shares => ({ n: 0, styles: [], w: [], edge: Infinit
 export class Regions {
   private readonly seed: number;
   private readonly near = newNear();
-  private readonly cum: number[];
-  /** The region round the origin. */
-  private readonly home: number;
+  /** Per style of the mix: its weight's share, and a salt for its draws (from its id, so the same style draws the same in any mix). */
+  private readonly weights: number[];
+  private readonly salts: number[];
+  /** The regions of the home ground (`REGIONS.home`), by hash. */
+  private readonly home = new Set<number>();
 
   constructor(seed: number, readonly mix: Mix) {
     this.seed = deriveSeed(seed, 'regions');
     const total = mix.reduce((a, [, w]) => a + w, 0);
-    let acc = 0;
-    this.cum = mix.map(([, w]) => (acc += w / total));
-    this.home = voronoiNear(this.seed, 0, 0, REGIONS.size, REGIONS.jitter, 0, newNear()).id;
+    this.weights = mix.map(([, w]) => w / total);
+    this.salts = mix.map(([id]) => hashString(id));
+    // The home ground: the region round the origin, and every region whose feature point is near it.
+    const S = REGIONS, probe = newNear();
+    this.home.add(voronoiNear(this.seed, 0, 0, S.size, S.jitter, 0, probe).id);
+    for (let z = -S.home - S.size; z <= S.home + S.size; z += S.size / 4) for (let x = -S.home - S.size; x <= S.home + S.size; x += S.size / 4) {
+      const r = voronoiNear(this.seed, x / S.size, z / S.size, S.size, S.jitter, 0, probe);
+      if (Math.hypot(r.px, r.pz) * S.size < S.home) this.home.add(r.id);
+    }
   }
 
-  /** The style (an index into the mix) of the region with hash `id`. */
+  /**
+   * The style (an index into the mix) of the region with hash `id`. Each style draws a time
+   * -ln(u) / weight and the earliest wins (so each wins its weight's share). The draws depend only
+   * on the region and the style's id: changing one style's weight, or adding or taking out a style,
+   * changes only the regions that style wins or loses, not the rest of the level.
+   */
   styleOf(id: number): number {
-    if (this.mix.length === 1 || id === this.home) return 0;
-    const r = hashToFloat(id * 747796405 + 1);
-    const i = this.cum.findIndex((c) => r < c);
-    return i < 0 ? this.mix.length - 1 : i;
+    if (this.mix.length === 1 || this.home.has(id)) return 0;
+    let best = 0, bt = Infinity;
+    for (let i = 0; i < this.weights.length; i++) {
+      const t = -Math.log(hashToFloat(hash2i(this.salts[i], id, 0x5e1)) + 1e-12) / this.weights[i];
+      if (t < bt) { bt = t; best = i; }
+    }
+    return best;
   }
 
   /** The style (an index into the mix) that owns (x, z). */

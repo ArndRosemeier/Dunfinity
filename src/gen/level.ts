@@ -6,11 +6,11 @@
  */
 import { HOUSE_DOORS, type DoorSpec } from './doorways';
 import { deriveSeed } from '@futuremagic/core';
-import { bandOf, type Band } from './bands';
+import { bandOf, mixOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
-import type { StyleId } from './style';
+import { owns, type StyleId } from './style';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
@@ -74,7 +74,7 @@ export class Level {
     // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
     const s = deriveSeed(seed, 'level', depth);
     const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
-    const mix = style && depth > 0 ? onlyMix(style, excavation.id) : this.band.styles;
+    const mix = style && depth > 0 ? onlyMix(style, excavation.id) : mixOf(seed, depth);
     this.field = new StyledField(excavation, stylesOf(mix, excavation, s, this.band), mix, s);
     this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined);
   }
@@ -283,7 +283,7 @@ export class Level {
       for (let a = 0; a < 16; a++) {
         const px = x + Math.cos(a * 0.39) * r, pz = z + Math.sin(a * 0.39) * r;
         const w = this.workingAt(px, pz);
-        if (w.collapse > 0 || w.cavern || w.height < above + 6 || w.spacing < minSpacing) continue;
+        if (w.collapse > 0 || w.cavern || w.height < above + 6 || w.spacing < minSpacing || !owns(this.field.excavation, px, pz)) continue;
         const f = this.floorAt(px, pz);
         if (f < this.waterAt(px, pz) + 1) continue;
         // (The field without shafts: the shafts are placed from the arrival, which is found here.)
