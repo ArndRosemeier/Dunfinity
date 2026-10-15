@@ -180,7 +180,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Show the map of what was seen (M) | `MapView` (`toggle`, `draw(level, explored, x, y, z, yaw, fire, now)`); a style's floor colour there is `Style.mapFloor` (default `MAP_FLOOR`) | `src/app/mapView.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
-| The debug menu (`): every ability, invulnerable (`Body.invulnerable`), tireless, any level; the places worth checking out on a level and where to stand by each | `DebugMenu` (`toggle`, `refresh`, with the game's `DebugActions`); `placesOn(level, fauna, x, z)` | `src/app/debugMenu.ts`, `src/game/debugPlaces.ts` |
+| The debug menu (`): every ability, invulnerable (`Body.invulnerable`, `Fighter.invulnerable`: `damage` does nothing), tireless, any level; the places worth checking out on a level and where to stand by each; the nearest region of a level style (here, or the nearest level whose mix has it) | `DebugMenu` (`toggle`, `refresh`, with the game's `DebugActions`); `placesOn(level, fauna, x, z)`; `DEBUG_STYLES`, `styleSpot(level, id, x, z)`, `depthWithStyle(seed, depth, id)` | `src/app/debugMenu.ts`, `src/game/debugPlaces.ts` |
 
 ### Sound and music
 
