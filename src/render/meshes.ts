@@ -23,9 +23,15 @@ export function meshFromData(d: IndexedData, kind: MaterialKind): Mesh {
   g.computeBoundingSphere();
   const m = new Mesh(g, kind.make());
   m.matrixAutoUpdate = false;
-  m.castShadow = kind.shadow.cast;
-  m.receiveShadow = kind.shadow.receive;
-  return m;
+  return wear(m, kind);
+}
+
+/** Put `mesh` on `kind`: its material, and the kind's shadow flags (never set per mesh). */
+export function wear<T extends Mesh>(mesh: T, kind: MaterialKind): T {
+  mesh.material = kind.make();
+  mesh.castShadow = kind.shadow.cast;
+  mesh.receiveShadow = kind.shadow.receive;
+  return mesh;
 }
 
 /** A small hand-built mesh of `kind` (a creature's part, a find), posed per frame: `build` adds its shapes. */

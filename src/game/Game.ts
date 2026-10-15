@@ -199,8 +199,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
   const nobody = await Nobody.create(params.seed, level);
+  // The dogs too: skinned, their shaders are their own, so they compile in the warm-up with the humans.
+  const dogView = await DogView.create();
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
@@ -214,7 +216,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(cricketView.root);
   const slimeView = new SlimeView();
   await view.stage.add(slimeView.root);
-  const dogView = new DogView();
   await view.stage.add(dogView.root);
   const eelView = new EelView();
   await view.stage.add(eelView.root);
