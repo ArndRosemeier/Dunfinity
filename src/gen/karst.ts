@@ -93,11 +93,13 @@ export class Karst implements Style {
     const wx = x + n.n2(x / K.warp[1] + 5.3, z / K.warp[1] - 1.7) * K.warp[0], wz = z + n.n2(x / K.warp[1] - 8.1, z / K.warp[1] + 3.9) * K.warp[0];
     const ci = Math.floor(wx / K.cell), cj = Math.floor(wz / K.cell);
     // (Features further than FAR count as FAR: the cells looked at hold every nearer one, so none drops out with a jump.)
-    let inside = -FAR, roof = 0, fsum = 0, wsum = Math.exp(-FAR / 2.5);
+    let inside = -FAR, roof = 0, fsum = 0, wsum = Math.exp(-FAR / 5);
     const take = (fd: number, height: number, floor: number) => {
       inside = Math.max(inside, fd);
       roof = Math.max(roof, height * smoothstep(0, height / K.roof * 1.5, fd));
-      const wt = Math.exp(Math.min(fd, 6) / 2.5);
+      // (Over 5 m, not less: where a tube's floor meets a chamber's a few metres higher, a quicker
+      // blend made floors steeper than the field's distances allow, and the floor jumped.)
+      const wt = Math.exp(Math.min(fd, 6) / 5);
       fsum += wt * floor; wsum += wt;
     };
     for (let dj = -2; dj <= 1; dj++) for (let di = -2; di <= 1; di++) {
