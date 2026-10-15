@@ -13,6 +13,7 @@ import { Karst } from './karst';
 import { Rift } from './rift';
 import { Collapse } from './collapse';
 import { Catacombs } from './catacombs';
+import { Dungeon } from './dungeon';
 import type { Style, StyleId } from './style';
 
 /** Makes the style for a level, from the level's seed and band. */
@@ -23,6 +24,7 @@ const MAKE: Partial<Record<StyleId, Make>> = {
   rift: (seed, band) => new Rift(seed, band),
   collapse: (seed, band) => new Collapse(seed, band),
   catacombs: (seed, band) => new Catacombs(seed, band),
+  dungeon: (seed, band) => new Dungeon(seed, band),
 };
 
 /** The styles that can be asked for by name (`?style=`), the excavation and the cellar aside. */

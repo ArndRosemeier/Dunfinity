@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.080 — Dungeon rooms
+
+- A seventh kind of place, and the first one anybody built on purpose: rooms of dressed grey stone with flagged floors, joined by short corridors that dog-leg from door to door. Little cells, guard rooms, long halls with two rows of square pillars, and great rooms under a barrel vault. Each room stands a step or few higher or lower than the next, and the corridors ramp between them. Try `?style=dungeon`.
+- Never the whole level: a share of the Cisterns (levels 6–8) and of the Threshold (9–10), between the caves and the workings. On the map (M) it shows grey.
+
 ## v0.079 — Catacombs
 
 - A fifth kind of place, the first from the crypts: a warren of narrow vaulted galleries cut into soft pale stone, their walls lined floor to vault with rows of burial niches full of old bones, here and there opening into a round domed chapel. Not every stretch was dug, so it branches, loops and dead-ends. Soot blackens the vaults where lamps once burned. Try `?style=catacombs`.
