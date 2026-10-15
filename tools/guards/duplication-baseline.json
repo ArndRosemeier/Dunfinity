@@ -2482,5 +2482,13 @@
   {
     "key": "idiom: [.columnAt .level] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/gen/quarryProps.ts",
     "reason": "creatures and the prop pass each ask the level for its column at a spot (level.columnAt) for their own placement; one seam called from four places, surfaced when the finder's corpus shifted"
+  },
+  {
+    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
+    "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
+  },
+  {
+    "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   }
 ]

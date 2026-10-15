@@ -3,6 +3,11 @@
  * their element by id into the host.
  */
 
+/** `t` made safe to put into innerHTML. */
+export function esc(t: string): string {
+  return t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+}
+
 /** Add a stylesheet to the page. */
 export function addStyle(css: string): void {
   const style = document.createElement('style');

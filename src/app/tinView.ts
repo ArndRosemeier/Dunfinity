@@ -6,7 +6,7 @@
 import { SKILLS, type Practice, type Skill } from '../loot/practice';
 import { CARDS, CHAPTERS, type CardId, type Cooked } from '../loot/recipes';
 import type { Tin } from '../loot/tin';
-import { panel } from './panel';
+import { esc, panel } from './panel';
 
 const STYLE = `
   #tin { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow-y: auto;
@@ -47,7 +47,6 @@ export class TinView {
 
   /** Open (or redraw) the tin with card `sel` chosen; `why`: why it could not be cooked, if that was tried. */
   show(cooked: Cooked, tin: Tin, sel: CardId, why: string | null, practice: Practice): void {
-    const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     let html = `<h2>Grandma's tin <span class="salt">· ${tin.salt} ${tin.salt === 1 ? 'pinch' : 'pinches'} of infused salt</span></h2><div class="cols"><div>`;
     for (const ch of CHAPTERS) {
       const cards = CARDS.filter((c) => c.chapter === ch && cooked.has(c.id));
