@@ -8,6 +8,7 @@ import { hash3f } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
 import { newColumn } from '../src/gen/quarry';
 import { PASSAGE } from '../src/gen/styledField';
+import { MAP_FLOOR } from '../src/gen/style';
 import { farFromSurface } from '../src/gen/chunkMesh';
 
 /** The levels with more than one style, one of each band. */
@@ -183,4 +184,10 @@ test('a level can be asked to be all one style (?style=): that style but where o
     assert.deepEqual(new Level(1, d, 'karst').key, { seed: 1, depth: d, style: 'karst' });
   }
   assert.deepEqual(new Level(1, 0, 'karst').field.styles.map((s) => s.id), ['cellar']);
+});
+
+test('on the map, the caves show apart from the worked stone', () => {
+  const [ex, karst] = new Level(1, 9).field.styles;
+  assert.equal(ex.mapFloor, undefined);
+  assert.ok(karst.mapFloor && karst.mapFloor.join() !== MAP_FLOOR.join());
 });
