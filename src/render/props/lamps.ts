@@ -20,7 +20,7 @@ export class LampLights {
 
   constructor(parent: Object3D, count = 8) {
     for (let i = 0; i < count; i++) {
-      const l = new PointLight(0xffa860, 0, 26, DECAY);
+      const l = new PointLight(0xffbe80, 0, 26, DECAY);
       this.lights.push(l);
       parent.add(l);
     }

@@ -183,6 +183,11 @@ export class Dungeon implements Style {
     return Math.min(d, o.pillar);
   }
 
+  /** Dressed blocks in metre courses, big flagstones underfoot. */
+  surface(_col: Column, _x: number, _y: number, _z: number, out: Float32Array, o: number): void {
+    out[o] = 0; out[o + 1] = 1; out[o + 2] = 0; out[o + 3] = 1;
+  }
+
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     const B = this.band, h = y - col.floor;
     const u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos;
