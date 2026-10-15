@@ -68,7 +68,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Is there water here, how high does it stand? | `level.waterAt(x, z)` (water wherever the ground is lower) | `src/gen/level.ts` |
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
-| What the miners left in a tile (rails, carts, lamps, shacks, things left against the rock, derricks, loose stones; in the Salt Works statues, chapels and hanging lamps, as much as `level.band` asks for), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
+| What the miners left in a tile (rails, carts, lamps, shacks, things left against the rock, derricks, loose stones; in the Salt Works statues, chapels and hanging lamps; in the Threshold's caverns ruins (`band.ruins`); as much as `level.band` asks for), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
 | A point in a prop's own frame (across, ahead) in world x, z | `local(x, z, yaw)` | `src/gen/propMesh.ts` |
 | Where a human's feet find the floor (foot IK) | `floorUnder(() => level)` | `src/render/humans/nobody.ts` |
 | Carve a salt miner (statues, and the watchers' figures) | `carveMiner(builder, x, top, z, yaw, pose, colour)` | `src/gen/quarryProps.ts` |

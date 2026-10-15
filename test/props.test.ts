@@ -127,6 +127,17 @@ test('the Cisterns have pipes, pumps and bunker furniture, and no salt statues; 
   assert.equal(salt.machines, 0);
 });
 
+test('the Threshold has ruins against its cavern walls and no miners\' leavings there; nowhere else has ruins', () => {
+  const sum = (l: Level, n: number) => {
+    const [ax, , az] = l.arrival, s = { ruins: 0, rails: 0 };
+    for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) s.ruins += quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts.ruins;
+    return s;
+  };
+  const deep = sum(new Level(1, 9), 3).ruins + sum(new Level(2, 10), 3).ruins;
+  assert.ok(deep >= 2, `${deep} ruins`);
+  assert.equal(sum(new Level(1, 3), 2).ruins + sum(new Level(1, 6), 2).ruins, 0);
+});
+
 test('a tube runs between its ends, round', () => {
   const b = new PropBuilder();
   b.tube(0, 1, 0, 2, 1, 0, 0.1, [1, 1, 1], 8);
