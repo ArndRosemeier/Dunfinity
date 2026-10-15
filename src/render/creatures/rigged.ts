@@ -4,7 +4,8 @@
  *
  * `Rigged.fetch` loads it once and puts every part on a material kind (docs/SHADERS.md): the coat on
  * its `CoatKind` (the glb's two maps go into the kind's textures), the eyes on `GLOW` (they throw the
- * headlamp back), the teeth on `VERTEX_COLOR_SOLID`. `rig.figure()` clones it with its own skeleton,
+ * headlamp back), the teeth on `VERTEX_COLOR_SOLID`; a creature with no coat (the mushroom monsters,
+ * `creature.mushroom`) has its `skin` in vertex colours on `VERTEX_COLOR_SOLID`, as the props are. `rig.figure()` clones it with its own skeleton,
  * and `Animator` plays its clips: one clip at a time, faded into the next, so nothing ever pops; gaits
  * by distance travelled (`stride`), so the paws stay planted at any speed; a flinch layered on top.
  */
@@ -19,16 +20,17 @@ import { groundSpeed, type Creature } from '../../creatures/creature';
 export class Rigged {
   private constructor(private readonly template: Object3D, readonly clips: ReadonlyMap<string, AnimationClip>) {}
 
-  /** Load `public/creatures/<file>`; the glb's coat maps go into `coat`'s textures. */
-  static async fetch(file: string, coat: CoatKind): Promise<Rigged> {
+  /** Load `public/creatures/<file>`; the glb's coat maps go into `coat`'s textures (none: a skin in vertex colours). */
+  static async fetch(file: string, coat?: CoatKind): Promise<Rigged> {
     const gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}creatures/${file}`);
-    const kinds: Record<string, MaterialKind> = { coat, eye: GLOW, teeth: VERTEX_COLOR_SOLID };
+    const kinds: Record<string, MaterialKind> = { eye: GLOW, teeth: VERTEX_COLOR_SOLID, skin: VERTEX_COLOR_SOLID };
+    if (coat) kinds.coat = coat;
     gltf.scene.traverse((o) => {
       if (!(o instanceof Mesh)) return;
       const loaded = o.material as { name: string; map?: Texture | null; normalMap?: Texture | null; dispose(): void };
       const kind = kinds[loaded.name];
       if (!kind) throw new Error(`creature ${file}: no kind for material "${loaded.name}"`);
-      if (kind === coat) {
+      if (coat && kind === coat) {
         fill(coat.maps.colour, loaded.map);
         fill(coat.maps.normal, loaded.normalMap);
       }

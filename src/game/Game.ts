@@ -32,6 +32,7 @@ import { ForemanView } from '../render/creatures/foremanView';
 import type { Lamp } from '../creatures/crickets';
 import { CricketView } from '../render/creatures/cricketView';
 import { SlimeView } from '../render/creatures/slimeView';
+import { ShroomView } from '../render/creatures/shroomView';
 import { DogView } from '../render/creatures/dogView';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
@@ -205,8 +206,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const cricketView = await CricketView.create();
   const slimeView = await SlimeView.create();
   const eelView = await EelView.create();
+  const shroomView = await ShroomView.create();
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
@@ -219,6 +221,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(slimeView.root);
   await view.stage.add(dogView.root);
   await view.stage.add(eelView.root);
+  await view.stage.add(shroomView.root);
+  await view.stage.add(shroomView.spores.root);
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
   const lampDir = new Vector3();
@@ -418,7 +422,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -695,6 +699,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     slimeView.murk.draw(fauna.murk.list, now, body);
     dogView.draw(fauna.dogs.list, now, body);
     eelView.draw(fauna.eels.list, now, body);
+    shroomView.toadstools.draw(fauna.toadstools.list, now, body);
+    shroomView.puffcaps.draw(fauna.puffcaps.list, now, body);
+    shroomView.spores.draw(fauna.puffcaps.spores, now);
     scavengerView.draw(fauna.scavengers.list, body.x, body.z, dt, now);
     if (fauna.scavengers.calls > calls) say(fauna.scavengers.said, 3.5);
     calls = fauna.scavengers.calls;
@@ -766,6 +773,8 @@ const HURT: Record<string, [string, string]> = {
   dog: ['a feral dog bites', 'The dogs pulled you down.'],
   eel: ['a brine eel strikes', 'Something in the water took you.'],
   lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
+  toadstool: ['a toadstool slams', 'A toadstool crushed you. It was only a mushroom.'],
+  spores: ['spores burn', 'The spores filled your lungs.'],
   murk: ['a Murk slime burns', 'The Murk swallowed you.'],
   'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],
   foreman: ['the Foreman strikes', 'The Foreman brought his pick down on you.'],
