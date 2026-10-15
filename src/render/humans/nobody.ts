@@ -19,6 +19,16 @@ export function nobodyLook(seed: number): HumanoidAppearance {
   return randomAppearance('human', deriveSeed(seed, 'nobody'), { age: 0.46 });
 }
 
+/** Where a human's feet find the floor (its foot IK): the rock's surface under them, if near, on the level `level()` gives. */
+export function floorUnder(level: () => Level | null): (x: number, y: number, z: number) => number | null {
+  return (x, y, z) => {
+    const l = level();
+    if (!l) return null;
+    const g = l.groundAt(x, z);
+    return Math.abs(g - y) < 0.8 ? g : null;
+  };
+}
+
 export class Nobody {
   /** Put this into the scene (it moves with the body). */
   readonly root: Object3D;
@@ -39,11 +49,7 @@ export class Nobody {
     this.root = human.object;
     this.head.position.y = human.height - 0.1;
     this.root.add(this.head);
-    // The feet find the floor (the rock's surface under them, if near).
-    this.ground = (x, y, z) => {
-      const g = this.level.groundAt(x, z);
-      return Math.abs(g - y) < 0.8 ? g : null;
-    };
+    this.ground = floorUnder(() => this.level);
   }
 
   /**

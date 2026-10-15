@@ -15,6 +15,7 @@ import { deriveSeed } from '@futuremagic/core';
 import { TOUCHED, type Touched } from '../../creatures/touched';
 import type { Level } from '../../gen/level';
 import { WARDROBE, minersClothes } from '../humans/wardrobe';
+import { floorUnder } from '../humans/nobody';
 
 /** How many can be drawn at once, and how far off they are drawn, metres. */
 const POOL = 3;
@@ -40,11 +41,7 @@ export class TouchedView {
   readonly root = new Group();
   /** The level they stand on (the feet find its floor). */
   level: Level | null = null;
-  private readonly ground = (x: number, y: number, z: number): number | null => {
-    if (!this.level) return null;
-    const g = this.level.groundAt(x, z);
-    return Math.abs(g - y) < 0.8 ? g : null;
-  };
+  private readonly ground = floorUnder(() => this.level);
 
   static async create(seed: number): Promise<TouchedView> {
     const humans: Humanoid[] = [];

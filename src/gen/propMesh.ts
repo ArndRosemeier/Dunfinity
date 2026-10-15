@@ -150,3 +150,12 @@ export class PropBuilder {
     };
   }
 }
+
+/**
+ * The frame at (x, z) turned by `yaw` (as `PropBuilder.upright`): a point `side` across and `fwd`
+ * ahead in it (ahead is (sin yaw, cos yaw)), in world x, z.
+ */
+export function local(x: number, z: number, yaw: number): (side: number, fwd: number) => [number, number] {
+  const ca = Math.cos(yaw), sa = Math.sin(yaw);
+  return (side, fwd) => [x + ca * side + sa * fwd, z - sa * side + ca * fwd];
+}

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.024 — Sweep
+
+- Behind the scenes: a duplication sweep (both finders). The five local frames of the props generator fold into one helper, and the nobody and the Salt-Touched find the floor under their feet the same way. Nothing changes in play.
+
 ## v0.023 — Cave crickets
 
 - Pale cave crickets the size of a dog cling to the pillars and walls a few metres up, in little groups, feelers sweeping. Come near and they drop on you one after another: each sinks onto its long hind legs (that is your warning), leaps, lands on you with a knock, bites, and leaps off to come again from another side.
