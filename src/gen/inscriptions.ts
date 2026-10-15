@@ -72,7 +72,19 @@ export function canRead(ins: Inscription, x: number, y: number, z: number): bool
   // In front of the face, within reach of its middle, and not far above or below it.
   const half = (letteringOf(ins).width * p.scale) / 2, mx = p.x + p.rx * half, mz = p.z + p.rz * half;
   const out = (x - mx) * p.nx + (z - mz) * p.nz;
-  return out > 0.2 && Math.hypot(x - mx, z - mz) < READ_REACH.wall && y > p.y - 9 && y < p.y + 2;
+  return out > 0.2 && Math.hypot(x - mx, z - mz) < READ_REACH.wall && y > p.y - 11 && y < p.y + 2;
+}
+
+/**
+ * A line of `text` across an upright face, centred on (x, y, z) and looking out along (ox, oz): as
+ * large as `scale` metres to a unit, smaller if it would not fit in `half` metres either side.
+ */
+export function acrossFace(id: string, script: Script, text: string, where: string, x: number, y: number, z: number, ox: number, oz: number, half: number, scale: number): Inscription {
+  const l = letter(script, text), s = Math.min(scale, (2 * half) / l.width), w = (l.width * s) / 2;
+  let lo = Infinity, hi = -Infinity;
+  for (const st of l.strokes) for (const [, v] of st) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  // Running to the right as one faces it: (oz, -ox).
+  return { id, script, text, where, place: { kind: 'wall', x: x - oz * w, y: y - ((lo + hi) / 2) * s, z: z + ox * w, rx: oz, rz: -ox, nx: ox, nz: oz, scale: s } };
 }
 
 /** The lettering of an inscription. */

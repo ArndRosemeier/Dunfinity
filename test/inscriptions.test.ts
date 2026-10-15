@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GRANDMA_KERF, Key } from '../src/lore/key';
-import { THRESHOLD_LINTELS } from '../src/lore/fragments';
+import { DIGGERS, THRESHOLD_LINTELS, frieze, numberWords } from '../src/lore/fragments';
 import { Level } from '../src/gen/level';
 import { PROP_TILE, quarryProps } from '../src/gen/quarryProps';
 import { breakLines, letter } from '../src/lore/scripts';
@@ -9,6 +9,7 @@ import { CELLAR } from '../src/gen/cellar';
 import { CELLAR_WARD, type Inscription, type RingPlace, type WallPlace, canRead, inscriptionsAt, letteringOf, onRing } from '../src/gen/inscriptions';
 import { PropBuilder } from '../src/gen/propMesh';
 import { inscribe } from '../src/gen/inscriptions';
+import { DWARVEN } from '../src/gen/dwarven';
 
 test('the cellar has grandma\'s ward round her salt circle, and no other level has writing yet', () => {
   const [ward] = inscriptionsAt(0);
@@ -81,4 +82,39 @@ test('grandma\'s rubbing pencils in her runes once', () => {
   assert.equal(k.pencil('kerf', GRANDMA_KERF), GRANDMA_KERF.length);
   assert.equal(k.pencil('kerf', GRANDMA_KERF), 0);
   assert.equal(k.makeOut('kerf', 'do not wake the tall'), 'do not _a_e the ta__');
+});
+
+test('the dwarven halls carry gold runes: hall names over the gates, friezes on the panels, readable from the floor', () => {
+  // Tiles (from the arrival) where halls stand, found by looking.
+  const found: [Level, Inscription][] = [];
+  for (const [seed, tiles] of [[7, [[-2, -1], [-1, -1]]], [2, [[1, 2], [2, 2]]]] as const) {
+    const l = new Level(seed, 25, 'dwarven'), [ax, , az] = l.arrival;
+    for (const [i, j] of tiles) for (const ins of quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).inscriptions) found.push([l, ins]);
+  }
+  const ids = found.map(([, s]) => s.id).filter((id) => !id.startsWith('lintel:'));
+  const gates = ids.filter((id) => id.startsWith('gate:')), friezes = ids.filter((id) => id.startsWith('frieze:'));
+  assert.ok(gates.length >= 1 && friezes.length >= 6, `${gates.length} gates, ${friezes.length} friezes`);
+  assert.equal(new Set(ids).size, ids.length, 'an inscription placed twice');
+  for (const [l, ins] of found) {
+    if (ins.id.startsWith('lintel:')) continue;
+    assert.equal(ins.script, 'kerf');
+    const p = ins.place as WallPlace, w = letteringOf(ins).width * p.scale;
+    assert.ok(p.scale >= 0.14, `${ins.text}: runes ${(p.scale * 200).toFixed(0)} cm`);
+    const mx = p.x + p.rx * w / 2, mz = p.z + p.rz * w / 2, floor = l.groundAt(mx + p.nx * 2.5, mz + p.nz * 2.5);
+    assert.ok(canRead(ins, mx + p.nx * 2.5, floor, mz + p.nz * 2.5), `${ins.id} not readable from the floor before it`);
+  }
+  for (const [, g] of found) if (g.id.startsWith('gate:')) assert.match(g.text, /^hall of the /);
+});
+
+test('frieze texts are English the dwarves could cut: the diggers\' lines and the halls\' records', () => {
+  assert.equal(numberWords(47), 'forty seven');
+  assert.equal(numberWords(30), 'thirty');
+  assert.equal(numberWords(13), 'thirteen');
+  const seen = new Set<string>();
+  for (let s = 0; s < 400; s++) seen.add(frieze((k) => ((s * 7919 + k * 104729) % 1000) / 1000));
+  assert.ok([...seen].some((t) => DIGGERS.includes(t)) && [...seen].some((t) => t.endsWith('fathoms to the fire')) && [...seen].some((t) => t.startsWith('here ')));
+  for (const t of seen) assert.ok(/^[a-z ]+$/.test(t), t);
+  // Every one fits a panel in runes at least 28 cm tall.
+  const P = DWARVEN.panel, room = DWARVEN.pillar.pitch * P.share - 1.2;
+  for (const t of [...DIGGERS, ...seen]) assert.ok(letter('kerf', t).width * 0.14 <= room, t);
 });

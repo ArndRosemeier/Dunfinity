@@ -27,6 +27,8 @@ import { boxDist2, boxDist3 } from './shapes';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import type { Dress } from './styleProps';
+import { acrossFace, letteringOf } from './inscriptions';
+import { frieze, hallName } from '../lore/fragments';
 
 export const DWARVEN = {
   /** One hall to a cell this long (along u) and wide (along v), metres; the hall's middle strays along u by up to `jitter`. */
@@ -52,7 +54,16 @@ export const DWARVEN = {
   stair: { rise: 0.5, tread: 0.9 },
   /** What stands before each wall panel: the chances of a king's statue, a forge, a brazier by the column (half of them lit), and of a chain hanging over the nave at each column. */
   things: { statue: 0.3, forge: 0.25, brazier: 0.3, lit: 0.5, chain: 0.35 },
+  /**
+   * Kerf runes inlaid in gold (docs/design/lore.md §4.3): a frieze along the back of a wall panel
+   * (this chance, this high over the floor, at most this many metres to a rune's unit), and the
+   * hall's name over each of its gates (this high over the gate).
+   */
+  writing: { frieze: 0.6, high: 5.6, scale: 0.25, over: 1.3, gateScale: 0.35, cut: 0.15 },
 } as const;
+
+/** The gold of the inlay, in the rock's colour and in the runes laid on it. */
+const GOLD = [0.85, 0.58, 0.2] as const;
 
 /** Where a forge's coals lie in it (the forge model's frame: x across, y up, z out of its front). */
 const COALS = [0.2, 0.62, 0.25] as const;
@@ -233,7 +244,7 @@ export class Dwarven implements Style {
     const inlay = deep ? 0 : h > 0.5 ? 1 - smoothstep(0.25, 0.5, Math.abs(line - 3)) : h < 0.3 ? 1 - smoothstep(0.3, 0.55, Math.abs(band - 4.5)) : 0;
     const soot = deep ? 0.55 : 1 - 0.35 * (1 - smoothstep(1, 6, h));
     const glow = deep ? smoothstep(-25, -40, h) : 0;
-    const GOLD = [0.85, 0.58, 0.2], EMBER = [0.95, 0.3, 0.06];
+    const EMBER = [0.95, 0.3, 0.06];
     for (let c = 0; c < 3; c++) {
       const stone = (0.26 + B.rock[c] * 0.14) * course * grain * soot;
       out[o + c] = (stone * (1 - inlay) + GOLD[c] * inlay) * (1 - glow) + EMBER[c] * glow;
@@ -263,6 +274,7 @@ export class Dwarven implements Style {
       for (let i = Math.floor(Math.min(...us) / GU) - 1; i <= Math.floor(Math.max(...us) / GU) + 1; i++) {
         const a = this.hall(i, j), n = Math.max(0, Math.floor((a.hu - 4) / pitch)), s = d.seed ^ hash2i(this.cells, i, j);
         const clear = (u: number, r: number) => !a.ch || Math.abs(u - a.cu) > a.ch + r;
+        this.writing(d, a, i, j, n, s);
         for (let k = -n; k <= n; k++) for (const side of [-1, 1]) {
           const r = (m: number) => hashToFloat(hash2i(s, k * 2 + (side > 0 ? 1 : 0), m));
           // Facing the nave's middle.
@@ -304,10 +316,50 @@ export class Dwarven implements Style {
     }
   }
 
+  /**
+   * The hall's writing (docs/design/lore.md §4.3): its name in gold over each of its gates, and
+   * friezes along the backs of its wall panels, the diggers' account and the hall's records.
+   * Placed only where the face is there to take it, by the tile that owns the ground before it.
+   */
+  private writing(d: Dress, a: Hall, i: number, j: number, n: number, s: number): void {
+    const D = DWARVEN, W = D.writing, depth = d.level.depth, seed = s ^ 0x77726974;
+    const write = (id: string, text: string, where: string, u: number, v: number, y: number, ou: number, ov: number, half: number, scale: number) => {
+      const [x, z] = this.grain.xz(u, v), [ox, oz] = this.grain.xz(ou, ov);
+      if (!d.mine(x + ox, z + oz)) return;
+      const ins = acrossFace(id, 'kerf', text, where, x, y, z, ox, oz, half, scale), p = ins.place;
+      if (p.kind !== 'wall') return;
+      // Rock behind the line and air before it, along the whole of it.
+      const len = letteringOf(ins).width * p.scale;
+      for (const t of [0, 0.5, 1]) {
+        const px = p.x + p.rx * t * len, pz = p.z + p.rz * t * len;
+        if (d.level.sdf(px - ox * 0.3, y, pz - oz * 0.3) > 0 || d.level.sdf(px + ox * 0.6, y, pz + oz * 0.6) < 0.2) return;
+      }
+      d.write(ins, W.cut * p.scale, 0.02, GOLD);
+      d.placed();
+    };
+    const name = hallName(hashToFloat(hash2i(seed, 0, 0)));
+    for (const e of [-1, 1]) {
+      if (!joined(this.cells, e > 0 ? i : i - 1, j, 0, D.extra)) continue;
+      write(`gate:${depth}:${i}:${j}:${e}`, name, GATE, a.u + e * a.hu, a.v, a.floor + D.gate.height + W.over, -e, 0, D.gate.half + 0.5, W.gateScale);
+    }
+    const P = D.panel, pitch = D.pillar.pitch;
+    for (let k = -n; k < n; k++) for (const side of [-1, 1]) {
+      const pu = a.u + (k + 0.5) * pitch;
+      if (a.ch && Math.abs(pu - a.cu) < a.ch + pitch * P.share) continue;
+      const r = (m: number) => hashToFloat(hash2i(seed, k * 2 + (side > 0 ? 1 : 0), m + 1));
+      if (r(9) >= W.frieze) continue;
+      write(`frieze:${depth}:${i}:${j}:${k}:${side}`, frieze(r), FRIEZE, pu, a.v + side * (a.hv + P.depth), a.floor + W.high, 0, -side, (pitch * P.share) / 2 - 0.6, W.scale);
+    }
+  }
+
   climbable(): boolean {
     return true;
   }
 }
+
+/** What one sees on reading the writing, before any of it can be made out. */
+const GATE = 'Over the gate, inlaid in gold and big enough to read across the hall: one short line of runes. A name, by the look of it.';
+const FRIEZE = 'Inlaid in gold along the back of the panel, each rune as long as a forearm: straight cuts on upright staves, none of them level. Dwarven runes.';
 
 /** Plan distance to a hall's nave: two rows of square columns along u, none over the chasm (positive outside them). */
 function nave(a: Hall, u: number, v: number): number {

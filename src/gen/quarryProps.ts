@@ -19,8 +19,7 @@ import type { SaltCircle } from './lair';
 import { furnishCellar } from './cellarProps';
 import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
 import { propModel, type Model } from './models';
-import { inscribe, type Inscription } from './inscriptions';
-import { kerf } from '../lore/scripts';
+import { acrossFace, inscribe, type Inscription } from './inscriptions';
 import { THRESHOLD_LINTELS } from '../lore/fragments';
 
 /** Tile size, metres. */
@@ -181,6 +180,7 @@ class TileBuilder {
       block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
       light: (x, y, z) => this.light(x, y, z),
       placed: () => { this.counts.dressed++; },
+      write: (ins, width, depth, colour) => this.write(ins, width, depth, colour),
     };
   }
 
@@ -959,12 +959,13 @@ class TileBuilder {
 
   /** A line of Kerf runes cut across a face whose middle is (x, y, z), looking out along (ox, oz), at most `half` metres either side. */
   private lintel(x: number, y: number, z: number, ox: number, oz: number, half: number, text: string): void {
-    const scale = Math.min(LINTEL.scale, (2 * half) / kerf(text).width), w = (kerf(text).width * scale) / 2;
-    const ins: Inscription = {
-      id: `lintel:${this.level.depth}:${Math.round(x)}:${Math.round(z)}`, script: 'kerf', text, where: LINTEL.where,
-      place: { kind: 'wall', x: x - oz * w, y: y - scale, z: z + ox * w, rx: oz, rz: -ox, nx: ox, nz: oz, scale },
-    };
-    inscribe(this.solid, ins, LINTEL.cut * scale, 0.015, CUT);
+    const ins = acrossFace(`lintel:${this.level.depth}:${Math.round(x)}:${Math.round(z)}`, 'kerf', text, LINTEL.where, x, y, z, ox, oz, half, LINTEL.scale);
+    this.write(ins, LINTEL.cut * ins.place.scale, 0.015, CUT);
+  }
+
+  /** Lay `ins` on the tile's props and list it for the game to read. */
+  private write(ins: Inscription, width: number, depth: number, colour: Rgb): void {
+    inscribe(this.solid, ins, width, depth, colour);
     this.inscriptions.push(ins);
   }
 
