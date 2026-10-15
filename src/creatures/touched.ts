@@ -76,6 +76,8 @@ interface Spot extends Den {
 }
 
 export class SaltTouched extends Population<Spot, Touched> {
+  /** Salt does not stop them (src/world/saltLine.ts). */
+  protected override heedsSalt = false;
   private readonly n: [number, number, number] = [0, 0, 0];
 
   constructor(level: Level) {

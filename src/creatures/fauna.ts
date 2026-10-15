@@ -9,6 +9,7 @@
 import type { Level } from '../gen/level';
 import type { Fighter } from '../combat/combat';
 import type { Blockers } from '../world/blockers';
+import type { SaltCircle } from '../gen/lair';
 import { Rats, type Rat } from './rats';
 import { SaltTouched, type Touched } from './touched';
 import { Crickets, type Cricket, type Lamp } from './crickets';
@@ -56,6 +57,11 @@ export class Fauna {
     this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = this.tall.blockers = b;
   }
 
+  /** The salt poured on the level (grandma's Salt Line): those that heed it will not step in. */
+  set salt(c: readonly SaltCircle[]) {
+    for (const p of this.all) p.salt = c;
+  }
+
   /** The Sunday candles burning: rats and crickets keep away. */
   set glare(g: readonly { readonly x: number; readonly z: number }[]) {
     this.rats.glare = this.crickets.glare = g;
@@ -81,10 +87,14 @@ export class Fauna {
   /** The ones you killed since the last call, by kind (a population's name) and where they fell. */
   fallen(): { kind: string; x: number; y: number; z: number }[] {
     const out: { kind: string; x: number; y: number; z: number }[] = [];
-    for (const p of [this.rats, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.tall]) {
+    for (const p of this.all) {
       for (const f of p.fallen.splice(0)) out.push({ kind: p.name, ...f });
     }
     return out;
+  }
+
+  private get all() {
+    return [this.rats, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.tall] as const;
   }
 
   /** Whether something near is after `prey`. */
