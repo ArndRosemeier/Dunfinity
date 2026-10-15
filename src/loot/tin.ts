@@ -40,6 +40,13 @@ export interface Gain {
   readonly why: string;
 }
 
+/** What a tin holds, to keep (src/persist/save.ts). */
+export interface TinData {
+  readonly salt: number;
+  readonly deepest: number;
+  readonly times: readonly (readonly [string, number])[];
+}
+
 export class Tin {
   salt = SALT.start;
   /** The deepest level any of the family has reached (chapters of recipes open with it). */
@@ -63,6 +70,19 @@ export class Tin {
   camp(depth: number): Gain | null {
     if (this.nth(`camp:${depth}`) > 1) return null;
     return this.add(SALT.camp, 'Grandma was here.');
+  }
+
+  /** What the tin holds, to keep; `Tin.from` puts it back. */
+  get data(): TinData {
+    return { salt: this.salt, deepest: this.deepest, times: [...this.times] };
+  }
+
+  static from(d: TinData): Tin {
+    const t = new Tin();
+    t.salt = d.salt;
+    t.deepest = d.deepest;
+    for (const [k, n] of d.times) t.times.set(k, n);
+    return t;
   }
 
   private nth(key: string): number {

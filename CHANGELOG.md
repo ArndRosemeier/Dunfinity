@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.052 — Saved between visits
+
+- The game now keeps itself in your browser every few seconds and when you leave. That covers grandma's tin and the salt in it, which grandchild is next, the finds already taken, and the grandchild now down there with where they stand, how hurt they are, their cards, their practice and their pack. Come back later and you carry on where you were.
+- A grandchild who dies is not kept, so reloading sends the next one down. Each seed has its own save, and `?fresh` starts over.
+
 ## v0.051 — Practice
 
 - Using things now makes you better at them. Blows that land train Kitchen Work, knives that hit train Throwing, rolls train Footwork, metres climbed train Climbing, and blows stopped with the lid train Guard. Each goes up at 10, 30 and 70: more damage for the knife and thrown knives, and less stamina for rolling, climbing and blocking. A line tells you when one goes up.

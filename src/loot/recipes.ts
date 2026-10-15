@@ -127,6 +127,17 @@ export class Cooked {
     return this.ranks.get(id) ?? 0;
   }
 
+  /** The ranks cooked, to keep (src/persist/save.ts); `Cooked.from` puts them back (unknown cards are dropped). */
+  get data(): Partial<Record<CardId, number>> {
+    return Object.fromEntries(this.ranks);
+  }
+
+  static from(d: Partial<Record<string, number>>): Cooked {
+    const c = new Cooked();
+    for (const [id, r] of Object.entries(d)) if (CARDS.some((k) => k.id === id) && r) c.ranks.set(id as CardId, r);
+    return c;
+  }
+
   /** The salt the next rank of `id` costs, or null at the last rank. */
   costOf(id: CardId): number | null {
     return card(id).cost[this.rank(id)] ?? null;
