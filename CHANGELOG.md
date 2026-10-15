@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.070 — A debug menu
+
+- Press the key left of 1 (` on English keyboards, ^ on German ones) to open a debug menu. It lets go of the mouse; click the game to look round again.
+- "Give me all abilities": every recipe card in grandma's tin at its top rank, and all of Kemal's gear.
+- Invulnerable: blows and falls still land (the red flash) but take nothing. Tireless: stamina stays full, so you can climb anything.
+- Go to any level: buttons for 0 to 12, and a box for any deeper one.
+- Teleport on this level: in grandma's house her armchair, the notary's letter, the cellar door, her hall, the street, Ilse's, Kemal's, Frau Weber and the old shaft; below, the way up, the nearest way down, the Foreman (level 5), grandma's camp (level 9), the Tall One and a salt circle (level 10), and the nearest den of every creature living on the level (rats, Salt-Touched, crickets, both slimes, dogs, eels, scavengers).
+- What you do with it is kept in the save like anything else.
+
 ## v0.069 — Tidying up
 
 - Behind the scenes: a sweep for repeated code. The dogs, rats, slimes and cave crickets now share one way of putting their figures where they stand. Nothing changes in play.

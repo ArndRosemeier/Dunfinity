@@ -47,7 +47,9 @@ import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
 import { Tin, type Gain } from '../loot/tin';
-import { Cooked, card, type CardId } from '../loot/recipes';
+import { CARDS, Cooked, card, type CardId } from '../loot/recipes';
+import { DebugMenu } from '../app/debugMenu';
+import { placesOn, type Place } from './debugPlaces';
 import { TinView } from '../app/tinView';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { Thrown } from '../combat/thrown';
@@ -233,6 +235,46 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let throwAt = -9, released = true, tossing: 'knife' | 'candle' = 'knife';
   const tinView = new TinView(document.body);
   const mapView = new MapView(document.body);
+  /** The debug menu (`): every ability, invulnerable, tireless, any level, anything worth checking out. */
+  let debugPlaces: Place[] = [];
+  /** Put the nobody down at (x, y, z) facing `yaw` on the level shown, as they were (health, stamina), fading in. */
+  const putDown = (x: number, y: number, z: number, yaw: number): void => {
+    const hp = body.health, st = body.stamina;
+    body = new Body(x, y + 0.2, z);
+    body.health = hp; body.stamina = st;
+    body.facing = cam.yaw = yaw;
+    picking = null;
+    cam.follow(body.x, body.y + 1.6, body.z, 1);
+    fadeIn = 0.5;
+  };
+  /** Not mid-climb, mid-way home or dead. */
+  const canGo = (): boolean => !climb.active && homeTo === null && !body.dead;
+  const debug = new DebugMenu(document.body, {
+    allAbilities: () => {
+      cooked = Cooked.from(Object.fromEntries(CARDS.map((c) => [c.id, c.cost.length])));
+      gear = new Gear(GEAR_ORDER);
+      return 'Every recipe card at its top rank, and all of Kemal\'s gear.';
+    },
+    toLevel: (d) => {
+      if (!canGo()) return;
+      show(new Level(params.seed, d));
+      const [x, , z] = level.arrival;
+      // Facing away from the ladder up, out over the level.
+      const up = level.ascent, yaw = d === 0 ? CELLAR.start.yaw : up ? Math.atan2(up.x - x, up.z - z) : cam.yaw;
+      putDown(x, d === 0 ? 0 : level.groundAt(x, z), z, yaw);
+      say(levelName(level), 5);
+      debug.refresh();
+    },
+    places: () => (debugPlaces = placesOn(level, fauna, body.x, body.z)),
+    toPlace: (i) => {
+      const p = debugPlaces[i];
+      if (!p || !canGo()) return;
+      putDown(p.x, p.y, p.z, p.yaw);
+      say(p.name, 3);
+      debug.toggle();
+    },
+    depth: () => level.depth,
+  });
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
   let tinSel: CardId = TinView.order()[0], cookAt = -9;
   /** When the last roll began (grandma's Duck card). */
@@ -362,7 +404,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown,
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, debug,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -397,6 +439,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
     if (controls.tap('KeyM')) mapView.toggle();
+    if (controls.tap('Backquote')) debug.toggle();
+    body.invulnerable = debug.invulnerable;
+    if (debug.tireless) body.stamina = MOVE.stamina;
     if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
@@ -652,6 +697,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (draft) lines.push(draft);
     }
+    if (debug.invulnerable || debug.tireless) lines.push(`debug: ${[debug.invulnerable && 'invulnerable', debug.tireless && 'tireless'].filter(Boolean).join(', ')}`);
     lines.push(...fauna.tally(), `infused salt in grandma's tin: ${tin.salt}`, euros ? `euros in grandma's purse: €${euros}` : '');
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
     if (hud) hud.textContent = hudText(body, backend, body.dead ? notaryList(fallen, heir + 1, params.seed) : []) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
@@ -694,6 +740,6 @@ function hudText(b: Body, backend: string, list: readonly string[]): string {
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
   if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light · M map  ·  ${backend}`);
+  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light · M map · \` debug  ·  ${backend}`);
   return lines.join('\n');
 }

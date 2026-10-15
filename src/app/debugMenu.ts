@@ -1,0 +1,126 @@
+/**
+ * The debug menu (the key left of 1: ` or ^): give yourself every ability, become invulnerable or
+ * tireless, go to any level, and teleport to anything worth checking out on this one. A DOM panel;
+ * it lets go of the mouse while open (click the game to look round again).
+ */
+import { bandOf } from '../gen/bands';
+import { panel } from './panel';
+
+/** What the menu asks the game to do. */
+export interface DebugActions {
+  /** Every recipe card at its top rank, and all of Kemal's gear. */
+  allAbilities(): string;
+  /** Go to level `depth` (at its arrival). */
+  toLevel(depth: number): void;
+  /** The places worth checking out on the level one is on. */
+  places(): readonly { readonly name: string }[];
+  /** Go to place `i` of `places()`. */
+  toPlace(i: number): void;
+  /** The level one is on. */
+  depth(): number;
+}
+
+/** The levels with a button of their own (any other through the number box). */
+const LEVELS = 12;
+
+const STYLE = `
+  #debug { position: fixed; right: 12px; top: 44px; z-index: 9; display: none; width: 300px; max-height: calc(100vh - 54px); overflow-y: auto;
+    padding: 10px 12px; background: #15130fef; color: #e3d9c4; border: 1px solid #8a7656; border-radius: 4px; box-shadow: 0 6px 30px #000a;
+    font: 12px/1.35 system-ui, sans-serif; }
+  #debug.open { display: block; }
+  #debug h3 { margin: 10px 0 4px; font-size: 12px; color: #c9a86a; text-transform: uppercase; letter-spacing: 0.05em; }
+  #debug h3:first-child { margin-top: 0; }
+  #debug button { margin: 2px 2px 2px 0; padding: 3px 7px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; border-radius: 3px; cursor: pointer; font: inherit; }
+  #debug button:hover { background: #3b3328; }
+  #debug button.here { border-color: #e8d27a; color: #e8d27a; }
+  #debug .places button { display: block; width: 100%; text-align: left; }
+  #debug label { display: block; margin: 2px 0; cursor: pointer; }
+  #debug input[type=number] { width: 52px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; font: inherit; }
+  #debug .said { color: #a8c98a; min-height: 1em; margin-top: 4px; white-space: pre-wrap; }
+  #debug .hint { color: #8d8270; margin-top: 8px; }`;
+
+export class DebugMenu {
+  /** Blows and falls take nothing. */
+  invulnerable = false;
+  /** Stamina stays full. */
+  tireless = false;
+  private readonly el: HTMLDivElement;
+  private readonly said: HTMLDivElement;
+  private readonly levels: HTMLDivElement;
+  private readonly list: HTMLDivElement;
+
+  constructor(host: HTMLElement, private readonly act: DebugActions) {
+    this.el = panel(host, 'div', 'debug', STYLE);
+    const h = (text: string) => { const e = document.createElement('h3'); e.textContent = text; this.el.appendChild(e); };
+    const button = (parent: HTMLElement, text: string, click: () => void): HTMLButtonElement => {
+      const b = document.createElement('button');
+      b.textContent = text;
+      b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
+      parent.appendChild(b);
+      return b;
+    };
+    const toggle = (text: string, set: (on: boolean) => void) => {
+      const l = document.createElement('label'), c = document.createElement('input');
+      c.type = 'checkbox';
+      c.addEventListener('change', () => { set(c.checked); c.blur(); });
+      l.append(c, ` ${text}`);
+      this.el.appendChild(l);
+    };
+    h('Debug');
+    button(this.el, 'Give me all abilities', () => this.say(act.allAbilities()));
+    toggle('Invulnerable', (on) => { this.invulnerable = on; });
+    toggle('Tireless (stamina stays full)', (on) => { this.tireless = on; });
+    h('Go to level');
+    this.levels = document.createElement('div');
+    this.el.appendChild(this.levels);
+    for (let d = 0; d <= LEVELS; d++) button(this.levels, String(d), () => act.toLevel(d)).title = d ? `Level ${d} · ${bandOf(d).name}` : bandOf(0).name;
+    const any = document.createElement('div'), n = document.createElement('input');
+    n.type = 'number'; n.min = '0'; n.value = String(LEVELS + 1);
+    any.append(n, ' ');
+    button(any, 'Go', () => { const d = Math.max(0, Math.floor(Number(n.value) || 0)); act.toLevel(d); });
+    this.el.appendChild(any);
+    h('Teleport on this level');
+    this.list = document.createElement('div');
+    this.list.className = 'places';
+    this.el.appendChild(this.list);
+    this.said = document.createElement('div');
+    this.said.className = 'said';
+    this.el.appendChild(this.said);
+    const hint = document.createElement('div');
+    hint.className = 'hint';
+    hint.textContent = 'Kept in the save like anything you do. ` (^) closes; click the game to look round.';
+    this.el.appendChild(hint);
+    // The game's keys still work with the menu open; typing a level number must not walk.
+    n.addEventListener('keydown', (e) => e.stopPropagation());
+  }
+
+  get open(): boolean {
+    return this.el.classList.contains('open');
+  }
+
+  toggle(): void {
+    this.el.classList.toggle('open');
+    if (this.open) {
+      document.exitPointerLock?.();
+      this.refresh();
+    }
+  }
+
+  /** Redraw the level buttons and the places (after going somewhere). */
+  refresh(): void {
+    if (!this.open) return;
+    const depth = this.act.depth();
+    [...this.levels.children].forEach((b, d) => b.classList.toggle('here', d === depth));
+    this.list.replaceChildren();
+    this.act.places().forEach((p, i) => {
+      const b = document.createElement('button');
+      b.textContent = p.name;
+      b.addEventListener('click', (e) => { e.stopPropagation(); this.act.toPlace(i); b.blur(); });
+      this.list.appendChild(b);
+    });
+  }
+
+  private say(text: string): void {
+    this.said.textContent = text;
+  }
+}
