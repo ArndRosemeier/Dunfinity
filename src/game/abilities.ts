@@ -22,6 +22,7 @@ export const ABILITIES: readonly Ability[] = [
   { card: 'tenderising', key: 'KeyV', label: 'V', short: 'Pound' },
   { card: 'helpings', key: 'Mouse2', label: 'RMB', short: 'Throw knife' },
   { card: 'duck', key: 'KeyQ', label: 'Q', short: 'Roll' },
+  { card: 'spring', key: 'Space', label: 'Space', short: 'Spring' },
   { card: 'pot-lid', key: 'KeyX', label: 'X', hold: true, short: 'Pot lid' },
   { card: 'tiptoe', key: 'KeyZ', label: 'Z', hold: true, short: 'Tiptoe' },
   { card: 'stove-flame', key: 'KeyR', label: 'R', short: 'Stove flame' },

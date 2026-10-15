@@ -23,6 +23,8 @@ export const MOVE = {
   guarded: 2,
   swim: 2.4,
   jump: 6.2,
+  /** A jump in mid-air (Spring in Your Step, rank 2) leaves this share of a sprung jump's speed. */
+  airJump: 0.85,
   gravity: 18,
   climb: 1.7,
   /** Seconds of climbing on a full bar. */
@@ -107,6 +109,11 @@ export class Body {
   private rollX = 0;
   private rollZ = 0;
   private safe: readonly [number, number] = [0, 0];
+  /** Grandma's Spring in Your Step card, if cooked: how fast a jump leaves the floor, m/s, how many more it may take in mid-air, and the stamina each costs. */
+  spring: { readonly jump: number; readonly air: number; readonly cost: number } | null = null;
+  /** Jumps left in mid-air (Spring in Your Step, rank 2), and when (body time) the last sprung jump left the floor or the air. */
+  private airJumps = 0;
+  sprangAt = -Infinity;
   /** Grandma's Tiptoe card, if cooked: speed tiptoeing, m/s, and how far off things notice you then (a share). */
   tiptoe: { readonly speed: number; readonly hush: number } | null = null;
   /** Tiptoeing this step. */
@@ -250,9 +257,18 @@ export class Body {
     this.vx += clampStep(mx * speed - this.vx, accel * dt);
     this.vz += clampStep(mz * speed - this.vz, accel * dt);
     this.vy -= MOVE.gravity * dt;
+    const spring = this.spring && this.stamina >= this.spring.cost ? this.spring : null;
     if (this.grounded) {
-      if (input.jump) this.vy = MOVE.jump;
+      this.airJumps = this.spring?.air ?? 0;
+      if (input.jump && spring) { this.vy = spring.jump; this.stamina -= spring.cost; this.sprangAt = this.time; }
+      else if (input.jump) this.vy = MOVE.jump;
       else this.vy = Math.min(this.vy, -2); // stick to the floor walking downhill
+    } else if (input.jump && spring && this.airJumps > 0) {
+      // Grandma's Spring, rank 2: once more off nothing at all.
+      this.airJumps--;
+      this.vy = Math.max(this.vy, spring.jump * MOVE.airJump);
+      this.stamina -= spring.cost;
+      this.sprangAt = this.time;
     }
   }
 
