@@ -57,10 +57,8 @@ const SHORE = 1;
 const WOOD: Rgb = [0.2, 0.13, 0.075];
 const RUST: Rgb = [0.13, 0.065, 0.04];
 const IRON: Rgb = [0.06, 0.055, 0.05];
-const TAR: Rgb = [0.05, 0.045, 0.04];
 const GLASS: Rgb = [0.09, 0.085, 0.07];
 const FLAME: Rgb = [1.0, 0.72, 0.4];
-const LOAD: Rgb = [0.4, 0.37, 0.31];
 const SHALLOW: Rgb = [0.2, 0.21, 0.18];
 const DEEP: Rgb = [0.015, 0.03, 0.035];
 /** An electric lamp's enamel shade and its bulb, burning. */
@@ -391,14 +389,9 @@ class TileBuilder {
 
   /** An ore cart on the rails, sometimes still loaded. */
   private cart(x: number, g: number, z: number, yaw: number, r: number): void {
-    const at = local(x, z, yaw);
-    for (const sd of [-0.42, 0.42]) for (const fw of [-0.45, 0.45]) {
-      const [wx, wz] = at(sd, fw);
-      this.solid.upright(wx, g + 0.42, wz, yaw, 0.05, 0.17, 0.17, IRON);
-    }
-    this.solid.upright(x, g + 1.0, z, yaw, 0.52, 0.42, 0.82, RUST);
-    this.block(x, z, yaw, 0.52, 0.82, g, g + 1.45);
-    if (r < 0.6) this.solid.upright(x, g + 1.4, z, yaw, 0.46, 0.06, 0.74, LOAD);
+    const cart = propModel(r < 0.6 ? 'prop_cart_loaded' : 'prop_cart');
+    this.solid.stamp(cart, x, g, z, yaw);
+    this.block(x, z, yaw, 0.52, 0.82, g, g + cart.max[1]);
     this.counts.carts++;
   }
 
@@ -1011,18 +1004,8 @@ class TileBuilder {
     }
     if (this.level.sdf(x, g + 3.6, z) < 1.2) return;
     const tint = 0.8 + 0.4 * this.roll(w, 52, iu, iv);
-    this.solid.upright(x, g + 1.2, z, yaw, 2.2, 1.4, 1.6, [WOOD[0] * tint * 1.2, WOOD[1] * tint * 1.15, WOOD[2] * tint]);
+    this.solid.stamp(propModel('prop_shack'), x, g, z, yaw, { tint: [tint, tint, tint] });
     this.block(x, z, yaw, 2.3, 1.7, g - 0.5, g + 2.7);
-    // Corner posts and a beam under the eaves, darker than the boards.
-    const frame: Rgb = [WOOD[0] * 0.6, WOOD[1] * 0.6, WOOD[2] * 0.6];
-    for (const [sd, fw] of [[-2.2, -1.6], [2.2, -1.6], [-2.2, 1.6], [2.2, 1.6]]) {
-      const [px, pz] = at(sd, fw);
-      this.solid.upright(px, g + 1.2, pz, yaw, 0.1, 1.42, 0.1, frame);
-    }
-    this.solid.upright(x, g + 2.45, z, yaw, 2.26, 0.1, 1.66, frame);
-    this.solid.upright(x, g + 2.68, z, yaw, 2.5, 0.08, 1.9, TAR);
-    const [dx, dz] = at(0.6, 1.61);
-    this.solid.upright(dx, g + 0.95, dz, yaw, 0.45, 0.95, 0.03, TAR);
     const lit = this.roll(w, 53, iu, iv) < 0.6;
     const [wx, wz] = at(2.21, 0);
     (lit ? this.glow : this.solid).upright(wx, g + 1.55, wz, yaw, 0.02, 0.28, 0.4, lit ? [FLAME[0] * 0.7, FLAME[1] * 0.6, FLAME[2] * 0.5] : GLASS);
@@ -1030,12 +1013,12 @@ class TileBuilder {
     this.lamp(lx, g + 2.25, lz, lit);
     for (let c = 0; c < 3; c++) {
       if (this.roll(w, 54 + c, iu, iv) < 0.4) continue;
-      const size = 0.28 + 0.2 * this.roll(w, 57 + c, iu, iv);
+      const size = 0.28 + 0.2 * this.roll(w, 57 + c, iu, iv), crate = propModel('prop_crate'), scale = size / crate.max[0];
       const [cx, cz] = at(-2.2 - 0.4 - size - c * 0.1, -1.2 + c * 1.1);
       if (this.level.sdf(cx, this.level.groundAt(cx, cz) + 0.5, cz) < 0.6 || !this.level.dry(cx, cz, 0.05)) continue;
       const cy = this.level.groundAt(cx, cz), cyaw = yaw + this.roll(w, 60 + c, iu, iv);
-      this.solid.upright(cx, cy + size, cz, cyaw, size, size, size, [WOOD[0] * 1.4, WOOD[1] * 1.3, WOOD[2] * 1.1]);
-      this.block(cx, cz, cyaw, size, size, cy - 0.3, cy + size * 2);
+      this.solid.stamp(crate, cx, cy, cz, cyaw, { scale });
+      this.block(cx, cz, cyaw, size, size, cy - 0.3, cy + crate.max[1] * scale);
     }
     this.counts.shacks++;
   }

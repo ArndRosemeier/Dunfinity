@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.084 — Carts and shacks
+
+- The ore carts on the rails are modelled now: a riveted iron tub on four flanged wheels, some still heaped with ore.
+- The miners' shacks too: plank walls on a timber frame, a door, a window and a tarred roof with eaves.
+- Ten kinds of mushroom are made and waiting for the damp places: fly agarics, penny buns, inkcaps, honey clusters, chanterelles, puffballs, morels, pale cave caps, brackets on the rock and a giant three metres tall.
+
 ## v0.083 — Fungal grottoes
 
 - A second living kind of place: warm, wet caves overgrown with giant mushrooms, from knee-high ones to giants 14 m tall. Pale fibrous stalks hold up broad caps in the level's own hue (violet, teal, amber or rose) with paler spots, and their gills glow faintly underneath. The big caps are wide and flat enough to climb onto and walk across, a second storey over the dark loam. Try `?style=fungal`.
