@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.095 — Strata below the Threshold
+
+- Below level 10 the world goes on in strata, each a place of its own: the Ossuaries (levels 11–20, catacombs and fallen ground), the Old Halls (21–40, rifts, halls and the first lava), Before People (41–60, fungal grottoes, geodes, root hollows, lava tubes), and from 61 the Deep, where any kind of place can turn up, a new make-up every ten levels.
+- Every world draws its own make-up for each stratum: three to five kinds of place, so your Ossuaries are not someone else's. Its levels share that make-up and each leans its own way.
+- Dungeon rooms stay a sprinkle; you always arrive in old workings with a ladder up and a way down not far off.
+
 ## v0.094 — Real slimes
 
 - The slimes are new: sculpted, rigged and animated in Blender. Lumen is a pale, glossy jelly with glowing motes in its skin; Murk is black, lumpy and oily.
