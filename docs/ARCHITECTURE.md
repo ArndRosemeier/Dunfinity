@@ -36,7 +36,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | How strongly the rock's veins glow (per band) | `ROCK_VEINS.value`, set by `LevelView` from `level.band.veins` | `src/render/materials.ts` |
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
 | Dust in the air, seen in the headlamp's beam | `Dust` (one mesh of the `DUST` kind; `follow(lamp)` each frame) | `src/render/dust.ts` |
-| Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later) | `src/render/props/lamps.ts` |
+| Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later; `power` from `band.lamplight`) | `src/render/props/lamps.ts` |
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `screen.toScreen` *(planned; guarded already)* | `src/render/screen.ts` |
@@ -62,7 +62,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Put a point onto an upright rock face (chalk on a pillar, water running up it) | `level.ontoRock(x, y, z, n, fixed)` | `src/gen/level.ts` |
 | Is a spot dry ground? How far to the rock beside a column? | `level.dry(x, z, margin)`; `rockDistance(col)` | `src/gen/level.ts`, `src/gen/quarry.ts` |
 | Which band (Quarry, Salt Works, Cisterns, ...) a depth belongs to, and how it looks: rock colours, pillar fluting, floor steps between halls, water, glowing veins, what was left against the rock (carvings, waterworks), the share of natural caverns (`band.caverns`, `Working.cavern`, `Column.cavern` in `QuarryField`), its name | `bandOf(depth)`, `level.band` (passed to `QuarryField`) | `src/gen/bands.ts` |
-| Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |
+| Grandma's cellar (depth 0, the same for every seed): its rooms, the old shaft, its things | `CellarField` (a `QuarryField` whose `column`/`at`/`color` are the cellar's), `CELLAR`, `CELLAR_SHAFT`, `CELLAR_BAND`; furnished by `furnishCellar` through `quarryProps` | `src/gen/cellar.ts`, `src/gen/cellarProps.ts` |
+| Where does a viewer start? | `level.arrival` (by grandma's armchair in the cellar; at the way up below); `level.spawn()` for a hall near a point | `src/gen/level.ts` |
 | Where exactly is the rock surface under a point (where props stand)? | `level.groundAt(x, z)` | `src/gen/level.ts` |
 | Which way does the rock face here? | `level.normal(x, y, z, out)` | `src/gen/level.ts` |
 | How far until a ray hits rock? | `level.trace(...)` | `src/gen/level.ts` |

@@ -10,6 +10,7 @@ import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
+import { CELLAR, CELLAR_SHAFT, CellarField } from './cellar';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -43,8 +44,10 @@ export class Level {
 
   constructor(readonly seed: number, readonly depth: number) {
     this.band = bandOf(depth);
-    this.field = new QuarryField(deriveSeed(seed, 'level', depth), this.band);
-    this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent);
+    // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
+    const s = deriveSeed(seed, 'level', depth);
+    this.field = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
+    this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined);
   }
 
   /** Grandma's first camp, if it is on this level (level 9). */
@@ -59,12 +62,12 @@ export class Level {
     return this.lair_;
   }
 
-  /** The way up, where one arrives from the level above (null on the first level, or if no pillar there will do). */
+  /** The way up, where one arrives from the level above (null in the cellar, or if no pillar there will do). */
   get ascent(): Shaft | null {
     if (this.ascent_ === undefined) {
       this.ascent_ = null;
       // In the arrival hall, else in one further out.
-      for (let k = 0; k < 6 && this.depth > 1 && !this.ascent_; k++) {
+      for (let k = 0; k < 6 && this.depth > 0 && !this.ascent_; k++) {
         const [x, , z] = this.spawn(k ? Math.cos(k) * 300 : 0, k ? Math.sin(k) * 300 : 0);
         this.ascent_ = findAscent(this.field, x, z);
       }
@@ -73,13 +76,14 @@ export class Level {
   }
 
   /**
-   * Where a player arrives on this level: at the foot of the way up below the first level, else
-   * (and at the start) `spawn()` near the origin.
+   * Where a player arrives on this level: in the cellar by grandma's armchair; below it at the foot
+   * of the way up, else `spawn()` near the origin.
    */
   get arrival(): [number, number, number] {
     if (!this.arrival_) {
       const a = this.ascent;
-      if (a) {
+      if (this.depth === 0) this.arrival_ = [CELLAR.start.x, 0, CELLAR.start.z];
+      else if (a) {
         const [x, z] = ladderTop(a);
         this.arrival_ = [x, a.floor, z];
       } else this.arrival_ = this.spawn();

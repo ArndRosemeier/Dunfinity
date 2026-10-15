@@ -4,12 +4,12 @@ import { Level } from '../src/gen/level';
 import { CRICKET, Crickets, type Cricket, type Lamp } from '../src/creatures/crickets';
 import type { Fighter } from '../src/combat/combat';
 
-const level = new Level(1, 1);
+const level = new Level(1, 2); // (a group whose wall leaves room to land by you)
 
 /** Someone standing near the cave crickets' group nearest the arrival. */
 function setup(): { cr: Crickets; me: Fighter & { taken: number } } {
   const cr = new Crickets(level);
-  const [ax, , az] = level.arrival;
+  const [ax, , az] = level.spawn(); // (the grand hall near the origin)
   let best: { x: number; z: number } | null = null, bd = Infinity;
   for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) {
     const g = cr.denAt(Math.floor(ax / CRICKET.cell) + i, Math.floor(az / CRICKET.cell) + j);

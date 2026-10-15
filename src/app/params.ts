@@ -23,7 +23,7 @@ export function parseViewParams(search: string): ViewParams {
   const q = new URLSearchParams(search);
   const s = q.get('seed') ?? '1';
   const seed = /^\d+$/.test(s) ? Number(s) >>> 0 : hashString(s);
-  const depth = Math.max(1, Math.floor(Number(q.get('depth') ?? '1')) || 1);
+  const depth = Math.max(0, Math.floor(Number(q.get('depth') ?? '0')) || 0); // 0: grandma's cellar
   const p = (q.get('pos') ?? '').split(',').map(Number);
   const pos = p.length === 3 && p.every(Number.isFinite) ? (p as [number, number, number]) : null;
   const l = (q.get('look') ?? '').split(',').map(Number);

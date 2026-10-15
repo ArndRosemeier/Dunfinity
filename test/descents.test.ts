@@ -29,10 +29,10 @@ test('a shaft is a hole in the floor: air down the middle, rock beside it, the l
   assert.ok(Math.abs(level.groundAt(lx, lz) - s.top) < 0.8, 'the ladder starts on the floor');
 });
 
-test('below the first level one arrives at the foot of a way up: a ladder up a pillar into the ceiling', () => {
-  assert.equal(new Level(1, 1).ascent, null);
-  for (const seed of [1, 2, 3, 4, 5]) {
-    const l = new Level(seed, 2), a = l.ascent;
+test('below the cellar one arrives at the foot of a way up: a ladder up a pillar into the ceiling', () => {
+  assert.equal(new Level(1, 0).ascent, null);
+  for (const seed of [1, 2, 3, 4, 5]) for (const depth of [1, 2]) {
+    const l = new Level(seed, depth), a = l.ascent;
     assert.ok(a && a.up, `seed ${seed}: no way up`);
     const L = ladderOf(a);
     const [x, y, z] = l.arrival;
