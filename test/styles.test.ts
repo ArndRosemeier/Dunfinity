@@ -285,3 +285,21 @@ test('the dungeon rooms are none of them: built rooms with dead flat floors, joi
     assert.ok(open('dungeon') < open('excavation') / 2, `the dungeon ${(open('dungeon') * 100).toFixed(0)}% open, the excavation ${(open('excavation') * 100).toFixed(0)}%`);
   }
 });
+
+test('the root hollows are none of them: chambers crossed by giant roots from roof to floor', () => {
+  for (const depth of [6, 7]) {
+    const l = new Level(1, depth), [ax, , az] = l.arrival;
+    const st: Record<string, { inner: number; crossed: number }> = {};
+    for (let k = 0; k < 40000; k++) {
+      const x = ax + (hash3f(31, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(31, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || c.wall < 6 || c.ceiling - c.floor < 6) continue;
+      // Well inside a big space: is there anything in the air between floor and roof?
+      const s = (st[l.field.styles[c.style].id] ??= { inner: 0, crossed: 0 });
+      s.inner++;
+      for (let y = c.floor + 2; y < c.ceiling - 2; y += 0.5) if (l.sdf(x, y, z) < 0) { s.crossed++; break; }
+    }
+    const crossed = (id: string) => st[id].crossed / st[id].inner;
+    assert.ok(st.roots.inner > 200, `${st.roots.inner} root hollow columns inside chambers on level ${depth}`);
+    assert.ok(crossed('roots') > 0.3 && crossed('roots') > 2 * crossed('excavation') && crossed('karst') < 0.05, `roots cross ${(crossed('roots') * 100).toFixed(0)}% of the root hollows' chambers on level ${depth}, pillars ${(crossed('excavation') * 100).toFixed(0)}% of the excavation's, karst ${(crossed('karst') * 100).toFixed(0)}%`);
+  }
+});

@@ -1,9 +1,14 @@
 # Changelog
 
-## v0.082 — Real dogs
+## v0.083 — Real dogs
 
 - The feral dogs are new. They were built from a few ellipsoids in code; now each one is a gaunt street dog sculpted, rigged and animated in Blender (AssetGenerator). It has a deep narrow chest, ribs and spine showing, bristling hackles and tail, a rough coat with a dark saddle and a black muzzle, a mouth that opens on its teeth, and eyes that throw your headlamp back.
 - Everything they do has its own animation: lying up at the den, standing and looking about, a trot, a gallop round you, a low stalk with the head down and lips drawn back while they circle, down on the haunches before a lunge (the tell), the lunge with the jaw wide, the snap, a flinch when you stab one, and a fall onto its side when it dies. The paws stay planted at every speed, and one action fades into the next, so nothing pops or flickers.
+
+## v0.082 — Root hollows
+
+- The first living kind of place: caves a forest grew into from above. Giant roots as thick as a cart come down through the roof, writhe across the chambers, split and plunge into the floor. Some cross low enough to walk along their backs, and root tips hang from the roof. The floor is a moss carpet over humps of tangled root mat, and the walls are damp dark soil. Try `?style=roots`.
+- A share of the Cisterns (levels 6–8). On the map (M) they show moss green.
 
 ## v0.081 — Things made properly
 
