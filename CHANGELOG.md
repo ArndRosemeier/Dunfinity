@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.051 — Practice
+
+- Using things now makes you better at them. Blows that land train Kitchen Work, knives that hit train Throwing, rolls train Footwork, metres climbed train Climbing, and blows stopped with the lid train Guard. Each goes up at 10, 30 and 70: more damage for the knife and thrown knives, and less stamina for rolling, climbing and blocking. A line tells you when one goes up.
+- Like the cards, practice belongs to the grandchild, and the next one starts fresh.
+- Grandma's tin now lists her cards on the left and the chosen card on the right, with what you have practised beneath it.
+
 ## v0.050 — Pot Lid
 
 - A new card in grandma's tin: **Pot Lid** (Guard). Its divider opens once one of the family has reached level 10. Once it is cooked, the dented lid of her big pot hangs on your back. Hold X to raise it and face where you look, walking slowly behind it.

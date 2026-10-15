@@ -82,6 +82,9 @@ export class Thrown {
   }
 
   /** Step everything thrown by dt; `rng` rolls the damage. Returns the creatures hit. */
+  /** What a thrown knife's damage is multiplied by (the thrower's practice). */
+  power = 1;
+
   fly(level: Level, foes: readonly Fighter[], rng: Rng, dt: number): Fighter[] {
     const hits: Fighter[] = [];
     for (let i = this.missiles.length - 1; i >= 0; i--) {
@@ -100,7 +103,7 @@ export class Thrown {
         if (!k.spent) {
           for (const f of foes) {
             if (f.dead || Math.hypot(f.x - k.x, f.z - k.z) > f.radius + 0.08 || k.y < f.y - 0.05 || k.y > f.y + f.height) continue;
-            damage(f, rng.range(THROW.damage[0], THROW.damage[1]), k.x - k.vx, k.z - k.vz, THROW.knock, 'knife');
+            damage(f, rng.range(THROW.damage[0], THROW.damage[1]) * this.power, k.x - k.vx, k.z - k.vz, THROW.knock, 'knife');
             hits.push(f);
             k.spent = true;
             // It drops off the creature.

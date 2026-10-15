@@ -5,6 +5,7 @@
  * wheel to first person.
  */
 import { Timer, Vector3 } from 'three/webgpu';
+import { Practice, SKILLS, type Skill } from '../loot/practice';
 import { CELLAR } from '../gen/cellar';
 import { notaryLetter } from '../gen/notary';
 import { Level } from '../gen/level';
@@ -96,6 +97,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   tin.deepest = level.depth;
   /** The cards this grandchild has cooked (the next one starts with none). */
   let cooked = new Cooked();
+  /** What this grandchild has practised (the next one starts at none). */
+  let practice = new Practice();
+  /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
+  let climbed = 0, climbY = 0, blockedAt = -Infinity;
   const show = (l: Level) => {
     level = l;
     fauna = new Fauna(l);
@@ -232,6 +237,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (d < best && Math.abs(angleDiff(cam.yaw, yaw)) < STAB.aimArc && Math.abs(r.y - body.y) < 1.5) { best = d; stabYaw = yaw; }
     }
   };
+  /** Count practice of `s`; say so when it goes up a tier. */
+  const practised = (s: Skill, n = 1): void => {
+    const t = practice.use(s, n);
+    if (t) say(`${SKILLS[s].name}, practice ${t}. ${SKILLS[s].line}`, 4);
+  };
   /** A line to show for a while (arriving on a level), and until when. */
   let notice = levelName(level), noticeUntil = 5;
   /** Show `text` as the notice for `secs` seconds. */
@@ -325,7 +335,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); cooked = new Cooked(); picking = null; }
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); cooked = new Cooked(); practice = new Practice(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, pound = cooked.tenderising;
@@ -348,7 +358,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('KeyQ') && duck && !busy && !tinView.open && !body.rolling) {
       const f = input.forward || input.right ? input.forward : -1, rt = input.right;
       const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
-      if (body.roll(dx, dz, duck.stamina, duck.safe)) rollAt = now;
+      if (body.roll(dx, dz, duck.stamina * practice.less('footwork'), duck.safe)) { rollAt = now; practised('footwork'); }
     }
     // Grandma's Way Home: H, eyes shut, nothing after you; home to her armchair, or (rank 2, from her salt circle) back down.
     if (controls.tap('KeyH') && cooked.wayHome && homeTo === null && !busy && !tinView.open) {
@@ -378,9 +388,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
           }
         }
-        if (tinView.open && (redraw || why)) tinView.show(cooked, tin, tinSel, why);
+        if (tinView.open && (redraw || why)) tinView.show(cooked, tin, tinSel, why, practice);
       }
-    } else if (controls.tap('KeyT') && campfire.resting) tinView.show(cooked, tin, tinSel, null);
+    } else if (controls.tap('KeyT') && campfire.resting) tinView.show(cooked, tin, tinSel, null, practice);
     if (controls.tap('KeyE')) {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
@@ -397,7 +407,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const stirring = now - cookAt < COOK.dur;
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
     // Grandma's Pot Lid: hold X to keep it up between you and whatever it is.
-    body.lid = cooked.lid;
+    const lid = cooked.lid;
+    body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard') };
     nobody.lid = !!cooked.lid;
     body.guarding = !!cooked.lid && controls.held('KeyX') && !busy && !tinView.open && !body.rolling && homeTo === null && now - stabAt > stabDur;
     if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
@@ -423,7 +434,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
         if (tossing === 'knife') thrown.throw(hx, hy, hz, cam.yaw, foes());
         else thrown.toss(hx, hy, hz, cam.yaw);
       }
-      thrown.fly(level, foes(), blows, dt);
+      thrown.power = practice.more('throwing');
+      const hit = thrown.fly(level, foes(), blows, dt);
+      if (hit.length) practised('throwing', hit.length);
       const candles = thrown.candles;
       fauna.glare = candles;
       view.props.loose = new Float32Array(candles.flatMap((c) => [c.x, c.y + 0.35, c.z]));
@@ -438,10 +451,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
         stabDone = true;
         if (striking === 'pound' && pound) {
           const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
-          for (const r of pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : []) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage, body.x, body.z, POUND.knock, 'knife');
+          const struck = pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : [];
+          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
+          if (struck.length) practised('knife');
         } else {
           const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
-          if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage, body.x, body.z, STAB.knock, 'knife');
+          if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
           if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
         }
       }
@@ -460,7 +475,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
-      body.climbCost = cooked.climbing;
+      body.climbCost = cooked.climbing * practice.less('climbing');
+      // Practice: metres climbed, and blows the lid stopped.
+      if (body.mode === 'climb') climbed += Math.max(0, body.y - climbY);
+      climbY = body.y;
+      if (climbed >= 1) { practised('climbing', Math.floor(climbed)); climbed -= Math.floor(climbed); }
+      if (body.blockedAt !== blockedAt) { if (body.blockedAt > blockedAt) practised('guard'); blockedAt = body.blockedAt; }
       body.tiptoe = cooked.tiptoe;
       campfire.soup = cooked.soup;
       campfire.step(body, threat, now, dt);
