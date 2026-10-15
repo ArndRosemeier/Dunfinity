@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { propModel } from '../src/gen/models';
+import { modelNames, propModel } from '../src/gen/models';
 import { PropBuilder } from '../src/gen/propMesh';
 
 test('every packed model decodes: on the ground, centred, outward normals, colours in range', () => {
-  for (const name of ['prop_crate', 'prop_barrel', 'prop_bucket', 'prop_pick', 'prop_shovel', 'prop_cut_block'] as const) {
+  assert.ok(modelNames().length >= 19);
+  for (const name of modelNames()) {
     const m = propModel(name);
     assert.ok(m.indices.length > 30 && m.indices.length % 3 === 0, name);
     assert.ok(Math.abs(m.min[1]) < 0.01, `${name} stands on y = 0, not ${m.min[1]}`);

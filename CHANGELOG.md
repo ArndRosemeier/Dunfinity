@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.082 — Carts and shacks
+
+- The ore carts on the rails are modelled now: a riveted iron tub on four flanged wheels, some still heaped with ore.
+- The miners' shacks too: plank walls on a timber frame, a door, a window and a tarred roof with eaves.
+- Ten kinds of mushroom are made and waiting for the damp places: fly agarics, penny buns, inkcaps, honey clusters, chanterelles, puffballs, morels, pale cave caps, brackets on the rock and a giant three metres tall.
+
 ## v0.081 — Things made properly
 
 - The things miners left against the rock are now modelled in Blender instead of built from boxes: crates of nailed planks, barrels with staves and iron hoops, a pick and a shovel leant on the rock, a pail with its handle dropped to one side, and squared blocks with tool marks and knocked corners. Shadows sit in their creases and under them.

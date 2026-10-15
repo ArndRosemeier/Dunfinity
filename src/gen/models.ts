@@ -25,10 +25,18 @@ export interface Model {
 
 let models: Map<string, Model> | null = null;
 
+function packed(): Map<string, Model> {
+  return (models ??= decodePack(Uint8Array.from(atob(PACK), (c) => c.charCodeAt(0))));
+}
+
+/** The names of every packed model. */
+export function modelNames(): ModelName[] {
+  return [...packed().keys()] as ModelName[];
+}
+
 /** The model packed under `name`. */
 export function propModel(name: ModelName): Model {
-  models ??= decodePack(Uint8Array.from(atob(PACK), (c) => c.charCodeAt(0)));
-  const m = models.get(name);
+  const m = packed().get(name);
   if (!m) throw new Error(`no model '${name}' in the pack`);
   return m;
 }
