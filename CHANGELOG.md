@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.114 — Every level style cut through its own mix of rock
+
+- Each of the thirteen level styles now names the rocks it is cut through, so no area is one stone: the karst is limestone with beds of shale and sandstone, the rift shale, sandstone, granite and slate, the catacombs limestone and clay-dark shale, the lava tubes and basalt columns basalt with slate, the geodes and flooded galleries limestone with marble, the dwarven halls granite with marble and slate, the elven vaults marble with limestone, and so on.
+
 ## v0.113 — Swimming with the head out of the water
 
 - The swimmer was drawn completely under water: the body floats with its feet 1.4 m down, but the swim pose lies flat at hip height, so head and back sat about a quarter metre under the surface.
