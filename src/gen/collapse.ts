@@ -17,6 +17,7 @@ import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
 import { blendShare, newNear, voronoiNear, type Near } from './voronoi';
+import { boxDist2, boxDist3 } from './shapes';
 
 export const COLLAPSE = {
   /** Chambers: Voronoi cells this big, metres, their feature points straying this much (0..1). */
@@ -204,7 +205,7 @@ export class Collapse implements Style {
       if (!s) continue;
       const dx = x - s.x, dz = z - s.z, u = Math.abs(dx * s.cos + dz * s.sin) - s.hx, v = Math.abs(-dx * s.sin + dz * s.cos) - s.hz;
       o.scars.push(s);
-      o.scarD.push(-(Math.hypot(Math.max(u, 0), Math.max(v, 0)) + Math.min(Math.max(u, v), 0)));
+      o.scarD.push(-boxDist2(u, v));
     }
     const B = C.block, bi = Math.floor(x / B.cell), bj = Math.floor(z / B.cell);
     for (let j = bj - 1; j <= bj + 1; j++) for (let i = bi - 1; i <= bi + 1; i++) {
@@ -243,7 +244,7 @@ export class Collapse implements Style {
       const u = dx * b.cy + dz * b.sy, w = -dx * b.sy + dz * b.cy;
       const v = dy * b.ct - w * b.st, t = dy * b.st + w * b.ct;
       const qx = Math.abs(u) - b.hx, qy = Math.abs(v) - b.hy, qz = Math.abs(t) - b.hz;
-      d = Math.min(d, Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0));
+      d = Math.min(d, boxDist3(qx, qy, qz));
     }
     return d;
   }

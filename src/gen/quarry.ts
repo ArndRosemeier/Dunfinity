@@ -16,6 +16,7 @@ import { QUARRY, type Band } from './bands';
 import { Noise, hash2i, hashToFloat, deriveSeed, smoothstep, clamp } from '@futuremagic/core';
 import { owns, type Style, type StyleId } from './style';
 import { blendShare, newNear, voronoiNear, type Near } from './voronoi';
+import { boxDist2 } from './shapes';
 
 /**
  * Pillars older than the Cisterns (docs/design/town-and-first-strata.md §4): the drum's radius as a
@@ -263,7 +264,7 @@ export class QuarryField implements Style {
         if (state === 'none') continue;
         const lu = u - (iu + du + 0.5) * s, lv = v - (iv + dv + 0.5) * s;
         const qx = Math.abs(lu) - half, qz = Math.abs(lv) - half;
-        let d = Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0);
+        let d = boxDist2(qx, qz);
         // Carved pillars: flutes down each side (the salt miners carved theirs like a church's).
         if (this.band.flutes > 0 && d > -1) d += this.band.flutes * fluting(qx > qz ? lv : lu, half, this.band.fluteCount);
         // Some stand on something older: a round drum, wider than the pillar, up to a few metres.

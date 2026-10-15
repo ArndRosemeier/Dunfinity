@@ -17,6 +17,7 @@ import type { Band } from './bands';
 import { joined } from './gridTree';
 import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
+import { boxDist2 } from './shapes';
 
 export const DUNGEON = {
   /** One room to a cell this wide, metres, kept this far in from the cell's border. */
@@ -213,7 +214,7 @@ export class Dungeon implements Style {
 function inBox(p: number, q: number, p0: number, p1: number, q0: number, q1: number, half: number): number {
   const dp = Math.abs(p - (p0 + p1) / 2) - Math.abs(p1 - p0) / 2 - half;
   const dq = Math.abs(q - (q0 + q1) / 2) - Math.abs(q1 - q0) / 2 - half;
-  return -(Math.hypot(Math.max(dp, 0), Math.max(dq, 0)) + Math.min(Math.max(dp, dq), 0));
+  return -boxDist2(dp, dq);
 }
 
 /** Plan distance to a hall's two rows of square pillars (positive outside them). */
@@ -222,5 +223,5 @@ function pillars(r: Room, u: number, v: number): number {
   const n = Math.max(0, Math.floor((ha - 2) / P.pitch));
   const da = Math.abs(a - P.pitch * Math.max(-n, Math.min(n, Math.round(a / P.pitch)))) - P.half;
   const db = Math.abs(Math.abs(b) - hb * 0.45) - P.half;
-  return Math.hypot(Math.max(da, 0), Math.max(db, 0)) + Math.min(Math.max(da, db), 0);
+  return boxDist2(da, db);
 }

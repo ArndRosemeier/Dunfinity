@@ -18,6 +18,7 @@ import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
 import { GrainLines } from './grainLines';
 import type { Style, StyleId } from './style';
+import { boxDist3 } from './shapes';
 
 export const RIFT = {
   /** Faults lie this far apart, metres, each strayed by up to `jitter`, and meander by up to `meander[0]` over `meander[1]` metres. */
@@ -203,7 +204,7 @@ export class Rift implements Style {
         const ys = floor + under + r, a = f(3) * Math.PI, ca = Math.cos(a), sa = Math.sin(a);
         const du = u - us, dv = v - vs, dy = y - ys, round = r * 0.3;
         const qx = Math.abs(du * ca + dv * sa) - r * (0.75 + 0.25 * f(4)) + round, qy = Math.abs(dy) - r * (0.55 + 0.2 * f(5)) + round, qz = Math.abs(-du * sa + dv * ca) - r * 0.85 + round;
-        d = Math.min(d, Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - round);
+        d = Math.min(d, boxDist3(qx, qy, qz) - round);
       }
     }
     return d;
