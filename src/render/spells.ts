@@ -1,7 +1,8 @@
 /**
  * Grandma's salt-magic seen (src/loot/recipes.ts, Fire & Frost and Force): Stove Flame's gout of
  * fire, Cold Larder's cold spreading over the floor (and frost glinting on what it caught), and
- * Rolling Pin's shove going out ahead. Every cast is seen, not only its numbers (Arnd's rule).
+ * Rolling Pin's shove going out ahead, and the puff of salt under a sprung jump (Spring in Your
+ * Step). Every cast is seen, not only its numbers (Arnd's rule).
  *
  * Fixed pools of glowing sparks per colour, built once and added with the Stage before play.
  */
@@ -104,6 +105,14 @@ export class SpellView {
     for (let i = 0; i < 30; i++) {
       const a = yaw + ((i % 15) / 14 - 0.5) * 1.5, v = reach / life;
       this.pools.force.emit(x, y + (i < 15 ? 0.5 : 1.1), z, -Math.sin(a) * v, 0, -Math.cos(a) * v, now, life);
+    }
+  }
+
+  /** Spring in Your Step: a puff of salt kicked out round the feet at (x, y, z), at `now`. */
+  puff(x: number, y: number, z: number, now: number): void {
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2, v = this.rng.range(2, 3.2);
+      this.pools.force.emit(x, y + 0.1, z, Math.cos(a) * v, this.rng.range(0, 0.8), Math.sin(a) * v, now, SPELLS.force.life * 1.4);
     }
   }
 

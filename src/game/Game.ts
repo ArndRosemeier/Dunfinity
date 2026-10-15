@@ -259,6 +259,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const spells = new SpellView(params.seed);
   await view.stage.add(spells.root);
   /** Grandma's salt-magic: when each was last cast, and the last cast (its pose, and which way it went). */
+  /** The last sprung jump seen (Spring in Your Step: its puff of salt). */
+  let sprangSeen = -Infinity;
   let flameAt = -Infinity, larderAt = -Infinity, pinAt = -Infinity, castAt = -Infinity, castYaw = 0, casting: 'flame' | 'larder' | 'pin' = 'flame';
   /** Knives thrown (grandma's Second Helpings), and when the last throw began. */
   const thrown = new Thrown();
@@ -778,6 +780,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (climbed >= 1) { practised('climbing', Math.floor(climbed)); climbed -= Math.floor(climbed); }
       if (body.blockedAt !== blockedAt) { if (body.blockedAt > blockedAt) practised('guard'); blockedAt = body.blockedAt; }
       body.tiptoe = cooked.tiptoe;
+      body.spring = cooked.spring;
       campfire.soup = cooked.soup;
       campfire.step(body, threat, now, dt);
       if (homeTo !== null) {
@@ -837,6 +840,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
+    if (body.sprangAt !== sprangSeen) { sprangSeen = body.sprangAt; if (Number.isFinite(sprangSeen)) spells.puff(body.x, body.y, body.z, now); }
     spells.place(now);
     thrownView.arrange(thrown.missiles, now);
     saltLineView.draw(saltLine, level, now);
@@ -871,6 +875,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         case 'tenderising': return { ready: striking === 'pound' ? ready(stabAt, POUND.dur) : 1, on: false, dim: body.stamina < POUND.stamina };
         case 'helpings': return { ready: ready(throwAt, Math.max(THROWING.dur, every ?? 0)), on: false, dim: false };
         case 'duck': return { ready: body.rolling ? ready(rollAt, MOVE.roll.dur) : 1, on: body.rolling, dim: body.stamina < (duck?.stamina ?? 0) };
+        case 'spring': return { ready: 1, on: !body.grounded && body.time - body.sprangAt < 1.5, dim: body.stamina < (cooked.spring?.cost ?? 0) };
         case 'stove-flame': return { ready: ready(flameAt, flame?.every ?? 1), on: false, dim: body.stamina < FLAME.stamina };
         case 'cold-larder': return { ready: ready(larderAt, LARDER.every), on: false, dim: body.stamina < LARDER.stamina };
         case 'rolling-pin': return { ready: ready(pinAt, PIN.every), on: false, dim: body.stamina < PIN.stamina };
