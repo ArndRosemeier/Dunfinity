@@ -117,8 +117,8 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   // partings, and rings of fine grooves where the miners' cutting machines stopped.
   const saltBed = mx_noise_float(vec3(p.x.mul(0.03), p.y.mul(1.4).add(mottle.mul(0.25)), p.z.mul(0.03)));
   const saltStreak = mx_noise_float(vec3(p.x.mul(0.35), p.y.mul(6.5).add(mottle.mul(0.6)), p.z.mul(0.35)));
-  const saltPale = smoothstep(-0.1, 0.35, saltBed).mul(0.7).add(smoothstep(0.2, 0.5, saltStreak).mul(0.45)).add(blotch.mul(0.2)).clamp(0, 1);
-  const saltHue = mix(mix(vec3(0.62, 0.58, 0.55), vec3(1.45, 1.43, 1.38), saltPale), vec3(1.3, 1.02, 0.95), smoothstep(0.4, 0.62, saltBed));
+  const saltPale = smoothstep(0.25, 0.45, saltBed).mul(0.8).add(smoothstep(0.35, 0.55, saltStreak).mul(0.6)).add(blotch.mul(0.15)).clamp(0, 1);
+  const saltHue = mix(mix(vec3(0.5, 0.46, 0.42), vec3(1.55, 1.52, 1.46), saltPale), vec3(1.05, 0.88, 0.74), smoothstep(-0.45, -0.25, saltBed).mul(smoothstep(-0.05, -0.25, saltBed)));
   const clay = thinLine(saltBed.sub(-0.45).abs().mul(0.4), float(0.01)).mul(steep);
   const ringCell = vec3(u.div(1.7).floor(), p.y.div(1.3).floor(), 2.9), ringJ = mx_cell_noise_float(ringCell).sub(0.5);
   const ringU = u.div(1.7).floor().add(0.5).add(ringJ.mul(0.5)).mul(1.7), ringY = p.y.div(1.3).floor().add(0.5).sub(ringJ.mul(0.4)).mul(1.3);
@@ -153,7 +153,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const shutter = worked.mul(steep).mul(ROCK_FINISH.formwork);
 
   // Height for the bump: per surface kind, blended.
-  const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7))).sub(ring.mul(0.04).mul(ROCK_FINISH.salt).mul(worked));
+  const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7))).sub(ring.mul(0.04).mul(ROCK_FINISH.salt).mul(worked)).add(lumps.mul(0.18).mul(ROCK_FINISH.salt));
   const hMasonry = edge.oneMinus().mul(0.12).sub(joint.mul(0.2)).add(mottle.mul(0.1)).add(lumps.mul(0.06)).add(grain.mul(0.03));
   const hFlow = mottle.mul(0.25).add(drip.mul(0.18).mul(steep)).add(rim.mul(0.1)).add(sin(p.y.mul(38).add(drip.mul(9))).mul(0.006).mul(smoothstep(0.5, 0.2, p.y.mul(38).fwidth())));
   const height = mix(mix(hNatural, hMasonry, masonry), hFlow, flow).sub(boardLine.mul(0.05).add(tie.mul(0.15)).mul(shutter));
