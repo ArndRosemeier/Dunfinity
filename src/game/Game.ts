@@ -503,6 +503,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
     } else {
       doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
+      // At the top of a climb: pull up over the edge (played out, then the body stands on the ledge).
+      if (body.ledge) {
+        climb.play([{ kind: 'ledge', ledge: body.ledge, feet: body.y }], body.x, body.y, body.z, body.facing);
+        onLanded = () => body.overLedge();
+      }
       const stabbing = now - stabAt < stabDur, throwing = now - throwAt < THROWING.dur;
       if (stabbing) body.facing = stabYaw;
       if (throwing || body.guarding) body.facing = cam.yaw;

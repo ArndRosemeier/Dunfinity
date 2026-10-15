@@ -13,7 +13,7 @@
  * per-sample pass.
  */
 import { QUARRY, type Band } from './bands';
-import { Noise, cellular2, cellBorder, hash2i, hashToFloat, deriveSeed, smoothstep, clamp, lerp, type CellResult } from '@futuremagic/core';
+import { Noise, hash2i, hashToFloat, deriveSeed, smoothstep, clamp } from '@futuremagic/core';
 
 /**
  * Pillars older than the Cisterns (docs/design/town-and-first-strata.md §4): the drum's radius as a
@@ -33,6 +33,61 @@ function fluting(along: number, half: number, count: number): number {
 const WORKING = 220;
 /** Floors, ceilings and collapse blend into the neighbouring working over this distance from the border, metres. */
 const BLEND = 14;
+/** How far the workings' feature points stray from their cell's middle (0..1). */
+const JITTER = 0.85;
+
+/**
+ * The workings round a point: the one it is in, how far it is from that working's border (the
+ * nearest Voronoi edge, exact), and every neighbour near enough to blend with, with its blend distance
+ * (`blends`, under BLEND). A neighbour comes in and goes out smoothly, so anything blended from these
+ * is continuous (blending with the second-nearest working alone is not: it switches at a three-way corner).
+ */
+interface Near {
+  id: number;
+  px: number;
+  pz: number;
+  border: number;
+  count: number;
+  ids: number[];
+  pxs: number[];
+  pzs: number[];
+  blends: number[];
+}
+
+/** The workings round (x, z) (in WORKING cells, `seed` the cells' seed), into `out`. */
+function workingsNear(seed: number, x: number, z: number, out: Near): Near {
+  const xi = Math.floor(x), zi = Math.floor(z);
+  const fx: number[] = FX, fz: number[] = FZ, hs: number[] = HS;
+  let best = 0, f1 = Infinity;
+  for (let k = 0, dz = -2; dz <= 2; dz++) {
+    for (let dx = -2; dx <= 2; dx++, k++) {
+      const cx = xi + dx, cz = zi + dz, h = hash2i(seed, cx, cz);
+      hs[k] = h;
+      fx[k] = cx + 0.5 + (hashToFloat(h) - 0.5) * JITTER;
+      fz[k] = cz + 0.5 + (hashToFloat(h * 2654435761) - 0.5) * JITTER;
+      const d = (fx[k] - x) ** 2 + (fz[k] - z) ** 2;
+      if (d < f1) { f1 = d; best = k; }
+    }
+  }
+  out.id = hs[best]; out.px = fx[best]; out.pz = fz[best];
+  out.border = Infinity;
+  out.count = 0;
+  for (let k = 0; k < 25; k++) {
+    if (k === best) continue;
+    const ex = fx[k] - fx[best], ez = fz[k] - fz[best];
+    const e = (fx[k] - x) ** 2 + (fz[k] - z) ** 2 - f1;
+    out.border = Math.min(out.border, (e / (2 * Math.hypot(ex, ez))) * WORKING);
+    // For blending, the border's distance as if every neighbour were one cell away: the same seen
+    // from either side of any border, so a blend never jumps (the exact one does at a three-way corner).
+    const b = (e / 2) * WORKING;
+    if (b >= BLEND) continue;
+    out.ids[out.count] = hs[k]; out.pxs[out.count] = fx[k]; out.pzs[out.count] = fz[k]; out.blends[out.count] = b;
+    out.count++;
+  }
+  return out;
+}
+const FX: number[] = new Array(25), FZ: number[] = new Array(25), HS: number[] = new Array(25);
+const newNear = (): Near => ({ id: 0, px: 0, pz: 0, border: 0, count: 0, ids: [], pxs: [], pzs: [], blends: [] });
 
 /** What one working looks like (all derived from its cell hash). */
 export interface Working {
@@ -123,8 +178,8 @@ export class QuarryField {
   private readonly cellSeed: number;
   private readonly pillarSeed: number;
   private readonly rubbleSeed: number;
-  private readonly cell: CellResult = { f1: 0, f2: 0, cx: 0, cy: 0, cz: 0, id: 0, px: 0, py: 0, pz: 0, id2: 0, px2: 0, py2: 0, pz2: 0 };
-  private readonly probe: CellResult = { f1: 0, f2: 0, cx: 0, cy: 0, cz: 0, id: 0, px: 0, py: 0, pz: 0, id2: 0, px2: 0, py2: 0, pz2: 0 };
+  private readonly near: Near = newNear();
+  private readonly probe: Near = newNear();
   private readonly workings = new Map<number, Working>();
   private readonly pillarCache = new Map<number, boolean>();
 
@@ -138,8 +193,8 @@ export class QuarryField {
 
   /** The working that owns column (x, z). */
   workingAt(x: number, z: number): Working {
-    const c = cellular2(this.cellSeed, x / WORKING, z / WORKING, 0.85, this.cell);
-    return this.working(c.id, c.px, c.py);
+    const c = workingsNear(this.cellSeed, x / WORKING, z / WORKING, this.near);
+    return this.working(c.id, c.px, c.pz);
   }
 
   private working(id: number, px: number, py: number): Working {
@@ -158,15 +213,16 @@ export class QuarryField {
     const n = this.noise;
     col.working = w;
 
-    // Near the border, floor, ceiling and collapse blend halfway into the neighbouring working, so the
-    // field is continuous where the two meet (in an opening, a ramp instead of a cliff).
-    const border = cellBorder(this.cell) * WORKING;
-    const nb = this.working(this.cell.id2, this.cell.px2, this.cell.py2);
-    const t = 0.5 + 0.5 * smoothstep(0, BLEND, border);
-    const floor = lerp(nb.floor, w.floor, t);
-    const height = lerp(nb.height, w.height, t);
-    const collapse = lerp(nb.collapse, w.collapse, t);
-    const cavern = lerp(nb.cavern ? 1 : 0, w.cavern ? 1 : 0, t);
+    // Near a border, floor, ceiling and collapse blend into the neighbouring workings (halfway on the
+    // border), so the field is continuous where they meet (in an opening, a ramp instead of a cliff).
+    const ring = this.near, border = ring.border;
+    let sum = 1, floor = w.floor, height = w.height, collapse = w.collapse, cavern = w.cavern ? 1 : 0;
+    for (let i = 0; i < ring.count; i++) {
+      const nb = this.working(ring.ids[i], ring.pxs[i], ring.pzs[i]), s = smoothstep(0, BLEND, ring.blends[i]);
+      const k = (1 - s) / (1 + s); // (one neighbour: its share is (1 - s) / 2, as a lerp to halfway)
+      sum += k; floor += k * nb.floor; height += k * nb.height; collapse += k * nb.collapse; cavern += k * (nb.cavern ? 1 : 0);
+    }
+    floor /= sum; height /= sum; collapse /= sum; cavern /= sum;
     col.border = border;
     col.collapse = collapse;
     col.cavern = cavern;
@@ -298,8 +354,8 @@ export class QuarryField {
     let inside = this.pillarCache.get(key);
     if (inside === undefined) {
       const [x, z] = this.fromGrid(w, (iu + 0.5) * w.spacing, (iv + 0.5) * w.spacing);
-      const c = cellular2(this.cellSeed, x / WORKING, z / WORKING, 0.85, this.probe);
-      inside = c.id === w.id && cellBorder(c) * WORKING > (w.pillar / 2) * Math.SQRT2 + 3;
+      const c = workingsNear(this.cellSeed, x / WORKING, z / WORKING, this.probe);
+      inside = c.id === w.id && c.border > (w.pillar / 2) * Math.SQRT2 + 3;
       if (this.pillarCache.size > 65536) this.pillarCache.clear();
       this.pillarCache.set(key, inside);
     }
