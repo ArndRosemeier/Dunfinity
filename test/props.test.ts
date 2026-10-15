@@ -148,3 +148,42 @@ test('a tube runs between its ends, round', () => {
     assert.ok(Math.abs(Math.hypot(y - 1, z) - 0.1) < 1e-6, 'on the radius');
   }
 });
+
+test('in the Cisterns water runs up the rock from the pools, and up only; nowhere else', () => {
+  const run = (l: Level, n: number) => {
+    const [ax, , az] = l.arrival;
+    let up = 0, rises = 0, falls = 0;
+    for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) {
+      const t = quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j);
+      up += t.counts.uphill;
+      const p = t.flow?.positions;
+      if (!p) continue;
+      // Each sheet starts at its pool's surface and climbs.
+      for (let v = 0; v + 2 < p.length / 3; v += 2) {
+        if (p[(v + 2) * 3 + 1] > p[v * 3 + 1]) rises++; else falls++;
+      }
+    }
+    return { up, rises, falls };
+  };
+  const cis = run(new Level(1, 7), 3);
+  assert.ok(cis.up >= 3, JSON.stringify(cis));
+  assert.ok(cis.rises > cis.falls * 10, JSON.stringify(cis));
+  assert.equal(run(new Level(1, 3), 1).up + run(new Level(1, 9), 1).up, 0);
+});
+
+test('some Cistern pillars stand on an older drum: round and wider below, the square pillar on top', () => {
+  const l = new Level(1, 7), f = l.field;
+  const [ax, , az] = l.arrival;
+  let older = 0;
+  for (let z = az - 150; z < az + 150 && older < 3; z += 1.5) for (let x = ax - 150; x < ax + 150 && older < 3; x += 1.5) {
+    const col = l.columnAt(x, z);
+    if (col.olderTop === -Infinity || col.pillarD > -0.3) continue;
+    // Inside the drum but outside the square: rock below the drum's top, air above it.
+    if (col.squareD < 0.3) continue;
+    assert.ok(f.at(col, x, col.olderTop - 0.5, z) < 0, 'in the drum');
+    assert.ok(f.at(col, x, col.olderTop + 1.5, z) > 0, 'above the drum, beside the pillar');
+    older++;
+  }
+  assert.ok(older >= 3, `${older} older drums`);
+  assert.equal(new Level(1, 3).band.older, 0);
+});

@@ -110,6 +110,20 @@ export const WATER = defineKind('water', ['position', 'normal', 'color'], () => 
   return m;
 }, { cast: false, receive: true });
 
+/**
+ * Water running in a thin sheet over the rock (the Cisterns' water that runs uphill): glossy like
+ * standing water, with ripples that travel up the world's y, so it reads as climbing. Same attributes as the solid kind.
+ */
+export const FLOW = defineKind('flow', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ roughness: 0.05, metalness: 0.1 });
+  const p = positionWorld;
+  const ripple = sin(p.y.mul(7).sub(time.mul(3.2)).add(mx_noise_float(p.mul(1.5)).mul(4))).mul(0.5).add(0.5);
+  m.colorNode = vertexColor().mul(ripple.mul(ripple).mul(1.6).add(0.5));
+  // A faint cold shimmer on the crests: it should not be possible, and it shows.
+  m.emissiveNode = vec3(0.05, 0.09, 0.1).mul(ripple.mul(ripple).mul(ripple));
+  return m;
+}, { cast: false, receive: true });
+
 /** Worked metal: a knife's blade, tools. Glints in the lamps. Same attributes as the solid kind. */
 export const METAL = defineKind('metal', ['position', 'normal', 'color'], () => {
   const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.28, metalness: 0.65 });
