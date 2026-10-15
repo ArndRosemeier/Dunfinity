@@ -103,13 +103,15 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Does a blow, blast or effect reach someone? Who does it hit? | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
 | Rats: nests, waking, chasing, biting | `Rats` (a `Population`: `advance(dt, prey)`, `list`, `denAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
 | Draw the rats | `RatView` (a `FigurePool` added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
-| Walk a creature over the floor: steer to a goal round what is in the way, arrive without overshooting (no jitter), keep out of its prey's legs | `Steer` (`move`, `slide`, `walkable`) with the kind's `Gait` | `src/creatures/steer.ts` |
+| Walk a creature over the floor: steer to a goal round what is in the way, arrive without overshooting (no jitter), keep out of its prey's legs | `Steer` (`move`, `slide`, `walkable`) with the kind's `Gait` (`probe`: how high it looks for a wall) | `src/creatures/steer.ts` |
 | The Salt-Touched: where they work, noticing, chasing, the pick blow | `SaltTouched` (a `Population`: `advance(dt, prey)`, `list`, `denAt`) and its numbers `TOUCHED`; how many per band: `band.touched` | `src/creatures/touched.ts` |
 | Draw the Salt-Touched | `TouchedView` (a pool of humans built before the warm-up: `figures` go to `view.start`; `draw(list, x, z, dt, time)`) | `src/render/creatures/touchedView.ts` |
 | Cave crickets: perches on the rock, leaps, bites, scattering from the headlamp | `Crickets` (a `Population`: `advance(dt, prey, lamp)`, `list`, `denAt`), numbers `CRICKET`, how many per band `band.crickets` | `src/creatures/crickets.ts` |
 | Draw the cave crickets | `CricketView` (a `FigurePool` added once with the Stage; `draw(crickets, time)`) | `src/render/creatures/cricketView.ts` |
+| Slimes: Lumen and Murk colonies, their war, pulses, the squash-and-throw blow | `Slimes` (a `Population` per faction: `advance(dt, prey, otherFaction.list)`), numbers `SLIME`; a hurt creature's `cause` says who hurt it | `src/creatures/slimes.ts` |
+| Draw the slimes | `SlimeView` (`lumen` and `murk` `FigurePool`s added once with the Stage) | `src/render/creatures/slimeView.ts` |
 | What every creature is (health, hurt, death, `provoked`) | `Creature`; `groundSpeed(v)` | `src/creatures/creature.ts` |
-| A kind of creature on a level: dens per cell, waking near you, sleeping far off, the dead staying dead, stepping | `Population` (subclass: `denIn`, `hatch`, `act`; callers: `advance(dt, prey, ctx)`, `list`, `denAt`, `killed`, `blockers`) | `src/creatures/population.ts` |
+| A kind of creature on a level: dens per cell, waking near you, sleeping far off, the dead staying dead, stepping | `Population` (subclass: `denIn`, `hatch`, `act`, using `sites`, `floorFor`, `countIn`, `around`, `apart`; callers: `advance(dt, prey, ctx)`, `list`, `denAt`, `killed`, `blockers`) | `src/creatures/population.ts` |
 | Draw a pool of creature figures | `FigurePool` (a `Figure` per creature: `root`, `pose`) | `src/render/creatures/figures.ts` |
 | Slow a walker down | `brake(w, rate, dt)` | `src/creatures/steer.ts` |
 | What lies about to be found (floor finds, rat hoards), what is in reach, what is taken | `Finds` (`near`, `inReach`, `take`), kinds and values in `FINDS` | `src/loot/finds.ts` |

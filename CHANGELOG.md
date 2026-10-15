@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.025 — Slimes
+
+- From level 2 the floors have slimes, in colonies of three to five, and they come in two kinds at war. Lumen are pale jelly with glowing motes in them; Murk are black and oily. Where a Lumen colony and a Murk colony meet, they fight.
+- Murk come for you. Lumen leave you alone, until you stab one; then that whole colony is after you (they calm down once you have been gone a while).
+- They move in pulses, squeezing and flowing. Before a blow a slime squashes down (your warning), then throws itself forward. Hit, it quivers; dead, it melts into a puddle.
+- Behind the scenes: all four kinds of creature now pick their den sites the same way.
+
 ## v0.024 — Sweep
 
 - Behind the scenes: a duplication sweep (both finders). The five local frames of the props generator fold into one helper, and the nobody and the Salt-Touched find the floor under their feet the same way. Nothing changes in play.

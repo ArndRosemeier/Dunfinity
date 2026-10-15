@@ -15,8 +15,9 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   /** Seconds since it was last hurt, and since it died. */
   hurtT = 9;
   deadT = 0;
-  /** Hurt since its sim last looked: the sim reacts (alarm, anger, bolting) and clears it. */
+  /** Hurt since its sim last looked: the sim reacts (alarm, anger, bolting) and clears it. What hurt it last ('knife', 'murk', ...). */
   provoked = false;
+  cause = '';
 
   /** At (x, y, z) facing `yaw` (forward is (-sin yaw, -cos yaw)). */
   constructor(public x: number, public y: number, public z: number, public yaw: number, readonly radius: number, readonly height: number, health: number, public mode: Mode) {
@@ -25,10 +26,11 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
 
   get dead(): boolean { return this.health <= 0; }
 
-  hurt(amount: number, _cause: string): void {
+  hurt(amount: number, cause: string): void {
     this.health = Math.max(0, this.health - amount);
     this.hurtT = 0;
     this.provoked = true;
+    this.cause = cause;
     if (this.dead) { this.mode = 'dead' as Mode; this.deadT = 0; }
   }
 }

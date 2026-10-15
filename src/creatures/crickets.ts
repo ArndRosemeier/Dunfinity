@@ -127,16 +127,12 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
   /** The group of cell (i, j), if any: perches on the rock of a pillar or a wall, a few metres up. */
   protected denIn(key: number, i: number, j: number): Group | null {
     const C = CRICKET, s = this.seed, l = this.level;
-    if (hash3f(s, i, j, 0) >= l.band.crickets) return null;
-    const [ax, , az] = l.arrival;
-    for (let k = 0; k < 6; k++) {
-      const x = (i + 0.15 + 0.7 * hash3f(s, i, j, 1 + 2 * k)) * C.cell, z = (j + 0.15 + 0.7 * hash3f(s, i, j, 2 + 2 * k)) * C.cell;
-      if (Math.hypot(x - ax, z - az) < C.quiet) continue;
+    for (const [x, z] of this.sites(i, j, l.band.crickets, 6)) {
       const col = l.columnAt(x, z), d = rockDistance(col);
       if (d > 4 || col.collapse > 0) continue;
       const g = l.groundAt(x, z);
       if (!l.dry(x, z, 0.1)) continue;
-      const count = C.count[0] + Math.floor(hash3f(s, i, j, 20) * (C.count[1] - C.count[0] + 1));
+      const count = this.countIn(i, j, C.count);
       const perches: number[][] = [];
       for (let p = 0; p < count * 3 && perches.length < count; p++) {
         const a = hash3f(s, i, j, 30 + p) * Math.PI * 2, r = hash3f(s, i, j, 60 + p) * 2.5;
