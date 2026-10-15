@@ -7,7 +7,7 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, type Material, type Node } from 'three/webgpu';
+import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
 import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_cell_noise_float, mx_noise_float, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
@@ -65,6 +65,17 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const tooled = surf.x, masonry = surf.y.clamp(0, 1), flow = surf.z.clamp(0, 1);
   const natural = float(1).sub(masonry).mul(float(1).sub(flow));
   const mottle = mx_fractal_noise_float(p.mul(0.32), 3, 2.0, 0.5); // about -1..1, metres-wide patches
+  // Which rock this is: the band's rock types (ROCK_FINISH.rocks, and its salt) in patches and beds
+  // 5-30 m across, each type winning where its own noise runs high, the edges between them soft.
+  // Beds: the noise stretched level, so a type runs along a wall as a layer; blobs: patches.
+  const kindAt = (k: number) => mx_fractal_noise_float(vec3(p.x.mul(0.055), p.y.mul(0.32), p.z.mul(0.055)).add(k * 17.3), 2, 2.0, 0.5)
+    .mul(0.6).add(mx_noise_float(p.mul(0.035).add(k * 9.1)).mul(0.5));
+  const share = (w: Node<'float'>, k: number) => w.mul(smoothstep(-0.9, 0.9, kindAt(k)).pow(3)).add(0.0001);
+  const wLime = share(ROCK_FINISH.rocks.x, 0), wSand = share(ROCK_FINISH.rocks.y, 1), wShale = share(ROCK_FINISH.rocks.z, 2), wGran = share(ROCK_FINISH.rocks.w, 3), wSalt = share(ROCK_FINISH.salt, 4);
+  const kinds = wLime.add(wSand).add(wShale).add(wGran).add(wSalt);
+  const sharp = (w: Node<'float'>) => smoothstep(0.35, 0.65, w.div(kinds));
+  const lime = sharp(wLime), sand = sharp(wSand), shale = sharp(wShale), gran = sharp(wGran);
+  const saltShare = sharp(wSalt);
   const grain = mx_noise_float(p.mul(9.0)); // centimetre grain
   const lumps = mx_noise_float(p.mul(3.1)); // a chiselled roughness, hand-sized
   const steep = smoothstep(0.75, 0.35, abs(normalWorld.y));
@@ -88,7 +99,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const stroke = smoothstep(-0.2, 0.45, mx_noise_float(vec3(gpos.floor().mul(1.7), p.y.mul(3.2), prow.mul(2.3))));
   const pick = float(1).sub(scoop.mul(scoop)).mul(stroke);
   const worked = smoothstep(0.0, 0.08, tooled).mul(float(1).sub(masonry));
-  const tool = pick.mul(smoothstep(0.4, 0.15, gpos.fwidth())).mul(float(1).sub(ROCK_FINISH.salt)).mul(steep).mul(tooled.clamp(0, 1)).mul(float(1).sub(masonry)).mul(smoothstep(-0.4, 0.1, mx_noise_float(p.mul(0.4).add(5.3))));
+  const tool = pick.mul(smoothstep(0.4, 0.15, gpos.fwidth())).mul(float(1).sub(saltShare)).mul(steep).mul(tooled.clamp(0, 1)).mul(float(1).sub(masonry)).mul(smoothstep(-0.4, 0.1, mx_noise_float(p.mul(0.4).add(5.3))));
   // Cracks in the walls: the edges of cells, a little warped (no tiles), in some stretches only:
   // a hairline, dark, with a shadowed lip beside it.
   const warp = vec3(mottle.mul(0.4), mx_noise_float(p.mul(0.9).add(8.2)).mul(0.25), mottle.mul(-0.3));
@@ -112,6 +123,20 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const grey = smoothstep(0.25, 0.6, mx_noise_float(p.mul(0.6).add(vec3(-5.2, 2.4, 9.9))));
   const texture = float(1).add(fleck.mul(0.32)).add(blotch.mul(0.22));
   const stain = mix(mix(vec3(1, 1, 1), vec3(1.16, 0.9, 0.68), iron.mul(0.7)), vec3(0.82, 0.88, 0.95), grey.mul(0.6));
+  // Each rock type's own look: pale cream limestone; ochre sandstone in beds a hand thick, some
+  // darker; dark shale split into thin laminae; grey-pink granite thick with dark and pale crystals.
+  const sandBed = sin(p.y.mul(13).add(mottle.mul(2.5)).add(strata.mul(2))).mul(0.5).add(0.5);
+  const lamina = thinLine(p.y.mul(16).add(mottle.mul(1.5)).fract().sub(0.5).abs().div(16), float(0.006)).mul(steep).mul(smoothstep(0.35, 0.12, p.y.mul(16).fwidth()));
+  const crystal = mx_worley_noise_float(p.mul(28)).mul(smoothstep(1.0, 0.3, p.mul(28).x.fwidth()));
+  const granSpot = smoothstep(0.3, 0.1, crystal).mul(0.45).sub(smoothstep(0.55, 0.85, crystal).mul(0.2));
+  const kindSum = lime.add(sand).add(shale).add(gran).add(saltShare).add(0.001);
+  const rockHue = vec3(1, 1, 1).mul(saltShare.add(0.001))
+    .add(vec3(1.14, 1.1, 1.0).mul(lime))
+    .add(vec3(1.28, 0.98, 0.66).mul(sandBed.mul(0.22).add(0.88)).mul(sand))
+    .add(vec3(0.5, 0.48, 0.47).mul(float(1).sub(lamina.mul(0.5))).mul(shale))
+    .add(vec3(0.86, 0.82, 0.86).mul(float(1).sub(granSpot.mul(1.4))).mul(gran))
+    .div(kindSum);
+  const rockKind = mix(vec3(1, 1, 1), rockHue, float(1).sub(masonry).mul(float(1).sub(flow.mul(0.7))));
   // Rock salt (the Salt Works), as it looks in a real mine: dark grey-brown salt with pale, near white
   // beds and thin streaks running level along the walls, a pinkish bed here and there, dark clay
   // partings, and rings of fine grooves where the miners' cutting machines stopped.
@@ -153,7 +178,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const shutter = worked.mul(steep).mul(ROCK_FINISH.formwork);
 
   // Height for the bump: per surface kind, blended.
-  const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7))).sub(ring.mul(0.04).mul(ROCK_FINISH.salt).mul(worked)).add(lumps.mul(0.18).mul(ROCK_FINISH.salt));
+  const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7))).sub(ring.mul(0.04).mul(saltShare).mul(worked)).add(lumps.mul(0.18).mul(saltShare));
   const hMasonry = edge.oneMinus().mul(0.12).sub(joint.mul(0.2)).add(mottle.mul(0.1)).add(lumps.mul(0.06)).add(grain.mul(0.03));
   const hFlow = mottle.mul(0.25).add(drip.mul(0.18).mul(steep)).add(rim.mul(0.1)).add(sin(p.y.mul(38).add(drip.mul(9))).mul(0.006).mul(smoothstep(0.5, 0.2, p.y.mul(38).fwidth())));
   const height = mix(mix(hNatural, hMasonry, masonry), hFlow, flow).sub(boardLine.mul(0.05).add(tie.mul(0.15)).mul(shutter));
@@ -169,7 +194,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const region = mix(mix(vec3(1, 1, 1), vec3(1.2, 0.98, 0.72), smoothstep(0.05, 0.45, broadHue)), vec3(0.8, 0.82, 0.86), smoothstep(-0.05, -0.45, broadHue))
     .mul(broad.mul(0.55).add(1).clamp(0.62, 1.3));
   const natShade = float(0.9).add(mottle.mul(0.22)).add(strata.mul(0.16).mul(steep)).add(grain.mul(0.07)).add(grit.mul(0.1)).add(speck)
-    .sub(seam.mul(0.4)).sub(tool.mul(0.1)).sub(crack.mul(0.65)).sub(damp.mul(0.3)).sub(clay.mul(0.4).add(ring.mul(0.05)).mul(ROCK_FINISH.salt));
+    .sub(seam.mul(0.4)).sub(tool.mul(0.1)).sub(crack.mul(0.65)).sub(damp.mul(0.3)).sub(clay.mul(0.4).add(ring.mul(0.05)).mul(saltShare));
   const masShade = float(0.72).add(block.mul(0.4)).add(fleck.mul(0.1)).add(mottle.mul(0.14)).add(grain.mul(0.08)).add(grit.mul(0.06)).sub(joint.mul(0.4)).sub(edge.mul(0.06)).sub(damp.mul(0.2));
   const flowBand = sin(p.y.mul(7).add(drip.mul(4)).add(mottle.mul(3))).mul(0.5).add(0.5); // the colour bands of a curtain
   const flowShade = float(1.0).add(drip.mul(0.14).mul(steep)).add(mottle.mul(0.1)).sub(rim.mul(0.12)).add(grain.mul(0.06)).add(speck.mul(0.5)).sub(flowBand.mul(0.12).mul(steep));
@@ -179,8 +204,8 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const rust = mix(vec3(1, 1, 1), vec3(0.95, 0.74, 0.55), streak.mul(0.65).mul(natural));
   const cream = mix(vec3(1, 1, 1), mix(vec3(1.08, 1.0, 0.86), vec3(1.12, 0.9, 0.7), flowBand.mul(steep)), flow);
   const blockHue = mix(vec3(1, 1, 1), mix(vec3(1.05, 1.0, 0.92), vec3(0.94, 0.98, 1.04), block), masonry);
-  const salt = mix(vec3(1, 1, 1), saltHue, ROCK_FINISH.salt.mul(natural));
-  m.colorNode = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(salt).mul(hue).mul(region).mul(rust).mul(cream).mul(blockHue);
+  const salt = mix(vec3(1, 1, 1), saltHue, saltShare.mul(natural));
+  m.colorNode = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(rockKind).mul(salt).mul(hue).mul(region).mul(rust).mul(cream).mul(blockHue);
   // Wet sheen: some stretches of rock run with water and shine in the lamps; flowstone is always damp.
   const wetMask = smoothstep(0.1, 0.5, mx_noise_float(p.mul(vec3(0.3, 0.05, 0.3)).add(-9.4))).mul(ROCK_FINISH.wet).add(flow.mul(0.6)).add(damp.mul(ROCK_FINISH.wet)).clamp(0, 1);
   m.roughnessNode = float(0.9).add(grain.mul(0.06)).sub(wetMask.mul(0.55));
@@ -198,7 +223,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   // light as the viewer moves, only close by.
   const facet = mx_worley_noise_float(p.mul(9));
   const twinkle = smoothstep(0.5, 0.85, mx_noise_float(p.mul(13).add(cameraPosition.mul(1.7))));
-  const glint = smoothstep(0.16, 0.04, facet).mul(twinkle).mul(smoothstep(14, 2, length(positionView))).mul(natural.add(worked).clamp(0, 1)).mul(ROCK_FINISH.salt);
+  const glint = smoothstep(0.16, 0.04, facet).mul(twinkle).mul(smoothstep(14, 2, length(positionView))).mul(natural.add(worked).clamp(0, 1)).mul(saltShare);
   m.emissiveNode = vec3(0.25, 0.6, 1.0).mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2)));
   return m;
 });
@@ -211,7 +236,7 @@ export const ROCK_VEINS = uniform(0);
  * level white beds and streaks, the cutting machines' groove rings, glinting in the headlamp), worked
  * walls cast in concrete against board shuttering, how wet the rock runs.
  */
-export const ROCK_FINISH = { salt: uniform(0), formwork: uniform(0), wet: uniform(0) };
+export const ROCK_FINISH = { salt: uniform(0), formwork: uniform(0), wet: uniform(0), rocks: uniform(new Vector4(1, 0, 0, 0)) };
 
 /**
  * A line `width` metres to either side of where `dist` (metres) is 0, antialiased: soft over a pixel,
