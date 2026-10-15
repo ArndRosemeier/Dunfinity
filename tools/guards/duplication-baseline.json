@@ -72,12 +72,12 @@
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
   },
   {
-    "key": "idiom: [.ceiling .floor .get .own] in dunfinity/gen/dungeon.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts",
-    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
+    "key": "idiom: [.band .get .noise .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/lava.ts",
+    "reason": "each style reads its own band and noise from its own seed (this.band, noise per style); not a copy, surfaced when src/gen/rockTypes.ts shifted the idiom finder corpus"
   },
   {
-    "key": "idiom: [.cells .grain] in dunfinity/gen/catacombs.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts",
-    "reason": "each cell-grid style seeds its own cells and turns them by its own grain (Grain from grainOf, src/gen/grainLines.ts, the seam); the plan drawn on the cells is the style's own"
+    "key": "idiom: [.ceiling .floor .get .own] in dunfinity/gen/dungeon.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
   {
     "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
@@ -164,12 +164,20 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
+    "key": "idiom: [.n2 .noise] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/roots.ts",
+    "reason": "each style samples its own seeded Noise; the shared seam is Noise itself"
+  },
+  {
     "key": "idiom: [.n2 .noise] in dunfinity/gen/basalt.ts + dunfinity/gen/lava.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
     "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
   },
   {
     "key": "idiom: [.n3 .rough] in dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/karst.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
     "reason": "each style's own seeded roughness Noise (deriveSeed(seed, style, 'rough')) sampled with n3; one line each, the shapes differ"
+  },
+  {
+    "key": "idiom: [.noise .rough] in dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/karst.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
+    "reason": "each style roughens its own walls with its own seeded Noise; the shared seam is Noise itself"
   },
   {
     "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
@@ -1028,6 +1036,10 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
+    "key": "same name: dunfinity/gen/catacombs.ts#surface + dunfinity/gen/dungeon.ts#surface",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
     "key": "same name: dunfinity/gen/catacombs.ts#vault + dunfinity/gen/cellar.ts#vault",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -1106,6 +1118,10 @@
   {
     "key": "same name: dunfinity/gen/cellar.ts#plan + dunfinity/gen/fungal.ts#plan",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#surface + dunfinity/gen/quarry.ts#surface",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
     "key": "same name: dunfinity/gen/collapse.ts#at + dunfinity/gen/dungeon.ts#at",
@@ -1692,6 +1708,10 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
+    "key": "same name: dunfinity/gen/fungal.ts#cover + dunfinity/gen/roots.ts#cover",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
     "key": "same name: dunfinity/gen/fungal.ts#deriveSeed + dunfinity/gen/roots.ts#deriveSeed",
     "reason": "each cave style derives its own seeds by its own name (deriveSeed(seed, '<style>', ...)) for its Karst and its things; not a copy"
   },
@@ -2198,17 +2218,5 @@
   {
     "key": "same name: dunfinity/render/terrain/Terrain.ts#dispose + dunfinity/workers/pool.ts#dispose",
     "reason": "each frees its own resources (meshes vs workers); the pool is one of the terrain's resources"
-  },
-  {
-    "key": "same name: dunfinity/gen/catacombs.ts#surface + dunfinity/gen/dungeon.ts#surface",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "same name: dunfinity/gen/cellar.ts#surface + dunfinity/gen/quarry.ts#surface",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "idiom: [.band .get .noise .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/lava.ts",
-    "reason": "each style reads its own band and noise from its own seed (this.band, noise per style); not a copy, surfaced when src/gen/rockTypes.ts shifted the idiom finder corpus"
   }
 ]

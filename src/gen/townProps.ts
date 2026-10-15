@@ -13,10 +13,10 @@ const IRON: Rgb = [0.08, 0.08, 0.09], DOOR: Rgb = [0.18, 0.11, 0.07], FRAME: Rgb
 const LIT: Rgb = [0.95, 0.68, 0.36], DARK_PANE: Rgb = [0.04, 0.05, 0.09], LANTERN: Rgb = [1, 0.85, 0.55];
 
 /** The rock shader's surface records (src/gen/style.ts) of a plastered wall (smooth render), a tiled roof, a plinth of dressed stone in courses. */
-const PLASTERED = record([0, 0, 0.4, 0], [0, 0, 1, 0]), TILED = record([0, 0, 0, 0], [0, 0, 0, 1]), DRESSED = record([0, 1, 0, 0.3], [0, 0, 0, 0]);
+const PLASTERED = surfaceRecord([0, 0, 0.4, 0], [0, 0, 1, 0]), TILED = surfaceRecord([0, 0, 0, 0], [0, 0, 0, 1]), DRESSED = surfaceRecord([0, 1, 0, 0.3], [0, 0, 0, 0]);
 
 /** A surface record: `surface`, no rock types, `cover`. */
-function record(surface: readonly number[], cover: readonly number[]): number[] {
+function surfaceRecord(surface: readonly number[], cover: readonly number[]): number[] {
   const r = new Array<number>(SURFACE_STRIDE).fill(0);
   r.splice(0, 4, ...surface);
   r.splice(SURFACE_STRIDE - 4, 4, ...cover);

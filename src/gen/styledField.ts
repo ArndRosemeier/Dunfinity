@@ -201,7 +201,7 @@ export class StyledField {
 
   /** How the rock is worked at a surface point (`Surface`), blended across edges like the colour. */
   surface(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
-    this.blend(col, out, o, 4, (st, c) => { if (st.surface) st.surface(c, x, y, z, out, o); else putSurface(NATURAL, out, o); });
+    this.record('surface', NATURAL, col, x, y, z, out, o);
   }
 
   /** Which rock it is at a surface point (`RockMix`, eight numbers), blended across edges like the colour. */
@@ -211,8 +211,13 @@ export class StyledField {
 
   /** What covers the rock at a surface point (`Cover`: moss, bark, plaster, tiles), blended across edges like the colour. */
   cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
-    this.blend(col, out, o, 4, (st, c) => { if (st.cover) st.cover(c, x, y, z, out, o); else putSurface(BARE, out, o); });
+    this.record('cover', BARE, col, x, y, z, out, o);
   }
+  /** A style's four-number record at a point (its `surface` or `cover`, else `none`), blended across edges. */
+  private record(key: 'surface' | 'cover', none: readonly [number, number, number, number], col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    this.blend(col, out, o, 4, (st, c) => { const f = st[key]; if (f) f.call(st, c, x, y, z, out, o); else putSurface(none, out, o); });
+  }
+
 
   /** `size` numbers at out[o] written by `one` for the column's style, or weighted over its mix of styles. */
   private blend(col: Column, out: Float32Array, o: number, size: number, one: (style: Style, col: Column) => void): void {
