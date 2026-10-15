@@ -17,6 +17,8 @@ export interface Fighter {
   readonly radius: number;
   readonly height: number;
   readonly dead: boolean;
+  /** Out of the way of blows just now (the nobody mid-roll): a blow misses, and pushes nothing. */
+  readonly evading?: boolean;
   /** Take `amount` of health; `cause` says what for (the death screen tells it). */
   hurt(amount: number, cause: string): void;
 }
@@ -70,7 +72,7 @@ export function nearestReached<T extends Fighter>(b: Blow, targets: Iterable<T>)
 
 /** `amount` of damage to `t` from a blow struck at (fromX, fromZ), knocking it back at `knock` m/s. */
 export function damage(t: Fighter, amount: number, fromX: number, fromZ: number, knock: number, cause: string): void {
-  if (t.dead || amount <= 0) return;
+  if (t.dead || amount <= 0 || t.evading) return;
   t.hurt(amount, cause);
   const dx = t.x - fromX, dz = t.z - fromZ, d = Math.hypot(dx, dz) || 1;
   t.vx += (dx / d) * knock;

@@ -138,7 +138,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Infused salt in grandma's tin: what a first is worth, and less for the next ones | `Tin` (`killed(kind)`, `reached(depth)`, `camp(depth)` → a `Gain` or null), numbers in `SALT`, the falling-off in `pinches(k, base)` | `src/loot/tin.ts` |
 | Which creatures you killed since last asked, and where they fell | `fauna.fallen()` (kind = the population's `name`; each `Population` keeps its `fallen`) | `src/creatures/fauna.ts` |
 | Show salt drifting from where it formed into the nobody | `SaltDrift` (`burst(x, y, z, amount, now)`, `stream(now, tx, ty, tz)`) | `src/render/loot/saltDrift.ts` |
-| Grandma's recipe cards: what each is and costs, what a grandchild has cooked, and what that does to the numbers (knife, resting, climbing) | `CARDS`, `CHAPTERS`, `card(id)`; `Cooked` (`rank`, `costOf`, `cantCook`, `cook`, and the effects `knife`, `soup`, `climbing`) | `src/loot/recipes.ts` |
+| The nobody rolls out of the way (grandma's Duck card); blows miss a fighter while it evades | `body.roll(dx, dz, stamina, safe)`, `body.rolling`, `body.evading`; `Fighter.evading`, checked in `damage()` | `src/world/traverse/body.ts`, `src/combat/combat.ts` |
+| Grandma's recipe cards: what each is and costs, what a grandchild has cooked, and what that does to the numbers (knife, resting, climbing) | `CARDS`, `CHAPTERS`, `card(id)`; `Cooked` (`rank`, `costOf`, `cantCook`, `cook`, and the effects `knife`, `duck`, `soup`, `climbing`) | `src/loot/recipes.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |

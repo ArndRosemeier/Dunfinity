@@ -148,6 +148,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const tinView = new TinView(document.body);
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
   let tinSel: CardId = TinView.order()[0], cookAt = -9;
+  /** When the last roll began (grandma's Duck card). */
+  let rollAt = -9;
   /** The last salt gained (its HUD line), and until when it shows. */
   let gainLine = '', gainUntil = 0;
   /** Salt formed at (x, y, z): it drifts into the tin, and the HUD says why. */
@@ -289,7 +291,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, stabDur = STAB.dur * knife.time, stabHit = STAB.hit * knife.time;
-    if (controls.tap('Mouse0') && !busy && !tinView.open && now - stabAt > stabDur) stab(now);
+    if (controls.tap('Mouse0') && !busy && !tinView.open && !body.rolling && now - stabAt > stabDur) stab(now);
+    // Grandma's Duck card: Q rolls the way you are going (back, standing still).
+    const duck = cooked.duck;
+    if (controls.tap('KeyQ') && duck && !busy && !tinView.open && !body.rolling) {
+      const f = input.forward || input.right ? input.forward : -1, rt = input.right;
+      const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
+      if (body.roll(dx, dz, duck.stamina, duck.safe)) rollAt = now;
+    }
     const nearLadder = climb.active ? null : atLadder();
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const note = level.camp?.note, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
@@ -379,7 +388,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       campfire.step(body, threat, now, dt);
       const lighting = campfire.kindling(now);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, campfire.resting && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }

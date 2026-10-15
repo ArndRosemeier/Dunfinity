@@ -10,7 +10,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'soup' | 'kneading';
+export type CardId = 'hold-it' | 'duck' | 'soup' | 'kneading';
 
 export interface Card {
   readonly id: CardId;
@@ -34,6 +34,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['Now faster.', 'Show-off.'],
     cost: [3, 6, 10],
     does: ['knife damage +30%', 'and stabs 20% faster', 'knife damage +60%, stabs 20% faster'],
+  },
+  {
+    id: 'duck', title: 'Duck', chapter: 'Footwork',
+    need: 'one coward, alive. Serves one.',
+    method: 'When something big swings at you, don\'t be there. Dust yourself off afterwards, you\'re not an animal.',
+    ranks: ['Earlier. Lower. Again.'],
+    cost: [4, 8],
+    does: ['Q: roll away; blows miss you for most of it; costs 4 stamina', 'blows miss you for nearly all of it; costs 2.5 stamina'],
   },
   {
     id: 'soup', title: 'Chicken Soup', chapter: 'Grandma\'s Remedies',
@@ -97,6 +105,12 @@ export class Cooked {
   get knife(): { damage: number; time: number } {
     const r = this.rank('hold-it');
     return { damage: r >= 3 ? 1.6 : r >= 1 ? 1.3 : 1, time: r >= 2 ? 0.8 : 1 };
+  }
+
+  /** The roll (Q), if cooked: its stamina cost and the seconds of it that blows miss. */
+  get duck(): { stamina: number; safe: readonly [number, number] } | null {
+    const r = this.rank('duck');
+    return r === 0 ? null : r === 1 ? { stamina: 4, safe: [0.08, 0.42] } : { stamina: 2.5, safe: [0.04, 0.52] };
   }
 
   /** How much faster wounds close resting by a fire. */
