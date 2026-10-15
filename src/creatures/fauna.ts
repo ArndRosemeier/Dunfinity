@@ -73,6 +73,15 @@ export class Fauna {
     return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list, ...this.scavengers.list, ...this.tall.list];
   }
 
+  /** The ones you killed since the last call, by kind (a population's name) and where they fell. */
+  fallen(): { kind: string; x: number; y: number; z: number }[] {
+    const out: { kind: string; x: number; y: number; z: number }[] = [];
+    for (const p of [this.rats, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.tall]) {
+      for (const f of p.fallen.splice(0)) out.push({ kind: p.name, ...f });
+    }
+    return out;
+  }
+
   /** Whether something near is after `prey`. */
   after(prey: Fighter): boolean {
     const near = (c: Foe) => !c.dead && Math.hypot(c.x - prey.x, c.z - prey.z) < THREAT;

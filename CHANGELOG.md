@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.039 — Infused salt
+
+- Grandma's tin now holds infused salt. It starts with three pinches. More forms wherever something happens for the first time: the first of each kind of creature you kill (the Foreman and the Tall One are worth a great deal), a level deeper than any of the family has been, one of grandma's camps.
+- You see it come: pale blue motes rise where it formed, swirl, then stream into you. The HUD says how much and why.
+- It rewards variety, not grinding. The second and third of a kind give less, the fifth, tenth and twentieth a pinch, then nothing. The tin outlives each grandchild.
+
 ## v0.038 — Chalk numbers
 
 - Here and there in the Quarry someone has chalked a number on a pillar, underlined now and then. It is how far it is to the nearest way down, in tens of metres. Walk towards the shaft and the numbers count down.

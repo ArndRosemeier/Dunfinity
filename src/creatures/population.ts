@@ -32,6 +32,8 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   readonly list: C[] = [];
   /** Killed by you (a knife) on this visit to the level. */
   killed = 0;
+  /** Where the ones you killed fell, since the game last took them (`Fauna.fallen`). */
+  readonly fallen: { x: number; y: number; z: number }[] = [];
   protected readonly seed: number;
   protected readonly rng: Rng;
   protected readonly steer: Steer;
@@ -43,7 +45,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   private readonly awake = new Map<D, C[]>();
   private readonly dead = new Set<number>();
 
-  constructor(protected readonly level: Level, name: string, private readonly spread: Spread, gait: Gait) {
+  constructor(protected readonly level: Level, readonly name: string, private readonly spread: Spread, gait: Gait) {
     this.seed = deriveSeed(level.seed, name, level.depth);
     this.rng = new Rng(deriveSeed(level.seed, name, 'behaviour', level.depth));
     this.steer = new Steer(level, gait);
@@ -72,7 +74,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
       }
       this.settle();
     }
-    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (c.cause === 'knife') this.killed++; }
+    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (c.cause === 'knife') { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z }); } }
     return hits;
   }
 

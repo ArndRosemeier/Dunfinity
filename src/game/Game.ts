@@ -33,6 +33,8 @@ import { blowFrom, damage, nearestReached } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
+import { Tin, type Gain } from '../loot/tin';
+import { SaltDrift } from '../render/loot/saltDrift';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -73,6 +75,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!);
   };
   let pack = new Pack();
+  /** Grandma's tin: the infused salt outlives every grandchild. */
+  const tin = new Tin();
   const show = (l: Level) => {
     level = l;
     fauna = new Fauna(l);
@@ -131,6 +135,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(hearth.root);
   const findView = new FindView();
   await view.stage.add(findView.root);
+  const drift = new SaltDrift(params.seed);
+  await view.stage.add(drift.root);
+  /** The last salt gained (its HUD line), and until when it shows. */
+  let gainLine = '', gainUntil = 0;
+  /** Salt formed at (x, y, z): it drifts into the tin, and the HUD says why. */
+  const gained = (g: Gain | null, x: number, y: number, z: number, now: number): void => {
+    if (!g) return;
+    drift.burst(x, y, z, g.amount, now);
+    gainLine = `+${g.amount} infused salt. ${g.why}`;
+    gainUntil = now + 4;
+  };
   const shownFinds: Find[] = [];
 
   const input: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: false };
@@ -225,6 +240,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body.health = health;
       body.facing = climb.yaw;
       noticeUntil = timer.getElapsed() + 5;
+      if (!s.up) gained(tin.reached(level.depth), body.x, body.y, body.z, timer.getElapsed());
     };
   };
   /** What to do when the climb in progress ends. */
@@ -232,7 +248,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get pack() { return pack; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get pack() { return pack; }, tin,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -268,7 +284,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('KeyE')) {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
-      else if (nearNote) { readAt = now; notice = `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`; noticeUntil = now + 20; }
+      else if (nearNote) {
+        readAt = now; notice = `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`; noticeUntil = now + 20;
+        gained(tin.camp(level.depth), note[0], note[1], note[2], now);
+      }
     }
     const kindling = campfire.kindling(now);
     if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
@@ -311,6 +330,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
       const struck = fauna.advance(dt, body, lamp, body.facing);
+      for (const f of fauna.fallen()) gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now);
       if (body.health < health) {
         // Flinch away from the nearest foe (thrown back by a pick).
         let near: Foe | undefined, nd = Infinity;
@@ -349,9 +369,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     hearth.root.visible = !!fire;
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
+    drift.stream(now, body.x, body.y + 1, body.z);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
-    const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : ''];
+    const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push('E: read the note');
@@ -362,7 +383,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (draft) lines.push(draft);
     }
-    lines.push(...fauna.tally());
+    lines.push(...fauna.tally(), `infused salt in grandma's tin: ${tin.salt}`);
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
     if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the

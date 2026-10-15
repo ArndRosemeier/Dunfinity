@@ -135,6 +135,9 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Slow a walker down | `brake(w, rate, dt)` | `src/creatures/steer.ts` |
 | What lies about to be found (floor finds, rat hoards), what is in reach, what is taken | `Finds` (`near`, `inReach`, `take`), kinds and values in `FINDS` | `src/loot/finds.ts` |
 | What the nobody carries up | `Pack` (`items`, `worth`) | `src/loot/finds.ts` |
+| Infused salt in grandma's tin: what a first is worth, and less for the next ones | `Tin` (`killed(kind)`, `reached(depth)`, `camp(depth)` → a `Gain` or null), numbers in `SALT`, the falling-off in `pinches(k, base)` | `src/loot/tin.ts` |
+| Which creatures you killed since last asked, and where they fell | `fauna.fallen()` (kind = the population's `name`; each `Population` keeps its `fallen`) | `src/creatures/fauna.ts` |
+| Show salt drifting from where it formed into the nobody | `SaltDrift` (`burst(x, y, z, amount, now)`, `stream(now, tx, ty, tz)`) | `src/render/loot/saltDrift.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
 
