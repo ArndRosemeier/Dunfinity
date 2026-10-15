@@ -10,7 +10,7 @@ export class Controls {
   /** Wheel steps since the last `takeWheel()` (positive: towards the user). */
   private wheel = 0;
   private readonly pressed = new Set<string>();
-  /** Other keys that count as a key (the ability bar's 1–8), and keys held on without a hand on them (a bar slot clicked). */
+  /** Other keys that count as a key (the ability bar's number keys), and keys held on without a hand on them (a bar slot clicked). */
   private aliases = new Map<string, string[]>();
   private readonly latched = new Set<string>();
 

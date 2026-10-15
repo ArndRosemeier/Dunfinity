@@ -80,3 +80,17 @@ test('Tenderising opens at level 5: one blow, then everything in reach', () => {
   c.cook('tenderising', tin);
   assert.equal(c.tenderising!.all, true);
 });
+
+test('grandma\'s salt-magic opens at level 0: Stove Flame, Cold Larder, Rolling Pin, each stronger at rank 2', () => {
+  const c = new Cooked(), tin = new Tin();
+  tin.salt = 40;
+  assert.equal(c.flame, null); assert.equal(c.larder, null); assert.equal(c.pin, null);
+  for (const id of ['stove-flame', 'cold-larder', 'rolling-pin'] as const) assert.equal(c.cantCook(id, tin, 0), null, id);
+  for (const id of ['stove-flame', 'cold-larder', 'rolling-pin'] as const) c.cook(id, tin);
+  const [f1, l1, p1] = [c.flame!, c.larder!, c.pin!];
+  for (const id of ['stove-flame', 'cold-larder', 'rolling-pin'] as const) c.cook(id, tin);
+  assert.ok(c.flame!.reach > f1.reach && c.flame!.damage[0] > f1.damage[0] && c.flame!.every < f1.every);
+  assert.ok(c.larder!.r > l1.r && c.larder!.slow < l1.slow && c.larder!.lasts > l1.lasts);
+  assert.ok(c.pin!.reach > p1.reach && c.pin!.knock > p1.knock);
+  assert.equal(tin.salt, 40 - 3 * (4 + 8));
+});
