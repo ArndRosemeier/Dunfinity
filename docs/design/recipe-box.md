@@ -115,22 +115,28 @@ You light a small fire anywhere safe (no enemy aware of you) or use the inhabita
 
 Norgo's 202 abilities are too many for a permadeath run (a run cooks maybe 15–40 cards). Some don't fit at all: digging contradicts permanent rock, and settlement-life skills matter little underground.
 
-The chapters **open with depth**: the tin won't open past a divider until you've been deep enough.
+Every chapter is **open from the start**, so every way of playing has its first cards at once. Depth opens a chapter's **stronger cards**: they sit behind a divider inside the chapter until one of the family has been deep enough (`Card.opens`).
 
-| Chapter | From Norgo | Opens at |
-|---|---|---|
-| **Kitchen Work** (knives) | blades | 0 |
-| **Throwing** | throwing | 0 |
-| **Footwork** | acrobatics, athletics | 0 |
-| **Climbing & Water** | climbing, swimming | 0 |
-| **Light** | luminism, parts of lore | 0 |
-| **Grandma's Remedies** | vitae, herbalism, cooking, survival | 0 |
-| **Heavy Things** | axes, blunt, polearms | 5 |
-| **Quiet** | stealth, lockpicking | 5 |
-| **Way Home** (Recall, wards, traps, maps) | runecraft, lore | 8 |
-| **Guard** | shields, armour | 10 |
-| **Fire & Frost** | pyromancy, cryomancy | 15 |
-| **Force** | kinesis, gravitas | 25 |
+**Why (Arnd, 2026-10-15):** players like certain play styles. Gating whole chapters by depth made a mage-minded player wait until level 15 for the first fire.
+
+| Chapter | From Norgo | Starter cards (level 0) | Deeper cards open at |
+|---|---|---|---|
+| **Kitchen Work** (knives) | blades | Hold It Properly | 5, 10, 15, 25 |
+| **Throwing** | throwing | Second Helpings | 5, 10, 15, 25 |
+| **Footwork** | acrobatics, athletics | Duck | 5, 10, 15, 25 |
+| **Climbing & Water** | climbing, swimming | Kneading | 5, 10, 15, 25 |
+| **Light** | luminism, parts of lore | Sunday Candle | 5, 10, 15, 25 |
+| **Grandma's Remedies** | vitae, herbalism, cooking, survival | Chicken Soup | 5, 10, 15, 25 |
+| **Heavy Things** | axes, blunt, polearms | Tenderising | 5, 10, 15, 25 |
+| **Quiet** | stealth, lockpicking | Tiptoe | 5, 10, 15, 25 |
+| **Way Home** (Recall, wards, traps, maps) | runecraft, lore | Way Home | 5, 10, 15, 25 |
+| **Guard** | shields, armour | Pot Lid | 5, 10, 15, 25 |
+| **Fire & Frost** | pyromancy, cryomancy | Stove Flame, Cold Larder | 5, 10, 15, 25 |
+| **Force** | kinesis, gravitas | Rolling Pin | 5, 10, 15, 25 |
+
+**The salt-worker (mage) path starts in the kitchen.** The infused salt is already magic; grandma's first fire and frost are household: *Stove Flame* (a match and a pinch of salt: a short gout of flame ahead), *Cold Larder* (a breath of the larder's cold: things nearby slow down), and *Rolling Pin* (Force: a shove that sends things back without touching them). The big spells come deeper in the same chapters.
+
+**Paths on the first page:** the tin's first page names one starter per way of playing (the cook: Kitchen Work; the sneak: Quiet; the thrower: Throwing; the salt-worker: Fire & Frost), so a new player sees the paths, not just a list.
 
 Dropped or folded in: mining, woodcutting, foraging, tracking, smithing (field repair stays), tailoring, enchanting, barter, persuasion, intimidation. Geomancy and umbramancy become lost-card material. Animism (taming) stays out for now.
 
