@@ -772,10 +772,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/basalt.ts#color + dunfinity/gen/styledField.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/basalt.ts#column + dunfinity/gen/catacombs.ts#column",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -937,10 +933,6 @@
   },
   {
     "key": "same name: dunfinity/gen/catacombs.ts#color + dunfinity/gen/roots.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "same name: dunfinity/gen/catacombs.ts#color + dunfinity/gen/styledField.ts#color",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
@@ -1216,10 +1208,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/collapse.ts#color + dunfinity/gen/styledField.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/collapse.ts#column + dunfinity/gen/dungeon.ts#column",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -1353,10 +1341,6 @@
   },
   {
     "key": "same name: dunfinity/gen/dungeon.ts#color + dunfinity/gen/roots.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "same name: dunfinity/gen/dungeon.ts#color + dunfinity/gen/styledField.ts#color",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
@@ -1624,10 +1608,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/flooded.ts#color + dunfinity/gen/styledField.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/flooded.ts#column + dunfinity/gen/geode.ts#column",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -1844,10 +1824,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/karst.ts#color + dunfinity/gen/styledField.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/karst.ts#column + dunfinity/gen/lava.ts#column",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -1901,10 +1877,6 @@
   },
   {
     "key": "same name: dunfinity/gen/lava.ts#color + dunfinity/gen/roots.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "same name: dunfinity/gen/lava.ts#color + dunfinity/gen/styledField.ts#color",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
@@ -1964,10 +1936,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/quarry.ts#color + dunfinity/gen/styledField.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/quarry.ts#column + dunfinity/gen/rift.ts#column",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -1988,10 +1956,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/rift.ts#color + dunfinity/gen/styledField.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/rift.ts#column + dunfinity/gen/styledField.ts#column",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -2005,10 +1969,6 @@
   },
   {
     "key": "same name: dunfinity/gen/roots.ts#at + dunfinity/render/props/saltLine.ts#at",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "same name: dunfinity/gen/roots.ts#color + dunfinity/gen/styledField.ts#color",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
@@ -2246,5 +2206,13 @@
   {
     "key": "same name: dunfinity/render/terrain/Terrain.ts#dispose + dunfinity/workers/pool.ts#dispose",
     "reason": "each frees its own resources (meshes vs workers); the pool is one of the terrain's resources"
+  },
+  {
+    "key": "same name: dunfinity/gen/catacombs.ts#surface + dunfinity/gen/dungeon.ts#surface",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#surface + dunfinity/gen/quarry.ts#surface",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   }
 ]

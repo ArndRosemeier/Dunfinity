@@ -12,7 +12,7 @@
  */
 import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import { CELLAR_BAND } from './bands';
-import type { StyleId } from './style';
+import { putSurface, type StyleId, type Surface } from './style';
 import { QuarryField, unworked, type Column, type Working } from './quarry';
 import type { Shaft } from './descents';
 import { TOWN, houseColors, nearestHouse, townAir, townGround } from './town';
@@ -69,6 +69,12 @@ function vault(t: number, half: number, spring: number, crown: number): number {
   const u = Math.min(1, Math.abs(t) / half);
   return spring + (crown - spring) * Math.sqrt(1 - u * u);
 }
+
+/** Her cellar's surfaces (src/gen/style.ts `Surface`): brick courses (flagstones underfoot), the mine's worked rock, setts, the house's plaster. */
+const BRICK: Surface = [0, 1, 0, 0.075];
+const MINE: Surface = [1, 0, 0, 0];
+const COBBLES: Surface = [0, 1, 0, 0.2];
+const HOUSE_SURFACE: Surface = [0, 0, 0.4, 0];
 
 export class CellarField extends QuarryField {
   override readonly id: StyleId = 'cellar';
@@ -149,6 +155,16 @@ export class CellarField extends QuarryField {
     // Beyond the arch it is the mine's rock, not her bricks: rough.
     const wild = smoothstep(10.0, 11.0, x);
     return air + wild * (this.grain.n3(x / 1.6, y / 1.6, z / 1.6) * 0.22 + this.grain.n3(x / 0.6, y / 0.6, z / 0.6) * 0.05) * smoothstep(0.1, 0.6, y);
+  }
+
+  /** Bricks in her part, flagstones on its floor, the mine's pick-marked rock beyond the arch, cobbles in the street. */
+  override surface(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    if (townAir(x, y, z) > this.inside(col, x, y, z)) {
+      const street = x > TOWN.street.x[0] && x < TOWN.street.x[1] + 0.4 && nearestHouse(x, y, z).d >= 0.25;
+      putSurface(street ? COBBLES : HOUSE_SURFACE, out, o);
+    } else if (x > 9.3) putSurface(MINE, out, o);
+    else if (y > CELLAR.house.floor - 0.1 && x < -7) putSurface(HOUSE_SURFACE, out, o);
+    else putSurface(BRICK, out, o);
   }
 
   /** Bricks in her part (walls and vaults), flagstones on its floor, the mine's rock beyond the arch. */

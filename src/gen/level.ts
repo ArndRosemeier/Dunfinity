@@ -264,15 +264,21 @@ export class Level {
   /** Vertex colours (linear RGB) for mesh positions inside a sampled grid, from its nearest columns. */
   colors(grid: SampledGrid, positions: Float32Array, mode: ColorMode, lod: number): Float32Array {
     const out = new Float32Array(positions.length);
-    const { n, ox, oz, step, columns } = grid;
     for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i], y = positions[i + 1], z = positions[i + 2];
-      const ci = Math.min(n - 1, Math.max(0, Math.round((x - ox) / step)));
-      const ck = Math.min(n - 1, Math.max(0, Math.round((z - oz) / step)));
-      const col = columns[ci + n * ck];
+      const x = positions[i], y = positions[i + 1], z = positions[i + 2], col = columnIn(grid, x, z);
       if (mode === 'rock') this.field.color(col, x, y, z, out, i);
       else if (mode === 'working') hueOf(col.working.id, out, i);
       else hueOf(lod * 0x9e3779b9, out, i);
+    }
+    return out;
+  }
+
+  /** How the rock is worked (`Surface`, four numbers per vertex) at mesh positions inside a sampled grid. */
+  surfaces(grid: SampledGrid, positions: Float32Array): Float32Array {
+    const out = new Float32Array((positions.length / 3) * 4);
+    for (let i = 0, o = 0; i < positions.length; i += 3, o += 4) {
+      const x = positions[i], y = positions[i + 1], z = positions[i + 2];
+      this.field.surface(columnIn(grid, x, z), x, y, z, out, o);
     }
     return out;
   }
@@ -308,4 +314,12 @@ function hueOf(id: number, out: Float32Array, o: number): void {
     return 0.15 + 0.55 * Math.max(0, Math.min(1, Math.abs(t - 3) - 1));
   };
   out[o] = k(0); out[o + 1] = k(4); out[o + 2] = k(2);
+}
+
+/** The sampled grid's column nearest (x, z). */
+function columnIn(grid: SampledGrid, x: number, z: number): Column {
+  const { n, ox, oz, step, columns } = grid;
+  const ci = Math.min(n - 1, Math.max(0, Math.round((x - ox) / step)));
+  const ck = Math.min(n - 1, Math.max(0, Math.round((z - oz) / step)));
+  return columns[ci + n * ck];
 }

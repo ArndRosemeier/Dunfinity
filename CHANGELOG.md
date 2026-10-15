@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.108 — Every way of playing starts at level 0
+
+- Every chapter of grandma's tin is open from the start; depth now opens a chapter's stronger cards (`Card.opens`), not whole chapters.
+- Tenderising, Tiptoe, Way Home and Pot Lid can be cooked from the first fire.
+- Plan: the salt-worker path starts in the kitchen (Stove Flame, Cold Larder, Rolling Pin) in docs/design/recipe-box.md §6.
+
+## v0.107 — Stone of every kind
+
+- The rock is no longer one flat colour. The stone itself now has colour texture at several sizes: fine grain, mineral flecks, iron and grey stains, and lighter and darker patches and warmer and cooler stretches a few metres across, on floors as well as walls; across the cave, whole stretches of wall tens of metres long run lighter or darker, ochre or grey-brown.
+- Each kind of place has its own surface on top: in the old workings the walls show rows of pick marks, each row slanting its own way; natural rock has its beds and partings, hairline cracks, and specks of other minerals; caves are smooth creamy flowstone with drip ribs and coloured bands; dungeon rooms are dressed blocks in courses with worn edges and sunk joints over flagged floors; grandma's cellar is brick; the catacombs' tuff is chisel-marked.
+- Each band finishes its stone its own way too: the Salt Works are cut in rock as in a real salt mine: rough, lumpy, mostly dark grey-brown, with salt showing as pale, near white layers and streaks running level through it, a tan bed here and there, thin clay seams and the cutting machines' groove rings; the Cisterns' walls are concrete cast against boards, with the boards' lines and the tie holes; the Cisterns and the Threshold run wet and shine in the lamps.
+- Water is no longer flat grey: it is clear over the shallows so the floor shows through, near black where it is deep, and slow ripples move across it so the lamps glint on it.
+- The lamps burn a little less orange.
+- No band is one stone any more: each cuts through several rock types that change in patches and beds 5 to 30 metres across, as layers along a wall and lenses in it. There's pale cream limestone, ochre sandstone in hand-thick beds, dark shale split into thin layers, and grey speckled granite. The Salt Works are salt only in places, with dark shale and other rock between. Each band has its own mix (`band.finish.rocks`).
+
 ## v0.106 — Mushroom monsters, and creatures that move
 
 - New in the fungal grotto: toadstools. Each looks like one of the grotto's giant fly agarics until you come close. Then it shivers, tears six roots out of the ground and stands up on them, tipping its cap back to show two yellow eyes under the gills. It scuttles after you, rears back and slams its cap down on you. Lose it, and it walks back to its spot and roots itself again.

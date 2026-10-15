@@ -11,6 +11,8 @@ export interface IndexedData {
   normals: Float32Array;
   colors: Float32Array;
   indices: Uint32Array;
+  /** How rock is worked (four numbers per vertex, src/gen/style.ts `Surface`), for kinds that read it; natural rock if left out. */
+  surfaces?: Float32Array;
 }
 
 /** A static mesh (no per-frame matrix update) of `kind` from position, normal, colour and index arrays. */
@@ -19,6 +21,7 @@ export function meshFromData(d: IndexedData, kind: MaterialKind): Mesh {
   g.setAttribute('position', new Float32BufferAttribute(d.positions, 3));
   g.setAttribute('normal', new Float32BufferAttribute(d.normals, 3));
   g.setAttribute('color', new Float32BufferAttribute(d.colors, 3));
+  if (kind.attributes.includes('surface')) g.setAttribute('surface', new Float32BufferAttribute(d.surfaces ?? new Float32Array((d.positions.length / 3) * 4), 4));
   g.setIndex(new Uint32BufferAttribute(d.indices, 1));
   g.computeBoundingSphere();
   const m = new Mesh(g, kind.make());
