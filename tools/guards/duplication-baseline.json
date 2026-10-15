@@ -2088,6 +2088,10 @@
     "reason": "Figure.pose: the interface every drawn creature implements; rigged.ts holds the one for Blender-made creatures"
   },
   {
+    "key": "same name: dunfinity/render/humans/ladderClimb.ts#pose + dunfinity/render/humans/nobody.ts#pose",
+    "reason": "both hand the nobody's humanoid one frame (Humanoid.update): Nobody.pose from the Body, the ladder climb from its script; the posing itself is the package's animator"
+  },
+  {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
     "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
   },
@@ -2482,5 +2486,13 @@
   {
     "key": "idiom: [.columnAt .level] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/gen/quarryProps.ts",
     "reason": "creatures and the prop pass each ask the level for its column at a spot (level.columnAt) for their own placement; one seam called from four places, surfaced when the finder's corpus shifted"
+  },
+  {
+    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
+    "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
+  },
+  {
+    "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   }
 ]
