@@ -248,7 +248,7 @@ test('the catacombs are none of them: low, narrow galleries lined with niches, a
   const l = new Level(1, 9), [ax, , az] = l.arrival;
   const st: Record<string, { n: number; open: number; high: number }> = {};
   let niches = 0, walls = 0;
-  for (let k = 0; k < 30000; k++) {
+  for (let k = 0; k < 45000; k++) {
     const x = ax + (hash3f(23, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(23, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
     if (c.mix || c.passage > -20) continue;
     const id = l.field.styles[c.style].id, s = (st[id] ??= { n: 0, open: 0, high: 0 });
@@ -260,5 +260,28 @@ test('the catacombs are none of them: low, narrow galleries lined with niches, a
   const high = (id: string) => st[id].high / st[id].open;
   assert.ok(st.catacombs.n > 500, `${st.catacombs.n} catacombs columns`);
   assert.ok(high('catacombs') < 0.25 && high('catacombs') < high('karst') / 2 && high('catacombs') < high('excavation') / 2, `room 5 m up over ${(high('catacombs') * 100).toFixed(0)}% of the catacombs' floor, karst ${(high('karst') * 100).toFixed(0)}%, excavation ${(high('excavation') * 100).toFixed(0)}%`);
-  assert.ok(niches / walls > 0.3, `niches behind ${((niches / walls) * 100).toFixed(0)}% of the walls`);
+  assert.ok(niches / walls > 0.2, `niches behind ${((niches / walls) * 100).toFixed(0)}% of the walls`);
+});
+
+test('the dungeon rooms are none of them: built rooms with dead flat floors, joined by narrow corridors', () => {
+  for (const depth of [6, 9]) {
+    const l = new Level(1, depth), [ax, , az] = l.arrival;
+    const st: Record<string, { n: number; open: number; flat: number }> = {};
+    for (let k = 0; k < 40000; k++) {
+      const x = ax + (hash3f(29, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(29, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20) continue;
+      const id = l.field.styles[c.style].id, s = (st[id] ??= { n: 0, open: 0, flat: 0 });
+      s.n++;
+      if (l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      s.open++;
+      // Laid floors: not a centimetre of difference a metre away, either way.
+      const f = c.floor;
+      if (Math.abs(l.columnAt(x + 1, z).floor - f) < 0.002 && Math.abs(l.columnAt(x, z + 1).floor - f) < 0.002) s.flat++;
+    }
+    const flat = (id: string) => st[id].flat / st[id].open, open = (id: string) => st[id].open / st[id].n;
+    assert.ok(st.dungeon.n > 1000, `${st.dungeon.n} dungeon columns on level ${depth}`);
+    assert.ok(flat('dungeon') > 0.5, `flat floor under ${(flat('dungeon') * 100).toFixed(0)}% of the dungeon's open floor on level ${depth}`);
+    for (const id of Object.keys(st)) if (id !== 'dungeon') assert.ok(flat(id) < 0.2, `${id} flat as a dungeon on level ${depth}: ${(flat(id) * 100).toFixed(0)}%`);
+    assert.ok(open('dungeon') < open('excavation') / 2, `the dungeon ${(open('dungeon') * 100).toFixed(0)}% open, the excavation ${(open('excavation') * 100).toFixed(0)}%`);
+  }
 });

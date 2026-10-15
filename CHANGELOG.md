@@ -1,9 +1,19 @@
 # Changelog
 
-## v0.080 — Real dogs
+## v0.082 — Real dogs
 
 - The feral dogs are new. They were built from a few ellipsoids in code; now each one is a gaunt street dog sculpted, rigged and animated in Blender (AssetGenerator). It has a deep narrow chest, ribs and spine showing, bristling hackles and tail, a rough coat with a dark saddle and a black muzzle, a mouth that opens on its teeth, and eyes that throw your headlamp back.
 - Everything they do has its own animation: lying up at the den, standing and looking about, a trot, a gallop round you, a low stalk with the head down and lips drawn back while they circle, down on the haunches before a lunge (the tell), the lunge with the jaw wide, the snap, a flinch when you stab one, and a fall onto its side when it dies. The paws stay planted at every speed, and one action fades into the next, so nothing pops or flickers.
+
+## v0.081 — Things made properly
+
+- The things miners left against the rock are now modelled in Blender instead of built from boxes: crates of nailed planks, barrels with staves and iron hoops, a pick and a shovel leant on the rock, a pail with its handle dropped to one side, and squared blocks with tool marks and knocked corners. Shadows sit in their creases and under them.
+- More props will follow the same way: the shacks, the carts and things for the new kinds of place.
+
+## v0.080 — Dungeon rooms
+
+- A seventh kind of place, and the first one anybody built on purpose: rooms of dressed grey stone with flagged floors, joined by short corridors that dog-leg from door to door. Little cells, guard rooms, long halls with two rows of square pillars, and great rooms under a barrel vault. Each room stands a step or few higher or lower than the next, and the corridors ramp between them. Try `?style=dungeon`.
+- Never the whole level: a share of the Cisterns (levels 6–8) and of the Threshold (9–10), between the caves and the workings. On the map (M) it shows grey.
 
 ## v0.079 — Catacombs
 

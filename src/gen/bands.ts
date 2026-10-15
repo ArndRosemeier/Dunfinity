@@ -118,7 +118,7 @@ export const CISTERN: Band = {
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
   touched: 0.12, crickets: 0, dogs: 0.35, eels: 0.6, scavengers: 0.35, caverns: 0, ruins: 0, older: 0.14, uphill: 0.12, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.65], ['karst', 0.35]],
+  styles: [['excavation', 0.55], ['karst', 0.3], ['dungeon', 0.15]],
 };
 
 /**
@@ -139,7 +139,7 @@ export const THRESHOLD: Band = {
   stone: [0.36, 0.33, 0.3], carvings: 0, hanging: 0.12, machines: 0,
   touched: 0.06, crickets: 0.3, dogs: 0, eels: 0.4, scavengers: 0.2, caverns: 0.5, ruins: 0.2, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.3], ['karst', 0.4], ['rift', 0.2], ['catacombs', 0.1]],
+  styles: [['excavation', 0.25], ['karst', 0.35], ['rift', 0.15], ['catacombs', 0.1], ['dungeon', 0.15]],
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
