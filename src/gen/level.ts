@@ -11,7 +11,7 @@ import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
 import { shareOf } from './regions';
-import { owns, type StyleId } from './style';
+import { owns, SURFACE_STRIDE, type StyleId } from './style';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
@@ -273,12 +273,17 @@ export class Level {
     return out;
   }
 
-  /** How the rock is worked (`Surface`, four numbers per vertex) at mesh positions inside a sampled grid. */
+  /**
+   * The rock's surface at mesh positions inside a sampled grid, `SURFACE_STRIDE` numbers per vertex:
+   * how it is worked (`Surface`, four), then which rock it is (`RockMix`, eight).
+   */
   surfaces(grid: SampledGrid, positions: Float32Array): Float32Array {
-    const out = new Float32Array((positions.length / 3) * 4);
-    for (let i = 0, o = 0; i < positions.length; i += 3, o += 4) {
+    const out = new Float32Array((positions.length / 3) * SURFACE_STRIDE);
+    for (let i = 0, o = 0; i < positions.length; i += 3, o += SURFACE_STRIDE) {
       const x = positions[i], y = positions[i + 1], z = positions[i + 2];
-      this.field.surface(columnIn(grid, x, z), x, y, z, out, o);
+      const col = columnIn(grid, x, z);
+      this.field.surface(col, x, y, z, out, o);
+      this.field.rocks(col, out, o + 4);
     }
     return out;
   }

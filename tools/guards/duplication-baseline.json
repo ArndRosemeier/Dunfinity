@@ -72,14 +72,6 @@
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
   },
   {
-    "key": "idiom: [.band .get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts",
-    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
-  },
-  {
-    "key": "idiom: [.band .noise] in dunfinity/gen/dwarven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/fungal.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts + dunfinity/gen/roots.ts",
-    "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
-  },
-  {
     "key": "idiom: [.ceiling .floor .get .own] in dunfinity/gen/dungeon.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts",
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
@@ -2214,5 +2206,9 @@
   {
     "key": "same name: dunfinity/gen/cellar.ts#surface + dunfinity/gen/quarry.ts#surface",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "idiom: [.band .get .noise .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/lava.ts",
+    "reason": "each style reads its own band and noise from its own seed (this.band, noise per style); not a copy, surfaced when src/gen/rockTypes.ts shifted the idiom finder corpus"
   }
 ]

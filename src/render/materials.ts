@@ -7,13 +7,13 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
-import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_cell_noise_float, mx_noise_float, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, type Material, type Node } from 'three/webgpu';
+import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
   /** The geometry attributes meshes of this kind carry (warm-up builds a matching stand-in). Meshes are always indexed. */
-  readonly attributes: readonly ('position' | 'normal' | 'color' | 'uv' | 'surface')[];
+  readonly attributes: readonly ('position' | 'normal' | 'color' | 'uv' | 'surface')[]; // 'surface' carries `rocks` and `rocks2` with it (meshes.ts `surfaceAttributes`)
   /** Whether meshes of this kind cast and receive the headlamp's shadow (receiving is part of the shader's cache key). */
   readonly shadow: { readonly cast: boolean; readonly receive: boolean };
   /** The kind's material (one instance, made on first use). */
@@ -55,7 +55,8 @@ export const VERTEX_COLOR_SOLID = defineKind('vertexColorSolid', ['position', 'n
  * (a procedural height turned into a normal with screen-space derivatives, Mikkelsen's surface-gradient
  * bump). How the rock was worked comes per vertex from its style (`surface`, src/gen/style.ts
  * `Surface`: pick marks, masonry and its course height, flowstone); the band's finish comes in
- * uniforms (`ROCK_FINISH`: rock salt, concrete cast in board shuttering, wet sheen; `ROCK_VEINS`).
+ * uniforms (`ROCK_FINISH`: concrete cast in board shuttering, wet sheen; `ROCK_VEINS`); which rock it is, per
+ * vertex (`rocks`, `rocks2`: the style's `RockMix`, src/gen/rockTypes.ts), in patches and beds.
  * Natural rock (all 0) is broken stone: mottled, bedded, cracked, iron-stained.
  */
 export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'], () => {
@@ -65,17 +66,20 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const tooled = surf.x, masonry = surf.y.clamp(0, 1), flow = surf.z.clamp(0, 1);
   const natural = float(1).sub(masonry).mul(float(1).sub(flow));
   const mottle = mx_fractal_noise_float(p.mul(0.32), 3, 2.0, 0.5); // about -1..1, metres-wide patches
-  // Which rock this is: the band's rock types (ROCK_FINISH.rocks, and its salt) in patches and beds
+  // Which rock this is: the style's mix of rock types (per vertex, src/gen/rockTypes.ts order:
+  // limestone, sandstone, shale, granite, salt, basalt, marble, slate) laid out in patches and beds
   // 5-30 m across, each type winning where its own noise runs high, the edges between them soft.
   // Beds: the noise stretched level, so a type runs along a wall as a layer; blobs: patches.
-  const kindAt = (k: number) => mx_fractal_noise_float(vec3(p.x.mul(0.055), p.y.mul(0.32), p.z.mul(0.055)).add(k * 17.3), 2, 2.0, 0.5)
-    .mul(0.6).add(mx_noise_float(p.mul(0.035).add(k * 9.1)).mul(0.5));
-  const share = (w: Node<'float'>, k: number) => w.mul(smoothstep(-0.9, 0.9, kindAt(k)).pow(3)).add(0.0001);
-  const wLime = share(ROCK_FINISH.rocks.x, 0), wSand = share(ROCK_FINISH.rocks.y, 1), wShale = share(ROCK_FINISH.rocks.z, 2), wGran = share(ROCK_FINISH.rocks.w, 3), wSalt = share(ROCK_FINISH.salt, 4);
-  const kinds = wLime.add(wSand).add(wShale).add(wGran).add(wSalt);
-  const sharp = (w: Node<'float'>) => smoothstep(0.35, 0.65, w.div(kinds));
-  const lime = sharp(wLime), sand = sharp(wSand), shale = sharp(wShale), gran = sharp(wGran);
-  const saltShare = sharp(wSalt);
+  const rocksA = attribute<'vec4'>('rocks', 'vec4'), rocksB = attribute<'vec4'>('rocks2', 'vec4');
+  const bedAt = vec3(p.x.mul(0.055), p.y.mul(0.32), p.z.mul(0.055)), blobAt = p.mul(0.035);
+  const kindA = mx_fractal_noise_vec3(bedAt, 2, 2.0, 0.5).mul(0.6).add(mx_noise_vec3(blobAt).mul(0.5));
+  const kindB = mx_fractal_noise_vec3(bedAt.add(17.3), 2, 2.0, 0.5).mul(0.6).add(mx_noise_vec3(blobAt.add(9.1)).mul(0.5));
+  const kindC = mx_fractal_noise_vec3(bedAt.add(-31.7), 2, 2.0, 0.5).mul(0.6).add(mx_noise_vec3(blobAt.add(-4.4)).mul(0.5));
+  const share = (w: Node<'float'>, n: Node<'float'>) => w.mul(smoothstep(-0.9, 0.9, n).pow(3)).add(0.00001);
+  const ws = [share(rocksA.x, kindA.x), share(rocksA.y, kindA.y), share(rocksA.z, kindA.z), share(rocksA.w, kindB.x),
+    share(rocksB.x, kindB.y), share(rocksB.y, kindB.z), share(rocksB.z, kindC.x), share(rocksB.w, kindC.y)];
+  const kinds = ws.reduce((a, b) => a.add(b));
+  const [lime, sand, shale, gran, saltShare, basalt, marble, slate] = ws.map((w) => smoothstep(0.35, 0.65, w.div(kinds)));
   const grain = mx_noise_float(p.mul(9.0)); // centimetre grain
   const lumps = mx_noise_float(p.mul(3.1)); // a chiselled roughness, hand-sized
   const steep = smoothstep(0.75, 0.35, abs(normalWorld.y));
@@ -129,8 +133,15 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const lamina = thinLine(p.y.mul(16).add(mottle.mul(1.5)).fract().sub(0.5).abs().div(16), float(0.006)).mul(steep).mul(smoothstep(0.35, 0.12, p.y.mul(16).fwidth()));
   const crystal = mx_worley_noise_float(p.mul(28)).mul(smoothstep(1.0, 0.3, p.mul(28).x.fwidth()));
   const granSpot = smoothstep(0.3, 0.1, crystal).mul(0.45).sub(smoothstep(0.55, 0.85, crystal).mul(0.2));
-  const kindSum = lime.add(sand).add(shale).add(gran).add(saltShare).add(0.001);
+  // Black basalt, its pale specks; white marble with grey veins; blue-grey slate split along its cleavage.
+  const veinAt = mx_noise_float(p.mul(vec3(0.22, 0.5, 0.22)).add(vec3(mottle.mul(0.4)))).abs();
+  const marbleVein = thinLine(veinAt.mul(1.2), float(0.01)).add(smoothstep(0.05, 0.0, veinAt).mul(0.25)).mul(smoothstep(-0.2, 0.3, mx_noise_float(p.mul(0.15).add(2.2))));
+  const cleave = thinLine(p.y.mul(9).add(u.mul(3.5)).add(mottle).fract().sub(0.5).abs().div(9), float(0.005)).mul(smoothstep(0.35, 0.12, p.y.mul(9).add(u.mul(3.5)).fwidth()));
+  const kindSum = lime.add(sand).add(shale).add(gran).add(saltShare).add(basalt).add(marble).add(slate).add(0.001);
   const rockHue = vec3(1, 1, 1).mul(saltShare.add(0.001))
+    .add(vec3(0.2, 0.2, 0.22).mul(float(1).add(granSpot.mul(0.8))).mul(basalt))
+    .add(vec3(1.55, 1.52, 1.45).mul(float(1).sub(marbleVein.mul(0.45))).mul(marble))
+    .add(vec3(0.5, 0.56, 0.64).mul(float(1).sub(cleave.mul(0.4))).mul(slate))
     .add(vec3(1.14, 1.1, 1.0).mul(lime))
     .add(vec3(1.28, 0.98, 0.66).mul(sandBed.mul(0.22).add(0.88)).mul(sand))
     .add(vec3(0.5, 0.48, 0.47).mul(float(1).sub(lamina.mul(0.5))).mul(shale))
@@ -191,7 +202,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   // Across the cave: whole stretches of wall tens of metres long run lighter or darker, ochre or
   // grey-brown, so no two walls look alike.
   const broad = mx_fractal_noise_float(p.mul(0.07).add(vec3(-31.0, 5.5, 12.0)), 2, 2.0, 0.5), broadHue = mx_noise_float(p.mul(0.05).add(44.0));
-  const region = mix(mix(vec3(1, 1, 1), vec3(1.2, 0.98, 0.72), smoothstep(0.05, 0.45, broadHue)), vec3(0.8, 0.82, 0.86), smoothstep(-0.05, -0.45, broadHue))
+  const region = mix(mix(vec3(1, 1, 1), vec3(1.12, 0.99, 0.84), smoothstep(0.05, 0.45, broadHue)), vec3(0.8, 0.82, 0.86), smoothstep(-0.05, -0.45, broadHue))
     .mul(broad.mul(0.55).add(1).clamp(0.62, 1.3));
   const natShade = float(0.9).add(mottle.mul(0.22)).add(strata.mul(0.16).mul(steep)).add(grain.mul(0.07)).add(grit.mul(0.1)).add(speck)
     .sub(seam.mul(0.4)).sub(tool.mul(0.1)).sub(crack.mul(0.65)).sub(damp.mul(0.3)).sub(clay.mul(0.4).add(ring.mul(0.05)).mul(saltShare));
@@ -232,11 +243,10 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
 export const ROCK_VEINS = uniform(0);
 
 /**
- * The band's finish of its rock (`band.finish`), set by `LevelView`: rock salt (dark grey-brown with pale,
- * level white beds and streaks, the cutting machines' groove rings, glinting in the headlamp), worked
- * walls cast in concrete against board shuttering, how wet the rock runs.
+ * The band's finish of its rock (`band.finish`), set by `LevelView`: worked walls cast in concrete
+ * against board shuttering, how wet the rock runs. (Which rock it is comes per vertex: `rocks`.)
  */
-export const ROCK_FINISH = { salt: uniform(0), formwork: uniform(0), wet: uniform(0), rocks: uniform(new Vector4(1, 0, 0, 0)) };
+export const ROCK_FINISH = { formwork: uniform(0), wet: uniform(0) };
 
 /**
  * A line `width` metres to either side of where `dist` (metres) is 0, antialiased: soft over a pixel,
