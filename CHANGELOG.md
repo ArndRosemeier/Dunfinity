@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.106 — Mushroom monsters, and creatures that move
+
+- New in the fungal grotto: toadstools. Each looks like one of the grotto's giant fly agarics until you come close. Then it shivers, tears six roots out of the ground and stands up on them, tipping its cap back to show two yellow eyes under the gills. It scuttles after you, rears back and slams its cap down on you. Lose it, and it walks back to its spot and roots itself again.
+- New in the fungal grotto: puffcaps. These are tall, pale cave mushrooms with faintly glowing gills that never move. One that sees you turns to you, draws its cap in (the warning), then flares it and lobs a glowing ball of spores. The ball bursts into a cloud that burns while you stand in it.
+- Fixed: the dogs, rats, cave crickets, slimes and brine eels now actually play their animations; before, they slid around frozen in one pose.
+
+## v0.105 — Real brine eels
+
+- The brine eels are new: three metres of pale, slimy eel modelled, rigged and animated in Blender, with a blunt head, an underslung jaw of needle teeth, milky eyes and a fin running down its back into the tail.
+- Its body still swims along the water in a wave, and its head now acts: it weaves and breathes as it swims, rears up with its jaw dropping wide before it strikes, snaps shut in the strike, jerks when stabbed, and goes slack, belly up, when it dies.
+
 ## v0.104 — Things for the dwarven halls
 
 - Props for the dwarven halls are modelled and ready to set out: a stone forge with its anvil and glowing coals, a stern dwarf king carved in granite with a gold crown, a three-legged iron brazier and a heavy chain hanging from the roof.
