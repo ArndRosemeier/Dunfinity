@@ -327,3 +327,30 @@ test('the fungal grotto is none of them: giant mushrooms whose broad caps make a
   assert.ok(storey('fungal') > 0.06, `a second storey over ${(storey('fungal') * 100).toFixed(1)}% of the fungal grotto's chambers`);
   for (const id of Object.keys(st)) if (id !== 'fungal') assert.ok(storey(id) < storey('fungal') / 4, `${id} has a second storey over ${(storey(id) * 100).toFixed(1)}%`);
 });
+
+test('the lava tubes are none of them: long round tunnels, a dozen metres across, all of a height', () => {
+  // (No band has lava tubes yet, the magma strata are deeper: a level of them, against the Threshold's mix.)
+  const st: Record<string, { open: number; tube: number }> = {};
+  for (const l of [new Level(1, 9, 'lava'), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    // How far one can walk from (x, z) along (dx, dz), metres (up to 48).
+    const run = (x: number, z: number, dx: number, dz: number) => {
+      let s = 0;
+      for (; s < 48; s += 2) { const px = x + dx * s, pz = z + dz * s; if (l.sdf(px, l.columnAt(px, pz).floor + 1.5, pz) <= 0.3) break; }
+      return s;
+    };
+    for (let k = 0; k < 20000; k++) {
+      const x = ax + (hash3f(41, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(41, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { open: 0, tube: 0 });
+      s.open++;
+      // Long one way, 6 to 20 m across the other, and rock within 16 m overhead.
+      const runs = [0, 1, 2, 3].map((i) => { const a = (i * Math.PI) / 4; return run(x, z, Math.cos(a), Math.sin(a)) + run(x, z, -Math.cos(a), -Math.sin(a)); });
+      if (Math.max(...runs) >= 60 && Math.min(...runs) >= 6 && Math.min(...runs) <= 20 && l.sdf(x, c.floor + 16, z) < 0) s.tube++;
+    }
+  }
+  const tube = (id: string) => st[id].tube / st[id].open;
+  assert.ok(st.lava.open > 150, `${st.lava.open} open lava tube columns`);
+  assert.ok(tube('lava') > 0.3, `a tube's shape around ${(tube('lava') * 100).toFixed(0)}% of the lava tubes' floor`);
+  for (const id of Object.keys(st)) if (id !== 'lava') assert.ok(tube(id) < tube('lava') / 2, `${id} tube-shaped around ${(tube(id) * 100).toFixed(0)}% of its floor`);
+});

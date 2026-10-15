@@ -16,6 +16,7 @@ import { Catacombs } from './catacombs';
 import { Dungeon } from './dungeon';
 import { Roots } from './roots';
 import { Fungal } from './fungal';
+import { Lava } from './lava';
 import type { Style, StyleId } from './style';
 
 /** Makes the style for a level, from the level's seed and band. */
@@ -29,6 +30,7 @@ const MAKE: Partial<Record<StyleId, Make>> = {
   dungeon: (seed, band) => new Dungeon(seed, band),
   roots: (seed, band) => new Roots(seed, band),
   fungal: (seed, band) => new Fungal(seed, band),
+  lava: (seed, band) => new Lava(seed, band),
 };
 
 /** The styles that can be asked for by name (`?style=`), the excavation and the cellar aside. */
