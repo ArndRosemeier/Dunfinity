@@ -36,12 +36,12 @@
     "reason": "empty out-objects for two different scans (style shares vs Voronoi neighbours); same factory shape, different fields"
   },
   {
-    "key": "clone: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
+    "key": "clone: dunfinity/render/creatures/dogView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "idiom: [.add .body .root] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+    "key": "clone: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
+    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
   },
   {
     "key": "idiom: [.add .push .root] in dunfinity/render/creatures/scavengerView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/props/hearth.ts",
@@ -58,10 +58,6 @@
   {
     "key": "idiom: [.band .level .sites] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
-  },
-  {
-    "key": "idiom: [.body .root] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
   },
   {
     "key": "idiom: [.cells .noise .rough WeakMap] in dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/rift.ts",
@@ -82,10 +78,6 @@
   {
     "key": "idiom: [.dead .lieDead] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's one-line call into the Population seam (`if (c.dead) return this.lieDead(c, dt)`); the work is shared in population.ts. Flips between NEW and STALE as the corpus changes, like [.body .root]."
-  },
-  {
-    "key": "idiom: [.deadT .min .mode Math] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
   },
   {
     "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/gen/quarryProps.ts + dunfinity/world/fire.ts",
@@ -1076,10 +1068,6 @@
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
   },
   {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#parts + dunfinity/render/creatures/ratView.ts#parts",
-    "reason": "each kind's own part of the FigurePool seam (src/render/creatures/figures.ts): its parts and how one is posed"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/cricketView.ts#parts + dunfinity/render/creatures/slimeView.ts#parts",
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
   },
@@ -1088,31 +1076,19 @@
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
   },
   {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#pose + dunfinity/render/creatures/ratView.ts#pose",
-    "reason": "each kind's own part of the FigurePool seam (src/render/creatures/figures.ts): its parts and how one is posed"
+    "key": "same name: dunfinity/render/creatures/dogView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "same name: dunfinity/render/creatures/dogView.ts#pose + dunfinity/render/creatures/scavengerView.ts#pose",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+    "key": "same name: dunfinity/render/creatures/dogView.ts#create + dunfinity/render/creatures/ratView.ts#create",
+    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
   },
   {
-    "key": "same name: dunfinity/render/creatures/dogView.ts#pose + dunfinity/render/creatures/slimeView.ts#pose",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/dogView.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
-    "reason": "pose is the verb for putting a figure or a scene into a pose; the dog plays clips, the ladder climb drives the nobody"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/eelView.ts#parts + dunfinity/render/creatures/ratView.ts#parts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
+    "key": "same name: dunfinity/render/creatures/dogView.ts#travelled + dunfinity/render/creatures/ratView.ts#travelled",
+    "reason": "each species turns its own gait phase into metres for RiggedFigure (rigged.ts), the seam these override"
   },
   {
     "key": "same name: dunfinity/render/creatures/eelView.ts#parts + dunfinity/render/creatures/slimeView.ts#parts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/eelView.ts#pose + dunfinity/render/creatures/ratView.ts#pose",
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
   },
   {
@@ -1164,8 +1140,8 @@
     "reason": "each view draws its own thing per frame; the human pools share HumanPool.draw (src/render/creatures/humanPool.ts)"
   },
   {
-    "key": "same name: dunfinity/render/creatures/ratView.ts#parts + dunfinity/render/creatures/slimeView.ts#parts",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+    "key": "same name: dunfinity/render/creatures/rigged.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
+    "reason": "Figure.pose: the interface every drawn creature implements; rigged.ts holds the one for Blender-made creatures"
   },
   {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
