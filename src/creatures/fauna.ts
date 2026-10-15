@@ -1,6 +1,6 @@
 /**
  * Everything that lives on a level, together: the rats, the Salt-Touched, the cave crickets, the
- * two slime factions, the feral dogs and, on level 5, the Foreman and his crew. Made in one go for a level (or a
+ * two slime factions, the feral dogs, the brine eels and, on level 5, the Foreman and his crew. Made in one go for a level (or a
  * new grandchild), stepped in one go, and asked in one place whom a blow can hit and whether
  * something is after you.
  *
@@ -15,8 +15,9 @@ import { Crickets, type Cricket, type Lamp } from './crickets';
 import { Slimes, type Slime } from './slimes';
 import { Foreman, FOREMAN, type Boss } from './foreman';
 import { Dogs, type Dog } from './dogs';
+import { Eels, type Eel } from './eels';
 
-export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog;
+export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel;
 
 /** Something after you this close counts (the knife comes out). */
 const THREAT = 14;
@@ -29,6 +30,7 @@ export class Fauna {
   readonly murk: Slimes;
   readonly foreman: Foreman;
   readonly dogs: Dogs;
+  readonly eels: Eels;
 
   constructor(level: Level) {
     this.rats = new Rats(level);
@@ -38,6 +40,7 @@ export class Fauna {
     this.murk = new Slimes(level, 'murk');
     this.foreman = new Foreman(level);
     this.dogs = new Dogs(level);
+    this.eels = new Eels(level);
     const hall = this.foreman.hall;
     if (hall) this.touched.gather(hall.x, hall.z, FOREMAN.crew, 5);
   }
@@ -55,12 +58,13 @@ export class Fauna {
     this.lumen.advance(dt, prey, this.murk.list);
     this.murk.advance(dt, prey, this.lumen.list);
     this.dogs.advance(dt, prey, facing);
+    this.eels.advance(dt, prey);
     return struck;
   }
 
   /** Everyone a blow can hit (the dead included). */
   foes(): Foe[] {
-    return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list];
+    return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list];
   }
 
   /** Whether something near is after `prey`. */
@@ -70,6 +74,7 @@ export class Fauna {
       || [...this.touched.list, ...this.foreman.list].some((t) => t.angry && near(t))
       || this.crickets.list.some((c) => c.angry && near(c))
       || this.dogs.list.some((g) => g.hunting && near(g))
+      || this.eels.list.some((e) => e.mode !== 'cruise' && near(e))
       || [...this.lumen.list, ...this.murk.list].some((s) => s.foe === prey && near(s));
   }
 
@@ -80,6 +85,7 @@ export class Fauna {
     if (slimes) lines.push(`slimes killed: ${slimes}`);
     if (this.crickets.killed) lines.push(`cave crickets killed: ${this.crickets.killed}`);
     if (this.dogs.killed) lines.push(`feral dogs killed: ${this.dogs.killed}`);
+    if (this.eels.killed) lines.push(`brine eels killed: ${this.eels.killed}`);
     if (this.touched.killed) lines.push(`Salt-Touched laid to rest: ${this.touched.killed}`);
     if (this.foreman.killed) lines.push('The Foreman is dead.');
     return lines;

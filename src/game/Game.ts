@@ -23,6 +23,7 @@ import type { Lamp } from '../creatures/crickets';
 import { CricketView } from '../render/creatures/cricketView';
 import { SlimeView } from '../render/creatures/slimeView';
 import { DogView } from '../render/creatures/dogView';
+import { EelView } from '../render/creatures/eelView';
 import { blowFrom, damage, nearestReached } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -105,6 +106,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(slimeView.root);
   const dogView = new DogView();
   await view.stage.add(dogView.root);
+  const eelView = new EelView();
+  await view.stage.add(eelView.root);
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
   const lampDir = new Vector3();
@@ -209,7 +212,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get finds() { return finds; }, get pack() { return pack; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get finds() { return finds; }, get pack() { return pack; },
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -296,16 +299,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
 
-    ratView.draw(fauna.rats.list, now);
+    ratView.draw(fauna.rats.list, now, body);
     touchedView.draw(fauna.touched.list, body.x, body.z, dt, now);
     foremanView.draw(fauna.foreman.list[0] ?? null, fauna.foreman.hall, dt, now);
     const rung = fauna.foreman.list[0]?.rung ?? 0;
     if (rung > bells) { notice = 'A bell rings out through the halls. Something answers it.'; noticeUntil = now + 4; }
     bells = rung;
-    cricketView.draw(fauna.crickets.list, now);
-    slimeView.lumen.draw(fauna.lumen.list, now);
-    slimeView.murk.draw(fauna.murk.list, now);
-    dogView.draw(fauna.dogs.list, now);
+    cricketView.draw(fauna.crickets.list, now, body);
+    slimeView.lumen.draw(fauna.lumen.list, now, body);
+    slimeView.murk.draw(fauna.murk.list, now, body);
+    dogView.draw(fauna.dogs.list, now, body);
+    eelView.draw(fauna.eels.list, now, body);
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
@@ -343,6 +347,7 @@ const HURT: Record<string, [string, string]> = {
   rat: ['a rat bites', 'The rats got you.'],
   cricket: ['a cave cricket', 'The cave crickets got you.'],
   dog: ['a feral dog bites', 'The dogs pulled you down.'],
+  eel: ['a brine eel strikes', 'Something in the water took you.'],
   lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
   murk: ['a Murk slime burns', 'The Murk swallowed you.'],
   'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],
