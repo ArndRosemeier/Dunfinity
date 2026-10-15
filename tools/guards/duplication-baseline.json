@@ -80,15 +80,7 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
   },
   {
-    "key": "same name: dunfinity/creatures/crickets.ts#denIn + dunfinity/creatures/rats.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
-  },
-  {
     "key": "same name: dunfinity/creatures/crickets.ts#denIn + dunfinity/creatures/touched.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
-  },
-  {
-    "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/touched.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
   },
   {
@@ -104,15 +96,87 @@
     "reason": "each kind's own part of the FigurePool seam (src/render/creatures/figures.ts): its parts and how one is posed"
   },
   {
-    "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/creatures/rats.ts + dunfinity/gen/quarryProps.ts",
-    "reason": "calls of the one seam (level.dry), not copies of it"
+    "key": "clone: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/slimes.ts#denIn",
+    "reason": "what is left of each kind's denIn/hatch after the Population seam (sites, floorFor, around, countIn): a loop over the seam's helpers with the kind's own checks and fields"
   },
   {
-    "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/crickets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/touched.ts",
-    "reason": "each creature's state machine entering a mode for a seeded random while; the modes and their timings differ per kind"
+    "key": "clone: dunfinity/creatures/rats.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
+    "reason": "what is left of each kind's denIn/hatch after the Population seam (sites, floorFor, around, countIn): a loop over the seam's helpers with the kind's own checks and fields"
   },
   {
-    "key": "idiom: [.position .set .visible .x .y .z] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/loot/findView.ts",
-    "reason": "each pooled figure shown at its thing's place; one line per figure, nothing to fold"
+    "key": "idiom: [.add .body .root] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
+    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+  },
+  {
+    "key": "idiom: [.body .position .root .set .visible .x .y .z] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
+    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+  },
+  {
+    "key": "idiom: [.deadT .min .mode Math] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
+    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+  },
+  {
+    "key": "idiom: [.health .height .radius] in dunfinity/creatures/crickets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "idiom: [.mode .range .rng .t .z] in dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/crickets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "idiom: [.slide .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/slimes.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#act + dunfinity/creatures/slimes.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/slimes.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#hatch + dunfinity/creatures/touched.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#sleep + dunfinity/creatures/slimes.ts#sleep",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/slimes.ts#act + dunfinity/creatures/touched.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/creatures/slimes.ts#hatch + dunfinity/creatures/touched.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the abstract hooks it asks for; shared work lives in Population and Steer"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#parts + dunfinity/render/creatures/slimeView.ts#parts",
+    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ratView.ts#parts + dunfinity/render/creatures/slimeView.ts#parts",
+    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and its own pose; the shared pool lives in figures.ts"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/slimeView.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
+    "reason": "pose of a slime figure vs a human's ladder pose: same per-frame verb, unrelated bodies"
   }
 ]

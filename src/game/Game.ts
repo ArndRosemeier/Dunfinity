@@ -21,6 +21,8 @@ import { SaltTouched, type Touched } from '../creatures/touched';
 import { TouchedView } from '../render/creatures/touchedView';
 import { Crickets, type Cricket, type Lamp } from '../creatures/crickets';
 import { CricketView } from '../render/creatures/cricketView';
+import { Slimes, type Slime } from '../creatures/slimes';
+import { SlimeView } from '../render/creatures/slimeView';
 import { damage, nearestReached, type Blow } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -59,6 +61,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let rats: Rats;
   let touched: SaltTouched;
   let crickets: Crickets;
+  let lumen: Slimes, murk: Slimes;
   /** Finds taken so far, per level: they stay taken for every grandchild (D13). */
   const taken = new Map<number, Set<number>>();
   let finds: Finds;
@@ -72,6 +75,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     rats = new Rats(l);
     touched = new SaltTouched(l);
     crickets = new Crickets(l);
+    lumen = new Slimes(l, 'lumen'); murk = new Slimes(l, 'murk');
     touchedView.level = l;
     finds = findsOf(l);
     view.go(l);
@@ -85,6 +89,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   rats = new Rats(level);
   touched = new SaltTouched(level);
   crickets = new Crickets(level);
+  lumen = new Slimes(level, 'lumen'); murk = new Slimes(level, 'murk');
   finds = findsOf(level);
   // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
   const touchedView = await TouchedView.create(params.seed);
@@ -102,6 +107,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(ratView.root);
   const cricketView = new CricketView();
   await view.stage.add(cricketView.root);
+  const slimeView = new SlimeView();
+  await view.stage.add(slimeView.root);
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
   const lampDir = new Vector3();
@@ -132,7 +139,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     body.facing = Math.atan2(-(f.x - body.x), -(f.z - body.z));
   };
   /** Everyone the knife can hit. */
-  const foes = (): (Rat | Touched | Cricket)[] => [...rats.list, ...touched.list, ...crickets.list];
+  const foes = (): (Rat | Touched | Cricket | Slime)[] => [...rats.list, ...touched.list, ...crickets.list, ...lumen.list, ...murk.list];
   const stab = (now: number): void => {
     stabAt = now;
     stabDone = false;
@@ -204,7 +211,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return rats; }, get touched() { return touched; }, get crickets() { return crickets; }, get finds() { return finds; }, get pack() { return pack; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return rats; }, get touched() { return touched; }, get crickets() { return crickets; }, get slimes() { return [lumen, murk]; }, get finds() { return finds; }, get pack() { return pack; },
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -230,7 +237,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); rats = new Rats(level); touched = new SaltTouched(level); crickets = new Crickets(level); pack = new Pack(); picking = null; }
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); rats = new Rats(level); touched = new SaltTouched(level); crickets = new Crickets(level); lumen = new Slimes(level, 'lumen'); murk = new Slimes(level, 'murk'); pack = new Pack(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     if (controls.tap('Mouse0') && !busy && now - stabAt > STAB.dur) stab(now);
@@ -280,16 +287,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
       crickets.advance(dt, body, lamp);
+      lumen.blockers = murk.blockers = view.props.blockers;
+      lumen.advance(dt, body, murk.list);
+      murk.advance(dt, body, lumen.list);
       if (body.health < health) {
         // Flinch away from the nearest foe (thrown back by a pick).
-        let near: Rat | Touched | Cricket | undefined, nd = Infinity;
+        let near: Rat | Touched | Cricket | Slime | undefined, nd = Infinity;
         for (const r of foes()) { const d = Math.hypot(r.x - body.x, r.z - body.z); if (!r.dead && d < nd) { nd = d; near = r; } }
         if (near) nobody.hit(body.x - near.x, body.z - near.z, struck ? 1 : 0.5);
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = rats.list.some((r) => (r.mode === 'chase' || r.mode === 'bite') && Math.hypot(r.x - body.x, r.z - body.z) < 14)
         || touched.list.some((t) => t.angry && !t.dead && Math.hypot(t.x - body.x, t.z - body.z) < 14)
-        || crickets.list.some((c) => c.angry && !c.dead && Math.hypot(c.x - body.x, c.z - body.z) < 14);
+        || crickets.list.some((c) => c.angry && !c.dead && Math.hypot(c.x - body.x, c.z - body.z) < 14)
+        || [...lumen.list, ...murk.list].some((s) => s.foe === body && !s.dead);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
       const action = stooping ? { id: 'pickup', t0: pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping);
@@ -300,6 +311,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     ratView.draw(rats.list, now);
     touchedView.draw(touched.list, body.x, body.z, dt, now);
     cricketView.draw(crickets.list, now);
+    slimeView.lumen.draw(lumen.list, now);
+    slimeView.murk.draw(murk.list, now);
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
@@ -312,6 +325,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (draft) lines.push(draft);
     }
     if (rats.killed) lines.push(`rats killed: ${rats.killed}`);
+    if (lumen.killed + murk.killed) lines.push(`slimes killed: ${lumen.killed + murk.killed}`);
     if (crickets.killed) lines.push(`cave crickets killed: ${crickets.killed}`);
     if (touched.killed) lines.push(`Salt-Touched laid to rest: ${touched.killed}`);
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
@@ -338,6 +352,8 @@ function bar(value: number, max: number): string {
 const HURT: Record<string, [string, string]> = {
   rat: ['a rat bites', 'The rats got you.'],
   cricket: ['a cave cricket', 'The cave crickets got you.'],
+  lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
+  murk: ['a Murk slime burns', 'The Murk swallowed you.'],
   'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],
   fall: ['a hard landing', 'You fell to your death.'],
 };

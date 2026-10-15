@@ -8,7 +8,7 @@
  * Pure: positions on the level's floor, blows through src/combat. Nests are fixed by the seed; the
  * rats of a nest exist only while you are near it, and the ones you killed stay dead on this visit.
  */
-import { Rng, deriveSeed, hash3f, angleDiff } from '@futuremagic/core';
+import { Rng, deriveSeed, angleDiff } from '@futuremagic/core';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { brake } from './steer';
@@ -86,17 +86,15 @@ export class Rats extends Population<Nest, Rat> {
   constructor(level: Level) {
     super(level, 'rats', RAT, { arrive: RAT.arrive, still: RAT.still, step: RAT.step, drop: RAT.drop, accel: 10, turn: 12, face: 15 });
     this.chance = Math.min(0.8, RAT.chance + 0.08 * (level.depth - 1));
+    this.apart = 1;
   }
 
   protected hatch(nest: Nest, killed: (id: number) => boolean): Rat[] {
     const rng = new Rng(deriveSeed(this.seed, 'nest', nest.key)), born: Rat[] = [];
     for (let k = 0; k < nest.count; k++) {
-      const id = nest.key * 16 + k;
-      const a = rng.range(0, Math.PI * 2), d = rng.range(0.3, 2.5), size = rng.range(0.85, 1.25), yaw = rng.range(0, Math.PI * 2);
+      const id = nest.key * 16 + k, [x, y, z] = this.around(nest, rng, 0.3, 2.5), size = rng.range(0.85, 1.25), yaw = rng.range(0, Math.PI * 2);
       if (killed(id)) continue;
-      const x = nest.x + Math.cos(a) * d, z = nest.z + Math.sin(a) * d;
-      const y = this.level.groundAt(x, z);
-      const r = new Rat(id, nest, x, Math.abs(y - nest.y) < 1 ? y : nest.y, z, yaw, size, k);
+      const r = new Rat(id, nest, x, y, z, yaw, size, k);
       r.t = rng.range(0.5, 3);
       born.push(r);
     }
@@ -110,18 +108,11 @@ export class Rats extends Population<Nest, Rat> {
 
   /** Where in cell (i, j) a nest is, if any: open, dry floor, away from the arrival and the shafts. */
   protected denIn(key: number, i: number, j: number): Nest | null {
-    const c = RAT.cell, s = this.seed;
-    if (hash3f(s, i, j, 0) > this.chance) return null;
-    const [ax, , az] = this.level.arrival;
-    for (let k = 0; k < 4; k++) {
-      const x = (i + 0.15 + 0.7 * hash3f(s, i, j, 1 + 2 * k)) * c, z = (j + 0.15 + 0.7 * hash3f(s, i, j, 2 + 2 * k)) * c;
-      if (Math.hypot(x - ax, z - az) < RAT.quiet) continue;
+    for (const [x, z] of this.sites(i, j, this.chance)) {
       const col = this.level.columnAt(x, z);
       if (col.pillarD < 2 || col.wall < 2) continue;
-      const y = this.level.groundAt(x, z);
-      if (!this.level.dry(x, z, 0.05) || this.level.sdf(x, y + 0.6, z) < 0.4 || this.level.descents.at(x, z, 4)) continue;
-      const count = RAT.count[0] + Math.floor(hash3f(s, i, j, 20) * (RAT.count[1] - RAT.count[0] + 1));
-      return { key, x, z, y, count, alarmed: false };
+      const y = this.floorFor(x, z, 0.6, 0.4);
+      if (y !== null) return { key, x, z, y, count: this.countIn(i, j, RAT.count), alarmed: false };
     }
     return null;
   }
@@ -207,21 +198,5 @@ export class Rats extends Population<Nest, Rat> {
   /** Move by the velocity where the floor allows; the gait follows the distance. */
   private slide(r: Rat, dt: number): void {
     r.gait += this.steer.slide(r, dt) / (0.09 * r.size);
-  }
-
-  /** Keep the living from standing in each other. */
-  protected settle(): void {
-    const L = this.list;
-    for (let a = 0; a < L.length; a++) {
-      if (L[a].dead) continue;
-      for (let b = a + 1; b < L.length; b++) {
-        if (L[b].dead) continue;
-        const dx = L[b].x - L[a].x, dz = L[b].z - L[a].z, d = Math.hypot(dx, dz), min = L[a].radius + L[b].radius;
-        if (d >= min || d < 1e-4) continue;
-        const push = (min - d) / 2 / d;
-        L[a].x -= dx * push; L[a].z -= dz * push;
-        L[b].x += dx * push; L[b].z += dz * push;
-      }
-    }
   }
 }

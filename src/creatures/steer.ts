@@ -39,6 +39,8 @@ export interface Gait {
   accel: number;
   turn: number;
   face: number;
+  /** Where it checks for rock in the way, as a share of its height over its feet (default 0.5625; wide, low walkers need it higher, or the floor itself is in the way). */
+  probe?: number;
 }
 
 export class Steer {
@@ -105,7 +107,7 @@ export class Steer {
   /** Can w stand at (x, z), coming from where it is: no wall, no prop, no step it cannot take, no drop, no deep water. */
   walkable(w: Walker, x: number, z: number): boolean {
     const l = this.level;
-    if (l.sdf(x, w.y + w.height * 0.5625, z) < w.radius * 0.8) return false;
+    if (l.sdf(x, w.y + w.height * (this.gait.probe ?? 0.5625), z) < w.radius * 0.8) return false;
     if (this.blockers?.hits(x, z, w.radius * 0.8, w.y + 0.05, w.y + 0.3)) return false;
     const g = l.groundAt(x, z);
     if (g - w.y > this.gait.step || w.y - g > this.gait.drop) return false;

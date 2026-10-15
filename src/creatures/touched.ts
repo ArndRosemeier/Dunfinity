@@ -87,12 +87,8 @@ export class SaltTouched extends Population<Spot, Touched> {
 
   /** Where in cell (i, j) one of them works, if any: dry floor against a pillar or a wall, away from the arrival. */
   protected denIn(key: number, i: number, j: number): Spot | null {
-    const c = TOUCHED.cell, s = this.seed, l = this.level;
-    if (hash3f(s, i, j, 0) >= l.band.touched) return null;
-    const [ax, , az] = l.arrival;
-    for (let k = 0; k < 6; k++) {
-      const x = (i + 0.1 + 0.8 * hash3f(s, i, j, 1 + 2 * k)) * c, z = (j + 0.1 + 0.8 * hash3f(s, i, j, 2 + 2 * k)) * c;
-      if (Math.hypot(x - ax, z - az) < TOUCHED.quiet) continue;
+    const l = this.level;
+    for (const [x, z] of this.sites(i, j, l.band.touched, 6, 0.1)) {
       const col = l.columnAt(x, z), d = rockDistance(col);
       if (d < 0.4 || d > 3 || col.rubble > 0.05 || col.collapse > 0) continue;
       const g = l.groundAt(x, z);
