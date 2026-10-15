@@ -61,6 +61,8 @@ const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
 const THROWING = { dur: 0.55, release: 0.22 };
 /** Grandma's Way Home: seconds with eyes shut before one is there, the last of them fading to black; salt rises every `motes` seconds. */
 const WAY_HOME = { dur: 4, fade: 1, motes: 0.5 };
+/** Grandma's pot lid: the block pose's length, seconds, and how far into it the lid is up (held by restarting it there). */
+const BLOCK = { dur: 0.6, held: 0.25, hold: 0.4 };
 /** Cooking a card at the fire: seconds the nobody stirs. */
 const COOK = { dur: 2.4 };
 
@@ -176,6 +178,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let rollAt = -9;
   /** Way Home under way: when it began, and the level it goes to (null: none). */
   let homeAt = -Infinity, homeTo: number | null = null, homeMote = 0;
+  /** When the lid's block pose (re)started. */
+  let blockAt = -Infinity;
   /** The last salt gained (its HUD line), and until when it shows. */
   let gainLine = '', gainUntil = 0;
   /** Salt formed at (x, y, z): it drifts into the tin, and the HUD says why. */
@@ -392,6 +396,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
     const stirring = now - cookAt < COOK.dur;
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
+    // Grandma's Pot Lid: hold X to keep it up between you and whatever it is.
+    body.lid = cooked.lid;
+    nobody.lid = !!cooked.lid;
+    body.guarding = !!cooked.lid && controls.held('KeyX') && !busy && !tinView.open && !body.rolling && homeTo === null && now - stabAt > stabDur;
+    if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
     if (climb.active) {
       climb.advance(dt, timer.getElapsed());
       body.x = climb.pos.x; body.y = climb.pos.y; body.z = climb.pos.z;
@@ -407,7 +416,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
       const stabbing = now - stabAt < stabDur, throwing = now - throwAt < THROWING.dur;
       if (stabbing) body.facing = stabYaw;
-      if (throwing) body.facing = cam.yaw;
+      if (throwing || body.guarding) body.facing = cam.yaw;
       if (!released && now - throwAt >= THROWING.release) {
         released = true;
         const hx = body.x - Math.sin(cam.yaw) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(cam.yaw) * 0.3;
@@ -476,8 +485,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
         }
       }
       const lighting = campfire.kindling(now);
-      const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
+      const blocking = now - blockAt < BLOCK.dur;
+      const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.resting || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }

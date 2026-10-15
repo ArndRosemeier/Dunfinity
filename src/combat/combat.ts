@@ -19,6 +19,11 @@ export interface Fighter {
   readonly dead: boolean;
   /** Out of the way of blows just now (the nobody mid-roll): a blow misses, and pushes nothing. */
   readonly evading?: boolean;
+  /**
+   * The share of a blow from (fromX, fromZ) that gets through its guard (1: no guard), called once
+   * per blow (it may cost the guard something).
+   */
+  shield?(fromX: number, fromZ: number): number;
   /** How far off things notice it, a share of their usual (the nobody tiptoeing: grandma's Tiptoe card). */
   readonly hush?: number;
   /** Take `amount` of health; `cause` says what for (the death screen tells it). */
@@ -80,7 +85,9 @@ export function nearestReached<T extends Fighter>(b: Blow, targets: Iterable<T>)
 /** `amount` of damage to `t` from a blow struck at (fromX, fromZ), knocking it back at `knock` m/s. */
 export function damage(t: Fighter, amount: number, fromX: number, fromZ: number, knock: number, cause: string): void {
   if (t.dead || amount <= 0 || t.evading) return;
-  t.hurt(amount, cause);
+  const through = t.shield?.(fromX, fromZ) ?? 1;
+  amount *= through; knock *= through;
+  if (amount > 0) t.hurt(amount, cause);
   const dx = t.x - fromX, dz = t.z - fromZ, d = Math.hypot(dx, dz) || 1;
   t.vx += (dx / d) * knock;
   t.vz += (dz / d) * knock;

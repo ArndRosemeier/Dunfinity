@@ -104,16 +104,37 @@ function crowbar(): Object3D {
   return g;
 }
 
+/**
+ * Grandma's pot lid, as a shield (grip space as the humanoid straps a shield to the forearm: its
+ * face out along +z): dented blue enamel, a black rim and a wooden knob.
+ */
+function potLid(): Object3D {
+  const enamel = new PropBuilder(), wood = new PropBuilder();
+  enamel.cylinder(0, 0, 0, 0.17, 0.008, [0.16, 0.24, 0.38], 20);
+  enamel.cylinder(0, 0, 0, 0.175, 0.004, [0.05, 0.05, 0.06], 20);
+  enamel.ellipsoid(0.06, 0.012, 0.03, 0.04, 0.006, 0.035, [0.12, 0.17, 0.26], 6); // the dent
+  wood.cylinder(0, 0.025, 0, 0.022, 0.015, [0.2, 0.12, 0.06], 8);
+  const g = new Group();
+  for (const [b, kind] of [[wood, VERTEX_COLOR_SOLID], [enamel, METAL]] as const) {
+    const m: Mesh = meshFromData(b.build()!, kind);
+    m.rotation.x = Math.PI / 2; // built face up (+y); the shield's face is +z
+    m.matrixAutoUpdate = true;
+    g.add(m);
+  }
+  return g;
+}
+
 /** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
 const KNIFE_TILT = 2.7;
 
 export const WARDROBE: Wardrobe = {
   resolve,
-  itemDef: (defId) => (defId === 'knife' ? { visual: { shape: 'knife' }, category: 'weapon' } : { visual: { shape: defId } }),
+  itemDef: (defId) => (defId === 'knife' ? { visual: { shape: 'knife' }, category: 'weapon' } : defId === 'potlid' ? { visual: { shape: 'shield-potlid' }, category: 'shield' } : { visual: { shape: defId } }),
   buildItem: (defId) => {
     if (defId === 'knife') return kitchenKnife();
     if (defId === 'pick') return minersPick();
     if (defId === 'crowbar') return crowbar();
+    if (defId === 'potlid') return potLid();
     throw new Error(`no held item "${defId}"`);
   },
   disposeItem: (o) => o.traverse((m) => (m as Mesh).geometry?.dispose()),
@@ -153,17 +174,19 @@ const SHROUD: Outfit = {
   hand: null,
 };
 
-function dressIn(o: Outfit, seed: number): EquipmentVisuals {
+function dressIn(o: Outfit, seed: number, lid = false): EquipmentVisuals {
   const eq: EquipmentVisuals = {};
   o.clothes.forEach(([slot, defId, a, b, wear], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear) }; });
   if (o.hand) {
     const [defId, a, b, wear] = o.hand;
     eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: defId, material: 'metal' } };
   }
+  if (lid) eq.offhand = { defId: 'potlid', visual: { ...visual(seed + 4, [0.16, 0.24, 0.38], [0.05, 0.05, 0.06], 0.4), shape: 'shield-potlid', material: 'metal' } };
   return eq;
 }
 
-export const rags = (seed: number): EquipmentVisuals => dressIn(RAGS, seed);
+/** A grandchild's rags and grandma's knife; `lid`: and her pot lid (the Pot Lid card). */
+export const rags = (seed: number, lid = false): EquipmentVisuals => dressIn(RAGS, seed, lid);
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
 export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);

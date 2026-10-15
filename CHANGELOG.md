@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.050 — Pot Lid
+
+- A new card in grandma's tin: **Pot Lid** (Guard). Its divider opens once one of the family has reached level 10. Once it is cooked, the dented lid of her big pot hangs on your back. Hold X to raise it and face where you look, walking slowly behind it.
+- Blows from in front then do only 30% and knock you back less, but each one costs some breath. At rank 2 they do only 10%, and each costs less breath. Blows from behind, or when you are out of breath, get through.
+
 ## v0.049 — Tenderising
 
 - A new card in grandma's tin: **Tenderising** (Heavy Things). Its divider opens once one of the family has reached level 5. Once it is cooked, V turns the knife round and brings the handle down overhead with both hands. It is slower than a stab but hits harder (14–20) and knocks things far back, and it costs a little stamina. At rank 2 it hits harder still and strikes everything in reach.

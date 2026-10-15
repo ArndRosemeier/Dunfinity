@@ -19,6 +19,8 @@ export const MOVE = {
   sprint: 7,
   /** Speed walking through water deeper than the knees. */
   wade: 2.6,
+  /** Walking with the pot lid up. */
+  guarded: 2,
   swim: 2.4,
   jump: 6.2,
   gravity: 18,
@@ -58,6 +60,9 @@ export interface BodyInput {
 
 export type BodyMode = 'walk' | 'climb' | 'swim';
 
+/** The lid covers blows from this far either side of where the nobody faces, radians. */
+const GUARD_ARC = 1.2;
+
 /** Sphere centres above the feet. */
 const SPHERES = [MOVE.radius, MOVE.height / 2, MOVE.height - MOVE.radius];
 
@@ -85,6 +90,10 @@ export class Body {
   tiptoe: { readonly speed: number; readonly hush: number } | null = null;
   /** Tiptoeing this step. */
   sneaking = false;
+  /** Grandma's pot lid (the Pot Lid card), if cooked: the share of a blow that gets through it, and the stamina a blocked blow costs. */
+  lid: { readonly through: number; readonly cost: number } | null = null;
+  /** Holding the lid up (set by the game each step; only counts while walking on the floor). */
+  guarding = false;
   /** Facing, radians (same convention as the camera yaw). */
   facing = 0;
   /** The wall being climbed: its normal. */
@@ -110,6 +119,19 @@ export class Body {
   }
 
   get dead(): boolean { return this.health <= 0; }
+
+  /** A blow from (fromX, fromZ): what gets through the raised lid, if it comes from in front (`Fighter.shield`). */
+  shield(fromX: number, fromZ: number): number {
+    if (!this.lid || !this.guarding || this.mode !== 'walk' || this.stamina < this.lid.cost) return 1;
+    const a = Math.atan2(-(fromX - this.x), -(fromZ - this.z)), d = Math.abs(Math.atan2(Math.sin(a - this.facing), Math.cos(a - this.facing)));
+    if (d > GUARD_ARC) return 1;
+    this.stamina -= this.lid.cost;
+    this.blockedAt = this.time;
+    return this.lid.through;
+  }
+
+  /** Body time of the last blow the lid stopped. */
+  blockedAt = -Infinity;
 
   /** How far off things notice the nobody, a share of their usual (`Fighter.hush`). */
   get hush(): number { return this.sneaking ? this.tiptoe!.hush : 1; }
@@ -194,7 +216,7 @@ export class Body {
     }
     const sprint = input.sprint && this.stamina > 0;
     this.sneaking = !!input.sneak && !!this.tiptoe && !sprint && depth <= 0.5 && this.grounded;
-    const speed = depth > 0.5 ? MOVE.wade : sprint ? MOVE.sprint : this.sneaking ? this.tiptoe!.speed : MOVE.walk;
+    const speed = depth > 0.5 ? MOVE.wade : sprint && !this.guarding ? MOVE.sprint : this.guarding ? MOVE.guarded : this.sneaking ? this.tiptoe!.speed : MOVE.walk;
     if (sprint && this.grounded && Math.hypot(mx, mz) > 0.1) this.stamina = Math.max(0, this.stamina - 0.5 * dt);
     const accel = this.grounded ? 30 : 5;
     this.vx += clampStep(mx * speed - this.vx, accel * dt);

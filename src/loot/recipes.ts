@@ -10,7 +10,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid';
 
 export interface Card {
   readonly id: CardId;
@@ -99,6 +99,14 @@ export const CARDS: readonly Card[] = [
     cost: [5, 9],
     does: ['V: an overhead blow with the knife\'s handle, 14–20 damage, knocks it far back; costs 3 stamina', '18–26 damage to everything in reach'],
   },
+  {
+    id: 'pot-lid', title: 'Pot Lid', chapter: 'Guard',
+    need: 'the lid of the big pot, the one with the dent. Your grandfather made the dent. The other fellow came off worse.',
+    method: 'Hold it up between you and whatever it is. Things that bite get a mouthful of enamel.',
+    ranks: ['Lean into it. Don\'t flinch, it\'s only a lid.'],
+    cost: [8, 14],
+    does: ['hold X: raise the lid; blows from in front do 30% and knock you less; each one costs 1.5 stamina', 'blows from in front do 10%; each costs 1 stamina'],
+  },
 ];
 
 /** The chapters in the tin's order, and the depth each opens at (recipe-box.md §6). */
@@ -182,6 +190,11 @@ export class Cooked {
   get tenderising(): { damage: readonly [number, number]; all: boolean } | null {
     const r = this.rank('tenderising');
     return r === 0 ? null : r === 1 ? { damage: [14, 20], all: false } : { damage: [18, 26], all: true };
+  }
+
+  /** Grandma's Pot Lid (hold X), if cooked: the share of a blow from in front that gets through, and the stamina each costs. */
+  get lid(): { through: number; cost: number } | null {
+    return [null, { through: 0.3, cost: 1.5 }, { through: 0.1, cost: 1 }][this.rank('pot-lid')];
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */
