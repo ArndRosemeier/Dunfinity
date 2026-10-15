@@ -186,6 +186,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Show the ability bar (a slot per ability: number, key, how soon it is ready; a click uses it) | `AbilityBar` (`paint(bar, states, passives, hide)`) | `src/app/abilityBar.ts` |
 | Tab targeting: which foe Tab picks next, when it is let go, the yaw to it | `nextTarget`, `candidates`, `keeps`, `yawTo`, `TARGET` | `src/game/target.ts` |
 | Mark the Tab target on screen (chevron and health) | `TargetMark` (`paint(camera, x, y, z, left)`) | `src/app/targetMark.ts` |
+| Show grandma's salt-magic cast (flame, the larder's cold and frost glinting on what it caught, the rolling pin's shove) | `SpellView` (`flame`, `frost`, `glint`, `push`, `place(now)`) | `src/render/spells.ts` |
+| Slow a creature (Cold Larder): all its movement through `Steer.slide` | `walker.chill = { left, by }` | `src/creatures/steer.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
 | Remember what a grandchild has seen of each level (exploration memory) | `Explored` (`see(level, x, y, z)`, `has(depth, i, j)`, `cells`, `data`/`from`), `EXPLORE` | `src/world/explored.ts` |
 | A DOM panel of the game (its stylesheet and element), and an element in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)` | `src/app/panel.ts` |
