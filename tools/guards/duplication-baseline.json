@@ -180,6 +180,10 @@
     "reason": "reading a creature's place and heading (x, y, z, yaw) off the Creature fields where it is spawned or followed; the fields are the seam, there is nothing to fold"
   },
   {
+    "key": "idiom: [.columnAt .level] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/gen/quarryProps.ts",
+    "reason": "asking the level's column at a spot (level.columnAt) is the seam itself; each caller then checks its own thing there (den room, pillars, walls). Surfaced by the corpus growing (genome.ts), not by a new copy."
+  },
+  {
     "key": "same name: core/heap.ts#size + dunfinity/workers/pool.ts#size",
     "reason": "one-line getters that return a length; same shape, unrelated meaning"
   },
