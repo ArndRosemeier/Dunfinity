@@ -8,7 +8,7 @@
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, Vector3, type Material, type Node } from 'three/webgpu';
-import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, mod, mx_fractal_noise_float, mx_noise_float, normalize, normalView, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, mix, mod, mx_fractal_noise_float, mx_noise_float, mx_worley_noise_vec2, normalize, normalView, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -60,18 +60,38 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color'], () => {
   const p = positionWorld;
   const mottle = mx_fractal_noise_float(p.mul(0.32), 3, 2.0, 0.5); // about -1..1, metres-wide patches
   const grain = mx_noise_float(p.mul(9.0)); // centimetre grain
-  // Bedding: thin dark seams along the strata, wavering; only on steep faces (not the dusty floors).
   const steep = smoothstep(0.75, 0.35, abs(normalWorld.y));
+  const flat = float(1).sub(steep);
+  // Bedding: thin dark seams along the strata, wavering; only on steep faces (not the dusty floors).
   const bed = mx_noise_float(p.mul(vec3(0.05, 0.6, 0.05))); // which beds show a seam, and how strongly
   const seam = smoothstep(0.95, 0.995, abs(sin(p.y.mul(1.9).add(mottle.mul(2.2))))).mul(smoothstep(-0.1, 0.4, bed)).mul(steep);
-  const flat = float(1).sub(steep);
-  const grit = mx_noise_float(p.mul(23.0)).mul(flat); // dust and grit on the floors
-  const shade = float(1).add(mottle.mul(0.12)).add(grain.mul(0.04)).add(grit.mul(0.07)).sub(seam.mul(0.25));
-  m.colorNode = vertexColor().mul(shade);
-  // Height for the bump: broad lumps, a chiselled roughness, the seams cut in.
-  const height = mottle.mul(0.35).add(mx_noise_float(p.mul(3.1)).mul(0.12)).sub(seam.mul(0.12));
+  // The miners' pick marks (as much as the band's rock was cut by hand): shallow parallel scallops
+  // across the walls, slanting one way or the other course by course.
+  const lean = smoothstep(-0.15, 0.15, mx_noise_float(p.mul(vec3(0.22, 1.1, 0.22)).add(31.7)));
+  const across = p.x.add(p.z).mul(4.2).add(mottle.mul(2.5));
+  const pick = mix(sin(across.add(p.y.mul(2.6))), sin(across.sub(p.y.mul(2.6))), lean).mul(0.5).add(0.5).pow(3);
+  const tool = pick.mul(steep).mul(ROCK_TOOLED).mul(smoothstep(-0.3, 0.3, mx_noise_float(p.mul(0.4).add(5.3))));
+  // Cracks in the walls: the edges of cells, strongly warped (no tiles), in some stretches only.
+  const warp = vec3(mottle.mul(0.9), mx_noise_float(p.mul(0.9).add(8.2)).mul(0.5), mottle.mul(-0.7));
+  const cells = mx_worley_noise_vec2(p.mul(vec3(0.45, 0.3, 0.45)).add(warp));
+  const crack = smoothstep(0.045, 0.0, cells.y.sub(cells.x)).mul(smoothstep(0.2, 0.55, mx_noise_float(p.mul(0.12).add(-3.1)))).mul(steep);
+  // Iron and damp staining running down the walls; on the floors, damp patches and grit.
+  const streak = smoothstep(0.15, 0.65, mx_noise_float(p.mul(vec3(0.7, 0.07, 0.7)).add(13.7))).mul(steep);
+  const damp = smoothstep(0.3, 0.7, mx_noise_float(p.mul(0.18).add(vec3(2.1, 0, -6.4)))).mul(flat);
+  const grit = mx_noise_float(p.mul(23.0)).mul(flat);
+  // Height for the bump: broad lumps, a chiselled roughness, the seams, pick marks and cracks cut in.
+  const height = mottle.mul(0.35).add(mx_noise_float(p.mul(3.1)).mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.14)).sub(crack.mul(0.2));
   m.normalNode = bumped(height, 0.35);
-  m.roughnessNode = float(0.9).add(grain.mul(0.06));
+  // Colour: broad warmer and cooler stretches of stone, darker in the hollows, the seams and cracks
+  // darker still, rust-brown streaks down the walls, damp darker floors.
+  const tint = mx_fractal_noise_float(p.mul(0.06).add(17.0), 2, 2.0, 0.5);
+  const hue = mix(mix(vec3(1, 1, 1), vec3(1.1, 0.97, 0.82), smoothstep(0.0, 0.5, tint)), vec3(0.88, 0.92, 0.98), smoothstep(0.0, -0.5, tint));
+  const shade = float(0.92).add(mottle.mul(0.16)).add(grain.mul(0.05)).add(grit.mul(0.08))
+    .sub(seam.mul(0.3)).sub(tool.mul(0.12)).sub(crack.mul(0.55)).sub(damp.mul(0.25))
+    .mul(smoothstep(-0.55, 0.35, height).mul(0.3).add(0.7));
+  const rust = mix(vec3(1, 1, 1), vec3(0.95, 0.78, 0.6), streak.mul(0.6));
+  m.colorNode = vertexColor().mul(shade).mul(hue).mul(rust);
+  m.roughnessNode = float(0.9).add(grain.mul(0.06)).sub(damp.mul(0.35));
   // Veins of infused salt (the Salt Works): thin glowing blue lines where a noise crosses zero,
   // branching finer near the main ones, only in some stretches of rock, pulsing slowly.
   const line = float(1).sub(abs(mx_noise_float(p.mul(0.16).add(vec3(mottle.mul(0.7))))));
@@ -87,6 +107,9 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color'], () => {
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);
+
+/** How much the rock shows the miners' pick marks (the level's band: `band.tooled`). Set by `LevelView`. */
+export const ROCK_TOOLED = uniform(1);
 
 /** The view normal bent by a procedural `height` (Mikkelsen 2010, forward differences in screen space). */
 function bumped(height: Node<'float'>, scale: number) {

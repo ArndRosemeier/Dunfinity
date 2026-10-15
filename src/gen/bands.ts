@@ -32,6 +32,8 @@ export interface Band {
   readonly natural: readonly [number, number, number];
   /** How strongly veins of glowing blue infused salt show in the rock (0: none). */
   readonly veins: number;
+  /** How much of the rock was cut by hand: the miners' pick marks on its walls (1: every wall; 0: natural or built). */
+  readonly tooled: number;
   /** Loose stones, cut blocks and carvings: their colour. */
   readonly stone: readonly [number, number, number];
   /** What the miners left (src/gen/quarryProps.ts): the share of things against the rock that are carvings (statues of miners, chapels), and the chance per open spot of an electric lamp hanging from the roof. */
@@ -70,7 +72,7 @@ export const QUARRY: Band = {
   flutes: 0, fluteCount: 0,
   water: [-3.7, 1.3],
   rock: [0.46, 0.42, 0.35], layers: [0.05, 0.045, 0.035], dust: [0.08, 0.075, 0.065], natural: [0.82, 0.82, 0.85],
-  veins: 0,
+  veins: 0, tooled: 1,
   stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
   touched: 0, crickets: 0.22, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0.3,
   lamplight: 1,
@@ -86,7 +88,7 @@ export const SALT: Band = {
   flutes: 0.35, fluteCount: 4,
   water: [-2.4, 1.6],
   rock: [0.31, 0.32, 0.34], layers: [0.12, 0.12, 0.125], dust: [0.1, 0.1, 0.1], natural: [0.7, 0.72, 0.76],
-  veins: 1,
+  veins: 1, tooled: 0.7,
   stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
   touched: 0.35, crickets: 0.25, dogs: 0, eels: 0.5, scavengers: 0.3, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
@@ -106,7 +108,7 @@ export const CISTERN: Band = {
   flutes: 0, fluteCount: 0,
   water: [-0.5, 0.6],
   rock: [0.37, 0.36, 0.33], layers: [0.025, 0.025, 0.022], dust: [0.06, 0.06, 0.055], natural: [0.62, 0.6, 0.56],
-  veins: 0.1,
+  veins: 0.1, tooled: 0.15,
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
   touched: 0.12, crickets: 0, dogs: 0.35, eels: 0.6, scavengers: 0.35, caverns: 0, ruins: 0, older: 0.14, uphill: 0.12, chalk: 0,
   lamplight: 1,
@@ -126,7 +128,7 @@ export const THRESHOLD: Band = {
   flutes: 0, fluteCount: 0,
   water: [-2.8, 1.8],
   rock: [0.33, 0.3, 0.27], layers: [0.06, 0.05, 0.04], dust: [0.07, 0.065, 0.055], natural: [0.78, 0.76, 0.74],
-  veins: 0.5,
+  veins: 0.5, tooled: 0.1,
   stone: [0.36, 0.33, 0.3], carvings: 0, hanging: 0.12, machines: 0,
   touched: 0.06, crickets: 0.3, dogs: 0, eels: 0.4, scavengers: 0.2, caverns: 0.5, ruins: 0.2, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
@@ -137,7 +139,7 @@ export const THRESHOLD: Band = {
 export const CELLAR_BAND: Band = {
   ...QUARRY,
   id: 'cellar', name: 'Grandma\'s cellar',
-  touched: 0, crickets: 0, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0, carvings: 0, hanging: 0, machines: 0, veins: 0,
+  touched: 0, crickets: 0, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0, carvings: 0, hanging: 0, machines: 0, veins: 0, tooled: 0,
   lamplight: 0.12, // (bulbs in small brick rooms)
 };
 

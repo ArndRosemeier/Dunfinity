@@ -33,7 +33,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | A small hand-built mesh posed per frame (creature parts, finds) | `meshOf(build, kind)` | `src/render/meshes.ts` |
 | Show a level's props (rails, lamps, shacks) around the viewer | `Props` (streams tiles) | `src/render/props/Props.ts` |
 | Which meshes cast and receive the headlamp's shadow | the material kind's `shadow` flags, set by `meshFromData` (never per mesh) | `src/render/materials.ts` |
-| How strongly the rock's veins glow (per band) | `ROCK_VEINS.value`, set by `LevelView` from `level.band.veins` | `src/render/materials.ts` |
+| How strongly the rock's veins glow, and how much it shows pick marks (per band) | `ROCK_VEINS.value`, `ROCK_TOOLED.value`, set by `LevelView` from `level.band.veins` / `level.band.tooled` | `src/render/materials.ts` |
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
 | Dust in the air, seen in the headlamp's beam | `Dust` (one mesh of the `DUST` kind; `follow(lamp)` each frame) | `src/render/dust.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later; `power` from `band.lamplight`) | `src/render/props/lamps.ts` |
