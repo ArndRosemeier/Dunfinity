@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.100 — Smoother cave floors
+
+- Where a cave's tube meets a chamber whose floor lies a few metres higher or lower, the floor now rises over a longer stretch instead of jumping. That is gentler underfoot and leaves fewer odd ledges in the karst caves, root hollows and fungal grottoes.
+
 ## v0.099 — Basalt columns, and things on the new floors
 
 - A twelfth kind of place: where a thick flow cooled slowly and cracked into hexagonal columns. The whole floor is column tops 4 m across, each a step above or below its neighbours, so you hop and climb your way across. Towards the walls the columns rise like giant stairs, and the walls are columns standing to the roof like organ pipes. The basalt is black-grey, every column a shade of its own, with a pale rim round each top. Try `?style=basalt`.
