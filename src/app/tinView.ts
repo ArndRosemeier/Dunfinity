@@ -6,6 +6,7 @@
 import { SKILLS, type Practice, type Skill } from '../loot/practice';
 import { CARDS, CHAPTERS, type CardId, type Cooked } from '../loot/recipes';
 import type { Tin } from '../loot/tin';
+import { panel } from './panel';
 
 const STYLE = `
   #tin { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow-y: auto;
@@ -29,14 +30,10 @@ const STYLE = `
   #tin .keys { margin-top: 10px; font: 12px system-ui, sans-serif; color: #6d5a3d; }`;
 
 export class TinView {
-  private readonly el = document.createElement('div');
+  private readonly el: HTMLDivElement;
 
   constructor(host: HTMLElement) {
-    const style = document.createElement('style');
-    style.textContent = STYLE;
-    document.head.appendChild(style);
-    this.el.id = 'tin';
-    host.appendChild(this.el);
+    this.el = panel(host, 'div', 'tin', STYLE);
   }
 
   get open(): boolean {
