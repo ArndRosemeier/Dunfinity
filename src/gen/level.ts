@@ -125,6 +125,11 @@ export class Level {
     return s ? shaftAir(s, d, x, y, z) : d;
   }
 
+  /** Whether the rock nearest (x, y, z) can be climbed (the field's say: built walls cannot). */
+  climbable(x: number, y: number, z: number): boolean {
+    return this.field.climbable(x, y, z);
+  }
+
   /**
    * Which way the rock faces at (x, y, z): the field's gradient, normalised (pointing into the air),
    * written into `out`. From four samples on a tetrahedron, `e` metres apart.

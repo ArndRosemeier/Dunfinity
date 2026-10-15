@@ -81,6 +81,29 @@ test("a body fits through every way out of grandma's room: the doorway, the arch
   assert.ok(west.x < -6.2 && west.y > 0.8, `through the doorway and up the stairs: stopped at x ${west.x.toFixed(2)}, y ${west.y.toFixed(2)}`);
 });
 
+test("making straight for a way out from anywhere in her room gets one through: her walls slide one along, they are not climbed", () => {
+  const blockers = new Blockers();
+  for (let tz = -1; tz <= 0; tz++) for (let tx = -1; tx <= 1; tx++) blockers.set(`${tx},${tz}`, quarryProps(level, tx, tz).blockers);
+  const go = (sx: number, sz: number, tx: number): Body => {
+    const b = new Body(sx, 0, sz);
+    const dt = 1 / 120;
+    for (let t = 0; t < 8 && Math.hypot(tx - b.x, b.z) > 0.3; t += dt) {
+      b.step(level, { forward: 1, right: 0, yaw: Math.atan2(-(tx - b.x), b.z), sprint: false, jump: false }, dt, blockers);
+    }
+    return b;
+  };
+  // From round the wall of the room, at a slant to the doorway (west) and to the arch (east); not from behind her chair or table.
+  for (const [sx, sz] of [[4.6, 1.2], [4.6, -1.2], [5.5, 1.6], [5.5, -1.6], [6.6, 1.9], [6.6, -1.9]]) {
+    const w = go(sx, sz, 1.5);
+    assert.ok(w.x < 2 && w.mode === 'walk', `to the doorway from (${sx}, ${sz}): stopped at (${w.x.toFixed(2)}, ${w.z.toFixed(2)}), ${w.mode}`);
+  }
+  for (const [sx, sz] of [[5.5, 1.6], [5.5, -1.6], [7.5, 1.4], [7.5, -1.4], [6.6, 1.9], [6.6, -1.9]]) {
+    const e = go(sx, sz, 11.5);
+    assert.ok(e.x > 11 && e.mode === 'walk', `to the arch from (${sx}, ${sz}): stopped at (${e.x.toFixed(2)}, ${e.z.toFixed(2)}), ${e.mode}`);
+  }
+  assert.ok(!level.climbable(4.9, 1, 0.75) && !level.climbable(-11, 3.5, 4.1) && level.climbable(12, 1, 0.9), 'bricks and plaster no, the mine yes');
+});
+
 test('its one way down is the old shaft, and level 1 has its way up', () => {
   assert.equal(level.descents.nearest(0, 0, 5000), CELLAR_SHAFT);
   assert.equal(level.descents.nearest(500, 500, 300), null);

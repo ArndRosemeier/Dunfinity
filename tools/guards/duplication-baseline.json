@@ -148,10 +148,6 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the abstract hooks it asks for; shared work lives in Population, Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/foreman.ts#hurt + dunfinity/world/traverse/body.ts#hurt",
-    "reason": "both implement Fighter.hurt; the Foreman's scales the amount by his salt crust and passes it on to Creature.hurt"
-  },
-  {
     "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/touched.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the abstract hooks it asks for; shared work lives in Population, Steer and pick.ts"
   },

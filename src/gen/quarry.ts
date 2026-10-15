@@ -315,6 +315,11 @@ export class QuarryField {
     return this.band.water[0] + this.band.water[1] * (0.5 + 0.5 * this.noise.n2(x / 450 - 17.9, z / 450 + 41.3));
   }
 
+  /** Whether the rock nearest (x, y, z), a point in the air, can be climbed: all rock can (decision L1); built walls (src/gen/cellar.ts) cannot. */
+  climbable(_x: number, _y: number, _z: number): boolean {
+    return true;
+  }
+
   /** The field at height y in a column filled by `column`. */
   at(col: Column, x: number, y: number, z: number): number {
     let pillar = col.pillarD;

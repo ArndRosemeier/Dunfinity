@@ -3,7 +3,7 @@
  * movement, pure so the generator's reachability check and tests can run it too.
  *
  * The body is a capsule (three spheres stacked) pushed out of the rock along the field's gradient.
- * Any rock is climbable while stamina lasts, except overhangs (decision L1). Water deeper than the
+ * Any rock is climbable while stamina lasts, except overhangs (decision L1) and built walls (`level.climbable`). Water deeper than the
  * chest is swum. Landing too hard hurts.
  */
 import type { Blockers } from '../blockers';
@@ -81,6 +81,8 @@ export class Body {
   health: number = MOVE.maxHealth;
   /** What climbing costs in stamina, a share of the plain cost (grandma's Kneading card lowers it). */
   climbCost = 1;
+  /** What share of a blow hurts (a miner's helmet from Kemal's, src/loot/hardware.ts). */
+  armour = 1;
   /** Seconds since a roll began (Infinity: none yet), which way it goes, and the part of it that blows miss (seconds from its start). */
   rollT = Infinity;
   private rollX = 0;
@@ -198,8 +200,9 @@ export class Body {
     input.jump = false;
   }
 
-  /** Take damage: a hard landing, or a blow (through `combat.damage`, src/combat/combat.ts). */
+  /** Take damage: a hard landing, or a blow (through `combat.damage`, src/combat/combat.ts; `armour` takes a share off a blow). */
   hurt(amount: number, cause: string): void {
+    if (cause !== 'fall') amount *= this.armour;
     this.health = Math.max(0, this.health - amount);
     this.lastHurt = amount;
     this.hurtAt = this.time;
@@ -305,7 +308,7 @@ export class Body {
         // Out of a floor straight up (no sliding down slopes while standing), out of a wall along its normal.
         if (n[1] > MOVE.floorY) this.y += push / n[1];
         else { this.x += n[0] * push; this.y += n[1] * push; this.z += n[2] * push; }
-        if (n[1] <= MOVE.floorY && n[1] > MOVE.overhangY) { this.touch[0] = n[0]; this.touch[1] = n[1]; this.touch[2] = n[2]; this.touching = true; }
+        if (n[1] <= MOVE.floorY && n[1] > MOVE.overhangY && level.climbable(this.x, cy, this.z)) { this.touch[0] = n[0]; this.touch[1] = n[1]; this.touch[2] = n[2]; this.touching = true; }
         const vn = this.vx * n[0] + this.vy * n[1] + this.vz * n[2];
         if (vn < 0) {
           impact = Math.max(impact, -vn);
