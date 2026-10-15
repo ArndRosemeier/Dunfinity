@@ -5,6 +5,7 @@
  * wheel to first person.
  */
 import { Timer, Vector3 } from 'three/webgpu';
+import { CELLAR } from '../gen/cellar';
 import { Level } from '../gen/level';
 import { CAMP, NOTE } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
@@ -102,7 +103,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
-    return arrive();
+    const b = arrive();
+    // In grandma's cellar: by her armchair, facing the broken arch.
+    if (level.depth === 0 && !params.pos) b.facing = cam.yaw = CELLAR.start.yaw;
+    return b;
   };
   fauna = new Fauna(level);
   /** The nobody's own fire to rest by (one at a time). */
@@ -470,7 +474,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
 }
 
 function levelName(level: Level): string {
-  return `Level ${level.depth} · ${level.band.name}`;
+  return level.depth ? `Level ${level.depth} · ${level.band.name}` : level.band.name;
 }
 
 function bar(value: number, max: number): string {

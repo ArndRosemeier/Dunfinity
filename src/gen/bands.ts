@@ -4,7 +4,7 @@
  * many looks: a band is data, not a second generator.
  */
 export interface Band {
-  readonly id: 'quarry' | 'salt' | 'cistern' | 'threshold';
+  readonly id: 'cellar' | 'quarry' | 'salt' | 'cistern' | 'threshold';
   /** Shown on arrival: "Level 3 · The Salt Works". */
   readonly name: string;
   /** Workings: the chance of a grand hall (few, massive pillars) and of a cathedral (very tall). */
@@ -57,6 +57,8 @@ export interface Band {
   readonly uphill: number;
   /** The chance per pillar of a chalk number on it (the Quarry): metres to the nearest way down, in tens (src/gen/quarryProps.ts). */
   readonly chalk: number;
+  /** How bright a burning lamp is (1: the mines' lamps, hung to light a hall; less in small rooms). */
+  readonly lamplight: number;
 }
 
 export const QUARRY: Band = {
@@ -71,6 +73,7 @@ export const QUARRY: Band = {
   veins: 0,
   stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
   touched: 0, crickets: 0.22, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0.3,
+  lamplight: 1,
 };
 
 /** The salt mine proper (levels 3–5): cathedral chambers carved by miners, fluted pillars, brine lakes, the first veins of infused salt. */
@@ -86,6 +89,7 @@ export const SALT: Band = {
   veins: 1,
   stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
   touched: 0.35, crickets: 0.25, dogs: 0, eels: 0.5, scavengers: 0.3, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0,
+  lamplight: 1,
 };
 
 /**
@@ -105,6 +109,7 @@ export const CISTERN: Band = {
   veins: 0.1,
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
   touched: 0.12, crickets: 0, dogs: 0.35, eels: 0.6, scavengers: 0.35, caverns: 0, ruins: 0, older: 0.14, uphill: 0.12, chalk: 0,
+  lamplight: 1,
 };
 
 /**
@@ -124,9 +129,18 @@ export const THRESHOLD: Band = {
   veins: 0.5,
   stone: [0.36, 0.33, 0.3], carvings: 0, hanging: 0.12, machines: 0,
   touched: 0.06, crickets: 0.3, dogs: 0, eels: 0.4, scavengers: 0.2, caverns: 0.5, ruins: 0.2, older: 0, uphill: 0, chalk: 0,
+  lamplight: 1,
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
+/** Grandma's cellar (depth 0, src/gen/cellar.ts): hand-built, nothing generated in it. */
+export const CELLAR_BAND: Band = {
+  ...QUARRY,
+  id: 'cellar', name: 'Grandma\'s cellar',
+  touched: 0, crickets: 0, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0, carvings: 0, hanging: 0, machines: 0, veins: 0,
+  lamplight: 0.12, // (bulbs in small brick rooms)
+};
+
 export function bandOf(depth: number): Band {
-  return depth >= 9 ? THRESHOLD : depth >= 6 ? CISTERN : depth >= 3 ? SALT : QUARRY;
+  return depth <= 0 ? CELLAR_BAND : depth >= 9 ? THRESHOLD : depth >= 6 ? CISTERN : depth >= 3 ? SALT : QUARRY;
 }

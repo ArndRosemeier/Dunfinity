@@ -102,6 +102,7 @@ export class LevelView {
 
   private stream(): void {
     ROCK_VEINS.value = this.level_.band.veins; // a uniform: the same shader in every band
+    this.lamps.power = this.level_.band.lamplight;
     this.terrain_ = new Terrain(this.stage, this.rock, this.level_.seed, this.level_.depth);
     this.props_ = new Props(this.stage, this.things, this.level_.seed, this.level_.depth, this.lamps);
   }

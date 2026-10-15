@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.045 — Grandma's cellar
+
+- Every grandchild now starts in grandma's cellar, under her house. It is a vaulted brick cellar with shelves of jars, crates, a barrel and a bare bulb, and the stairs go up to the house door (shut).
+- Through a low doorway is her strange little room: her armchair with the tin on its seat, her side table with a lamp, the knife block and a letter, and a ring of glowing infused salt on the floor round them.
+- In the far wall, the arch she bricked up in 1966 has been broken through. The bricks lie where they fell. Behind it a rough passage leads to the old shaft, and its ladder goes down to the Quarry. Climbing back up from level 1 brings you home.
+
 ## v0.044 — Sweep
 
 - Tidying behind the scenes after the last ten versions, with nothing new to see. Putting something onto a rock face (the chalk numbers, the water running uphill) is now done one way, and the game's passing notices go through one helper.

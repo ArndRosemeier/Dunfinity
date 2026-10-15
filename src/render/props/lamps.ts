@@ -13,6 +13,8 @@ const INTENSITY = 70;
 export class LampLights {
   readonly lights: PointLight[] = [];
   private readonly near: { d: number; x: number; y: number; z: number }[] = [];
+  /** How bright the lamps of this level are (its band's `lamplight`). */
+  power = 1;
 
   constructor(parent: Object3D, count = 8) {
     for (let i = 0; i < count; i++) {
@@ -39,7 +41,7 @@ export class LampLights {
       l.position.set(n.x, n.y, n.z);
       const phase = hash3f(17, n.x, n.y, n.z) * 100;
       const flicker = 0.92 + 0.05 * Math.sin(time * 9 + phase) + 0.03 * Math.sin(time * 23 + phase * 1.7);
-      l.intensity = INTENSITY * flicker * smoothstep(RANGE, RANGE * 0.7, n.d);
+      l.intensity = INTENSITY * this.power * flicker * smoothstep(RANGE, RANGE * 0.7, n.d);
     }
   }
 }

@@ -97,9 +97,9 @@ export class Descents {
 
   /**
    * `arrival`: where a player arrives on this level (x, z); `ascent`: the way up there (null on the
-   * first level). Both asked for lazily.
+   * first level). Both asked for lazily. `only`: the one way down there is (the cellar's old shaft).
    */
-  constructor(private readonly field: QuarryField, seed: number, depth: number, private readonly arrival: () => [number, number], private readonly ascent: () => Shaft | null) {
+  constructor(private readonly field: QuarryField, seed: number, depth: number, private readonly arrival: () => [number, number], private readonly ascent: () => Shaft | null, private readonly only?: Shaft) {
     this.seed = deriveSeed(seed, 'descents', depth);
   }
 
@@ -150,7 +150,8 @@ export class Descents {
 
   /** Whether cell (i, j) has a shaft, and where: the first of a few candidate spots that fits. */
   private place(i: number, j: number): Shaft | null {
-    const c = SHAFT.cell, edge = SHAFT.radius + 12;
+    const c = SHAFT.cell, edge = SHAFT.radius + 12, o = this.only;
+    if (o) return Math.floor(o.x / c) === i && Math.floor(o.z / c) === j ? o : null;
     const [ax, az] = this.arrival();
     const d = Math.hypot((i + 0.5) * c - ax, (j + 0.5) * c - az);
     if (d < SHAFT.quiet) return null;

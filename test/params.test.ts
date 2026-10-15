@@ -6,7 +6,8 @@ test('Lab params: numeric and text seeds, depth floor, position', () => {
   assert.equal(parseViewParams('?seed=42').seed, 42);
   assert.equal(parseViewParams('?seed=grandma').seed, parseViewParams('?seed=grandma').seed);
   assert.notEqual(parseViewParams('?seed=grandma').seed, parseViewParams('?seed=grandpa').seed);
-  assert.equal(parseViewParams('?depth=0').depth, 1);
+  assert.equal(parseViewParams('?depth=-3').depth, 0);
+  assert.equal(parseViewParams('').depth, 0); // grandma's cellar
   assert.deepEqual(parseViewParams('?pos=1,2,3').pos, [1, 2, 3]);
   assert.equal(parseViewParams('?pos=1,2').pos, null);
   assert.equal(parseViewParams('?gl').forceWebGL, true);

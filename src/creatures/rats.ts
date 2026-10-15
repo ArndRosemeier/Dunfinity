@@ -88,7 +88,7 @@ export class Rats extends Population<Nest, Rat> {
 
   constructor(level: Level) {
     super(level, 'rats', RAT, { arrive: RAT.arrive, still: RAT.still, step: RAT.step, drop: RAT.drop, accel: 10, turn: 12, face: 15 });
-    this.chance = Math.min(0.8, RAT.chance + 0.08 * (level.depth - 1));
+    this.chance = level.depth ? Math.min(0.8, RAT.chance + 0.08 * (level.depth - 1)) : 0; // (none in grandma's cellar)
     this.apart = 1;
   }
 

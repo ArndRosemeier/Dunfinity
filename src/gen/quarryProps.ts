@@ -14,6 +14,7 @@ import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
 import type { GrandmasCamp } from './grandmasCamp';
 import type { SaltCircle } from './lair';
+import { furnishCellar } from './cellarProps';
 import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
 
 /** Tile size, metres. */
@@ -124,6 +125,7 @@ class TileBuilder {
   }
 
   build(): PropTile {
+    if (this.level.depth === 0) return this.cellar();
     const workings = this.workings();
     if (workings.some((w) => w.floor < 0)) this.flood();
     for (const sh of this.level.descents.within(this.x0, this.z0, this.x0 + PROP_TILE, this.z0 + PROP_TILE)) this.shaft(sh);
@@ -147,6 +149,22 @@ class TileBuilder {
     this.nooks();
     if (this.level.band.uphill > 0) this.uphill();
     this.debris();
+    return this.done();
+  }
+
+  /** Grandma's cellar: her things (src/gen/cellarProps.ts) and the old shaft, no quarry. */
+  private cellar(): PropTile {
+    for (const sh of this.level.descents.within(this.x0, this.z0, this.x0 + PROP_TILE, this.z0 + PROP_TILE)) this.shaft(sh);
+    furnishCellar({
+      solid: this.solid, glow: this.glow,
+      inTile: (x, z) => this.inTile(x, z),
+      light: (x, y, z) => { this.lamps.push(x, y, z); this.counts.lit++; },
+      block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
+    });
+    return this.done();
+  }
+
+  private done(): PropTile {
     return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), counts: this.counts };
   }
 
@@ -487,8 +505,16 @@ class TileBuilder {
    */
   private shaft(sh: Shaft): void {
     if (sh.up) { this.wayUp(sh); return; }
-    const { x, z, r, top } = sh;
     const frame: Rgb = [WOOD[0] * 0.8, WOOD[1] * 0.8, WOOD[2] * 0.8];
+    if (this.level.depth > 0) this.headframe(sh, frame); // (no room for one under grandma's house)
+    this.railing(sh, frame);
+    this.ladder(ladderOf(sh), 0.4);
+    this.counts.shafts++;
+  }
+
+  /** A shaft's headframe: four legs leaning in to a square top, cross beams, a pulley wheel, a lamp. */
+  private headframe(sh: Shaft, frame: Rgb): void {
+    const { x, z, r, top } = sh;
     // Headframe: four legs leaning in to a square top, cross beams, a pulley wheel on top.
     const H = 7, base = r + 0.7, head = 1.1;
     const legs: [number, number, number, number][] = [];
@@ -511,6 +537,11 @@ class TileBuilder {
     this.solid.box(x, top + H + 0.75, z, [ca * 0.06, 0, sa * 0.06], [0, 0.7, 0], [-sa * 0.7, 0, ca * 0.7], IRON); // pulley wheel
     this.solid.upright(x, top + (H + 6.75) / 2 - 6, z, 0, 0.015, (H + 6.75) / 2, 0.015, RUST); // the rope, hanging into the dark
     this.lamp(x + ca * 0.9, top + H - 0.3, z + sa * 0.9, true);
+  }
+
+  /** Railing round a shaft's rim: posts and two rails, open where the ladder is. */
+  private railing(sh: Shaft, frame: Rgb): void {
+    const { x, z, r, top } = sh;
     // Railing: posts round the rim and two rails between them, open where the ladder is.
     const n = 12, rr = r + 0.35;
     for (let k = 0; k < n; k++) {
@@ -522,8 +553,6 @@ class TileBuilder {
       for (const h of [0.5, 1.0]) this.solid.beam(px, top + h, pz, qx, top + h, qz, 0.03, 0.03, frame);
       this.blockLine(px, pz, qx, qz, 0.06, top - 0.5, top + 1.05);
     }
-    this.ladder(ladderOf(sh), 0.4);
-    this.counts.shafts++;
   }
 
   /**
@@ -539,8 +568,10 @@ class TileBuilder {
         this.solid.beam(bx, y, bz, bx + l.nx * (ASCENT.standoff + 0.25), y, bz + l.nz * (ASCENT.standoff + 0.25), 0.02, 0.02, IRON);
       }
     }
-    const side = 0.9;
-    this.lamp(l.x + l.nx * 0.2 - l.nz * side, l.floor + 2.4, l.z + l.nz * 0.2 + l.nx * side, true);
+    // A lamp on an iron bracket out from the pillar, beside the ladder.
+    const side = 0.9, lx = l.x - l.nz * side, lz = l.z + l.nx * side, out = -0.25; // (n points into the pillar)
+    this.solid.beam(lx + l.nx * (ASCENT.standoff + 0.2), l.floor + 2.5, lz + l.nz * (ASCENT.standoff + 0.2), lx + l.nx * out, l.floor + 2.5, lz + l.nz * out, 0.02, 0.02, IRON);
+    this.lamp(lx + l.nx * out, l.floor + 2.4, lz + l.nz * out, true);
     this.counts.shafts++;
   }
 
