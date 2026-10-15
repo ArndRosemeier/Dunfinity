@@ -1,6 +1,6 @@
 /**
  * Everything that lives on a level, together: the rats, the Salt-Touched, the cave crickets, the
- * two slime factions, the feral dogs, the brine eels, the scavengers and, on level 5, the Foreman and his crew. Made in one go for a level (or a
+ * two slime factions, the feral dogs, the brine eels, the scavengers, on level 5 the Foreman and his crew, and on level 10 the Tall One. Made in one go for a level (or a
  * new grandchild), stepped in one go, and asked in one place whom a blow can hit and whether
  * something is after you.
  *
@@ -17,8 +17,9 @@ import { Foreman, FOREMAN, type Boss } from './foreman';
 import { Dogs, type Dog } from './dogs';
 import { Eels, type Eel } from './eels';
 import { Scavengers, type Scavenger } from './scavengers';
+import { TALL, TallOnes, type TallOne } from './tallOne';
 
-export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel | Scavenger;
+export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel | Scavenger | TallOne;
 
 /** Something after you this close counts (the knife comes out). */
 const THREAT = 14;
@@ -33,6 +34,7 @@ export class Fauna {
   readonly dogs: Dogs;
   readonly eels: Eels;
   readonly scavengers: Scavengers;
+  readonly tall: TallOnes;
 
   constructor(level: Level) {
     this.rats = new Rats(level);
@@ -44,19 +46,20 @@ export class Fauna {
     this.dogs = new Dogs(level);
     this.eels = new Eels(level);
     this.scavengers = new Scavengers(level);
+    this.tall = new TallOnes(level);
     const hall = this.foreman.hall;
     if (hall) this.touched.gather(hall.x, hall.z, FOREMAN.crew, 5);
   }
 
   /** The props in the way: they all walk round them. */
   set blockers(b: Blockers | null) {
-    this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = b;
+    this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = this.tall.blockers = b;
   }
 
   /** Step them all by dt; `lamp`: your headlamp (the crickets shun it); `facing`: which way you face (the dogs go for your back). Returns whether a heavy blow (a pick, a crowbar) landed on you. */
   advance(dt: number, prey: Fighter, lamp: Lamp, facing: number): boolean {
     this.rats.advance(dt, prey);
-    const struck = this.touched.advance(dt, prey) + this.foreman.advance(dt, prey, this.touched) + this.scavengers.advance(dt, prey) > 0;
+    const struck = this.touched.advance(dt, prey) + this.foreman.advance(dt, prey, this.touched) + this.scavengers.advance(dt, prey) + this.tall.advance(dt, prey) > 0;
     this.crickets.advance(dt, prey, lamp);
     this.lumen.advance(dt, prey, this.murk.list);
     this.murk.advance(dt, prey, this.lumen.list);
@@ -67,7 +70,7 @@ export class Fauna {
 
   /** Everyone a blow can hit (the dead included). */
   foes(): Foe[] {
-    return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list, ...this.scavengers.list];
+    return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list, ...this.scavengers.list, ...this.tall.list];
   }
 
   /** Whether something near is after `prey`. */
@@ -79,6 +82,7 @@ export class Fauna {
       || this.dogs.list.some((g) => g.hunting && near(g))
       || this.eels.list.some((e) => e.mode !== 'cruise' && near(e))
       || this.scavengers.list.some((s) => (s.hostile || s.mode === 'stand') && near(s))
+      || this.tall.list.some((t) => t.hunting && !t.dead && Math.hypot(t.x - prey.x, t.z - prey.z) < TALL.notice)
       || [...this.lumen.list, ...this.murk.list].some((s) => s.foe === prey && near(s));
   }
 
@@ -93,14 +97,19 @@ export class Fauna {
     if (this.scavengers.killed) lines.push(`scavengers killed: ${this.scavengers.killed}`);
     if (this.touched.killed) lines.push(`Salt-Touched laid to rest: ${this.touched.killed}`);
     if (this.foreman.killed) lines.push('The Foreman is dead.');
+    if (this.tall.killed) lines.push('The Tall One is dead.');
     return lines;
   }
 
-  /** The Foreman's health bar while he is after `prey`, else ''. */
+  /** A boss's health bar (the Foreman's, the Tall One's) while it is after `prey`, else ''. */
   bossLine(prey: Fighter): string {
-    const f = this.foreman.list[0];
-    if (!f || f.dead || !f.angry || Math.hypot(f.x - prey.x, f.z - prey.z) > FOREMAN.forget) return '';
-    const n = Math.round((f.health / FOREMAN.health) * 30);
-    return `THE FOREMAN  ${'█'.repeat(n)}${'░'.repeat(30 - n)}`;
+    const f = this.foreman.list[0], t = this.tall.list[0];
+    const bar = (name: string, health: number, of: number) => {
+      const n = Math.round((health / of) * 30);
+      return `${name}  ${'█'.repeat(n)}${'░'.repeat(30 - n)}`;
+    };
+    if (f && !f.dead && f.angry && Math.hypot(f.x - prey.x, f.z - prey.z) <= FOREMAN.forget) return bar('THE FOREMAN', f.health, FOREMAN.health);
+    if (t && !t.dead && t.hunting) return bar('THE TALL ONE', t.health, TALL.health);
+    return '';
   }
 }

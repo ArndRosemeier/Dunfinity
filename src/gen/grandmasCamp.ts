@@ -9,6 +9,7 @@
 import { hash3f } from '@futuremagic/core';
 import type { Level } from './level';
 import { local } from './propMesh';
+import { openFloor, searchOut } from './searchOut';
 
 export const CAMP = {
   depth: 9,
@@ -40,29 +41,16 @@ export const NOTE = [
 /** The camp on `level`, or null (only on level 9, and only where the floor allows). */
 export function grandmasCamp(level: Level): GrandmasCamp | null {
   if (level.depth !== CAMP.depth) return null;
-  const [ax, , az] = level.arrival, turn = hash3f(level.seed, 9, 63, 1) * Math.PI * 2;
-  for (const caveOnly of [true, false]) {
-    for (let r = CAMP.near; r < CAMP.far; r += 6) {
-      for (let a = 0; a < 24; a++) {
-        const t = turn + (a / 24) * Math.PI * 2, x = ax + Math.cos(t) * r, z = az + Math.sin(t) * r;
-        const col = level.columnAt(x, z);
-        if ((caveOnly && col.cavern < 0.9) || col.collapse > 0 || col.rubble > 0.02 || col.border < 6) continue;
-        const camp = campAt(level, x, z, t + Math.PI); // the tent's back to the far side, facing the way she came
-        if (camp) return camp;
-      }
-    }
-  }
-  return null;
+  return searchOut(level, hash3f(level.seed, 9, 63, 1) * Math.PI * 2, CAMP.near, CAMP.far, 6, (x, z, t) =>
+    level.columnAt(x, z).border < 6 ? null : campAt(level, x, z, t + Math.PI)); // the tent's back to the far side, facing the way she came
 }
 
 /** The camp at (x, z) facing `yaw`, if the floor is dry and level round it, with headroom and no way down near. */
 function campAt(level: Level, x: number, z: number, yaw: number): GrandmasCamp | null {
   if (level.descents.at(x, z, 8) || !level.dry(x, z, 0.3)) return null;
   const g = level.groundAt(x, z), at = local(x, z, yaw);
-  for (const [sd, fw] of [[0, -1.2], [-1.2, -1.2], [1.2, -1.2], [-1.4, 1.2], [1.4, 1.2], [0, 2.8], [1.2, 2], [-1, 3.6]]) {
-    const [px, pz] = at(sd, fw);
-    if (!level.dry(px, pz, 0.3) || Math.abs(level.groundAt(px, pz) - g) > 0.25 || level.sdf(px, g + 2, pz) < 1.2) return null;
-  }
+  const round = ([[0, -1.2], [-1.2, -1.2], [1.2, -1.2], [-1.4, 1.2], [1.4, 1.2], [0, 2.8], [1.2, 2], [-1, 3.6]] as const).map(([sd, fw]) => at(sd, fw));
+  if (!openFloor(level, round, g, 0.25, 2, 1.2)) return null;
   const [nx, nz] = at(1.2, 2);
   return { x, y: g, z, yaw, note: [nx, level.groundAt(nx, nz) + 0.24, nz] };
 }
