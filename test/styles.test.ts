@@ -409,3 +409,28 @@ test('the basalt columns are none of them: a floor of column tops, stepping up o
   assert.ok(per10('basalt') > 0.7, `${per10('basalt').toFixed(2)} terrace edges every 10 m on the basalt`);
   for (const id of Object.keys(st)) if (id !== 'basalt' && st[id].walked > 100) assert.ok(per10(id) < per10('basalt') / 3, `${id}: ${per10(id).toFixed(2)} terrace edges every 10 m`);
 });
+
+test('the flooded galleries are none of them: water nearly to the roof, a narrow gap to swim in', () => {
+  // (The Cisterns hold a little of them; a level all of them, against the Cisterns', the Salt Works' and the Threshold's mixes.)
+  const st: Record<string, { n: number; sump: number }> = {};
+  for (const l of [new Level(1, 7, 'flooded'), new Level(1, 7), new Level(1, 4), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 6000; k++) {
+      const x = ax + (hash3f(53, k, 7, 0) - 0.5) * 3000, z = az + (hash3f(53, k, 7, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20) continue;
+      const id = l.field.styles[c.style].id, w = l.waterAt(x, z);
+      // An open cave here: air somewhere from the water or the floor up to 15 m over it.
+      let open = false;
+      for (let y = Math.min(w, c.floor) + 0.2; y < Math.max(w, c.floor) + 15 && !open; y += 0.5) open = l.sdf(x, y, z) > 0.3;
+      if (!open) continue;
+      const s = (st[id] ??= { n: 0, sump: 0 });
+      s.n++;
+      // A sump: air at the water, water over a metre deep, rock within 2 m over it.
+      if (l.sdf(x, w + 0.15, z) > 0.05 && l.sdf(x, w - 1.2, z) > 0 && l.sdf(x, w + 2, z) <= 0) s.sump++;
+    }
+  }
+  const sump = (id: string) => st[id].sump / st[id].n;
+  assert.ok(st.flooded.n > 500, `${st.flooded.n} open flooded columns`);
+  assert.ok(sump('flooded') > 0.25, `a sump over ${(sump('flooded') * 100).toFixed(0)}% of the flooded galleries`);
+  for (const id of Object.keys(st)) if (id !== 'flooded' && st[id].n > 100) assert.ok(sump(id) < sump('flooded') / 4, `${id}: a sump over ${(sump(id) * 100).toFixed(0)}%`);
+});
