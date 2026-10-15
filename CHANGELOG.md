@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.034 — Tidying up
+
+- Nothing new to see: a sweep through the code for things written twice. The creatures now share how the dead lie, how a fighter closes in to swing, and the Foreman is drawn the same way as the other people down there.
+
 ## v0.033 — Grandma's first camp
 
 - Somewhere on level 9, a good walk from where you arrive, is the camp grandma made in 1963 when she came down looking for her father: a canvas tent with her bedroll, a ring of stones round a fire long cold, and on a flat stone her thermos and a note. Bend down and read it (E).

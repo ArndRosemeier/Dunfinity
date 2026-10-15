@@ -13,9 +13,8 @@
 import { angleDiff, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import type { Fighter } from '../combat/combat';
-import { pickSwing } from './pick';
+import { closeIn, pickSwing } from './pick';
 import { Population, type Den } from './population';
-import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
 import { Creature } from './creature';
 import type { SaltTouched } from './touched';
@@ -150,16 +149,10 @@ export class Foreman extends Population<Hall, Boss, SaltTouched> {
     const F = FOREMAN, S = F.swing, h = f.hall;
     f.swingT += dt;
     f.ringT += dt;
-    f.hurtT += dt;
     const dx = prey.x - f.x, dz = prey.z - f.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     f.guard = Math.abs(angleDiff(f.yaw, toYou)) < F.guard ? F.front : F.back;
     if (f.provoked) { f.provoked = false; f.angry = true; }
-    if (f.dead) {
-      f.deadT += dt;
-      brake(f, 5, dt);
-      this.steer.slide(f, dt);
-      return 0;
-    }
+    if (f.dead) return this.lieDead(f, dt, 5);
     const near = !prey.dead && Math.abs(prey.y - f.y) < 4;
     if (near && d < F.notice) f.angry = true;
     if (f.angry && (prey.dead || d > F.forget || Math.hypot(f.x - h.x, f.z - h.z) > F.leash || Math.abs(prey.y - f.y) > 6)) f.angry = false;
@@ -188,8 +181,7 @@ export class Foreman extends Population<Hall, Boss, SaltTouched> {
         if (f.ringT >= F.ring.dur) f.mode = f.angry ? 'chase' : 'wait';
         break;
       case 'chase':
-        this.steer.close(f, prey, prey.radius + f.radius + S.start * 0.5, F.chase, dt, 1);
-        if (d - prey.radius - f.radius < S.start && f.swingT > S.dur + S.rest) { f.mode = 'swing'; f.swingT = 0; }
+        if (closeIn(f, f.swingT, prey, S, F.chase, this.steer, dt, 1)) { f.mode = 'swing'; f.swingT = 0; }
         break;
       case 'swing':
         hit = pickSwing(f, f.swingT, S, prey, F.aim, this.steer, this.rng, 'foreman', dt);

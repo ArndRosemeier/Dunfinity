@@ -13,9 +13,8 @@ import type { Level } from '../gen/level';
 import type { Fighter } from '../combat/combat';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
-import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
-import { pickSwing } from './pick';
+import { closeIn, pickSwing } from './pick';
 
 export const SCAVENGER = {
   radius: 0.3,
@@ -141,7 +140,6 @@ export class Scavengers extends Population<Camp, Scavenger> {
 
   protected act(s: Scavenger, prey: Fighter, _ctx: null, dt: number): number {
     const S = SCAVENGER, W = S.swing, c = s.camp;
-    s.hurtT += dt;
     s.swingT += dt;
     s.t += dt;
     if (s.provoked) {
@@ -149,12 +147,7 @@ export class Scavengers extends Population<Camp, Scavenger> {
       if (s.cause === 'knife') c.angry = true;
       if (!s.dead && s.health < S.health * S.fear && s.mode !== 'flee') { s.mode = 'flee'; s.t = 0; }
     }
-    if (s.dead) {
-      s.deadT += dt;
-      brake(s, 6, dt);
-      this.steer.slide(s, dt);
-      return 0;
-    }
+    if (s.dead) return this.lieDead(s, dt, 6);
     const dx = prey.x - s.x, dz = prey.z - s.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     const seen = !prey.dead && Math.abs(prey.y - s.y) < 3;
     const fromFire = Math.hypot(prey.x - c.x, prey.z - c.z);
@@ -181,9 +174,8 @@ export class Scavengers extends Population<Camp, Scavenger> {
         else if (!after && !watching && s.t > S.rise) s.mode = 'home';
         break;
       case 'chase':
-        this.steer.close(s, prey, prey.radius + s.radius + W.start * 0.5, S.run, dt, 0.8);
-        if (!after) s.mode = 'home';
-        else if (d - prey.radius - s.radius < W.start && s.swingT > W.dur + W.rest) { s.mode = 'swing'; s.swingT = 0; }
+        if (closeIn(s, s.swingT, prey, W, S.run, this.steer, dt, 0.8) && after) { s.mode = 'swing'; s.swingT = 0; }
+        else if (!after) s.mode = 'home';
         break;
       case 'swing':
         hit = pickSwing(s, s.swingT, W, prey, S.aim, this.steer, this.rng, 'scavenger', dt);
