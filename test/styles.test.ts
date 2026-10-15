@@ -382,3 +382,30 @@ test('the geodes are none of them: closed hollows lined with crystals of one bri
   assert.ok(vivid('geode') > 0.5, `crystal colour overhead in ${(vivid('geode') * 100).toFixed(0)}% of the geodes`);
   for (const id of Object.keys(st)) if (id !== 'geode') assert.ok(vivid(id) < vivid('geode') / 3, `${id} as vivid overhead: ${(vivid(id) * 100).toFixed(0)}%`);
 });
+
+test('the basalt columns are none of them: a floor of column tops, stepping up or down every few metres', () => {
+  // (No band has basalt yet, it belongs to the deep strata: a level of it, against the Threshold's and the Salt Works' mixes.)
+  const st: Record<string, { walked: number; steps: number }> = {};
+  for (const l of [new Level(1, 9, 'basalt'), new Level(1, 9), new Level(1, 3)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 5000; k++) {
+      const x = ax + (hash3f(47, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(47, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { walked: 0, steps: 0 });
+      // Walk up to 16 m over open ground, a metre at a time: how often a terrace's edge, a step of a
+      // quarter metre or more with flat ground (within 5 cm) on both sides.
+      const h = [l.groundAt(x, z)];
+      for (let t = 1; t <= 16; t++) {
+        const g = l.groundAt(x + t, z);
+        if (!(l.sdf(x + t, g + 1.5, z) > 0.3)) break;
+        h.push(g);
+      }
+      for (let i = 1; i + 2 < h.length; i++) if (Math.abs(h[i + 1] - h[i]) >= 0.25 && Math.abs(h[i] - h[i - 1]) < 0.05 && Math.abs(h[i + 2] - h[i + 1]) < 0.05) s.steps++;
+      s.walked += h.length - 1;
+    }
+  }
+  const per10 = (id: string) => (st[id].steps / st[id].walked) * 10;
+  assert.ok(st.basalt.walked > 5000, `${st.basalt.walked} m walked on basalt`);
+  assert.ok(per10('basalt') > 0.7, `${per10('basalt').toFixed(2)} terrace edges every 10 m on the basalt`);
+  for (const id of Object.keys(st)) if (id !== 'basalt' && st[id].walked > 100) assert.ok(per10(id) < per10('basalt') / 3, `${id}: ${per10(id).toFixed(2)} terrace edges every 10 m`);
+});

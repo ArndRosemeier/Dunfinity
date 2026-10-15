@@ -8,7 +8,8 @@
  * places what sits inside it, and every decision is a hash of the working and grid position, so
  * tiles agree with each other and a seed always gives the same quarry.
  */
-import { owns } from './style';
+import { owns, type Style } from './style';
+import type { Dress } from './styleProps';
 import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
@@ -39,7 +40,7 @@ export interface PropTile {
   blockers: Float32Array;
   /** Statues whose figure the view draws (and turns): x, top of the plinth, z, yaw, pose, each. */
   watchers: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number; chalk: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number; chalk: number; dressed: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -113,7 +114,7 @@ class TileBuilder {
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0, chalk: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0, chalk: 0, dressed: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -148,6 +149,7 @@ class TileBuilder {
     for (const c of this.level.lair?.circles ?? []) if (this.inTile(c.x, c.z)) this.saltCircle(c);
     this.nooks();
     if (this.level.band.uphill > 0) this.uphill();
+    for (const st of this.level.field.styles) if (st.props) st.props(this.dress(st));
     this.debris();
     return this.done();
   }
@@ -162,6 +164,17 @@ class TileBuilder {
       block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
     });
     return this.done();
+  }
+
+  /** What a style gets to dress its own ground in this tile with (src/gen/styleProps.ts). */
+  private dress(st: Style): Dress {
+    return {
+      solid: this.solid, glow: this.glow, level: this.level, x0: this.x0, z0: this.z0, size: PROP_TILE,
+      seed: deriveSeed(this.seed, st.id),
+      mine: (x, z) => this.inTile(x, z) && owns(st, x, z) && !this.byCamp(x, z),
+      block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
+      placed: () => { this.counts.dressed++; },
+    };
   }
 
   private done(): PropTile {

@@ -18,6 +18,8 @@ import { joined } from './gridTree';
 import { CaveThings, THING_REACH, taperDist, taperPlan, type Taper } from './caveThings';
 import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
+import { propModel } from './models';
+import { scatter, type Dress } from './styleProps';
 
 export const GEODE = {
   /** One geode to a cell this wide, metres; its radius in plan (min, extra) and height over radius (min, extra); its floor this much of its height under the middle. */
@@ -175,6 +177,26 @@ export class Geode implements Style {
   portal(x: number, z: number): [number, number] {
     const g = this.cavity(Math.floor(x / GEODE.cell), Math.floor(z / GEODE.cell));
     return [g.x, g.z];
+  }
+
+  /** Clusters of small crystals on the sand, in their geode's hue. */
+  props(d: Dress): void {
+    const cluster = propModel('crystal_cluster'), G = GEODE;
+    scatter(d, 2.2, 0xc4e, 1.5, (x, z, g, r) => {
+      if (r(3) >= 0.3) return;
+      // The geode this sand is in: the one it is deepest inside.
+      let hue: readonly number[] = HUES[0], best = 0;
+      const i0 = Math.floor(x / G.cell), j0 = Math.floor(z / G.cell);
+      for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
+        const c = this.cavity(i, j), d2 = this.inside(c, x, g + 0.5, z);
+        if (d2 > best) { best = d2; hue = HUES[c.hue]; }
+      }
+      if (best <= 0) return;
+      const scale = 0.7 + 1.6 * r(4) * r(4), yaw = r(5) * Math.PI * 2;
+      d.solid.stamp(cluster, x, g - 0.05, z, yaw, { scale, lean: (r(6) - 0.5) * 0.4, tint: [hue[0] * 1.4, hue[1] * 1.4, hue[2] * 1.4] });
+      if (scale > 1.4) d.block(x, z, yaw, 0.3 * scale, 0.25 * scale, g, g + 1.2 * scale);
+      d.placed();
+    });
   }
 
   climbable(): boolean {

@@ -21,7 +21,7 @@ export interface Stratum {
 }
 
 /** Every style below the first strata can be made of (the excavation and the cellar aside). */
-const ALL: readonly StyleId[] = ['karst', 'rift', 'collapse', 'catacombs', 'dungeon', 'roots', 'fungal', 'lava', 'geode'];
+const ALL: readonly StyleId[] = ['karst', 'rift', 'collapse', 'catacombs', 'dungeon', 'roots', 'fungal', 'lava', 'geode', 'basalt'];
 
 export const STRATA: readonly Stratum[] = [
   {
@@ -30,11 +30,11 @@ export const STRATA: readonly Stratum[] = [
   },
   {
     from: 21, name: 'The Old Halls', picks: [3, 5], workings: 0.2,
-    palette: [['dungeon', 1.5], ['rift', 1.5], ['karst', 1.2], ['catacombs', 1], ['collapse', 1], ['lava', 0.7], ['geode', 0.5], ['fungal', 0.5]],
+    palette: [['dungeon', 1.5], ['rift', 1.5], ['karst', 1.2], ['catacombs', 1], ['collapse', 1], ['lava', 0.7], ['geode', 0.5], ['fungal', 0.5], ['basalt', 0.6]],
   },
   {
     from: 41, name: 'Before People', picks: [3, 5], workings: 0.15,
-    palette: [['fungal', 2], ['geode', 1.8], ['lava', 1.8], ['roots', 1.5], ['karst', 1.5], ['rift', 1], ['collapse', 0.6]],
+    palette: [['fungal', 2], ['geode', 1.8], ['lava', 1.8], ['roots', 1.5], ['karst', 1.5], ['rift', 1], ['collapse', 0.6], ['basalt', 1.5]],
   },
 ];
 

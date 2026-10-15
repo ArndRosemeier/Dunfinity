@@ -9,8 +9,9 @@
  * roof are (the edge contract blends these between styles, E1).
  */
 import type { Column } from './quarry';
+import type { Dress } from './styleProps';
 
-export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode';
+export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt';
 
 export interface Style {
   readonly id: StyleId;
@@ -35,6 +36,12 @@ export interface Style {
    * space near (x, z), a point well inside its region. Pure.
    */
   portal(x: number, z: number): [number, number];
+  /**
+   * Puts the style's own things (plants, bones, crystals) on its ground in one prop tile, with
+   * `scatter` (src/gen/styleProps.ts), which offers only its own ground (E5). The excavation's are
+   * its own business (src/gen/quarryProps.ts). Pure.
+   */
+  props?(d: Dress): void;
 }
 
 /** Worked stone on the map (M): the excavation's, and any style's that does not say. */

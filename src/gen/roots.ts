@@ -18,6 +18,8 @@ import { CaveThings, THING_REACH, karstChambers, taperDist, taperPlan, type Cham
 import { Karst } from './karst';
 import type { Column } from './quarry';
 import type { Style, StyleId } from './style';
+import { propModel } from './models';
+import { roofOver, scatter, type Dress } from './styleProps';
 
 export const ROOTS = {
   /** Trunk roots per 100 m² of chamber floor (min, extra); their radius where they leave the roof and where they enter the floor (min, extra), metres. */
@@ -93,6 +95,25 @@ export class Roots implements Style {
   /** A passage from another style ends in the nearest chamber (E3). */
   portal(x: number, z: number): [number, number] {
     return this.cave.portal(x, z);
+  }
+
+  /** The forest floor come underground: ferns and moss, thicker in patches, pale flowers here and there; vines hanging from the roof. */
+  props(d: Dress): void {
+    const n = this.noise, fern = propModel('plant_fern'), moss = propModel('plant_moss'), flowers = propModel('plant_pale_flowers'), vines = propModel('plant_vines');
+    scatter(d, 4, 0x0f3, 1, (x, z, g, r) => {
+      const lush = smoothstep(-0.4, 0.5, n.n2(x / 18 + 4.4, z / 18 - 1.7)), roll = r(3), yaw = r(4) * Math.PI * 2;
+      // (A fern is some 8000 vertices: a few to a tile.)
+      if (roll < 0.03 * lush) d.solid.stamp(fern, x, g - 0.05, z, yaw, { scale: 1.2 + 1.2 * r(5) });
+      else if (roll < 0.23 * lush + 0.05) d.solid.stamp(moss, x, g - 0.02, z, yaw, { scale: 3 + 4 * r(5) });
+      else if (roll < 0.25 * lush + 0.1) d.solid.stamp(flowers, x, g - 0.02, z, yaw, { scale: 1.5 + r(5) });
+      else if (roll < 0.25 * lush + 0.12) {
+        // Hanging from the roof: the vine turned upside down.
+        const roof = roofOver(d.level, x, g + 1, z, 25);
+        if (!Number.isFinite(roof) || roof - g < 4) return;
+        d.solid.stamp(vines, x, roof + 0.15, z, yaw, { scale: 1.2 + 1.5 * r(5), lean: Math.PI });
+      } else return;
+      d.placed();
+    });
   }
 
   climbable(): boolean {
