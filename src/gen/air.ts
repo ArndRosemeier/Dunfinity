@@ -47,8 +47,8 @@ export function airOf(seed: number, depth: number): Air {
   if (!stratumOf(depth)) return { fog: hexToRgb(OURS.fog), sky: hexToRgb(OURS.sky), ground: hexToRgb(OURS.ground), lamp: hexToRgb(OURS.lamp), clear: 1, veins: band.veins };
   const laws = lawsOf(seed, depth);
   const hue = laws.includes('tinted') ? express(LAW_HUE, seed, depth) : express(HUE, seed, depth);
-  const tint = laws.includes('tinted') ? 0.6 : express(TINT, seed, depth);
-  const lampTint = laws.includes('tinted') ? 0.35 : express(LAMP_TINT, seed, depth);
+  const tint = laws.includes('tinted') ? 0.85 : express(TINT, seed, depth);
+  const lampTint = laws.includes('tinted') ? 0.55 : express(LAMP_TINT, seed, depth);
   const clear = laws.includes('haze') ? 0.4 : express(CLEAR, seed, depth);
   const glow = laws.includes('glow') ? 1 : express(GLOW, seed, depth);
   const tinted = (hex: number, l: number, t: number): Rgb => mixRgb(hexToRgb(hex), hsl2rgb(hue, 0.6, l), t);
