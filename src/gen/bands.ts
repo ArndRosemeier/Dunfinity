@@ -1,7 +1,9 @@
+import type { Mix } from './regions';
+
 /**
  * The bands of levels 1–10 (docs/design/town-and-first-strata.md §4): which kind of place a depth is,
- * and the numbers that make the excavation field (src/gen/quarry.ts) look like that place. One field,
- * many looks: a band is data, not a second generator.
+ * the styles it is made of and how much of each (docs/design/level-styles.md), and the numbers that
+ * make each style (the excavation field, src/gen/quarry.ts) look like that place. A band is data.
  */
 export interface Band {
   readonly id: 'cellar' | 'quarry' | 'salt' | 'cistern' | 'threshold';
@@ -61,6 +63,8 @@ export interface Band {
   readonly chalk: number;
   /** How bright a burning lamp is (1: the mines' lamps, hung to light a hall; less in small rooms). */
   readonly lamplight: number;
+  /** The level's styles and how much of it each covers (docs/design/level-styles.md; src/gen/regions.ts). */
+  readonly styles: Mix;
 }
 
 export const QUARRY: Band = {
@@ -76,6 +80,7 @@ export const QUARRY: Band = {
   stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
   touched: 0, crickets: 0.22, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0.3,
   lamplight: 1,
+  styles: [['excavation', 0.8], ['karst', 0.2]],
 };
 
 /** The salt mine proper (levels 3–5): cathedral chambers carved by miners, fluted pillars, brine lakes, the first veins of infused salt. */
@@ -92,6 +97,7 @@ export const SALT: Band = {
   stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
   touched: 0.35, crickets: 0.25, dogs: 0, eels: 0.5, scavengers: 0.3, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
+  styles: [['excavation', 0.85], ['karst', 0.15]],
 };
 
 /**
@@ -112,6 +118,7 @@ export const CISTERN: Band = {
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
   touched: 0.12, crickets: 0, dogs: 0.35, eels: 0.6, scavengers: 0.35, caverns: 0, ruins: 0, older: 0.14, uphill: 0.12, chalk: 0,
   lamplight: 1,
+  styles: [['excavation', 0.65], ['karst', 0.35]],
 };
 
 /**
@@ -132,6 +139,7 @@ export const THRESHOLD: Band = {
   stone: [0.36, 0.33, 0.3], carvings: 0, hanging: 0.12, machines: 0,
   touched: 0.06, crickets: 0.3, dogs: 0, eels: 0.4, scavengers: 0.2, caverns: 0.5, ruins: 0.2, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
+  styles: [['excavation', 0.4], ['karst', 0.6]],
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
@@ -141,6 +149,7 @@ export const CELLAR_BAND: Band = {
   id: 'cellar', name: 'Grandma\'s cellar',
   touched: 0, crickets: 0, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0, carvings: 0, hanging: 0, machines: 0, veins: 0, tooled: 0,
   lamplight: 0.12, // (bulbs in small brick rooms)
+  styles: [['cellar', 1]],
 };
 
 export function bandOf(depth: number): Band {

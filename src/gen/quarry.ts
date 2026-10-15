@@ -14,7 +14,8 @@
  */
 import { QUARRY, type Band } from './bands';
 import { Noise, hash2i, hashToFloat, deriveSeed, smoothstep, clamp } from '@futuremagic/core';
-import type { Style, StyleId } from './style';
+import { owns, type Style, type StyleId } from './style';
+import { blendShare, newNear, voronoiNear, type Near } from './voronoi';
 
 /**
  * Pillars older than the Cisterns (docs/design/town-and-first-strata.md §4): the drum's radius as a
@@ -37,58 +38,10 @@ const BLEND = 14;
 /** How far the workings' feature points stray from their cell's middle (0..1). */
 const JITTER = 0.85;
 
-/**
- * The workings round a point: the one it is in, how far it is from that working's border (the
- * nearest Voronoi edge, exact), and every neighbour near enough to blend with, with its blend distance
- * (`blends`, under BLEND). A neighbour comes in and goes out smoothly, so anything blended from these
- * is continuous (blending with the second-nearest working alone is not: it switches at a three-way corner).
- */
-interface Near {
-  id: number;
-  px: number;
-  pz: number;
-  border: number;
-  count: number;
-  ids: number[];
-  pxs: number[];
-  pzs: number[];
-  blends: number[];
-}
-
-/** The workings round (x, z) (in WORKING cells, `seed` the cells' seed), into `out`. */
+/** The workings round (x, z) (in WORKING cells, `seed` the cells' seed), into `out` (src/gen/voronoi.ts). */
 function workingsNear(seed: number, x: number, z: number, out: Near): Near {
-  const xi = Math.floor(x), zi = Math.floor(z);
-  const fx: number[] = FX, fz: number[] = FZ, hs: number[] = HS;
-  let best = 0, f1 = Infinity;
-  for (let k = 0, dz = -2; dz <= 2; dz++) {
-    for (let dx = -2; dx <= 2; dx++, k++) {
-      const cx = xi + dx, cz = zi + dz, h = hash2i(seed, cx, cz);
-      hs[k] = h;
-      fx[k] = cx + 0.5 + (hashToFloat(h) - 0.5) * JITTER;
-      fz[k] = cz + 0.5 + (hashToFloat(h * 2654435761) - 0.5) * JITTER;
-      const d = (fx[k] - x) ** 2 + (fz[k] - z) ** 2;
-      if (d < f1) { f1 = d; best = k; }
-    }
-  }
-  out.id = hs[best]; out.px = fx[best]; out.pz = fz[best];
-  out.border = Infinity;
-  out.count = 0;
-  for (let k = 0; k < 25; k++) {
-    if (k === best) continue;
-    const ex = fx[k] - fx[best], ez = fz[k] - fz[best];
-    const e = (fx[k] - x) ** 2 + (fz[k] - z) ** 2 - f1;
-    out.border = Math.min(out.border, (e / (2 * Math.hypot(ex, ez))) * WORKING);
-    // For blending, the border's distance as if every neighbour were one cell away: the same seen
-    // from either side of any border, so a blend never jumps (the exact one does at a three-way corner).
-    const b = (e / 2) * WORKING;
-    if (b >= BLEND) continue;
-    out.ids[out.count] = hs[k]; out.pxs[out.count] = fx[k]; out.pzs[out.count] = fz[k]; out.blends[out.count] = b;
-    out.count++;
-  }
-  return out;
+  return voronoiNear(seed, x, z, WORKING, JITTER, BLEND, out);
 }
-const FX: number[] = new Array(25), FZ: number[] = new Array(25), HS: number[] = new Array(25);
-const newNear = (): Near => ({ id: 0, px: 0, pz: 0, border: 0, count: 0, ids: [], pxs: [], pzs: [], blends: [] });
 
 /** What one working looks like (all derived from its cell hash). */
 export interface Working {
@@ -132,6 +85,13 @@ export interface Column {
   collapse: number;
   /** 0..1, how much this is a natural cavern (blended across the border like the floor). */
   cavern: number;
+  /** Which of the level's styles filled this column (an index into `StyledField.styles`), and where styles meet, all of theirs (src/gen/styledField.ts). */
+  style: number;
+  mix: ColumnMix | null;
+  /** How far inside a passage between two styles' regions this column is, metres (E3; -Infinity: none near). */
+  passage: number;
+  /** How far from zero the field counts here, metres (src/gen/styledField.ts, E4; Infinity: the level is one style). */
+  clamp: number;
   /**
    * The nearest pillar stands on an older one (the Cisterns): up to `olderTop` it is a round drum of
    * older stone (`pillarD` is the drum), above it the square pillar (`squareD`). -Infinity: not so.
@@ -148,8 +108,25 @@ export function rockDistance(col: Column): number {
   return Math.min(col.pillarD, col.wall);
 }
 
+/** No pillar in `col` (nor stump, stub or older drum): the starting point of a column, and what styles without pillars leave. */
+export function noPillar(col: Column): void {
+  col.pillarD = Infinity;
+  col.stumpTop = Infinity;
+  col.stubBottom = -Infinity;
+  col.olderTop = -Infinity;
+  col.squareD = Infinity;
+}
+
 export function newColumn(): Column {
-  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0, cavern: 0, olderTop: -Infinity, squareD: Infinity };
+  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0, cavern: 0, style: 0, mix: null, passage: -Infinity, clamp: Infinity, olderTop: -Infinity, squareD: Infinity };
+}
+
+/** The columns of each style where styles meet: `n` of them, the style's index, its share, its column (with the shared envelope). */
+export interface ColumnMix {
+  n: number;
+  styles: number[];
+  w: number[];
+  cols: Column[];
 }
 
 function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Working {
@@ -176,6 +153,7 @@ function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Work
 /** The excavation style (src/gen/style.ts). */
 export class QuarryField implements Style {
   readonly id: StyleId = 'excavation';
+  share?: (x: number, z: number) => number;
   private readonly noise: Noise;
   private readonly rough: Noise;
   private readonly cellSeed: number;
@@ -221,8 +199,7 @@ export class QuarryField implements Style {
     const ring = this.near, border = ring.border;
     let sum = 1, floor = w.floor, height = w.height, collapse = w.collapse, cavern = w.cavern ? 1 : 0;
     for (let i = 0; i < ring.count; i++) {
-      const nb = this.working(ring.ids[i], ring.pxs[i], ring.pzs[i]), s = smoothstep(0, BLEND, ring.blends[i]);
-      const k = (1 - s) / (1 + s); // (one neighbour: its share is (1 - s) / 2, as a lerp to halfway)
+      const nb = this.working(ring.ids[i], ring.pxs[i], ring.pzs[i]), k = blendShare(ring.blends[i], BLEND);
       sum += k; floor += k * nb.floor; height += k * nb.height; collapse += k * nb.collapse; cavern += k * (nb.cavern ? 1 : 0);
     }
     floor /= sum; height /= sum; collapse /= sum; cavern /= sum;
@@ -267,11 +244,7 @@ export class QuarryField implements Style {
     const iu = Math.floor(u / s), iv = Math.floor(v / s);
     // The nearest standing pillar among the 3 × 3 grid cells around (missing ones are skipped, so the
     // distance stays continuous where a pillar is missing).
-    col.pillarD = Infinity;
-    col.stumpTop = Infinity;
-    col.stubBottom = -Infinity;
-    col.olderTop = -Infinity;
-    col.squareD = Infinity;
+    noPillar(col);
     const half = w.pillar / 2;
     const near = border < half * Math.SQRT2 + 3 + 2.2 * s; // only then can a pillar be cut by the border
     for (let dv = -1; dv <= 1; dv++) {
@@ -346,8 +319,8 @@ export class QuarryField implements Style {
     if (w.cavern) return 'none';
     const roll = hashToFloat(hash2i(this.pillarSeed ^ w.id, iu, iv));
     if (roll < 0.04 + 0.45 * w.collapse) return 'none';
-    // Crews left no pillar standing across the border of their working.
-    if (nearBorder && !this.pillarInside(w, iu, iv)) return 'none';
+    // Crews left no pillar standing across the border of their working, nor out where the level turns into another style.
+    if ((nearBorder || this.share) && !this.pillarInside(w, iu, iv)) return 'none';
     return roll < 0.04 + 0.9 * w.collapse ? 'broken' : 'whole';
   }
 
@@ -358,7 +331,7 @@ export class QuarryField implements Style {
     if (inside === undefined) {
       const [x, z] = this.fromGrid(w, (iu + 0.5) * w.spacing, (iv + 0.5) * w.spacing);
       const c = workingsNear(this.cellSeed, x / WORKING, z / WORKING, this.probe);
-      inside = c.id === w.id && c.border > (w.pillar / 2) * Math.SQRT2 + 3;
+      inside = c.id === w.id && c.border > (w.pillar / 2) * Math.SQRT2 + 3 && owns(this, x, z);
       if (this.pillarCache.size > 65536) this.pillarCache.clear();
       this.pillarCache.set(key, inside);
     }
@@ -372,6 +345,11 @@ export class QuarryField implements Style {
    */
   water(x: number, z: number): number {
     return this.band.water[0] + this.band.water[1] * (0.5 + 0.5 * this.noise.n2(x / 450 - 17.9, z / 450 + 41.3));
+  }
+
+  /** A passage from another style ends here (E3): the halls are open nearly everywhere. */
+  portal(x: number, z: number): [number, number] {
+    return [x, z];
   }
 
   /** Whether the rock nearest (x, y, z), a point in the air, can be climbed: all rock can (decision L1); built walls (src/gen/cellar.ts) cannot. */

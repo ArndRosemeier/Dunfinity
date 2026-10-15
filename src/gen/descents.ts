@@ -13,6 +13,7 @@
 import { deriveSeed, hash3f } from '@futuremagic/core';
 import { newColumn, type QuarryField } from './quarry';
 import { CellMemo } from './cellMemo';
+import { owns } from './style';
 
 export const SHAFT = {
   /** Shaft radius, metres. */
@@ -176,14 +177,14 @@ export class Descents {
   private fits(x: number, z: number, id: number): number | null {
     const f = this.field, col = this.col;
     f.column(x, z, col);
-    if (col.working.id !== id || col.working.collapse > 0) return null;
+    if (col.working.id !== id || col.working.collapse > 0 || !owns(f, x, z)) return null;
     const top = col.floor;
     if (top < f.water(x, z) + 1 || f.at(col, x, top + 6, z) < 3) return null;
     for (let a = 0; a < 8; a++) {
       const r = SHAFT.radius + 2;
       const cx = x + Math.cos((a * Math.PI) / 4) * r, cz = z + Math.sin((a * Math.PI) / 4) * r;
       f.column(cx, cz, col);
-      if (col.working.id !== id || col.border < 8 || col.pillarD < 1 || col.rubble > 0.02 || Math.abs(col.floor - top) > 0.6) return null;
+      if (col.working.id !== id || !owns(f, cx, cz) || col.border < 8 || col.pillarD < 1 || col.rubble > 0.02 || Math.abs(col.floor - top) > 0.6) return null;
     }
     return top;
   }
@@ -215,7 +216,7 @@ export function findAscent(field: QuarryField, hx: number, hz: number): Shaft | 
     // The floor at the foot: open, at most a puddle.
     const footX = fx - nx * 1.2, footZ = fz - nz * 1.2;
     field.column(footX, footZ, col);
-    if (col.working.id !== w.id || col.collapse > 0.2 || col.rubble > 0.05 || col.floor < field.water(footX, footZ) - 0.4) continue; // (a puddle will do)
+    if (col.working.id !== w.id || col.collapse > 0.2 || col.rubble > 0.05 || col.floor < field.water(footX, footZ) - 0.4 || !owns(field, footX, footZ)) continue; // (a puddle will do)
     const floor = col.floor;
     field.column(fx - nx * 0.6, fz - nz * 0.6, col);
     const ceiling = col.ceiling;

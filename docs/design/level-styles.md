@@ -39,6 +39,19 @@ Two styles never just meet. Where regions touch, there is an **edge band** of wi
 
 **E6. Same everywhere.** Everything is a pure function of (seed, depth, x, y, z). The same point gives the same answer in any worker, in any order, at any chunk boundary.
 
+### 2a. As built (v0.074)
+
+What the code does, where it differs from the plan above:
+
+- **Regions** (`src/gen/regions.ts`): jittered Voronoi cells about 360 m across (the same scan as the workings, `src/gen/voronoi.ts`). Each gets a style by weight; the region round the origin, where one arrives and the way up is, is always the mix's first style. The edge band is 80 m (blend distance) on each side. A style's *share* at a point is the sum of its regions' blend shares, and every nearby region counts, so the shares are symmetric across a border.
+- **Weights** (`StyledField.weigh`): a style with a share of at most 1 − `SHARE_OWN` (0.1) gets no weight in the field, the others split the rest. So wherever a style owns a point (E5), the field there is exactly its own, and its ladders, shafts and pillars fit it.
+- **E1** as planned: floor and ceiling are blended by weight and every style then answers with that envelope.
+- **E2**: the field is the weighted sum of the styles' answers, each clamped to ±*k*. *k* is 4 m on a border and grows 0.5 m per metre of blend distance away from it, on every column of a multi-style level, so it never jumps. No separate edge rock yet: the blend of the two rocks and colours reads as a transition.
+- **E3**: one passage per border, not openings every 60 m. Between two regions of different styles, a polyline runs from a portal in one (`Style.portal`: the karst gives its nearest chamber, the excavation the point itself) through the middle of their border to a portal in the other. Along it the field is at least an arched tunnel 10 m wide, 3 m high at the walls and 5.5 m in the middle.
+- **E4**: the clamp keeps the blend 1-Lipschitz. Measured: edges are no steeper than the styles' own insides (p99 and p99.9 of the slope).
+- **E5**: `owns(style, x, z)` is the one test. Pillars, the miners' props and lamps, ways down and the way up all use it. Karst things will too.
+- Tests: `test/styles.test.ts` holds every mixed band to all of this.
+
 ## 3. The style contract (TypeScript sketch)
 
 ```ts

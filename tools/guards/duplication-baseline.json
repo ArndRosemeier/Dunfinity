@@ -688,15 +688,55 @@
     "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
   },
   {
-    "key": "same name: dunfinity/gen/cellar.ts#at + dunfinity/gen/styledField.ts#at",
-    "reason": "the Style contract (src/gen/style.ts): StyledField puts the level's styles together behind the same calls; Level is the one entry point"
-  },
-  {
-    "key": "same name: dunfinity/gen/cellarProps.ts#at + dunfinity/gen/styledField.ts#at",
-    "reason": "a props builder's placement helper vs the field's distance; same short name, unrelated"
-  },
-  {
     "key": "same name: dunfinity/gen/level.ts#climbable + dunfinity/gen/styledField.ts#climbable",
     "reason": "the Style contract (src/gen/style.ts): StyledField puts the level's styles together behind the same calls; Level is the one entry point"
+  },
+  {
+    "key": "clone: dunfinity/gen/karst.ts#constructor + dunfinity/gen/quarry.ts#constructor",
+    "reason": "each style seeds its own noises with deriveSeed(seed, <style>, <use>); a few lines of the same seeding shape, different noises"
+  },
+  {
+    "key": "clone: dunfinity/gen/regions.ts#newShares + dunfinity/gen/voronoi.ts#newNear",
+    "reason": "empty out-objects for two different scans (style shares vs Voronoi neighbours); same factory shape, different fields"
+  },
+  {
+    "key": "idiom: [.add .push .root] in dunfinity/render/creatures/scavengerView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/props/hearth.ts",
+    "reason": "building a three.js group (root.add, parts.push); unrelated views, surfaced when new files shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.angry .dead] in dunfinity/creatures/crickets.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/touched.ts",
+    "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/gen/quarryProps.ts + dunfinity/world/fire.ts",
+    "reason": "reading Level and a dry-floor flag; different checks, surfaced when new files shifted the idiom finder's corpus"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellMemo.ts#at + dunfinity/gen/karst.ts#at",
+    "reason": "cellMemo.at is a cache lookup; karst.at is the Style contract's distance. Same short name, unrelated"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#climbable + dunfinity/gen/quarry.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#color + dunfinity/gen/styledField.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#column + dunfinity/gen/styledField.ts#column",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#f + dunfinity/gen/quarry.ts#f",
+    "reason": "a local one-letter hash helper inside each style's own feature roll"
+  },
+  {
+    "key": "same name: dunfinity/gen/quarry.ts#at + dunfinity/gen/styledField.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/quarry.ts#color + dunfinity/gen/styledField.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable, and StyledField blends them under the same names; one seam, many implementations"
   }
 ]

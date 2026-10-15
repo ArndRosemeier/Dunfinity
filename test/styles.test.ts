@@ -1,26 +1,171 @@
+/**
+ * The level styles and the edge contract (docs/design/level-styles.md §2, §4): every style alone,
+ * and wherever two meet.
+ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hash3f } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
+import { newColumn } from '../src/gen/quarry';
+import { PASSAGE } from '../src/gen/styledField';
+import { farFromSurface } from '../src/gen/chunkMesh';
 
-/** A fingerprint of a level's field: the distance and the ground at 4000 seeded points over 1.2 km. */
-function fingerprint(depth: number): string {
-  const l = new Level(7, depth);
-  let h = 0;
-  for (let k = 0; k < 4000; k++) {
-    const x = (hash3f(1, k, depth, 0) - 0.5) * 1200, z = (hash3f(1, k, depth, 1) - 0.5) * 1200;
-    const g = l.groundAt(x, z), y = g + (hash3f(1, k, depth, 2) - 0.2) * 12;
-    h = (Math.imul(h, 31) + Math.round(l.sdf(x, y, z) * 1000) + Math.round(g * 1000)) | 0;
-  }
-  return (h >>> 0).toString(16);
+/** The levels with more than one style, one of each band. */
+const MIXED = [1, 4, 7, 9];
+
+/** `n` seeded columns within `span` metres of the arrival on `l`, as (x, z). */
+function* spots(l: Level, n: number, span: number, salt: number): Generator<[number, number]> {
+  const [ax, , az] = l.arrival;
+  for (let k = 0; k < n; k++) yield [ax + (hash3f(salt, k, l.depth, 0) - 0.5) * span, az + (hash3f(salt, k, l.depth, 1) - 0.5) * span];
 }
 
-test('one style per level: the field is what it was before styles (v0.072)', () => {
-  const was: Record<number, string> = { 0: '6026bf78', 1: '70210ab0', 2: '6c831faa', 3: '14ff75f3', 5: '144e7e44', 7: 'e3aa9b28', 9: '1eb2b425', 10: '772510f1' };
-  for (const [d, h] of Object.entries(was)) assert.equal(fingerprint(+d), h, `level ${d}`);
+const atEdge = (l: Level, x: number, z: number) => {
+  const c = l.columnAt(x, z);
+  return !!c.mix || c.passage > -PASSAGE.half * 2;
+};
+
+test('each level is made of its band\'s styles; the cellar is one', () => {
+  assert.deepEqual(new Level(7, 0).field.styles.map((s) => s.id), ['cellar']);
+  for (const d of MIXED) assert.deepEqual(new Level(7, d).field.styles.map((s) => s.id), ['excavation', 'karst']);
 });
 
-test('each level says which style it is', () => {
-  assert.deepEqual(new Level(7, 0).field.styles.map((s) => s.id), ['cellar']);
-  assert.deepEqual(new Level(7, 4).field.styles.map((s) => s.id), ['excavation']);
+test('the styles cover about their share of a level, and the arrival is in the first', () => {
+  for (const d of MIXED) {
+    const l = new Level(3, d), want = l.band.styles[1][1] / l.band.styles.reduce((a, [, w]) => a + w, 0);
+    let karst = 0, all = 0;
+    for (let z = -4000; z <= 4000; z += 80) for (let x = -4000; x <= 4000; x += 80) { all++; if (l.field.regions.styleAt(x, z) === 1) karst++; }
+    assert.ok(Math.abs(karst / all - want) < 0.12, `level ${d}: karst ${((karst / all) * 100).toFixed(0)}% of the area, want ${(want * 100).toFixed(0)}%`);
+    const [ax, , az] = l.arrival;
+    assert.equal(l.field.regions.styleAt(ax, az), 0, `level ${d}: the arrival is in the excavation`);
+  }
+});
+
+test('away from edges, the field is exactly its style\'s', () => {
+  for (const d of MIXED) {
+    const l = new Level(1, d);
+    let checked = 0;
+    for (const [x, z] of spots(l, 3000, 2400, 11)) {
+      const c = l.columnAt(x, z);
+      if (c.mix || c.passage > -40 || c.clamp < 40) continue;
+      const style = l.field.styles[c.style], own = style.column(x, z, newColumn());
+      for (const dy of [-3, 1, 5, 12]) {
+        const y = c.floor + dy, want = style.at(own, x, y, z);
+        // (Where a passage's air is nearer than the style's own, the passage is the answer, E3.)
+        if (Math.abs(want) < c.clamp && c.passage < want) assert.equal(l.field.at(c, x, y, z), want, `level ${d} at ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
+      }
+      checked++;
+    }
+    assert.ok(checked > 100, `level ${d}: ${checked} columns checked`);
+  }
+});
+
+test('E1, E2, E4: across edges the field and the floor are continuous, and no steeper than inside the styles', () => {
+  for (const d of MIXED) {
+    const l = new Level(1, d), slopes = { edge: [] as number[], core: [] as number[] };
+    let floorJump = 0;
+    for (const [x, z] of spots(l, 30000, 2400, 12)) {
+      const edge = atEdge(l, x, z), c = l.columnAt(x, z), f = c.floor;
+      const y = f + hash3f(12, x, z, 2) * 14 - 2, v = l.sdf(x, y, z);
+      for (const [dx, dy, dz] of [[0.5, 0, 0], [0, 0.5, 0], [0, 0, 0.5]]) (edge ? slopes.edge : slopes.core).push(Math.abs(l.sdf(x + dx, y + dy, z + dz) - v) / 0.5);
+      if (edge) floorJump = Math.max(floorJump, Math.abs(l.columnAt(x + 0.25, z).floor - f), Math.abs(l.columnAt(x, z + 0.25).floor - f));
+    }
+    const at = (a: number[], q: number) => [...a].sort((p, r) => p - r)[Math.floor(a.length * q)];
+    assert.ok(slopes.edge.length > 2000, `level ${d}: ${slopes.edge.length} samples at edges`);
+    for (const q of [0.99, 0.999]) assert.ok(at(slopes.edge, q) <= at(slopes.core, q) + 0.15, `level ${d}: at edges the ${q} slope is ${at(slopes.edge, q).toFixed(2)}, inside the styles ${at(slopes.core, q).toFixed(2)}`);
+    assert.ok(Math.max(...slopes.edge) < 40, `level ${d}: no jump at an edge (${Math.max(...slopes.edge).toFixed(1)})`);
+    assert.ok(floorJump < 1, `level ${d}: the floor jumps ${floorJump.toFixed(2)} m in a quarter metre at an edge`);
+  }
+});
+
+test('E3: between every two regions of different styles, a passage one can walk through', () => {
+  for (const d of MIXED) {
+    const l = new Level(1, d), field = l.field, [ax, , az] = l.arrival;
+    /** Room for a body at (x, z): air 0.4 m and 1.7 m over the ground. */
+    const room = (x: number, z: number) => { const g = l.groundAt(x, z); return l.sdf(x, g + 0.4, z) > 0.05 && l.sdf(x, g + 1.7, z) > 0.1; };
+    const done = new Set<string>();
+    let borders = 0;
+    for (let k = 0; k < 600 && borders < 6; k++) {
+      const x = ax + (hash3f(14, k, d, 0) - 0.5) * 2400, z = az + (hash3f(14, k, d, 1) - 0.5) * 2400;
+      const a = field.regions.regionAt(x, z), b = field.regions.regionAt(x + 40, z);
+      if (a.id === b.id || field.regions.styleAt(x, z) === field.regions.styleAt(x + 40, z) || done.has(`${a.id},${b.id}`)) continue;
+      done.add(`${a.id},${b.id}`); done.add(`${b.id},${a.id}`);
+      const mx = (a.px + b.px) / 2, mz = (a.pz + b.pz) / 2, at = field.regions.regionAt(mx, mz);
+      if (at.id !== a.id && at.id !== b.id) continue; // (they meet elsewhere, not across the middle)
+      borders++;
+      assert.ok(l.columnAt(mx, mz).passage > PASSAGE.half - 0.5, `level ${d}: a passage through the middle of the border at ${mx.toFixed(0)}, ${mz.toFixed(0)}`);
+      // Walk it both ways from the middle, keeping to its middle, until it opens out: room all along.
+      for (const [tx, tz] of [[a.px, a.pz], [b.px, b.pz]]) {
+        let x = mx, z = mz, hx = tx - mx, hz = tz - mz, n = Math.hypot(hx, hz), steps = 0;
+        hx /= n; hz /= n;
+        for (; steps < 120; steps++) {
+          assert.ok(room(x, z), `level ${d}: room in the passage at ${x.toFixed(0)}, ${z.toFixed(0)}`);
+          let best = -Infinity, bx = 0, bz = 0;
+          for (let t = -0.8; t <= 0.8; t += 0.2) {
+            const c = Math.cos(t), s2 = Math.sin(t), dx = hx * c - hz * s2, dz = hx * s2 + hz * c, p = l.columnAt(x + dx * 2, z + dz * 2).passage;
+            if (p > best) { best = p; bx = dx; bz = dz; }
+          }
+          if (best < PASSAGE.half - 1) break; // (its end: open ground of the style)
+          x += bx * 2; z += bz * 2; hx = bx; hz = bz;
+        }
+        assert.ok(steps < 120 && room(x, z), `level ${d}: the passage ends in open ground (${steps} steps, at ${x.toFixed(0)}, ${z.toFixed(0)})`);
+      }
+    }
+    assert.ok(borders > 0, `level ${d}: some borders between styles`);
+  }
+});
+
+test('E5: the miners\' things stand only in the excavation\'s own ground', () => {
+  for (const d of MIXED) {
+    const l = new Level(1, d), share = l.field.excavation.share!;
+    let karst = 0;
+    for (const [x, z] of spots(l, 2000, 2400, 15)) {
+      if (share(x, z) >= 0.9) continue;
+      karst++;
+      const w = l.workingAt(x, z), [u, v] = l.field.excavation.toGrid(w, x, z);
+      const iu = Math.floor(u / w.spacing), iv = Math.floor(v / w.spacing), [px, pz] = l.field.excavation.fromGrid(w, (iu + 0.5) * w.spacing, (iv + 0.5) * w.spacing);
+      if (share(px, pz) < 0.9) assert.equal(l.field.excavation.pillarAt(w, iu, iv), 'none', `level ${d}: no pillar in another style's ground`);
+    }
+    assert.ok(karst > 100);
+  }
+});
+
+test('E4: a chunk is skipped only if it has no surface, at edges too', () => {
+  for (const d of MIXED) {
+    const l = new Level(1, d);
+    let edgeChunks = 0;
+    for (const [x, z] of spots(l, 400, 2000, 16)) {
+      if (!atEdge(l, x, z)) continue;
+      edgeChunks++;
+      const g = l.columnAt(x, z).floor;
+      for (const [size, oy] of [[32, g - 16], [64, g - 70], [64, g + 30]] as const) {
+        const ox = Math.floor(x / size) * size, oz = Math.floor(z / size) * size, step = size / 16;
+        if (!farFromSurface(l, ox, oy, oz, size, step)) continue;
+        const grid = l.sampleGrid(ox, oy, oz, step, 17);
+        const pos = grid.d.some((v) => v > 0), neg = grid.d.some((v) => v < 0);
+        assert.ok(!(pos && neg), `level ${d}: chunk at ${ox}, ${oy.toFixed(0)}, ${oz} (size ${size}) skipped but has a surface`);
+      }
+    }
+    assert.ok(edgeChunks > 20, `level ${d}: ${edgeChunks} chunks at edges`);
+  }
+});
+
+test('E6: the same level twice is the same, whatever was asked first', () => {
+  const a = new Level(5, 9), b = new Level(5, 9);
+  const pts = [...spots(a, 300, 2000, 17)];
+  const one = pts.map(([x, z]) => a.sdf(x, a.columnAt(x, z).floor + 1.5, z));
+  const two = [...pts].reverse().map(([x, z]) => b.sdf(x, b.columnAt(x, z).floor + 1.5, z)).reverse();
+  assert.deepEqual(one, two);
+});
+
+test('the karst is not the excavation: no pillars, smooth domes, a different share of open floor', () => {
+  const l = new Level(1, 9);
+  let karstCols = 0, pillars = 0;
+  for (const [x, z] of spots(l, 4000, 2400, 18)) {
+    const c = l.columnAt(x, z);
+    if (c.mix || l.field.styles[c.style].id !== 'karst') continue;
+    karstCols++;
+    if (c.pillarD < 50) pillars++;
+  }
+  assert.ok(karstCols > 500, `${karstCols} karst columns`);
+  assert.equal(pillars, 0);
 });

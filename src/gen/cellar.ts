@@ -13,7 +13,7 @@
 import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import { CELLAR_BAND } from './bands';
 import type { StyleId } from './style';
-import { QuarryField, type Column, type Working } from './quarry';
+import { QuarryField, noPillar, type Column, type Working } from './quarry';
 import type { Shaft } from './descents';
 import { TOWN, houseColors, nearestHouse, townAir, townGround } from './town';
 
@@ -112,16 +112,12 @@ export class CellarField extends QuarryField {
     col.working = HOME;
     col.floor = this.floorOf(x, z);
     col.ceiling = col.floor + 2.4;
-    col.pillarD = Infinity;
-    col.stumpTop = Infinity;
-    col.stubBottom = -Infinity;
+    noPillar(col);
     col.wall = this.planAir(x, z);
     col.rubble = 0;
     col.border = 100;
     col.collapse = 0;
     col.cavern = 0;
-    col.olderTop = -Infinity;
-    col.squareD = Infinity;
     return col;
   }
 

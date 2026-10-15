@@ -126,7 +126,7 @@ export class Foreman extends Population<Hall, Boss, SaltTouched> {
     const l = this.level, F = FOREMAN;
     for (const [x, z] of this.sites(i, j, 1, 8)) {
       const col = l.columnAt(x, z);
-      if (col.working.height < F.cathedral || rockDistance(col) < 5 || col.rubble > 0.05 || col.collapse > 0) continue;
+      if (col.mix || col.working.height < F.cathedral || rockDistance(col) < 5 || col.rubble > 0.05 || col.collapse > 0) continue;
       const y = this.floorFor(x, z, 3.5, 2);
       if (y === null) continue;
       const yaw = hash3f(this.seed, i, j, 40) * Math.PI * 2, bx = x + Math.cos(yaw) * F.bell, bz = z - Math.sin(yaw) * F.bell;
