@@ -1772,10 +1772,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/collapse.ts#column + dunfinity/gen/flooded.ts#column",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/collapse.ts#f + dunfinity/gen/flooded.ts#f",
     "reason": "a local one-letter hash helper inside each style's own feature roll"
   },
