@@ -1,9 +1,14 @@
 # Changelog
 
-## v0.079 — Things made properly
+## v0.080 — Things made properly
 
 - The things miners left against the rock are now modelled in Blender instead of built from boxes: crates of nailed planks, barrels with staves and iron hoops, a pick and a shovel leant on the rock, a pail with its handle dropped to one side, and squared blocks with tool marks and knocked corners. Shadows sit in their creases and under them.
 - More props will follow the same way: the shacks, the carts and things for the new kinds of place.
+
+## v0.079 — Catacombs
+
+- A fifth kind of place, the first from the crypts: a warren of narrow vaulted galleries cut into soft pale stone, their walls lined floor to vault with rows of burial niches full of old bones, here and there opening into a round domed chapel. Not every stretch was dug, so it branches, loops and dead-ends. Soot blackens the vaults where lamps once burned. Try `?style=catacombs`.
+- A trace of them already lies in the Threshold, behind the crypt fronts. On the map (M) they show bone-pale.
 
 ## v0.078 — Collapses
 
