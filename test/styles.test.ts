@@ -218,3 +218,28 @@ test('the rift is neither: tall, narrow canyons with rock between, no pillars', 
     assert.ok(open('rift') < open('karst') / 2 && open('rift') < open('excavation') / 3, `level ${d}: the rift's open floor ${(open('rift') * 100).toFixed(0)}%, karst ${(open('karst') * 100).toFixed(0)}%, excavation ${(open('excavation') * 100).toFixed(0)}%`);
   }
 });
+
+test('the collapse is neither: big open chambers whose floor is heaped with fallen blocks, no pillars', () => {
+  for (const d of [3, 4]) {
+    const l = new Level(1, d), [ax, , az] = l.arrival;
+    const st: Record<string, { n: number; open: number; relief: number; rn: number }> = {};
+    let pillars = 0;
+    for (let k = 0; k < 20000; k++) {
+      const x = ax + (hash3f(21, k, d, 0) - 0.5) * 3000, z = az + (hash3f(21, k, d, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20) continue;
+      const id = l.field.styles[c.style].id, s = (st[id] ??= { n: 0, open: 0, relief: 0, rn: 0 });
+      s.n++;
+      if (id === 'collapse' && c.pillarD < 50) pillars++;
+      if (l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      s.open++;
+      // Relief: how much the ground (blocks included) rises or falls over 12 m.
+      const g = l.groundAt(x, z), g2 = l.groundAt(x + 12, z);
+      if (Number.isFinite(g) && Number.isFinite(g2)) { s.relief += Math.abs(g - g2); s.rn++; }
+    }
+    const relief = (id: string) => st[id].relief / st[id].rn;
+    assert.ok(st.collapse.n > 500, `level ${d}: ${st.collapse.n} collapse columns`);
+    assert.equal(pillars, 0);
+    assert.ok(st.collapse.open / st.collapse.n > 0.5, `level ${d}: the collapse is ${((st.collapse.open / st.collapse.n) * 100).toFixed(0)}% open floor`);
+    assert.ok(relief('collapse') > 1.8 * relief('excavation') && relief('collapse') > 2.5 * relief('karst'), `level ${d}: relief ${relief('collapse').toFixed(2)} m, excavation ${relief('excavation').toFixed(2)}, karst ${relief('karst').toFixed(2)}`);
+  }
+});
