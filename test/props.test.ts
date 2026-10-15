@@ -187,3 +187,14 @@ test('some Cistern pillars stand on an older drum: round and wider below, the sq
   assert.ok(older >= 3, `${older} older drums`);
   assert.equal(new Level(1, 3).band.older, 0);
 });
+
+test('the Quarry has chalk numbers on its pillars; the Salt Works has none', () => {
+  const count = (l: Level, n: number) => {
+    const [ax, , az] = l.arrival;
+    let c = 0;
+    for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) c += quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts.chalk;
+    return c;
+  };
+  assert.ok(count(new Level(1, 1), 1) >= 4);
+  assert.equal(count(new Level(1, 3), 1), 0);
+});

@@ -36,7 +36,7 @@ export interface PropTile {
   blockers: Float32Array;
   /** Statues whose figure the view draws (and turns): x, top of the plinth, z, yaw, pose, each. */
   watchers: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number; chalk: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -64,6 +64,21 @@ const DEEP: Rgb = [0.015, 0.03, 0.035];
 const ENAMEL: Rgb = [0.09, 0.13, 0.1];
 const BULB: Rgb = [1.0, 0.85, 0.6];
 const WAX: Rgb = [0.5, 0.47, 0.38];
+/** Chalk on the rock. */
+const CHALK_WHITE: Rgb = [0.82, 0.8, 0.74];
+/**
+ * Chalk numbers: how far a shaft may be to be counted, metres; the height of the number's foot
+ * above the floor (min, extra); a digit's size (width, height), the gap between digits, a stroke's
+ * half thickness, how far it reaches into and out of the rock (so the drawn rock, a mesh a few cm off the field, never hides it) and the length of the pieces laid onto the rock one by one, metres; how uneven the hand is, metres; how far
+ * the writing leans (share of height).
+ */
+const CHALK = { far: 900, at: [1.45, 0.35], size: [0.24, 0.42], gap: 0.1, thick: 0.02, out: 0.06, piece: 0.1, jitter: 0.025, slant: 0.25 } as const;
+/** Digit strokes, seven-segment style: each segment's ends (x, y) in a unit-wide, unit-tall cell. */
+const SEGMENT_ENDS: Record<string, readonly [number, number, number, number]> = {
+  a: [0, 1, 1, 1], b: [1, 1, 1, 0.5], c: [1, 0.5, 1, 0], d: [0, 0, 1, 0], e: [0, 0, 0, 0.5], f: [0, 0.5, 0, 1], g: [0, 0.5, 1, 0.5],
+};
+const SEGMENTS = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abfgcd'];
+
 /** A sheet of water running over the rock: it catches more light than the pool. */
 const SHEET: Rgb = [0.3, 0.36, 0.36];
 /**
@@ -97,7 +112,7 @@ class TileBuilder {
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0, chalk: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -121,6 +136,7 @@ class TileBuilder {
       for (let iu = Math.floor(umin / s) - 1; iu <= Math.ceil(umax / s); iu++) {
         for (let iv = Math.floor(vmin / s) - 1; iv <= Math.ceil(vmax / s); iv++) {
           this.pillarLamp(w, iu, iv);
+          this.chalk(w, iu, iv);
           this.shack(w, iu, iv);
         }
       }
@@ -407,6 +423,64 @@ class TileBuilder {
     if (this.level.sdf(ox, g + 3, oz) < 0.3 || !this.level.dry(ox, oz, 0.1)) return;
     this.solid.beam(x, g + 3.3, z, ox, g + 3.3, oz, 0.03, 0.03, IRON);
     this.lamp(ox, g + 3.15, oz, r < 0.06);
+  }
+
+  /**
+   * A chalk number on a face of pillar (iu, iv) (the Quarry): how far it is to the nearest way down,
+   * in tens of metres. Walk towards the shaft and the numbers count down. Each stroke is a thin box
+   * laid onto the rock, the digits a little uneven, as a hand writes them.
+   */
+  private chalk(w: Working, iu: number, iv: number): void {
+    const b = this.level.band;
+    if (b.chalk <= 0 || this.roll(w, 50, iu, iv) > b.chalk) return;
+    const s = w.spacing, half = w.pillar / 2, field = this.level.field;
+    const face = Math.floor(this.roll(w, 51, iu, iv) * 4);
+    const du = face === 0 ? 1 : face === 1 ? -1 : 0, dv = face === 2 ? 1 : face === 3 ? -1 : 0;
+    const [cx, cz] = field.fromGrid(w, (iu + 0.5) * s, (iv + 0.5) * s);
+    const [fx, fz] = field.fromGrid(w, (iu + 0.5) * s + du * half, (iv + 0.5) * s + dv * half);
+    if (!this.inTile(fx, fz) || field.pillarAt(w, iu, iv) !== 'whole') return;
+    const nl = Math.hypot(fx - cx, fz - cz) || 1, nx = (fx - cx) / nl, nz = (fz - cz) / nl;
+    const ox = fx + nx * 0.8, oz = fz + nz * 0.8;
+    const col = this.level.columnAt(ox, oz);
+    if (col.working.id !== w.id || col.rubble > 0.05 || !this.level.dry(ox, oz, 0.1) || this.level.descents.at(ox, oz, 2)) return;
+    const shaft = this.level.descents.nearest(fx, fz, CHALK.far);
+    if (!shaft) return;
+    const n = Math.min(99, Math.max(1, Math.ceil(Math.hypot(shaft.x - fx, shaft.z - fz) / 10)));
+    const digits = String(n), C = CHALK, tx = nz, tz = -nx; // (tx, tz): to the right, seen from in front
+    const r = (k: number) => this.roll(w, 60 + k, iu, iv);
+    const y0 = this.level.groundAt(ox, oz) + C.at[0] + r(0) * C.at[1], slant = (r(1) - 0.5) * C.slant;
+    const width = digits.length * C.size[0] + (digits.length - 1) * C.gap;
+    const shift = (r(2) - 0.5) * 0.3;
+    let k = 0;
+    // A stroke from (a) to (b), in metres across and up the face from the number's lower left: in
+    // short pieces, each laid onto the rock (the drawn rock is a mesh of the field, a few cm off it).
+    const stroke = (ax: number, ay: number, bx: number, by: number) => {
+      const j = (q: number) => (r(10 + k * 4 + q) - 0.5) * C.jitter;
+      ax += j(0) + ay * slant; bx += j(2) + by * slant; ay += j(1); by += j(3);
+      k++;
+      const pieces = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / C.piece));
+      const hx = (bx - ax) / pieces / 2, hy = (by - ay) / pieces / 2, len = Math.hypot(hx, hy) || 1;
+      // Along the stroke; across it in the face (n × along, so the box is right-handed); out of the rock.
+      const u = [tx * hx * 1.15, hy * 1.15, tz * hx * 1.15] as const;
+      const v = [(-nz * hy) / len * C.thick, ((nz * tx - nx * tz) * hx) / len * C.thick, (nx * hy) / len * C.thick] as const;
+      for (let q = 0; q < pieces; q++) {
+        const mx = ax + (2 * q + 1) * hx - width / 2 + shift, my = ay + (2 * q + 1) * hy;
+        let px = fx + tx * mx + nx * 0.3, py = y0 + my, pz = fz + tz * mx + nz * 0.3;
+        for (let i = 0; i < 4; i++) { const d = this.level.sdf(px, py, pz); px -= nx * d; pz -= nz * d; }
+        if (Math.abs(this.level.sdf(px, py, pz)) > 0.05) continue;
+        this.solid.box(px, py, pz, u, v, [nx * C.out, 0, nz * C.out], CHALK_WHITE);
+      }
+    };
+    let x = 0;
+    for (const ch of digits) {
+      for (const sg of SEGMENTS[Number(ch)]) {
+        const [ax, ay, bx, by] = SEGMENT_ENDS[sg];
+        stroke(x + ax * C.size[0], ay * C.size[1], x + bx * C.size[0], by * C.size[1]);
+      }
+      x += C.size[0] + C.gap;
+    }
+    if (r(3) < 0.5) stroke(-0.05, -0.08, width + 0.05, -0.1); // underlined
+    this.counts.chalk++;
   }
 
   /** A lamp housing with its bulb below; a burning one glows and becomes a light. */
