@@ -56,6 +56,11 @@ export class Fauna {
     this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = this.tall.blockers = b;
   }
 
+  /** The Sunday candles burning: rats and crickets keep away. */
+  set glare(g: readonly { readonly x: number; readonly z: number }[]) {
+    this.rats.glare = this.crickets.glare = g;
+  }
+
   /** Step them all by dt; `lamp`: your headlamp (the crickets shun it); `facing`: which way you face (the dogs go for your back). Returns whether a heavy blow (a pick, a crowbar) landed on you. */
   advance(dt: number, prey: Fighter, lamp: Lamp, facing: number): boolean {
     this.rats.advance(dt, prey);

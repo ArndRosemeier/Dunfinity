@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.043 — Sunday Candle
+
+- A new card in grandma's tin: **Sunday Candle** (Light). Once it is cooked, G tosses a lit candle a few metres ahead. It stands where it lands and burns for 40 seconds, lighting the floor round it.
+- Rats and cave crickets hate it. Rats run from it even when they are after you, and crickets scatter from its light as they do from your headlamp. At rank 2 two candles can burn at once.
+
 ## v0.042 — Second Helpings
 
 - A new card in grandma's tin: **Second Helpings** (Throwing). Once it is cooked, the right mouse button throws a kitchen knife. It flies in an arc to the nearest creature roughly where you look, turning end over end, and drops off it. A knife that misses sticks where it hits and fades after a while. There are always more knives in the block. At rank 2 you throw again sooner.

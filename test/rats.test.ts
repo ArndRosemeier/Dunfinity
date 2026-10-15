@@ -50,3 +50,19 @@ test('rats behave the same for the same level and player', () => {
   };
   assert.deepEqual(run(), run());
 });
+
+test('rats keep away from a Sunday candle, even when they are after you, and bite less', () => {
+  const bites = (candle: boolean) => {
+    const r = new Rats(level), me = standAtNest(r);
+    if (candle) r.glare = [{ x: me.x, z: me.z }];
+    let near = 0;
+    for (let k = 0; k < 900; k++) {
+      r.advance(1 / 60, me); me.vx = me.vz = 0;
+      if (k > 300) near += r.list.filter((x) => !x.dead && Math.hypot(x.x - me.x, x.z - me.z) < 1.5).length;
+    }
+    return { taken: me.taken, near };
+  };
+  const dark = bites(false), lit = bites(true);
+  assert.ok(lit.near < dark.near * 0.3, `${lit.near} rat-steps close by the candle vs ${dark.near} without`);
+  assert.ok(lit.taken < dark.taken, `${lit.taken} vs ${dark.taken}`);
+});

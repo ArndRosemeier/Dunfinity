@@ -13,6 +13,7 @@
 import { Rng, deriveSeed, hash3f, angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from '../combat/combat';
+import { CANDLE } from '../combat/thrown';
 import { Population, type Den } from './population';
 import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
@@ -168,6 +169,7 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
 
   /** Whether the lamp shines on c. */
   private lit(c: Cricket, lamp: Lamp | null): boolean {
+    if (this.glaring(c, CANDLE.shun)) return true; // a Sunday candle's light is all round it
     if (!lamp) return false;
     const dx = c.x - lamp.x, dy = c.y + c.height / 2 - lamp.y, dz = c.z - lamp.z, d = Math.hypot(dx, dy, dz);
     return d < CRICKET.lit && d > 0.01 && (dx * lamp.dx + dy * lamp.dy + dz * lamp.dz) / d > lamp.cos;
@@ -227,7 +229,7 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
       }
       case 'ground': {
         c.t += dt;
-        if (lit && c.hurtT > 0.3) { this.scatter(c, prey); break; }
+        if (lit && c.hurtT > 0.3) { this.scatter(c, this.glaring(c, CANDLE.shun) ?? prey); break; } // away from the light
         if (!c.angry) { brake(c, 8, dt); this.steer.slide(c, dt); c.t = 0; break; }
         if (c.bitten >= C.bites || c.t > C.grounded) { this.leapOff(c, prey); break; }
         // Hop to just short of you, on the line from you to it (a goal that turns as it moves is chased round).
@@ -279,8 +281,8 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
   }
 
   /** Lit: leap away from the light into the dark. */
-  private scatter(c: Cricket, prey: Fighter): void {
-    const away = Math.atan2(c.x - prey.x, c.z - prey.z);
+  private scatter(c: Cricket, from: { readonly x: number; readonly z: number }): void {
+    const away = Math.atan2(c.x - from.x, c.z - from.z);
     for (let k = 0; k < 6; k++) {
       const a = away + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.5, r = this.rng.range(5, 8);
       if (this.crouchFor(c, c.x + Math.sin(a) * r, c.z + Math.cos(a) * r, true)) return;

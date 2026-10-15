@@ -13,6 +13,7 @@ import { Creature } from './creature';
 import { Population, type Den } from './population';
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from '../combat/combat';
+import { CANDLE } from '../combat/thrown';
 
 export const RAT = {
   /** Body radius and height at size 1, metres. */
@@ -67,6 +68,9 @@ export class Rat extends Creature<RatMode> {
   t = 0;
   /** Gait phase (radians), advanced by distance travelled. */
   gait = 0;
+  /** What it flees from: a Sunday candle at (fx, fz), or (NaN) you. */
+  fx = NaN;
+  fz = NaN;
   /** Seconds since the last bite started (the snap is at RAT.windup). */
   biteT = 9;
   /** Where it is going (scurrying about). */
@@ -129,7 +133,10 @@ export class Rats extends Population<Nest, Rat> {
     if (!hunting && (r.mode === 'chase' || r.mode === 'bite')) { r.mode = 'scurry'; r.t = 0; r.nest.alarmed = r.nest.alarmed && !prey.dead && d < RAT.forget; }
     if (hunting && (r.mode === 'sniff' || r.mode === 'scurry')) { r.mode = 'alert'; r.t = RAT.alert + (r.slot % 3) * 0.12; }
     // Badly hurt: now and then it bolts for a moment.
-    if (provoked && r.health < RAT.health * 0.4 && this.rng.chance(0.5)) { r.mode = 'flee'; r.t = this.rng.range(1.2, 2.2); }
+    if (provoked && r.health < RAT.health * 0.4 && this.rng.chance(0.5)) { r.mode = 'flee'; r.t = this.rng.range(1.2, 2.2); r.fx = NaN; }
+    // A Sunday candle: it runs from the light, whatever it was doing.
+    const glare = r.mode === 'flee' ? null : this.glaring(r, CANDLE.shun);
+    if (glare) { r.mode = 'flee'; r.t = this.rng.range(1.2, 1.8); r.fx = glare.x; r.fz = glare.z; }
 
     let speed = 0, gx = r.x, gz = r.z, bit = 0;
     switch (r.mode) {
@@ -145,7 +152,8 @@ export class Rats extends Population<Nest, Rat> {
         if ((r.t -= dt) <= 0 || Math.hypot(r.tx - r.x, r.tz - r.z) < 0.3) { r.mode = 'sniff'; r.t = this.rng.range(0.8, 3.5); }
         break;
       case 'flee':
-        gx = r.x - dx; gz = r.z - dz; speed = RAT.run;
+        if (Number.isNaN(r.fx)) { gx = r.x - dx; gz = r.z - dz; } else { gx = 2 * r.x - r.fx; gz = 2 * r.z - r.fz; }
+        speed = RAT.run;
         if ((r.t -= dt) <= 0) r.mode = hunting ? 'chase' : 'sniff';
         break;
       case 'alert':

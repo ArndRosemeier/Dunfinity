@@ -10,7 +10,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'soup' | 'kneading';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading';
 
 export interface Card {
   readonly id: CardId;
@@ -50,6 +50,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['Earlier. Lower. Again.'],
     cost: [4, 8],
     does: ['Q: roll away; blows miss you for most of it; costs 4 stamina', 'blows miss you for nearly all of it; costs 2.5 stamina'],
+  },
+  {
+    id: 'candle', title: 'Sunday Candle', chapter: 'Light',
+    need: 'a candle from the sideboard drawer, a match. Sundays only, in principle.',
+    method: 'Light it. Throw it. Things that live in the dark hate it the way your uncle hates vegetables.',
+    ranks: ['Two candles. It\'s a special occasion.'],
+    cost: [3, 7],
+    does: ['G: toss a lit candle that burns 40 s; rats and crickets keep 6 m away from it; one at a time', 'two at a time'],
   },
   {
     id: 'soup', title: 'Chicken Soup', chapter: 'Grandma\'s Remedies',
@@ -124,6 +132,11 @@ export class Cooked {
   get duck(): { stamina: number; safe: readonly [number, number] } | null {
     const r = this.rank('duck');
     return r === 0 ? null : r === 1 ? { stamina: 4, safe: [0.08, 0.42] } : { stamina: 2.5, safe: [0.04, 0.52] };
+  }
+
+  /** How many Sunday candles may burn at once (G), 0 if not cooked. */
+  get candles(): number {
+    return this.rank('candle');
   }
 
   /** How much faster wounds close resting by a fire. */
