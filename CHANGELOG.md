@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.079 — Things made properly
+
+- The things miners left against the rock are now modelled in Blender instead of built from boxes: crates of nailed planks, barrels with staves and iron hoops, a pick and a shovel leant on the rock, a pail with its handle dropped to one side, and squared blocks with tool marks and knocked corners. Shadows sit in their creases and under them.
+- More props will follow the same way: the shacks, the carts and things for the new kinds of place.
+
 ## v0.078 — Collapses
 
 - A fourth kind of place: chambers whose roofs came down. Huge domed halls, walled off from each other by thick rock that is broken through here and there. Where slabs fell, the roof has angular scars reaching higher into the rock, and under each one the floor heaps up into a hill of fallen blocks: tilted, freshly broken and pale, a few standing on end. You climb over them or find the valleys between. Try `?style=collapse`.

@@ -86,6 +86,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where a human's feet find the floor (foot IK) | `floorUnder(() => level)` | `src/render/humans/nobody.ts` |
 | Carve a salt miner (statues, and the watchers' figures) | `carveMiner(builder, x, top, z, yaw, pose, colour)` | `src/gen/quarryProps.ts` |
 | Draw the watcher statues (turn to you while unseen) | `Watchers` (`draw(props.watcherLists, x, z, camera, dt)`, in `LevelView.frame`); the tiles list them in `PropTile.watchers` | `src/render/props/watchers.ts` |
+| A prop made in Blender (crate, barrel, bucket, pick, shovel, cut stone), placed into a tile | `propModel(name)` then `PropBuilder.stamp(m, x, y, z, yaw, { lean, scale, tint })`; models are AssetGenerator specs listed in `tools/props/models.json`, packed by `npm run props` (Blender: `BLENDER_PYTHON` with pip's bpy) into the generated `src/gen/models.pack.ts` | `src/gen/models.ts`, `src/gen/propMesh.ts` |
 | Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts, `cylinder` for barrels and buckets, `tube` for pipes and rims between any two points, `ribbon` for a strip between two polylines) | `src/gen/propMesh.ts` |
 | One thing per grid cell (shafts, rat nests), decided once per cell | `CellMemo` (`at(i, j)`) | `src/gen/cellMemo.ts` |
 | Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |
