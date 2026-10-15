@@ -57,6 +57,8 @@ const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
 /** Throwing a knife (grandma's Second Helpings): seconds the throw takes, and when the knife leaves the hand. */
 const THROWING = { dur: 0.55, release: 0.22 };
+/** Grandma's Way Home: seconds with eyes shut before one is there, the last of them fading to black; salt rises every `motes` seconds. */
+const WAY_HOME = { dur: 4, fade: 1, motes: 0.5 };
 /** Cooking a card at the fire: seconds the nobody stirs. */
 const COOK = { dur: 2.4 };
 
@@ -97,16 +99,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
     touchedView.level = foremanView.level = scavengerView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
+    reached = Math.max(reached, l.depth);
     thrown.missiles.length = 0;
     view.go(l);
     cam.level = l;
     nobody.level = l;
   };
-  /** Which grandchild this is (1: the first); the notary writes to each. */
-  let heir = 0;
+  /** Which grandchild this is (1: the first); the notary writes to each. The deepest level this one has reached. */
+  let heir = 0, reached = 0;
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
     heir++;
+    reached = level.depth;
     const b = arrive();
     // In grandma's cellar: by her armchair, facing the broken arch.
     if (level.depth === 0 && !params.pos) b.facing = cam.yaw = CELLAR.start.yaw;
@@ -168,6 +172,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let tinSel: CardId = TinView.order()[0], cookAt = -9;
   /** When the last roll began (grandma's Duck card). */
   let rollAt = -9;
+  /** Way Home under way: when it began, and the level it goes to (null: none). */
+  let homeAt = -Infinity, homeTo: number | null = null, homeMote = 0;
   /** The last salt gained (its HUD line), and until when it shows. */
   let gainLine = '', gainUntil = 0;
   /** Salt formed at (x, y, z): it drifts into the tin, and the HUD says why. */
@@ -326,6 +332,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
       if (body.roll(dx, dz, duck.stamina, duck.safe)) rollAt = now;
     }
+    // Grandma's Way Home: H, eyes shut, nothing after you; home to her armchair, or (rank 2, from her salt circle) back down.
+    if (controls.tap('KeyH') && cooked.wayHome && homeTo === null && !busy && !tinView.open) {
+      const back = level.depth === 0 && cooked.wayHome >= 2 && campfire.inHaven(body);
+      const why = fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : level.depth === 0 && !back ? (cooked.wayHome >= 2 && reached > 0 ? 'Stand in her salt circle to think of where you were.' : 'You are home.') : back && reached === 0 ? 'You have not been down yet.' : '';
+      if (why) say(why, 2.5);
+      else { homeAt = now; homeMote = now; homeTo = back ? reached : 0; say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', WAY_HOME.dur); }
+    }
     const nearLadder = climb.active ? null : atLadder();
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
@@ -364,7 +377,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (why) say(why, 2.5); else campfire.light(body, body.facing, now);
     }
     const stirring = now - cookAt < COOK.dur;
-    if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring) input.forward = input.right = 0; // stooping or kneeling, not walking
+    if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
     if (climb.active) {
       climb.advance(dt, timer.getElapsed());
       body.x = climb.pos.x; body.y = climb.pos.y; body.z = climb.pos.z;
@@ -423,10 +436,30 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body.tiptoe = cooked.tiptoe;
       campfire.soup = cooked.soup;
       campfire.step(body, threat, now, dt);
+      if (homeTo !== null) {
+        const t = now - homeAt;
+        if (threat || body.dead || body.health < health) { homeTo = null; fade.style.opacity = '0'; say('Something is coming. You cannot think of the armchair now.', 3); }
+        else if (t >= WAY_HOME.dur) {
+          const to = homeTo;
+          homeTo = null;
+          show(new Level(params.seed, to));
+          const hp = body.health, st = body.stamina;
+          body = arrive(null);
+          body.health = hp; body.stamina = st;
+          if (to === 0) body.facing = cam.yaw = CELLAR.start.yaw;
+          notice = levelName(level);
+          noticeUntil = now + 5;
+          fadeIn = 0.8;
+        } else {
+          fade.style.opacity = String(Math.max(0, (t - (WAY_HOME.dur - WAY_HOME.fade)) / WAY_HOME.fade));
+          // The salt in the floor rises round the nobody.
+          if (now >= homeMote) { homeMote = now + WAY_HOME.motes; drift.burst(body.x, body.y + 0.05, body.z, 1, now); }
+        }
+      }
       const lighting = campfire.kindling(now);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
       const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
-      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, campfire.resting && !stabbing ? 'crouch' : undefined);
+      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.resting || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }

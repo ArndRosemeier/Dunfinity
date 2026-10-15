@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.048 — Way Home
+
+- A new card in grandma's tin: **Way Home**. Its divider opens once one of the family has reached level 8. Once it is cooked, press H with nothing after you. You kneel and shut your eyes while the salt in the floor rises round you, and after four seconds you are back by her armchair. Anything that comes for you in the meantime breaks it.
+- At rank 2 it also works the other way. Press H standing in her salt circle and you go back down to the deepest level this grandchild has reached.
+
 ## v0.047 — Tiptoe
 
 - A new card in grandma's tin: **Tiptoe** (Quiet). Its divider opens once one of the family has been down to level 5. Once it is cooked, hold Z to creep along slowly, crouched. While you do, creatures notice you only from half as far, or from a third as far at rank 2, when you also creep a little faster.

@@ -10,7 +10,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home';
 
 export interface Card {
   readonly id: CardId;
@@ -82,6 +82,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['Heel last. Breathe through your nose.'],
     cost: [6, 10],
     does: ['hold Z: tiptoe at 1.6 m/s; things notice you from half as far', 'tiptoe at 2.2 m/s; from a third as far'],
+  },
+  {
+    id: 'way-home', title: 'Way Home', chapter: 'Way Home',
+    need: 'a quiet moment. Nothing after you. Eyes shut.',
+    method: 'For when you\'ve overstayed your welcome. Close your eyes, think of my armchair. Do NOT bring back anything that is still moving.',
+    ranks: ['And back again, if you must. Think of where you were. Wrap up warm.'],
+    cost: [12, 20],
+    does: ['H: after 4 s still, with nothing after you, you are back by her armchair', 'and H in her salt circle takes you back to the deepest level you reached'],
   },
 ];
 
@@ -155,6 +163,11 @@ export class Cooked {
   /** Tiptoeing (hold Z), if cooked: its speed, m/s, and how far off things notice you then (a share). */
   get tiptoe(): { speed: number; hush: number } | null {
     return [null, { speed: 1.6, hush: 0.5 }, { speed: 2.2, hush: 0.33 }][this.rank('tiptoe')];
+  }
+
+  /** Grandma's Way Home: 0 not cooked, 1 home to the armchair, 2 and back down again. */
+  get wayHome(): number {
+    return this.rank('way-home');
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */
