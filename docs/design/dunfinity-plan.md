@@ -235,6 +235,7 @@ Deep-dive documents, one at a time, each ending in decisions:
 3. **Strata 1–10 content**: see [town-and-first-strata.md](town-and-first-strata.md).
 4. **Shared package setup** (G14): see [shared-package.md](shared-package.md).
 5. **Avoiding duplicate code:** see [no-duplicates.md](no-duplicates.md).
+6. **The story and the old scripts** (the rift to the first world, Kerf runes, Thread script): see [lore.md](lore.md).
 
 ## 9. First milestone (when you say go)
 

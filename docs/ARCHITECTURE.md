@@ -126,6 +126,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 
 | Question | The one way | Where |
 |---|---|---|
+| Write a line in the dwarves' Kerf runes or the elves' Thread script (spelling by ear, glyphs as polylines and dots in the line's units); the story they tell | `kerf(text)`, `thread(text)` (a `Lettering`), `kerfSpell`, `threadSpell`; draw a sheet with `tools/lore/sheet.ts`; plan: `docs/design/lore.md` | `src/lore/scripts.ts` |
 | Does a creature notice the nobody? (closer when it tiptoes: `Fighter.hush`, `Body.tiptoe`) | `noticed(prey, d, notice)`; never compare against a `notice` range directly | `src/combat/combat.ts` |
 | Does a guard (grandma's pot lid) stop part of a blow? | `Fighter.shield(fromX, fromZ)`, asked by `damage` (`Body.shield` with `Body.lid`, `Body.guarding`); never scale damage at the attacker | `src/combat/combat.ts`, `src/world/traverse/body.ts` |
 | Does a blow, blast or effect reach someone? Who does it hit? | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
