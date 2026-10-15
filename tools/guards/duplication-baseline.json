@@ -588,6 +588,10 @@
     "reason": "CellarField overrides QuarryField's field method: the same seam, the cellar's own shape (one density function per level)."
   },
   {
+    "key": "idiom: [.dead .lieDead] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's one-line call into the Population seam (`if (c.dead) return this.lieDead(c, dt)`); the work is shared in population.ts. Flips between NEW and STALE as the corpus changes, like [.body .root]."
+  },
+  {
     "key": "idiom: [.body .root] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
   },

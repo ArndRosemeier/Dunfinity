@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.062 — Doors
+
+- Grandma's house has real doors now: the front door, the kitchen, her bedroom and the living room. Press E at a door to open or shut it. A shut door stops you, and a door won't swing through you if you stand in its way.
+- The cellar door, at the foot of the stairs, is a strange one: near-black, iron-banded, seven little brass locks (none of them locked), and her salt signs glowing faintly on both faces. It has something to say when you open it, and it shuts itself once nobody is near.
+
 ## v0.061 — Nothing to walk through on the cellar stairs
 
 - Fix: the back wall of grandma's house, drawn from the street down, cut across the cellar stairs where they pass under the hill, and you walked straight through it. It now starts where the hill meets it.
