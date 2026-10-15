@@ -1,0 +1,81 @@
+{
+ "_doc": "Dunfinity's score (tools/audio/music.py): Lyria 3 Pro pieces. kind: stream = played once (a calm episode, a cue), loop = a bar-true loop for as long as the danger lasts. prompt: what Lyria is asked for (the shared style is added in front). Options as in Scale's build_tracks.py: cut, fade, fadeIn, window, length, xf.",
+ "_style": "Instrumental only, no vocals, no singing, no choir, no humming, no voices at all. Score for a dark, quiet, hand-made dungeon crawler about a grandchild going down into an endless old quarry under grandma's house in a small German town. Intimate acoustic chamber instruments, close and a little worn, lots of space and silence, reverb of stone halls.",
+ "town": {
+  "kind": "stream",
+  "prompt": "A small town street at night: solo felt piano and a soft, slightly out-of-tune accordion, a gentle melancholic waltz, sleepy and tender, 72 BPM."
+ },
+ "cellar": {
+  "kind": "stream",
+  "prompt": "Grandma's cellar: a warm, sad and homely tune on a music box, cello and muted piano, nostalgic, like an old photograph, 66 BPM."
+ },
+ "quarry-1": {
+  "kind": "stream",
+  "prompt": "An abandoned underground stone quarry: sparse low cello drones, distant bowed metal, slow single piano notes falling like drips, patient and lonely, 60 BPM."
+ },
+ "quarry-2": {
+  "kind": "stream",
+  "prompt": "Walking deeper into endless dark quarry halls with a headlamp: a slow pulse of muted low drum, plucked double bass, a lonely clarinet melody, curious and uneasy, 70 BPM."
+ },
+ "salt": {
+  "kind": "stream",
+  "prompt": "A vast cathedral carved out of salt deep underground: no guitar. Glass harmonica, bowed vibraphone and crystal glasses shimmering, slow sustained string pads, a cold and awe-struck stillness, 56 BPM."
+ },
+ "cistern": {
+  "kind": "stream",
+  "prompt": "Old flooded underground cisterns: dripping marimba and kalimba notes, low string drones, water-like ripples on harp, mysterious and still, 64 BPM."
+ },
+ "threshold": {
+  "kind": "stream",
+  "prompt": "Deep natural caverns where things get strange: detuned dulcimer, scraped cymbals, a slow uneasy viola melody, eerie and dreamlike, 58 BPM."
+ },
+ "fire": {
+  "kind": "stream",
+  "prompt": "Resting by a small campfire deep underground, safe for a moment: a gentle fingerpicked nylon guitar and a soft cello, warm lullaby, 76 BPM."
+ },
+ "danger-1": {
+  "kind": "loop",
+  "window": [
+   1,
+   115
+  ],
+  "length": [
+   40,
+   70
+  ],
+  "prompt": "Something is hunting you in the dark: tense driving low strings ostinato, frame drum and taiko pulses, scraping col legno, steady and relentless, 110 BPM."
+ },
+ "danger-2": {
+  "kind": "loop",
+  "window": [
+   1,
+   115
+  ],
+  "length": [
+   40,
+   70
+  ],
+  "prompt": "A desperate knife fight in a cave, from the very first bar: urgent staccato cello and pizzicato strings, pounding hand drums, sharp dissonant violin stabs, no guitar, steady tempo all the way through, 120 BPM."
+ },
+ "boss": {
+  "kind": "loop",
+  "window": [
+   1,
+   115
+  ],
+  "length": [
+   40,
+   70
+  ],
+  "prompt": "The Foreman, a huge undead mine boss with a pickaxe, rings his bell: heavy slow war drums, anvil hits, a menacing low brass-like bowed bass motif, steady, 90 BPM."
+ },
+ "death": {
+  "kind": "stream",
+  "cut": [
+   0,
+   40
+  ],
+  "fade": 6,
+  "prompt": "A grandchild did not come back: a short, very sad elegy on solo cello and piano, slow and quiet, ending softly, 60 BPM."
+ }
+}

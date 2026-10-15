@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.071 — Sound and music
+
+- The game has sound. Footsteps on stone (and splashing in water), landings, the knife's swish and the thud when it lands, getting hurt, dying, ladders, doors creaking open and shut, picking things up, Ilse's coins, striking a match for a fire and the fire crackling.
+- The creatures make themselves heard: rats squeak when they come for you and when they bite, cave crickets chirp on their perches and rustle when they leap, the dogs growl and bark, eels burst out of the water, slimes squelch, the Salt-Touched chip at the rock while they work and grunt when they swing, the Foreman's bell rings through the halls, and the Tall One's stare comes with a cold whoosh.
+- Every place has its own background: the town at night, grandma's cellar with the clock ticking upstairs, the Quarry's deep rumble, the Salt Works, the dripping Cisterns, the wind in the Threshold's caverns.
+- Music, scored sparsely: now and then a piece for the place you are in (the town, the cellar, the Quarry, the Salt Works, the Cisterns, the Threshold), a quiet one when you rest by a fire, tense loops while something is after you, a heavier one for the Foreman and the Tall One, and an elegy when a grandchild does not come back.
+- N turns all sound off and on, B the music. Both are remembered.
+- The sounds are made with ByteDance Seed Audio and the music with Lyria 3 Pro. A listening model checked every take, and prompts that came out wrong were rewritten.
+
 ## v0.070 — A debug menu
 
 - Press the key left of 1 (` on English keyboards, ^ on German ones) to open a debug menu. It lets go of the mouse; click the game to look round again.

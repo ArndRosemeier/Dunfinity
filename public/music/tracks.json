@@ -1,0 +1,65 @@
+{
+ "version": 1,
+ "tracks": {
+  "boss": {
+   "file": "tracks/boss.ogg",
+   "kind": "loop",
+   "seconds": 59.99
+  },
+  "cellar": {
+   "file": "tracks/cellar.mp3",
+   "kind": "stream",
+   "seconds": 157.893
+  },
+  "cistern": {
+   "file": "tracks/cistern.mp3",
+   "kind": "stream",
+   "seconds": 176.314
+  },
+  "danger-1": {
+   "file": "tracks/danger-1.ogg",
+   "kind": "loop",
+   "seconds": 40.364
+  },
+  "danger-2": {
+   "file": "tracks/danger-2.ogg",
+   "kind": "loop",
+   "seconds": 68.002
+  },
+  "death": {
+   "file": "tracks/death.mp3",
+   "kind": "stream",
+   "seconds": 39.933
+  },
+  "fire": {
+   "file": "tracks/fire.mp3",
+   "kind": "stream",
+   "seconds": 158.922
+  },
+  "quarry-1": {
+   "file": "tracks/quarry-1.mp3",
+   "kind": "stream",
+   "seconds": 164.331
+  },
+  "quarry-2": {
+   "file": "tracks/quarry-2.mp3",
+   "kind": "stream",
+   "seconds": 158.659
+  },
+  "salt": {
+   "file": "tracks/salt.mp3",
+   "kind": "stream",
+   "seconds": 176.684
+  },
+  "threshold": {
+   "file": "tracks/threshold.mp3",
+   "kind": "stream",
+   "seconds": 177.087
+  },
+  "town": {
+   "file": "tracks/town.mp3",
+   "kind": "stream",
+   "seconds": 120.009
+  }
+ }
+}

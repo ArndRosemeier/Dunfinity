@@ -1,0 +1,281 @@
+{
+ "amb_cellar": {
+  "files": [
+   "amb_cellar.ogg"
+  ],
+  "loop": true,
+  "gain": 0.3
+ },
+ "amb_cistern": {
+  "files": [
+   "amb_cistern.ogg"
+  ],
+  "loop": true,
+  "gain": 0.4
+ },
+ "amb_quarry": {
+  "files": [
+   "amb_quarry.ogg"
+  ],
+  "loop": true,
+  "gain": 0.4
+ },
+ "amb_salt": {
+  "files": [
+   "amb_salt.ogg"
+  ],
+  "loop": true,
+  "gain": 0.4
+ },
+ "amb_threshold": {
+  "files": [
+   "amb_threshold.ogg"
+  ],
+  "loop": true,
+  "gain": 0.4
+ },
+ "amb_town": {
+  "files": [
+   "amb_town.ogg"
+  ],
+  "loop": true,
+  "gain": 0.35
+ },
+ "bell": {
+  "files": [
+   "bell_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
+ "coins": {
+  "files": [
+   "coins_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "cricket_chirp": {
+  "files": [
+   "cricket_chirp_1.ogg",
+   "cricket_chirp_2.ogg",
+   "cricket_chirp_3.ogg"
+  ],
+  "loop": false,
+  "gain": 0.35
+ },
+ "cricket_leap": {
+  "files": [
+   "cricket_leap_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.4
+ },
+ "death": {
+  "files": [
+   "death_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
+ "dog_bark": {
+  "files": [
+   "dog_bark_1.ogg",
+   "dog_bark_2.ogg",
+   "dog_bark_3.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "dog_die": {
+  "files": [
+   "dog_die_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "dog_growl": {
+  "files": [
+   "dog_growl_1.ogg",
+   "dog_growl_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "door_close": {
+  "files": [
+   "door_close_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "door_open": {
+  "files": [
+   "door_open_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "eel_strike": {
+  "files": [
+   "eel_strike_1.ogg",
+   "eel_strike_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "fire": {
+  "files": [
+   "fire.ogg"
+  ],
+  "loop": true,
+  "gain": 0.5
+ },
+ "fire_light": {
+  "files": [
+   "fire_light_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "hurt": {
+  "files": [
+   "hurt_1.ogg",
+   "hurt_2.ogg",
+   "hurt_3.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "knife_swing": {
+  "files": [
+   "knife_swing_1.ogg",
+   "knife_swing_2.ogg",
+   "knife_swing_3.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "ladder": {
+  "files": [
+   "ladder_1.ogg",
+   "ladder_2.ogg",
+   "ladder_3.ogg"
+  ],
+  "loop": false,
+  "gain": 0.4
+ },
+ "land": {
+  "files": [
+   "land_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "pick_swing": {
+  "files": [
+   "pick_swing_1.ogg",
+   "pick_swing_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "pick_work": {
+  "files": [
+   "pick_work_1.ogg",
+   "pick_work_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.4
+ },
+ "pickup": {
+  "files": [
+   "pickup_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "pound": {
+  "files": [
+   "pound_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
+ "rat_bite": {
+  "files": [
+   "rat_bite_1.ogg",
+   "rat_bite_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "rat_die": {
+  "files": [
+   "rat_die_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "rat_squeak": {
+  "files": [
+   "rat_squeak_1.ogg",
+   "rat_squeak_2.ogg",
+   "rat_squeak_3.ogg",
+   "rat_squeak_4.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "salt_gain": {
+  "files": [
+   "salt_gain_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.4
+ },
+ "slime": {
+  "files": [
+   "slime_1.ogg",
+   "slime_2.ogg",
+   "slime_3.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "step_stone": {
+  "files": [
+   "step_stone_1.ogg",
+   "step_stone_2.ogg",
+   "step_stone_3.ogg",
+   "step_stone_4.ogg",
+   "step_stone_5.ogg"
+  ],
+  "loop": false,
+  "gain": 0.35
+ },
+ "step_water": {
+  "files": [
+   "step_water_1.ogg",
+   "step_water_2.ogg",
+   "step_water_3.ogg",
+   "step_water_4.ogg"
+  ],
+  "loop": false,
+  "gain": 0.4
+ },
+ "tall_stare": {
+  "files": [
+   "tall_stare_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "throw": {
+  "files": [
+   "throw_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ }
+}

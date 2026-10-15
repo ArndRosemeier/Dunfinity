@@ -162,6 +162,16 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
 | The debug menu (`): every ability, invulnerable (`Body.invulnerable`), tireless, any level; the places worth checking out on a level and where to stand by each | `DebugMenu` (`toggle`, `refresh`, with the game's `DebugActions`); `placesOn(level, fauna, x, z)` | `src/app/debugMenu.ts`, `src/game/debugPlaces.ts` |
 
+### Sound and music
+
+| Question | The one way | Where |
+|---|---|---|
+| Play a sound: one-shot (placed or on the nobody), a positioned loop, ambience beds; volume, mute, music switch (kept through `src/persist/settings.ts`) | `SoundEngine` (`play(id, at, gain, pitch)`, `loop`, `ambience`, `set`); clips in `public/sounds/manifest.json` | `src/audio/audio.ts` |
+| Which sounds the world makes (footsteps, landings, hurt, creatures' modes, doors, the fire, the bell) and which ambience and music | `GameSounds.update(scene)` once a frame; the game's own events through `sounds.play(id, at)`; a creature kind's voice in `VOICES` | `src/audio/gameSounds.ts` |
+| Where one is, for sound (town, cellar, a band) | `GameSounds.place(level, pos)` | `src/audio/gameSounds.ts` |
+| Which music plays when | `MoodDirector` (pure; moods, episodes, danger hold), pieces per mood `MOOD_TRACKS`, played by `Music` / `TrackPlayer` | `src/audio/music/` |
+| Make or change a sound effect or a piece of music | edit its prompt in `tools/audio/sounds.json` / `music.json`, then `tools/audio/sfx.py gen, screen, build` / `music.py gen, build` | `tools/audio/` |
+
 ### The Lab
 
 | Question | The one way | Where |
@@ -178,6 +188,7 @@ Import rules, enforced by `npm test` (`tools/guards/rules.json`):
 - `src/gen` (the generator) is pure data: no three.js, no render, no Lab, no world facade. It runs in workers and headless tests.
 - `src/world` (queries) is pure: no three.js, no render, no Lab.
 - `src/render` does not know about the Lab.
+- `src/audio` does not know three.js, the renderer, the Lab or the game: the game hands it plain numbers each frame.
 
 ## Shared code
 

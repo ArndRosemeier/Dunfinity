@@ -53,6 +53,7 @@ import { placesOn, type Place } from './debugPlaces';
 import { TinView } from '../app/tinView';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { Thrown } from '../combat/thrown';
+import { GameSounds } from '../audio/gameSounds';
 import { ThrownView } from '../render/humans/thrownView';
 
 /** Fixed simulation step, seconds. */
@@ -289,6 +290,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const gained = (g: Gain | null, x: number, y: number, z: number, now: number): void => {
     if (!g) return;
     drift.burst(x, y, z, g.amount, now);
+    sounds.play('salt_gain', null, 0.7);
     gainLine = `+${g.amount} infused salt. ${g.why}`;
     gainUntil = now + 4;
   };
@@ -303,6 +305,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const pain = document.createElement('div');
   pain.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,0,0,0.85) 100%)';
   host.appendChild(pain);
+  /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. */
+  const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
+  await sounds.init();
   const timer = new Timer();
   let acc = 0;
   const climb = new LadderClimb(nobody);
@@ -326,6 +331,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     stabAt = now;
     stabDone = false;
     striking = how;
+    sounds.play(how === 'pound' ? 'throw' : 'knife_swing', null, 0.8, how === 'pound' ? 0.8 : 1);
     // Turn to the nearest foe roughly where the camera looks, else where it looks.
     stabYaw = cam.yaw;
     let best = STAB.aim;
@@ -439,6 +445,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
     if (controls.tap('KeyM')) mapView.toggle();
+    if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
+    if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
     if (controls.tap('Backquote')) debug.toggle();
     body.invulnerable = debug.invulnerable;
     if (debug.tireless) body.stamina = MOVE.stamina;
@@ -521,6 +529,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       else if (nearPawn && pack.items.length) {
         const r = sell(pack, sales++);
         euros += r.paid; readAt = now; // (stooping over her counter)
+        sounds.play('coins');
         say(r.line, 6);
       } else if (nearDoor) {
         const line = doors.toggle(nearDoor, now);
@@ -533,7 +542,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const kindling = campfire.kindling(now);
     if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
       const why = campfire.whyNot(body, body.facing, fauna.after(body), now);
-      if (why) say(why, 2.5); else campfire.light(body, body.facing, now);
+      if (why) say(why, 2.5); else { campfire.light(body, body.facing, now); sounds.play('fire_light'); }
     }
     const stirring = now - cookAt < COOK.dur;
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
@@ -568,6 +577,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (!released && now - throwAt >= THROWING.release) {
         released = true;
         const hx = body.x - Math.sin(cam.yaw) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(cam.yaw) * 0.3;
+        sounds.play('throw', null, 0.8, tossing === 'knife' ? 1.1 : 0.85);
         if (tossing === 'knife') thrown.throw(hx, hy, hz, cam.yaw, foes());
         else thrown.toss(hx, hy, hz, cam.yaw);
       }
@@ -579,6 +589,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       view.props.loose = new Float32Array(candles.flatMap((c) => [c.x, c.y + 0.35, c.z]));
       if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
         finds.take(picking);
+        sounds.play('pickup');
         pack.add(picking);
         say(`You pick up ${FINDS[picking.kind].name}.`, 3);
       }
@@ -589,11 +600,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
         if (striking === 'pound' && pound) {
           const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
           const struck = pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : [];
+          for (const r of struck) sounds.play('pound', r);
           for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * gear.edge * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
           if (struck.length) practised('knife');
         } else {
           const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
           if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * gear.edge * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
+          if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : 1.3); }
           if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
         }
       }
@@ -705,6 +718,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.y + (body.mode === 'swim' ? 0.45 : 1.85), body.z - Math.cos(cam.yaw) * 0.4);
     view.frame(body.x, body.y, body.z, timer.getElapsed());
+    view.camera.getWorldDirection(lampDir);
+    const ear = view.camera.position;
+    sounds.update({
+      dt, body, level, fauna, doors: doors.list, fire: campfire.burning(timer.getElapsed()) ? campfire.fire : null,
+      resting: campfire.resting, ladder: climb.active, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
+    });
     (globalThis as { __ready?: boolean }).__ready = view.settled;
     controls.endFrame();
   });
@@ -740,6 +759,6 @@ function hudText(b: Body, backend: string, list: readonly string[]): string {
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
   if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light · M map · \` debug  ·  ${backend}`);
+  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
   return lines.join('\n');
 }
