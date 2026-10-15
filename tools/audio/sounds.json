@@ -1,0 +1,291 @@
+{
+ "_doc": "Dunfinity's sound effects (tools/audio/sfx.py). sound: what the game needs, in words (the listener's target). seed: the Seed Audio prompt after 'The sound of'. kind: shot = one event cut out of each take; steps = several short events cut apart (each a variation); loop = an ambience bed looped seamlessly. max: longest cut (s). files: how many variations to keep. gain: playback gain in the manifest. Seed Audio could not make a knife going into flesh or skidding off stone (three rounds of prompts gave coughs, claps and knocks): the game plays `pound` and `pick_work`, pitched up, for those.",
+ "step_stone": {
+  "kind": "steps",
+  "max": 0.45,
+  "files": 5,
+  "gain": 0.35,
+  "sound": "a single quiet footstep of a light person in worn shoes on a gritty stone floor in a cave",
+  "seed": "slow quiet footsteps of a light person in worn shoes on a gritty stone floor in a cave, each step separate"
+ },
+ "step_water": {
+  "kind": "steps",
+  "max": 0.6,
+  "files": 4,
+  "gain": 0.4,
+  "sound": "a footstep wading through shallow water",
+  "seed": "slow footsteps wading through shallow water in a cave, each step a separate splash"
+ },
+ "knife_swing": {
+  "kind": "shot",
+  "max": 0.45,
+  "files": 3,
+  "gain": 0.5,
+  "sound": "a quick swish of a small knife slashing through the air",
+  "seed": "a thin stick swung very fast through the air, one sharp whoosh"
+ },
+ "pound": {
+  "kind": "shot",
+  "max": 0.6,
+  "files": 2,
+  "gain": 0.7,
+  "sound": "a heavy blunt thud of a wooden knife handle hitting a body",
+  "seed": "a heavy blunt thud of a wooden handle hitting a body, once"
+ },
+ "hurt": {
+  "kind": "shot",
+  "max": 0.8,
+  "files": 3,
+  "gain": 0.6,
+  "sound": "a young woman's short pained gasp or grunt when bitten, no words",
+  "seed": "a young woman gasping in pain once when something bites her, a short grunt, no words"
+ },
+ "death": {
+  "kind": "shot",
+  "max": 2.0,
+  "files": 1,
+  "gain": 0.7,
+  "sound": "a young woman's last cry and a body slumping to a stone floor, no words",
+  "seed": "a young woman crying out once and her body slumping down onto a stone floor, no words"
+ },
+ "land": {
+  "kind": "shot",
+  "max": 0.6,
+  "files": 2,
+  "gain": 0.6,
+  "sound": "a person landing hard on a stone floor after a fall, a heavy body thud",
+  "seed": "a person landing hard on a stone floor after a jump, one heavy thud"
+ },
+ "ladder": {
+  "kind": "steps",
+  "max": 0.5,
+  "files": 4,
+  "gain": 0.4,
+  "sound": "a hand or foot gripping an old wooden ladder rung, a creak and knock",
+  "seed": "someone climbing an old wooden ladder slowly, each rung a separate creak and knock"
+ },
+ "door_open": {
+  "kind": "shot",
+  "max": 1.8,
+  "files": 1,
+  "gain": 0.6,
+  "sound": "an old wooden house door with an iron latch creaking open",
+  "seed": "an old wooden house door's iron latch clicking and the door creaking open, once"
+ },
+ "door_close": {
+  "kind": "shot",
+  "max": 1.2,
+  "files": 1,
+  "gain": 0.6,
+  "sound": "an old wooden house door swinging shut with a solid thud and a latch click",
+  "seed": "an old wooden house door swinging shut with a solid thud and an iron latch clicking, once"
+ },
+ "pickup": {
+  "kind": "shot",
+  "max": 0.9,
+  "files": 2,
+  "gain": 0.5,
+  "sound": "picking up a small object from a gravelly floor and putting it into a cloth bag",
+  "seed": "a small object being picked up from gravel and dropped into a cloth bag, once"
+ },
+ "coins": {
+  "kind": "shot",
+  "max": 1.5,
+  "files": 1,
+  "gain": 0.5,
+  "sound": "a few euro coins counted out onto a wooden shop counter",
+  "seed": "a few coins being counted out onto a wooden shop counter"
+ },
+ "fire_light": {
+  "kind": "shot",
+  "max": 2.0,
+  "files": 1,
+  "gain": 0.6,
+  "sound": "a match struck and small kindling catching fire with a soft whoosh",
+  "seed": "a match being struck and dry kindling catching fire with a soft whoosh"
+ },
+ "fire": {
+  "kind": "loop",
+  "max": 12,
+  "files": 1,
+  "gain": 0.5,
+  "sound": "a small campfire crackling steadily, close",
+  "seed": "a small campfire crackling and popping steadily, close by, nothing else"
+ },
+ "throw": {
+  "kind": "shot",
+  "max": 0.5,
+  "files": 2,
+  "gain": 0.5,
+  "sound": "a knife thrown hard, spinning whoosh through the air",
+  "seed": "one short fast whoosh of a small object thrown past, swish"
+ },
+ "rat_squeak": {
+  "kind": "steps",
+  "max": 0.7,
+  "files": 4,
+  "gain": 0.5,
+  "sound": "an angry rat squeaking",
+  "seed": "a small rat squeaking, close up, a few squeaks with pauses"
+ },
+ "rat_bite": {
+  "kind": "shot",
+  "max": 0.6,
+  "files": 2,
+  "gain": 0.5,
+  "sound": "a rat lunging and biting with a sharp hiss and squeal",
+  "seed": "a rat lunging and biting with a sharp hissing squeal, once"
+ },
+ "rat_die": {
+  "kind": "shot",
+  "max": 0.9,
+  "files": 2,
+  "gain": 0.5,
+  "sound": "a rat's short dying squeal",
+  "seed": "a rat giving one short dying squeal"
+ },
+ "cricket_chirp": {
+  "kind": "steps",
+  "max": 0.8,
+  "files": 3,
+  "gain": 0.35,
+  "sound": "a large cave cricket chirping and clicking",
+  "seed": "a single cricket chirping, close up, quiet night"
+ },
+ "cricket_leap": {
+  "kind": "shot",
+  "max": 0.5,
+  "files": 2,
+  "gain": 0.4,
+  "sound": "a big insect leaping with a dry rustle of legs and a click",
+  "seed": "a big cricket leaping with a dry rustle of legs and a click, once"
+ },
+ "dog_growl": {
+  "kind": "shot",
+  "max": 1.6,
+  "files": 2,
+  "gain": 0.6,
+  "sound": "a feral dog growling low and menacing",
+  "seed": "a feral dog growling low and menacing in a cave"
+ },
+ "dog_bark": {
+  "kind": "steps",
+  "max": 0.7,
+  "files": 3,
+  "gain": 0.6,
+  "sound": "a feral dog barking once, echoing",
+  "seed": "a feral dog barking a few times in an echoing cave"
+ },
+ "dog_die": {
+  "kind": "shot",
+  "max": 1.2,
+  "files": 1,
+  "gain": 0.6,
+  "sound": "a dog's short pained yelp and whimper",
+  "seed": "a dog giving a short pained yelp and whimper, once"
+ },
+ "eel_strike": {
+  "kind": "shot",
+  "max": 1.2,
+  "files": 2,
+  "gain": 0.6,
+  "sound": "something lunging out of dark water with a sudden heavy splash",
+  "seed": "a big fish leaping out of the water and splashing back, one heavy splash"
+ },
+ "slime": {
+  "kind": "steps",
+  "max": 0.8,
+  "files": 3,
+  "gain": 0.5,
+  "sound": "a wet gelatinous slime squelching and slurping",
+  "seed": "a big wet gelatinous slime squelching and slurping as it moves"
+ },
+ "pick_swing": {
+  "kind": "shot",
+  "max": 0.8,
+  "files": 2,
+  "gain": 0.6,
+  "sound": "a heavy iron pickaxe swung through the air with a grunt",
+  "seed": "a heavy iron pickaxe swung hard through the air with a man's grunt, once"
+ },
+ "pick_work": {
+  "kind": "steps",
+  "max": 0.7,
+  "files": 3,
+  "gain": 0.4,
+  "sound": "a pickaxe striking rock, a single ringing chink",
+  "seed": "a pickaxe hitting stone, one sharp chink of metal on rock, then another after a pause"
+ },
+ "bell": {
+  "kind": "shot",
+  "max": 5.0,
+  "files": 1,
+  "gain": 0.7,
+  "sound": "a large old iron bell ringing out through huge underground halls",
+  "seed": "a large old iron bell ringing a few times, echoing through huge underground halls"
+ },
+ "tall_stare": {
+  "kind": "shot",
+  "max": 4.0,
+  "files": 1,
+  "gain": 0.6,
+  "sound": "a deep unnatural cold whoosh and low dissonant drone swelling, horror sting",
+  "seed": "a horror movie sting, a low eerie whoosh rising into a dissonant metallic screech, then silence"
+ },
+ "salt_gain": {
+  "kind": "shot",
+  "max": 1.5,
+  "files": 1,
+  "gain": 0.4,
+  "sound": "a soft magical sparkling shimmer of crystals",
+  "seed": "a magic chime, a soft sparkling twinkle of tiny bells"
+ },
+ "amb_town": {
+  "kind": "loop",
+  "max": 20,
+  "files": 1,
+  "gain": 0.35,
+  "sound": "a quiet small town street at night: light wind, crickets in the grass, a far-off dog, no traffic",
+  "seed": "a quiet small town street at night, light wind, crickets in the grass and a far-off dog, no cars, no voices"
+ },
+ "amb_cellar": {
+  "kind": "loop",
+  "max": 20,
+  "files": 1,
+  "gain": 0.3,
+  "sound": "a quiet old cellar room tone with a clock ticking upstairs",
+  "seed": "a quiet room at night with an old clock ticking, nothing else"
+ },
+ "amb_quarry": {
+  "kind": "loop",
+  "max": 20,
+  "files": 1,
+  "gain": 0.4,
+  "sound": "a vast abandoned underground quarry: deep low rumble, distant water drips, faint creaking timber",
+  "seed": "a vast abandoned underground stone quarry, deep low rumble, distant water dripping and faint creaking timber, no voices"
+ },
+ "amb_salt": {
+  "kind": "loop",
+  "max": 20,
+  "files": 1,
+  "gain": 0.4,
+  "sound": "a huge salt mine cathedral: airy resonant hum, faint crystalline tinkles, distant wind",
+  "seed": "wind blowing softly through a huge empty cave, a low hollow drone, nothing else"
+ },
+ "amb_cistern": {
+  "kind": "loop",
+  "max": 20,
+  "files": 1,
+  "gain": 0.4,
+  "sound": "an underground cistern: water trickling and dripping into deep pools, echoing",
+  "seed": "an underground cistern with water trickling and dripping into deep pools, long echoes, no voices"
+ },
+ "amb_threshold": {
+  "kind": "loop",
+  "max": 20,
+  "files": 1,
+  "gain": 0.4,
+  "sound": "deep natural caverns: a low eerie wind moaning through, very distant rumbles",
+  "seed": "deep natural caverns far underground, a low eerie wind moaning through and very distant rumbles, no voices"
+ }
+}

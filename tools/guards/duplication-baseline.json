@@ -622,5 +622,73 @@
   {
     "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
+  },
+  {
+    "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts",
+    "reason": "Object.entries over a record, a language idiom (parsing a manifest, walking ambience levels, practice and recipe tables); nothing to share."
+  },
+  {
+    "key": "idiom: [.mode .swingT] in dunfinity/render/creatures/foremanView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/tallOneView.ts + dunfinity/render/creatures/touchedView.ts",
+    "reason": "the views read their creature's mode and swing clock to pose it; the shared part is the Creature fields themselves (src/creatures/creature.ts)."
+  },
+  {
+    "key": "same name: dunfinity/audio/audio.ts#load + dunfinity/audio/music/TrackPlayer.ts#load",
+    "reason": "both fetch and decode audio, but each into its own cache: clips per sound id vs the music's loop buffers (which tell a failed fetch from an Ogg that does not decode, to switch loops off). One fetch line each; fold if a third audio loader appears."
+  },
+  {
+    "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/audio/music/TrackPlayer.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/audio/music/mood.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/lab/FlyCamera.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/render/props/Props.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/render/props/lamps.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/Music.ts#want + dunfinity/render/terrain/Terrain.ts#want",
+    "reason": "'what should be loaded now': the music's next piece vs the terrain's next chunks; unrelated."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#prepare + dunfinity/render/stage.ts#prepare",
+    "reason": "getting something ready ahead of use: a music piece buffered vs a mesh compiled; unrelated."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#step + dunfinity/world/doors.ts#step",
+    "reason": "a step of a state machine: a music deck's fade vs a door's swing; unrelated."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#update + dunfinity/audio/music/mood.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#update + dunfinity/lab/FlyCamera.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#update + dunfinity/render/props/Props.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#update + dunfinity/render/props/lamps.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/mood.ts#update + dunfinity/render/props/Props.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/audio/music/mood.ts#update + dunfinity/render/props/lamps.ts#update",
+    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
   }
 ]
