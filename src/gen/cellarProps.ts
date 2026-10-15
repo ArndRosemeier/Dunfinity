@@ -10,7 +10,7 @@
  */
 import { hash3f } from '@futuremagic/core';
 import { CELLAR } from './cellar';
-import { inscribeRing, inscriptionsAt } from './inscriptions';
+import { inscribe, inscriptionsAt } from './inscriptions';
 import { local, type PropBuilder, type Rgb } from './propMesh';
 import { furnishTown } from './townProps';
 
@@ -89,7 +89,7 @@ export function furnishCellar(f: Furnish): void {
       f.glow.upright(x, 0.006, z, -a, 0.035, 0.006, (Math.PI * ci.r) / n + 0.01, SALT);
     }
     // Round it, traced in the same salt, the ward she copied (src/gen/inscriptions.ts).
-    for (const ins of inscriptionsAt(0)) inscribeRing(f.glow, ins, 0.022, WARD);
+    for (const ins of inscriptionsAt(0)) inscribe(f.glow, ins, 0.022, 0.008, WARD);
     // Her armchair, the tin on its seat.
     const ch = C.chair, p = local(ch.x, ch.z, ch.yaw);
     const box = (side: number, fwd: number, y: number, hx: number, hy: number, hz: number, c: Rgb) => {

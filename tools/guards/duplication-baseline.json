@@ -2490,5 +2490,17 @@
   {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "each style's own cell memo read (`this.own.get`) through the one CellMemo seam; surfaced when new files shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts",
+    "reason": "each style's own cell memo read (`this.own.get`) through the one CellMemo seam; surfaced when new files shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts",
+    "reason": "each style's own cell memo read (`this.own.get`) through the one CellMemo seam; surfaced when new files shifted the idiom finder's corpus"
   }
 ]
