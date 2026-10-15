@@ -32,7 +32,7 @@ export interface PropTile {
   blockers: Float32Array;
   /** Statues whose figure the view draws (and turns): x, top of the plinth, z, yaw, pose, each. */
   watchers: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -83,7 +83,7 @@ class TileBuilder {
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -429,14 +429,16 @@ class TileBuilder {
       const g = this.level.groundAt(x, z), d = rockDistance(col);
       if (d < 0.3 || this.level.sdf(x, g + 2, z) < 0.3) continue;
       if (d < 2.2) {
-        if (r(0) > LEFT.chance) continue;
+        // Against a cavern's rock nobody left anything, but something far older stands there now and then.
+        const b = this.level.band, cavern = col.cavern > 0.5;
+        if (r(0) > (cavern ? b.ruins : LEFT.chance)) continue;
         // Back it against the rock: the rock's normal there points out into the air.
         this.level.normal(x, g + 1.6, z, o);
         const h = Math.hypot(o[0], o[2]);
         if (h < 0.5) continue;
         const ox = o[0] / h, oz = o[2] / h;
         const rx = x - ox * (d - 0.05), rz = z - oz * (d - 0.05);
-        const b = this.level.band;
+        if (cavern) { this.ruin(rx, rz, ox, oz, g, r); continue; }
         if (r(5) < b.machines) this.waterworks(rx, rz, ox, oz, g, r);
         else if (r(5) >= b.machines + b.carvings) this.leftBehind(rx, rz, ox, oz, g, r);
         else if (r(6) < 0.2) this.chapel(rx, rz, ox, oz, g, r);
@@ -640,6 +642,63 @@ class TileBuilder {
     this.counts.chapels++;
   }
 
+  /**
+   * A ruin against a cavern's rock at (x, z), (ox, oz) pointing away from it, older than any mine
+   * and made for something taller than people: the front of a crypt (steps, two columns, a lintel
+   * under a heavy gable, a doorway of darkness), or a stair of steps too tall to climb, leading up
+   * into the rock.
+   */
+  private ruin(x: number, z: number, ox: number, oz: number, g: number, r: (k: number) => number): void {
+    const yaw = Math.atan2(ox, oz), at = local(x, z, yaw), L = this.level;
+    for (const [sd, out] of [[-2.4, 1.4], [2.4, 1.4], [0, 2.5], [-2, 4.5], [2, 4.5], [0, 6]]) {
+      const [cx, cz] = at(sd, out);
+      if (!L.dry(cx, cz, 0.1) || Math.abs(L.groundAt(cx, cz) - g) > 0.9 || L.sdf(cx, g + 1.5, cz) < 0.6) return;
+    }
+    const [hx, hz] = at(0, 1.2);
+    if (L.sdf(hx, g + 6.5, hz) < 0.5) return;
+    const old = (k: number): Rgb => { const c = this.tone(k); return [c[0] * 0.92, c[1] * 0.97, c[2] * 0.9]; };
+    if (r(60) < 0.55) {
+      // The crypt: two broad steps, columns, the lintel and gable, and the doorway, black. It stands
+      // a little out from the rock, so the rock's bulges do not swallow the doorway.
+      const at = local(x + ox * 0.7, z + oz * 0.7, yaw);
+      const base = g + 0.6, high = 5.2;
+      // (The steps reach a metre down: the floor in front of a cavern wall is never quite level.)
+      for (const [out, top, hw, hd] of [[1.5, g + 0.3, 2.8, 0.55], [1.0, g + 0.6, 2.5, 0.45]] as const) {
+        const [sx, sz] = at(0, out);
+        this.stones.upright(sx, (g - 1 + top) / 2, sz, yaw, hw, (top - g + 1) / 2, hd, old(0.9));
+      }
+      const [px, pz] = at(0, 1.2);
+      this.block(px, pz, yaw, 2.8, 0.9, g - 0.3, g + 0.6);
+      for (const sd of [-1.9, 1.9]) {
+        const [cx, cz] = at(sd, 0.85);
+        this.stones.cylinder(cx, base + high / 2, cz, 0.36, high / 2, old(1), 12, 0.04);
+        this.stones.upright(cx, base + high + 0.15, cz, yaw, 0.48, 0.15, 0.48, old(1.05)); // capital
+        this.stones.upright(cx, base + 0.12, cz, yaw, 0.46, 0.12, 0.46, old(1.05)); // foot
+        this.block(cx, cz, yaw, 0.45, 0.45, g, base + high);
+      }
+      const [lx, lz] = at(0, 0.75), top = base + high + 0.3;
+      this.stones.upright(lx, top + 0.3, lz, yaw, 2.6, 0.3, 0.55, old(0.95));
+      const [ax, az] = at(-2.7, 0.7), [bx, bz] = at(2.7, 0.7), [mx, mz] = at(0, 0.7);
+      this.stones.beam(ax, top + 0.75, az, mx, top + 2.1, mz, 0.4, 0.3, old(0.9));
+      this.stones.beam(bx, top + 0.75, bz, mx, top + 2.1, mz, 0.4, 0.3, old(0.9));
+      const [dx, dz] = at(0, 0.1);
+      this.solid.upright(dx, base + 1.9, dz, yaw, 1.05, 1.9, 0.3, VOID);
+      const [wx, wz] = at(0, -0.5);
+      this.stones.upright(wx, base + high / 2 + 0.5, wz, yaw, 2.4, high / 2 + 1.5, 0.6, old(0.8)); // the front's back wall, into the rock
+      for (const sd of [-1.15, 1.15]) { const [fx, fz] = at(sd, 0.18); this.stones.upright(fx, base + 1.95, fz, yaw, 0.12, 1.95, 0.14, old(1.1)); }
+    } else {
+      // The stair: steps three times a person's, rising into the rock to nothing that is left.
+      const n = 6, rise = 0.75, tread = 0.9;
+      for (let k = 0; k < n; k++) {
+        const out = (n - k - 0.5) * tread, top = g + rise * (k + 1);
+        const [sx, sz] = at(0, out);
+        this.stones.upright(sx, (g - 1 + top) / 2, sz, yaw, 2.2, (top - g + 1) / 2, tread / 2 + 0.02, old(0.85 + 0.2 * r(61 + k)));
+        this.block(sx, sz, yaw, 2.2, tread / 2, g - 0.3, top);
+      }
+    }
+    this.counts.ruins++;
+  }
+
   /** An old electric lamp hanging on its chain from the roof over (x, z), its bulb `HANG.low`–`HANG.high` above the floor; most still burn. */
   private hangingLamp(x: number, z: number, g: number, r: (k: number) => number): void {
     const y = g + HANG.low + (HANG.high - HANG.low) * r(44);
@@ -794,6 +853,8 @@ export function carveMiner(b: PropBuilder, px: number, top: number, pz: number, 
 
 /** What was left against the rock, and the derricks: the cell size scanned (m) and the chance per cell. */
 const LEFT = { cell: 6, chance: 0.22, derricks: 0.006 };
+/** A doorway into darkness. */
+const VOID: Rgb = [0.008, 0.008, 0.01];
 /** A hanging lamp's bulb height over the floor (low, high) and the longest chain it hangs on, m. */
 const HANG = { low: 3.6, high: 5, chain: 30 };
 /** A derrick's mast height and how far its boom reaches out, m. */

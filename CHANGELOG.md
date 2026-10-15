@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.032 — Ruins older than the mine
+
+- In the Threshold's caverns, against the rock, now and then stands something no miner made: the front of a crypt, columns and a heavy gable around a doorway of darkness, or a stair of steps far too tall for people, climbing into the rock towards nothing that is left.
+
 ## v0.031 — The Threshold
 
 - Levels 9 and 10 are the Threshold, where the mine runs out. Natural caverns break through between the last, deepest workings: wide, rough caves with vaulted roofs and rolling floors, columns of rock the water never dissolved, and stalagmites rising to meet stalactites. The fallen stones in them are round boulders, and the veins of infused salt glow in the walls.
