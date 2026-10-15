@@ -14,6 +14,7 @@
  */
 import { deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
+import { Grain, grainOf } from './grainLines';
 import { joined } from './gridTree';
 import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
@@ -77,16 +78,13 @@ export class Dungeon implements Style {
   /** Grey on the map (M). */
   readonly mapFloor = [0.56, 0.56, 0.6] as const;
   private readonly cells: number;
-  private readonly cos: number;
-  private readonly sin: number;
+  private readonly grain: Grain;
   private readonly own = new WeakMap<Column, DungeonColumn>();
   private readonly rooms = new Map<number, Room>();
 
   constructor(readonly seed: number, readonly band: Band) {
     this.cells = deriveSeed(seed, 'dungeon', 'cells');
-    const a = hashToFloat(deriveSeed(seed, 'dungeon', 'grain')) * Math.PI;
-    this.cos = Math.cos(a);
-    this.sin = Math.sin(a);
+    this.grain = new Grain(grainOf(seed, 'dungeon'));
   }
 
   /** The room in cell (i, j). */
@@ -127,7 +125,7 @@ export class Dungeon implements Style {
 
   column(x: number, z: number, col: Column): Column {
     const D = DUNGEON, G = D.cell;
-    const u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos;
+    const u = this.grain.u(x, z), v = this.grain.v(x, z);
     let o = this.own.get(col);
     if (!o) {
       o = { n: 0, inside: new Float64Array(9), wall: new Float64Array(9), vault: new Float64Array(9), span: new Float64Array(9), pillar: Infinity, corridor: 0 };
@@ -190,7 +188,7 @@ export class Dungeon implements Style {
 
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     const B = this.band, h = y - col.floor;
-    const u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos;
+    const u = this.grain.u(x, z), v = this.grain.v(x, z);
     // Big dressed blocks in courses, each course half a block along from the last, and big flagstones:
     // each its own shade (the rock is meshed a metre apart, so finer joints would not show).
     const row = Math.floor(h / 1), a = (u + v) / 2 + row * 0.5;
@@ -205,9 +203,9 @@ export class Dungeon implements Style {
 
   /** A passage from another style ends in the middle of the nearest room (E3). */
   portal(x: number, z: number): [number, number] {
-    const G = DUNGEON.cell, u = x * this.cos + z * this.sin, v = -x * this.sin + z * this.cos;
+    const G = DUNGEON.cell, u = this.grain.u(x, z), v = this.grain.v(x, z);
     const r = this.room(Math.floor(u / G), Math.floor(v / G));
-    return [r.u * this.cos - r.v * this.sin, r.u * this.sin + r.v * this.cos];
+    return this.grain.xz(r.u, r.v);
   }
 
   climbable(): boolean {
