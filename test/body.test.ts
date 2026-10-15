@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { Body, MOVE, type BodyInput } from '../src/world/traverse/body';
+import { damage } from '../src/combat/combat';
 
 const level = new Level(1, 1);
 const [sx, , sz] = level.spawn();
@@ -91,4 +92,32 @@ test('health comes back slowly once the nobody has been left alone a while', () 
   assert.ok(b.health > MOVE.maxHealth - 40 + 5 && b.health < MOVE.maxHealth);
   run(b, 120);
   assert.equal(b.health, MOVE.maxHealth, 'not past full');
+});
+
+test('a roll (grandma\'s Duck) carries the body a few metres, costs stamina, and blows miss it for part of it', () => {
+  const b = standing(), x0 = b.x, z0 = b.z, s0 = b.stamina;
+  // Roll along the open direction: the one with most room.
+  let best = [1, 0], room = 0;
+  for (let a = 0; a < 8; a++) {
+    const dx = Math.cos(a * 0.785), dz = Math.sin(a * 0.785);
+    let r = 0;
+    while (r < 6 && level.sdf(b.x + dx * r, b.y + 1, b.z + dz * r) > 0.6) r += 0.25;
+    if (r > room) { room = r; best = [dx, dz]; }
+  }
+  assert.ok(b.roll(best[0], best[1], 4, [0.08, 0.42]));
+  assert.equal(b.stamina, s0 - 4);
+  assert.ok(!b.roll(best[0], best[1], 4, [0.08, 0.42]), 'not twice at once');
+  assert.ok(!b.evading, 'not at the very start');
+  run(b, 0.2);
+  assert.ok(b.evading && b.rolling);
+  damage(b, 30, b.x + 1, b.z, 5, 'test');
+  assert.equal(b.health, MOVE.maxHealth, 'the blow missed');
+  run(b, 0.5);
+  assert.ok(!b.rolling && !b.evading);
+  const went = Math.hypot(b.x - x0, b.z - z0);
+  assert.ok(went > 1.8 && went < 3.5, `${went.toFixed(2)} m`);
+  damage(b, 30, b.x + 1, b.z, 5, 'test');
+  assert.equal(b.health, MOVE.maxHealth - 30, 'after it, blows land');
+  b.stamina = 1;
+  assert.ok(!b.roll(1, 0, 4, [0, 1]), 'no roll without the breath for it');
 });

@@ -37,6 +37,8 @@ export const MOVE = {
   /** Healing: after this many seconds unhurt, health comes back at this many points a second. */
   healAfter: 10,
   healRate: 0.8,
+  /** A roll (grandma's Duck card): seconds it takes, its speed at the start, m/s (it slows to a stop). */
+  roll: { dur: 0.6, speed: 7 },
 } as const;
 
 /** What the player wants this step: move relative to the camera, which faces along `yaw`. */
@@ -72,6 +74,11 @@ export class Body {
   health: number = MOVE.maxHealth;
   /** What climbing costs in stamina, a share of the plain cost (grandma's Kneading card lowers it). */
   climbCost = 1;
+  /** Seconds since a roll began (Infinity: none yet), which way it goes, and the part of it that blows miss (seconds from its start). */
+  rollT = Infinity;
+  private rollX = 0;
+  private rollZ = 0;
+  private safe: readonly [number, number] = [0, 0];
   /** Facing, radians (same convention as the camera yaw). */
   facing = 0;
   /** The wall being climbed: its normal. */
@@ -98,9 +105,31 @@ export class Body {
 
   get dead(): boolean { return this.health <= 0; }
 
+  /** Mid-roll. */
+  get rolling(): boolean { return this.rollT < MOVE.roll.dur; }
+
+  /** In the part of a roll that blows miss. */
+  get evading(): boolean { return this.rollT >= this.safe[0] && this.rollT < this.safe[1]; }
+
+  /**
+   * Roll along (dx, dz) (any length): on the floor, walking, not rolling already, and with `stamina`
+   * to spare. Blows miss it from `safe[0]` to `safe[1]` seconds in. Returns whether it rolls.
+   */
+  roll(dx: number, dz: number, stamina: number, safe: readonly [number, number]): boolean {
+    const l = Math.hypot(dx, dz);
+    if (this.dead || this.mode !== 'walk' || !this.grounded || this.rolling || this.stamina < stamina || l < 1e-6) return false;
+    this.stamina -= stamina;
+    this.rollX = dx / l; this.rollZ = dz / l;
+    this.safe = safe;
+    this.rollT = 0;
+    this.facing = Math.atan2(-this.rollX, -this.rollZ);
+    return true;
+  }
+
   /** Advance by dt seconds (call with small fixed steps, ~1/120 s). `blockers`: the props in the way (src/world/blockers.ts). */
   step(level: Level, input: BodyInput, dt: number, blockers?: Blockers): void {
     this.time += dt;
+    this.rollT += dt;
     if (!this.dead && this.time - this.hurtAt > MOVE.healAfter) this.health = Math.min(MOVE.maxHealth, this.health + MOVE.healRate * dt);
     if (this.dead) { input.jump = false; return; }
     const fx = -Math.sin(input.yaw), fz = -Math.cos(input.yaw);
@@ -133,7 +162,7 @@ export class Body {
     // Stamina comes back after a moment's rest on the floor.
     if (this.mode === 'climb' || (input.sprint && ml > 0.1 && this.grounded)) this.restSince = this.time;
     else if (this.grounded && this.time - this.restSince > 0.8) this.stamina = Math.min(MOVE.stamina, this.stamina + 3 * dt);
-    if (ml > 0.1 && this.mode !== 'climb') this.facing = Math.atan2(-mx, -mz);
+    if (ml > 0.1 && this.mode !== 'climb' && !this.rolling) this.facing = Math.atan2(-mx, -mz);
     input.jump = false;
   }
 
@@ -146,6 +175,13 @@ export class Body {
   }
 
   private walk(input: BodyInput, mx: number, mz: number, depth: number, dt: number): void {
+    if (this.rolling) {
+      // A roll goes where it was aimed, whatever the keys say, slowing to a stop.
+      const v = MOVE.roll.speed * (1 - (this.rollT / MOVE.roll.dur) ** 2);
+      this.vx = this.rollX * v; this.vz = this.rollZ * v;
+      this.vy = this.grounded ? Math.min(this.vy, -2) : this.vy - MOVE.gravity * dt;
+      return;
+    }
     const sprint = input.sprint && this.stamina > 0;
     const speed = depth > 0.5 ? MOVE.wade : sprint ? MOVE.sprint : MOVE.walk;
     if (sprint && this.grounded && Math.hypot(mx, mz) > 0.1) this.stamina = Math.max(0, this.stamina - 0.5 * dt);

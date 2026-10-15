@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.041 — Duck
+
+- A new card in grandma's tin: **Duck** (Footwork). Once it is cooked, Q rolls you the way you are going, or backwards if you are standing still. Blows miss you for most of the roll, but it costs stamina. At rank 2 it is cheaper and blows miss you for nearly all of it.
+
 ## v0.040 — Grandma's recipe tin
 
 - Resting by your fire, press T to open grandma's tin. Her cards are sorted by chapter, and the dividers for deeper chapters stay shut until one of the family has been that deep. W and S choose a card, E cooks it with infused salt, and T closes the tin.
