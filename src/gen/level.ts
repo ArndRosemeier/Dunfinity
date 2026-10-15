@@ -4,6 +4,7 @@
  *
  * Which kind of place a depth is (the Quarry, the Salt Works...) is its band (src/gen/bands.ts).
  */
+import { HOUSE_DOORS, type DoorSpec } from './doorways';
 import { deriveSeed } from '@futuremagic/core';
 import { bandOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
@@ -123,6 +124,11 @@ export class Level {
     const d = this.field.at(this.field.column(x, z, this.col), x, y, z);
     const s = this.descents.of(x, z);
     return s ? shaftAir(s, d, x, y, z) : d;
+  }
+
+  /** The doors that open and shut here (grandma's house, at depth 0). */
+  get doors(): readonly DoorSpec[] {
+    return this.depth === 0 ? HOUSE_DOORS : [];
   }
 
   /** Whether the rock nearest (x, y, z) can be climbed (the field's say: built walls cannot). */

@@ -38,6 +38,8 @@ import { ScavengerView } from '../render/creatures/scavengerView';
 import { TallOneView } from '../render/creatures/tallOneView';
 import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
+import { Doors } from '../world/doors';
+import { DoorView } from '../render/props/doorView';
 import { blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -119,6 +121,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     level = l;
     fauna = new Fauna(l);
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
+    doors = new Doors(l.doors);
+    doorView.hang(doors.list);
+    doors.into(view.props.blockers);
     touchedView.level = foremanView.level = scavengerView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
@@ -147,6 +152,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   fauna = new Fauna(level);
   /** The nobody's own fire to rest by (one at a time). */
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
+  /** The doors that open and shut (grandma's house). */
+  let doors = new Doors(level.doors);
   finds = findsOf(level);
   // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
   const touchedView = await TouchedView.create(params.seed);
@@ -204,6 +211,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const hearth = new Hearth(hearthParts());
   hearth.root.visible = false;
   await view.stage.add(hearth.root);
+  const doorView = new DoorView();
+  await view.stage.add(doorView.root);
+  doorView.hang(doors.list);
+  doors.into(view.props.blockers);
   const findView = new FindView();
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
@@ -344,7 +355,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown,
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -420,6 +431,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       return Math.hypot(d.x - body.x, d.z - body.z) < PAWN.reach;
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
+    const nearDoor = busy || nearLadder || nearFind || nearNote || !body.grounded ? null : doors.near(body.x, body.y, body.z);
     // Kemal's counter: 1, 2, 3 buy what is on it.
     if (nearKemal) GEAR_ORDER.forEach((k, i) => {
       if (!controls.tap(`Digit${i + 1}`)) return;
@@ -456,6 +468,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
         const r = sell(pack, sales++);
         euros += r.paid; readAt = now; // (stooping over her counter)
         say(r.line, 6);
+      } else if (nearDoor) {
+        const line = doors.toggle(nearDoor, now);
+        if (line) say(line, 4);
       } else if (nearNote) {
         readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`, 20);
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
@@ -486,6 +501,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       input.jump = false;
     } else {
+      doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
       const stabbing = now - stabAt < stabDur, throwing = now - throwAt < THROWING.dur;
       if (stabbing) body.facing = stabYaw;
@@ -595,6 +611,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     stares = fauna.tall.stares;
     const fire = campfire.fire, lit = campfire.kindling(now);
     hearth.root.visible = !!fire;
+    doorView.draw();
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
@@ -609,6 +626,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
+    else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : 'E: read the note');
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}. T: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');

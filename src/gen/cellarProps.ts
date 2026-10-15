@@ -60,6 +60,8 @@ export function furnishCellar(f: Furnish): void {
   }
 
   if (at(-6, 0)) {
+    // Over the cellar door (src/gen/doorways.ts), at the foot of the stairs: a lintel up to the vault.
+    s.upright(C.cellar.x[0] + 0.05, 2.4, 0, 0, 0.1, 0.25, C.stairs.z[1] + 0.15, DARK);
     // Wooden treads up the stairs into the house.
     const S = C.stairs, n = 14, run = (S.x[1] - S.x[0]) / n;
     for (let i = 0; i < n; i++) {
@@ -184,10 +186,8 @@ function furnishHouse(f: Furnish): void {
   window(-13.7, H.z[0] + 0.02, 0);
   window(H.x[0] + 0.02, -2.8, Math.PI / 2);
 
-  // The hall: the front door at its west end, standing open onto the street, a coat stand, a bulb.
+  // The hall: the front door at its west end (src/gen/doorways.ts), a coat stand, a bulb.
   if (at(H.x[0], 0)) {
-    s.upright(H.x[0] + 0.5, F + 1.0, -0.56, 0, 0.45, 1.0, 0.03, DARK);
-    s.upright(H.x[0] + 0.88, F + 0.98, -0.51, 0, 0.03, 0.02, 0.02, GOLD); // the handle
     s.upright(H.x[0] + 0.5, F + 0.006, 0, 0, 0.3, 0.006, 0.45, CLOTH); // the mat
     s.upright(H.x[0] + 0.6, F + 0.9, 0.85, 0, 0.025, 0.9, 0.025, WOOD); // the coat stand
     s.ellipsoid(H.x[0] + 0.6, F + 1.45, 0.82, 0.16, 0.3, 0.12, [0.22, 0.2, 0.18], 8); // her coat
