@@ -35,6 +35,11 @@
     "crystal_cluster",
     "crystal_spar",
     "lava_drips",
-    "basalt_block"
+    "basalt_block",
+    "prop_forge",
+    "prop_forge_fire",
+    "prop_dwarf_statue",
+    "prop_brazier",
+    "prop_chain"
   ]
 }
