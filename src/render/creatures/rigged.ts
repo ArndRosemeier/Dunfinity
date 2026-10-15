@@ -134,7 +134,7 @@ export class Animator {
  * clips, and the flinch when its health drops. A figure taken over by another creature starts that
  * one's clip without fading.
  */
-export abstract class RiggedFigure<T extends Creature<string> & { readonly size: number }> implements Figure<T> {
+export abstract class RiggedFigure<T extends Creature<string> & { readonly size?: number }> implements Figure<T> {
   readonly root = new Group();
   private readonly anim: Animator;
   private readonly over = new Map<string, boolean>();
@@ -174,7 +174,7 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size:
     this.last = time;
     const fresh = c !== this.who;
     if (fresh) { this.who = c; this.hurtT = c.hurtT; this.over.clear(); }
-    this.speed = groundSpeed(c) / c.size;
+    this.speed = groundSpeed(c) / (c.size ?? 1);
     const clip = this.clipFor(c);
     if (fresh) this.anim.fade = 0;
     this.anim.play(clip);
@@ -185,5 +185,9 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size:
     if (c.hurtT < this.hurtT && !fresh && !c.dead) this.anim.hurt();
     this.hurtT = c.hurtT;
     this.anim.update(fresh ? 0 : dt);
+    this.posed(c, time);
   }
+
+  /** After the clips have posed it: a figure whose body the sim shapes (an eel's chain) lays it out here. */
+  protected posed(_c: T, _time: number): void {}
 }

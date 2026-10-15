@@ -204,8 +204,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const ratView = await RatView.create();
   const cricketView = await CricketView.create();
   const slimeView = await SlimeView.create();
+  const eelView = await EelView.create();
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
@@ -217,7 +218,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(cricketView.root);
   await view.stage.add(slimeView.root);
   await view.stage.add(dogView.root);
-  const eelView = new EelView();
   await view.stage.add(eelView.root);
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
