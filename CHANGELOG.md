@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.082 — Root hollows
+
+- The first living kind of place: caves a forest grew into from above. Giant roots as thick as a cart come down through the roof, writhe across the chambers, split and plunge into the floor. Some cross low enough to walk along their backs, and root tips hang from the roof. The floor is a moss carpet over humps of tangled root mat, and the walls are damp dark soil. Try `?style=roots`.
+- A share of the Cisterns (levels 6–8). On the map (M) they show moss green.
+
 ## v0.081 — Things made properly
 
 - The things miners left against the rock are now modelled in Blender instead of built from boxes: crates of nailed planks, barrels with staves and iron hoops, a pick and a shovel leant on the rock, a pail with its handle dropped to one side, and squared blocks with tool marks and knocked corners. Shadows sit in their creases and under them.
