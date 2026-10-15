@@ -1,0 +1,44 @@
+name: Pages
+# Every push to main is playable at https://arndrosemeier.github.io/dunfinity/ (a preview, not a release).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/configure-pages@v5
+        id: pages
+        with:
+          enablement: true
+      # The repo's Pages site lives under /dunfinity/, the same subpath build:publish targets.
+      - run: npm run build:publish
+        env:
+          DUNFINITY_BASE: ${{ steps.pages.outputs.base_path }}/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

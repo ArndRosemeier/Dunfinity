@@ -1,12 +1,16 @@
 # Changelog
 
-## v0.065 — Over the top
+## v0.066 — Over the top
 
 - Fix: in the Quarry and below, where three workings meet, the floor could jump by several metres in a hand's width. That made a sheer step you could neither climb nor see properly, an invisible wall across what looked like an open gap. The floors now ramp smoothly there.
 - Climbing up onto a ledge, you no longer fall back down at the top. She grabs the edge, pulls herself up with her hands flat on the rock, gets a knee and then a foot over, and stands up on the ledge.
 - Walking into a steep bank at the foot of a wall now starts a climb instead of leaving you stuck pushing at it.
 - Fix: some patches of rock high up in tall halls were missing from the picture.
 - Cave crickets no longer perch low on a slope, and no longer back off and come again when a lunge carries them too close.
+
+## v0.065 — A preview link
+
+- Every change that lands is now playable at https://arndrosemeier.github.io/dunfinity/ a few minutes later, without publishing.
 
 ## v0.064 — Rock with a surface
 
