@@ -7,12 +7,10 @@
  *
  * A fixed pool, built once and added with the Stage before play.
  */
-import { FigurePool, placeFigure, type Figure } from './figures';
-import { Group } from 'three/webgpu';
+import { FigurePool } from './figures';
 import { DOG_COAT } from '../materials';
 import type { Dog } from '../../creatures/dogs';
-import { groundSpeed } from '../../creatures/creature';
-import { Animator, Rigged, type ClipUse } from './rigged';
+import { Rigged, RiggedFigure, type ClipUse } from './rigged';
 
 /** How many can be drawn at once. */
 const POOL = 16;
@@ -30,62 +28,32 @@ const CLIPS: Record<string, ClipUse> = {
   Die: { loop: false },
 };
 
-/** Ground speeds (m/s, at size 1) where it changes gait: up past the first, back below the second, so it never flickers between two. */
+/** Ground speeds (m/s, at size 1) where it changes gait: up past the first, back below the second. */
 const MOVING = [0.35, 0.15] as const;
 const GALLOP = [3.4, 2.6] as const;
 
-/** One drawn dog: its own copy of the model and its clips. */
-class DogFigure implements Figure<Dog> {
-  readonly root = new Group();
-  private readonly anim: Animator;
-  private who: Dog | null = null;
-  private last = 0;
-  private hurtT = 9;
-  private moving = false;
-  private galloping = false;
-
-  constructor(rig: Rigged) {
-    const model = rig.figure();
-    this.root.add(model);
-    this.anim = new Animator(model, rig, CLIPS, 'Hurt');
-  }
-
-  pose(g: Dog, time: number): void {
-    placeFigure(this.root, g);
-    const dt = Math.min(0.1, Math.max(0, time - this.last));
-    this.last = time;
-    const fresh = g !== this.who;
-    if (fresh) { this.who = g; this.hurtT = g.hurtT; }
-    const speed = groundSpeed(g) / g.size;
-    this.moving = speed > MOVING[this.moving ? 1 : 0];
-    this.galloping = speed > GALLOP[this.galloping ? 1 : 0];
-    const clip = this.clipFor(g);
-    if (fresh) this.anim.fade = 0;
-    this.anim.play(clip);
-    this.anim.fade = 0.22;
-    if (CLIPS[clip].stride) this.anim.pace(clip, g.gait * 0.16, CLIPS[clip].stride!);
-    // Stabbed: the flinch, on top.
-    if (g.hurtT < this.hurtT && !fresh && !g.dead) this.anim.hurt();
-    this.hurtT = g.hurtT;
-    this.anim.update(fresh ? 0 : dt);
-  }
-
-  private clipFor(g: Dog): string {
+class DogFigure extends RiggedFigure<Dog> {
+  protected clipFor(g: Dog): string {
+    const moving = this.faster('moving', MOVING), galloping = this.faster('gallop', GALLOP);
     switch (g.mode) {
       case 'dead': return 'Die';
       case 'crouch': return 'Crouch';
       case 'lunge': return 'Lunge';
       case 'back': return 'Bite';
-      case 'circle': return this.galloping ? 'Gallop' : 'Stalk';
-      case 'rest': return this.moving ? 'Trot' : 'Lie';
-      default: return this.moving ? (this.galloping ? 'Gallop' : 'Trot') : 'Idle';
+      case 'circle': return galloping ? 'Gallop' : 'Stalk';
+      case 'rest': return moving ? 'Trot' : 'Lie';
+      default: return moving ? (galloping ? 'Gallop' : 'Trot') : 'Idle';
     }
+  }
+
+  protected travelled(g: Dog): number {
+    return g.gait * 0.16;
   }
 }
 
 export class DogView extends FigurePool<Dog> {
   private constructor(rig: Rigged) {
-    super('dogs', POOL, () => new DogFigure(rig));
+    super('dogs', POOL, () => new DogFigure(rig, CLIPS));
   }
 
   /** Load the model (before the warm-up, so its coat's maps are there when the shaders build). */

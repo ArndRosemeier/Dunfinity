@@ -201,8 +201,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const nobody = await Nobody.create(params.seed, level);
   // The dogs too: skinned, their shaders are their own, so they compile in the warm-up with the humans.
   const dogView = await DogView.create();
+  const ratView = await RatView.create();
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
@@ -210,7 +211,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(scavengerView.camps.root);
   await view.stage.add(neighbourView.people.root);
   await view.stage.add(tallView.root);
-  const ratView = new RatView();
   await view.stage.add(ratView.root);
   const cricketView = new CricketView();
   await view.stage.add(cricketView.root);

@@ -1,141 +1,59 @@
 /**
- * The rats on screen (src/creatures/rats.ts): a fat-bodied quarry rat of smooth parts in the solid
- * kind, with eyes in the glow kind that catch the light in the dark. Legs and tail are their own
- * meshes on pivots, posed per frame: a trot, a sniff, up on the hind legs when it notices you, the
- * rear-back and lunge of a bite, the jerk of a blow, and rolled onto its back when dead. Every action
- * shows (docs: a rat that only takes your health away is not seen to bite).
+ * The rats on screen (src/creatures/rats.ts): a fat, grizzled quarry rat modelled, rigged and animated
+ * in Blender (AssetGenerator spec `creature_quarry_rat`, see src/render/creatures/rigged.ts), with
+ * naked ears and a long ringed tail, orange incisors, and eyes in the glow kind that catch the light.
+ * Every action shows: sniffing about with its nose working, the pottering scurry, the bounding run at
+ * you, up on its hind legs when it notices you, the bite (rearing back with the mouth wide, then the
+ * snap with the paws flung out), a flinch when hit, and over onto its back with its legs curling when
+ * it dies.
  *
- * A fixed pool of rats, built once and added with the Stage before play (the kinds are compiled in
- * the warm-up), so nothing is compiled or added to the scene later.
+ * A fixed pool, built once and added with the Stage before play.
  */
-import { FigurePool, placeFigure, type Figure } from './figures';
-import { groundSpeed } from '../../creatures/creature';
-import { Group, type Object3D } from 'three/webgpu';
-import type { Rgb } from '../../gen/propMesh';
-import { meshOf as mesh } from '../meshes';
-import { GLOW, VERTEX_COLOR_SOLID } from '../materials';
-import { RAT, type Rat } from '../../creatures/rats';
+import { FigurePool } from './figures';
+import { RAT_COAT } from '../materials';
+import type { Rat } from '../../creatures/rats';
+import { Rigged, RiggedFigure, type ClipUse } from './rigged';
 
 /** How many rats can be drawn at once. */
 const POOL = 36;
 
-const FUR: Rgb = [0.1, 0.078, 0.06], BELLY: Rgb = [0.2, 0.165, 0.13], PINK: Rgb = [0.42, 0.2, 0.18], TOOTH: Rgb = [0.55, 0.45, 0.2];
-const EYE: Rgb = [1.0, 0.28, 0.1];
+/** The clips (AssetGenerator's quadruped rat_clips.py; strides there as STRIDES). */
+const CLIPS: Record<string, ClipUse> = {
+  Sniff: { loop: true },
+  Scurry: { loop: true, stride: 0.22 },
+  Run: { loop: true, stride: 0.45 },
+  Rear: { loop: true },
+  Bite: { loop: false },
+  Die: { loop: false },
+};
 
-/** Hips of the legs (x, y, z): front left, front right, back left, back right; and their trot phase. */
-const HIPS: [number, number, number, number][] = [[-0.06, 0.12, -0.11, 0], [0.06, 0.12, -0.11, Math.PI], [-0.075, 0.12, 0.13, Math.PI], [0.075, 0.12, 0.13, 0]];
-const TAIL = { base: [0, 0.13, 0.22] as const, segments: 4, length: 0.1 };
+/** Ground speeds (m/s, at size 1) where it changes gait: up past the first, back below the second. */
+const MOVING = [0.25, 0.1] as const;
+const RUNNING = [2.2, 1.6] as const;
 
-/** The parts one rat is made of, built once and shared (geometry and material) by every rat. */
-function parts() {
-  const body = mesh((b) => {
-    b.ellipsoid(0, 0.15, 0.04, 0.1, 0.095, 0.17, FUR, 12);
-    b.ellipsoid(0, 0.15, 0.13, 0.115, 0.1, 0.11, FUR, 12);
-    b.ellipsoid(0, 0.14, -0.1, 0.085, 0.085, 0.1, FUR, 10);
-    b.ellipsoid(0, 0.105, 0.03, 0.08, 0.055, 0.15, BELLY, 10);
-    b.ellipsoid(0, 0.15, -0.21, 0.062, 0.06, 0.088, FUR, 10, 0.25);
-    b.ellipsoid(0, 0.13, -0.29, 0.033, 0.035, 0.06, FUR, 8, 0.3);
-    b.ellipsoid(0, 0.122, -0.345, 0.013, 0.012, 0.012, PINK, 6);
-    b.upright(0, 0.1, -0.328, 0, 0.008, 0.012, 0.004, TOOTH);
-    for (const s of [-1, 1]) b.ellipsoid(s * 0.045, 0.215, -0.19, 0.03, 0.033, 0.009, PINK, 8);
-  }, VERTEX_COLOR_SOLID);
-  const eyes = mesh((b) => { for (const s of [-1, 1]) b.ellipsoid(s * 0.04, 0.172, -0.255, 0.012, 0.012, 0.012, EYE, 6); }, GLOW);
-  const front = mesh((b) => {
-    b.ellipsoid(0, -0.045, 0, 0.026, 0.055, 0.032, FUR, 8);
-    b.ellipsoid(0, -0.108, -0.016, 0.02, 0.011, 0.03, PINK, 6);
-  }, VERTEX_COLOR_SOLID);
-  const back = mesh((b) => {
-    b.ellipsoid(0, -0.035, 0.01, 0.036, 0.06, 0.05, FUR, 8);
-    b.ellipsoid(0, -0.108, -0.02, 0.022, 0.011, 0.04, PINK, 6);
-  }, VERTEX_COLOR_SOLID);
-  const tail = Array.from({ length: TAIL.segments }, (_, k) => {
-    const r = 0.016 * (1 - k / (TAIL.segments + 0.5));
-    return mesh((b) => b.ellipsoid(0, 0, TAIL.length / 2, r, r, TAIL.length / 2 + r * 0.5, PINK, 6), VERTEX_COLOR_SOLID);
-  });
-  return { body, eyes, front, back, tail };
-}
-
-/** One drawn rat: a root at its feet (turned by yaw), a body that bobs and lunges, legs, a tail. */
-class RatFigure implements Figure<Rat> {
-  readonly root = new Group();
-  readonly body = new Group();
-  readonly legs: Object3D[] = [];
-  readonly tail: Object3D[] = [];
-  /** How far up on its hind legs (0..1), eased in and out. */
-  private rear = 0;
-  private last = 0;
-
-  constructor(p: ReturnType<typeof parts>) {
-    this.root.add(this.body);
-    this.body.add(p.body.clone(), p.eyes.clone());
-    HIPS.forEach(([x, y, z], i) => {
-      const leg = (i < 2 ? p.front : p.back).clone();
-      leg.position.set(x, y, z);
-      this.body.add(leg);
-      this.legs.push(leg);
-    });
-    let parent: Object3D = this.body;
-    p.tail.forEach((seg, k) => {
-      const s = seg.clone();
-      if (k === 0) s.position.set(TAIL.base[0], TAIL.base[1], TAIL.base[2]);
-      else s.position.set(0, 0, TAIL.length);
-      parent.add(s);
-      this.tail.push(s);
-      parent = s;
-    });
+class RatFigure extends RiggedFigure<Rat> {
+  protected clipFor(r: Rat): string {
+    const moving = this.faster('moving', MOVING), running = this.faster('run', RUNNING);
+    switch (r.mode) {
+      case 'dead': return 'Die';
+      case 'bite': return 'Bite';
+      case 'alert': return 'Rear';
+      default: return moving ? (running ? 'Run' : 'Scurry') : 'Sniff';
+    }
   }
 
-  pose(r: Rat, time: number): void {
-    const R = this.root, B = this.body;
-    placeFigure(R, r);
-    const speed = groundSpeed(r);
-    const moving = Math.min(1, speed / 1.5);
-    const g = r.gait;
-    B.position.set(0, Math.abs(Math.sin(g)) * 0.012 * moving, 0);
-    B.rotation.set(0, 0, 0);
-    if (r.mode === 'dead') {
-      // Rolled onto its back, legs curled up.
-      const k = Math.min(1, r.deadT / 0.35);
-      B.rotation.z = Math.PI * k * k;
-      B.position.y = 0.24 * k;
-      for (const leg of this.legs) leg.rotation.x = -1.1 * k;
-      this.tail.forEach((s, i) => { s.rotation.set(0.15, 0.2 * (i % 2 ? 1 : -1), 0); });
-      return;
-    }
-    // Trot: diagonal pairs together.
-    this.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(g + HIPS[i][3]) * 0.75 * moving; });
-    // Noticing you: up on the hind legs, front paws hanging, nose working.
-    const dt = Math.min(0.1, Math.max(0, time - this.last));
-    this.last = time;
-    this.rear += ((r.mode === 'alert' ? 1 : 0) - this.rear) * Math.min(1, dt * 14);
-    // Pitch (+ is nose up) about the hind hips when rearing, about the front feet when ducking in.
-    let pitch = this.rear * 0.8 + Math.sin(time * 14 + r.id) * 0.05 * this.rear, lunge = 0, reach = 0;
-    if (r.mode === 'sniff') pitch = Math.sin(time * 9 + r.id) * 0.04 + 0.05;
-    if (r.mode === 'bite') {
-      // Rear back and up, mouth open to the sky; then drive the head down and forward, paws out.
-      const t = r.biteT, w = Math.min(1, t / RAT.windup), s = t < RAT.windup ? 0 : Math.max(0, 1 - (t - RAT.windup) / 0.3);
-      if (t < RAT.windup) { pitch = 0.55 * w * (2 - w); lunge = 0.07 * w; }
-      else { pitch = -0.3 * s; lunge = -0.16 * s; reach = 1.1 * s; }
-    }
-    // Hit: a jerk up and back.
-    const hit = Math.max(0, 1 - r.hurtT / 0.25);
-    pitch -= hit * 0.4;
-    const pz = pitch > 0 ? 0.13 : -0.11;
-    B.rotation.x = pitch;
-    B.position.y += pz * Math.sin(pitch) + hit * 0.05;
-    B.position.z = pz - pz * Math.cos(pitch) + lunge + hit * 0.06;
-    // Front paws: hang straight down when up on the hind legs; reach out in the snap.
-    for (let i = 0; i < 2; i++) this.legs[i].rotation.x += -Math.max(0, pitch) * 0.85 + reach;
-    this.tail.forEach((s, i) => {
-      s.rotation.y = Math.sin(time * (3 + moving * 6) + r.id - i * 0.8) * (0.18 + 0.12 * moving);
-      s.rotation.x = i === 0 ? 0.25 - moving * 0.15 : 0.08;
-    });
+  protected travelled(r: Rat): number {
+    return r.gait * 0.09;
   }
 }
 
 export class RatView extends FigurePool<Rat> {
-  constructor() {
-    const p = parts();
-    super('rats', POOL, () => new RatFigure(p));
+  private constructor(rig: Rigged) {
+    super('rats', POOL, () => new RatFigure(rig, CLIPS));
+  }
+
+  /** Load the model (before the warm-up, so its coat's maps are there when the shaders build). */
+  static async create(): Promise<RatView> {
+    return new RatView(await Rigged.fetch('quarry_rat.glb', RAT_COAT));
   }
 }

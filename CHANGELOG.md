@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.087 — Real rats
+
+- The quarry rats are new: sculpted, rigged and animated in Blender like the dogs. Each one is a fat, grizzled sewer rat with a darker back, naked pink ears and feet, a long ringed tail, orange front teeth and eyes that catch your light.
+- Everything they do shows: sniffing about with the nose going, the pottering scurry, the bounding run when they come for you, up on the hind legs when they notice you, the bite (rearing back with the mouth wide open, then the snap forward), a flinch when you hit one, and over onto the back with the legs curling up when one dies.
+
 ## v0.086 — Real dogs
 
 - The feral dogs are new. They were built from a few ellipsoids in code; now each one is a gaunt street dog sculpted, rigged and animated in Blender (AssetGenerator). It has a deep narrow chest, ribs and spine showing, bristling hackles and tail, a rough coat with a dark saddle and a black muzzle, a mouth that opens on its teeth, and eyes that throw your headlamp back.
