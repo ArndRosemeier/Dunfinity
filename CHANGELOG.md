@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.059 — Ilse's pawn shop
+
+- Across the street from grandma's, a little way up, Ilse's pawn shop is still open: two lit windows full of other people's things, three brass balls over the door. Stand at her door with finds in your pack and press E: she buys the lot and the euros go into grandma's purse.
+- The purse belongs to the family, like the salt in the tin: it is kept when a grandchild dies. Euros buy ordinary things up here (the hardware store is next); they never turn into salt.
+
 ## v0.058 — The street
 
 - Grandma's front door is open now. Outside is her street at night: cobbles, street lamps, rows of old houses on both sides with a few windows still lit, her own living-room window glowing, and the quarry hill rising behind her side of the street. The valley closes the town in.

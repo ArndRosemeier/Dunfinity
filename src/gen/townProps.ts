@@ -46,13 +46,14 @@ export function furnishTown(f: Furnish): void {
       s.upright(fx + H.faces * 0.01, y, z, Math.PI / 2, 0.03, 0.55, 0.02, FRAME);
       s.upright(fx + H.faces * 0.03, y - 0.6, z, Math.PI / 2, 0.5, 0.04, 0.06, STONE); // the sill
     };
-    const doorZ = mid + (hash3f(TOWN_PROPS, i, 0, 2) - 0.5) * (H.z1 - H.z0 - 3);
+    const doorZ = H.door;
+    if (H.shop === 'pawn') pawnFront(f, H, fx);
     s.upright(fx, G + 1.05, doorZ, Math.PI / 2, 0.5, 1.05, 0.03, DOOR);
     s.upright(fx + H.faces * 0.25, G + 0.08, doorZ, Math.PI / 2, 0.7, 0.08, 0.25, STONE); // the step
     f.block(fx + H.faces * 0.25, doorZ, Math.PI / 2, 0.7, 0.26, G, G + 0.16);
     let k = 0;
     for (let z = H.z0 + 1.2; z < H.z1 - 1; z += 2.1) {
-      if (Math.abs(z - doorZ) > 1) pane(z, G + 1.6, k++);
+      if (Math.abs(z - doorZ) > (H.shop ? 2.4 : 1)) pane(z, G + 1.6, k++);
       if (H.eaves > G + 5) pane(z, G + 4.3, k++);
     }
   }
@@ -118,4 +119,30 @@ function shell(f: Furnish, H: House, door: boolean): void {
     const mx = cx, my = (ridge + ey) / 2 + nn[1] * lift, mz = (cz + ez) / 2 + nn[2] * lift;
     s.box(mx, my, mz, [a, 0, 0], half_v, [nn[0] * 0.06, nn[1] * 0.06, nn[2] * 0.06], roof);
   }
+}
+
+const SIGN: Rgb = [0.12, 0.09, 0.06], BRASS: Rgb = [0.6, 0.47, 0.2];
+
+/**
+ * Ilse's pawn shop front: a wide lit window either side of the door, the sign board over the door
+ * with its three brass balls, and a lantern by the door.
+ */
+function pawnFront(f: Furnish, H: House, fx: number): void {
+  const s = f.solid, G = TOWN.ground, out = H.faces;
+  for (const side of [-1, 1]) {
+    const z = H.door + side * 1.6;
+    f.glow.upright(fx, G + 1.45, z, Math.PI / 2, 0.85, 0.7, 0.01, [0.9, 0.62, 0.3]);
+    s.upright(fx + out * 0.01, G + 1.45, z, Math.PI / 2, 0.04, 0.7, 0.02, FRAME);
+    s.upright(fx + out * 0.06, G + 0.72, z, Math.PI / 2, 0.92, 0.04, 0.1, STONE);
+  }
+  // The sign board, the three brass balls hung from it.
+  s.upright(fx + out * 0.1, G + 2.75, H.door, Math.PI / 2, 1.1, 0.28, 0.04, SIGN);
+  s.upright(fx + out * 0.12, G + 2.75, H.door, Math.PI / 2, 1.0, 0.2, 0.02, BRASS);
+  s.upright(fx + out * 0.55, G + 3.25, H.door, 0, 0.5, 0.02, 0.02, IRON);
+  for (const [dz, dy] of [[-0.12, 0], [0.12, 0], [0, -0.2]]) s.ellipsoid(fx + out * 0.95, G + 3.0 + dy, H.door + dz, 0.09, 0.09, 0.09, BRASS, 10);
+  // The lantern by the door, lit.
+  const lz = H.door + 0.85;
+  s.upright(fx + out * 0.15, G + 2.25, lz, 0, 0.12, 0.02, 0.06, IRON);
+  f.glow.upright(fx + out * 0.2, G + 2.1, lz, 0, 0.07, 0.11, 0.07, LANTERN);
+  f.light(fx + out * 0.3, G + 2.0, lz);
 }

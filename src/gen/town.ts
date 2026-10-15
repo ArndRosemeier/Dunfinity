@@ -39,7 +39,13 @@ export interface House {
   /** Which way its front faces the street (+1: east, -1: west), and a number for its look. */
   readonly faces: 1 | -1;
   readonly look: number;
+  /** Where along its front its door is (z), and what it is (a shop, or someone's home). */
+  readonly door: number;
+  readonly shop?: Shop;
 }
+
+/** The shops of the street (town-and-first-strata.md §3). */
+export type Shop = 'pawn';
 
 const SEED = 1931;
 
@@ -63,7 +69,8 @@ function row(x0: number, x1: number, faces: 1 | -1, k: number, keep: number): Ho
       const za = z + gap, zb = Math.min(TOWN.valley.z - 2, za + w);
       // A lane between the houses now and then, its gap wider.
       const lane = r(3) < 0.18 ? 3 : 0;
-      out.push({ x0: x0 + (faces > 0 ? 0 : r(4) * 0.6), x1: x1 - (faces > 0 ? r(4) * 0.6 : 0), z0: dir > 0 ? za + lane : -zb, z1: dir > 0 ? zb : -(za + lane), eaves: GROUND_EAVES + r(5) * 2.6, pitch: 0.55 + r(6) * 0.45, faces, look: r(7) });
+      const z0 = dir > 0 ? za + lane : -zb, z1 = dir > 0 ? zb : -(za + lane);
+      out.push({ x0: x0 + (faces > 0 ? 0 : r(4) * 0.6), x1: x1 - (faces > 0 ? r(4) * 0.6 : 0), z0, z1, eaves: GROUND_EAVES + r(5) * 2.6, pitch: 0.55 + r(6) * 0.45, faces, look: r(7), door: (z0 + z1) / 2 + (r(8) - 0.5) * (z1 - z0 - 3) });
       z = zb + lane;
     }
   }
@@ -74,10 +81,23 @@ const GROUND_EAVES = TOWN.ground + 3.2;
 
 /** Every house of the street, grandma's first. */
 export const HOUSES: readonly House[] = [
-  { x0: TOWN.grandma.x[0], x1: TOWN.grandma.x[1], z0: TOWN.grandma.z[0], z1: TOWN.grandma.z[1], eaves: TOWN.grandma.eaves, pitch: TOWN.grandma.pitch, faces: -1, look: 0.5 },
-  ...row(TOWN.across.x[0], TOWN.across.x[1], 1, 0, 3), // a lane west, opposite her door
+  { x0: TOWN.grandma.x[0], x1: TOWN.grandma.x[1], z0: TOWN.grandma.z[0], z1: TOWN.grandma.z[1], eaves: TOWN.grandma.eaves, pitch: TOWN.grandma.pitch, faces: -1, look: 0.5, door: 0 },
+  ...shops(row(TOWN.across.x[0], TOWN.across.x[1], 1, 0, 3)), // a lane west, opposite her door
   ...row(TOWN.side.x[0], TOWN.side.x[1], -1, 1, TOWN.grandma.z[1]),
 ];
+
+/** Ilse's pawn shop: the first house up the street across from grandma's, its door in the middle of its front. */
+function shops(across: House[]): House[] {
+  const i = across.findIndex((h) => h.z0 > 0);
+  across[i] = { ...across[i], shop: 'pawn', door: (across[i].z0 + across[i].z1) / 2 };
+  return across;
+}
+
+/** The shop's house, and where one stands at its door to deal (on the street, before its step). */
+export function shopDoor(shop: Shop): { house: House; x: number; z: number } {
+  const house = HOUSES.find((h) => h.shop === shop)!;
+  return { house, x: (house.faces > 0 ? house.x1 : house.x0) + house.faces * 1.0, z: house.door };
+}
 
 /** The ground's height at (x, z), and how steep it is there (for the field's distance). */
 export function townGround(x: number, z: number): { y: number; steep: number } {
