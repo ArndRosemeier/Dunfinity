@@ -602,5 +602,29 @@
   {
     "key": "same name: dunfinity/gen/cellar.ts#at + dunfinity/render/humans/ladderClimb.ts#at",
     "reason": "the field's density at a point (QuarryField override) vs a climber's pose at a time; same short name, unrelated"
+  },
+  {
+    "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/gen/quarryProps.ts + dunfinity/world/fire.ts",
+    "reason": "each asks the level whether a spot is dry for its own rule (a cricket's landing, a prop, a fire); level.dry is the one seam"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "async factories of the human views (humans load their assets first)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "async factories of the human views (humans load their assets first)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/tallOneView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "async factories of the human views (humans load their assets first)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/touchedView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "async factories of the human views (humans load their assets first)"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
+    "reason": "async factories of the human views (humans load their assets first)"
   }
 ]

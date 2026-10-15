@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.067 — Frau Weber
+
+- Old Frau Weber lives across the street, just down from the lane opposite grandma's door. She is up at night, standing on her step in her lit doorway, and turns to watch you when you come near.
+- Press E by her to call on her. She knew your grandmother for sixty years. She has hints and stories, and the deeper the family has been, the more she remembers to tell. When one of you doesn't come back, she knows.
+
 ## v0.066 — Over the top
 
 - Fix: in the Quarry and below, where three workings meet, the floor could jump by several metres in a hand's width. That made a sheer step you could neither climb nor see properly, an invisible wall across what looked like an open gap. The floors now ramp smoothly there.
