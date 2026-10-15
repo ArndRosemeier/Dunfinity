@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.065 — A preview link
+
+- Every change that lands is now playable at https://arndrosemeier.github.io/dunfinity/ a few minutes later, without publishing.
+
 ## v0.064 — Rock with a surface
 
 - The rock no longer looks untextured. Its walls show cracks, rust-brown streaks running down, warmer and cooler stretches of stone, and darker hollows. Damp patches on the floors are darker and a little shiny.
