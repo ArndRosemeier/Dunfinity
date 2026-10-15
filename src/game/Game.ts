@@ -211,6 +211,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   /** A line to show for a while (arriving on a level), and until when. */
   let notice = levelName(level), noticeUntil = 5;
+  /** Show `text` as the notice for `secs` seconds. */
+  const say = (text: string, secs: number): void => { notice = text; noticeUntil = timer.getElapsed() + secs; };
   /** Times the Foreman's bell has rung (each ringing gets a notice). */
   let bells = 0, calls = 0, stares = 0;
   const ladder: [number, number] = [0, 0];
@@ -332,8 +334,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
             const r = cooked.cook(tinSel, tin), c = card(tinSel), fire = campfire.fire;
             cookAt = now;
             tinView.hide();
-            notice = r === 1 ? `${c.title}, cooked.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`;
-            noticeUntil = now + 6;
+            say(r === 1 ? `${c.title}, cooked.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
           }
         }
@@ -344,14 +345,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
       else if (nearNote) {
-        readAt = now; notice = `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`; noticeUntil = now + 20;
+        readAt = now; say(`Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`, 20);
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
       }
     }
     const kindling = campfire.kindling(now);
     if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
       const why = campfire.whyNot(body, body.facing, fauna.after(body), now);
-      if (why) { notice = why; noticeUntil = now + 2.5; } else campfire.light(body, body.facing, now);
+      if (why) say(why, 2.5); else campfire.light(body, body.facing, now);
     }
     const stirring = now - cookAt < COOK.dur;
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring) input.forward = input.right = 0; // stooping or kneeling, not walking
@@ -384,8 +385,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
         finds.take(picking);
         pack.add(picking);
-        notice = `You pick up ${FINDS[picking.kind].name}.`;
-        noticeUntil = now + 3;
+        say(`You pick up ${FINDS[picking.kind].name}.`, 3);
       }
       const reading = now - readAt < PICKUP.dur, stooping = picking !== null || reading;
       if (picking && (now - pickAt >= PICKUP.dur || body.dead)) picking = null;
@@ -393,7 +393,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         stabDone = true;
         const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
         if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage, body.x, body.z, STAB.knock, 'knife');
-        if (r && 'took' in r && r.took < 1) { notice = 'The knife skids off the salt on his chest.'; noticeUntil = now + 2; }
+        if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
       }
       const health = body.health;
       fauna.blockers = view.props.blockers;
@@ -425,7 +425,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     touchedView.draw(fauna.touched.list, body.x, body.z, dt, now);
     foremanView.draw(fauna.foreman.list[0] ?? null, fauna.foreman.hall, dt, now);
     const rung = fauna.foreman.list[0]?.rung ?? 0;
-    if (rung > bells) { notice = 'A bell rings out through the halls. Something answers it.'; noticeUntil = now + 4; }
+    if (rung > bells) say('A bell rings out through the halls. Something answers it.', 4);
     bells = rung;
     cricketView.draw(fauna.crickets.list, now, body);
     slimeView.lumen.draw(fauna.lumen.list, now, body);
@@ -433,10 +433,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     dogView.draw(fauna.dogs.list, now, body);
     eelView.draw(fauna.eels.list, now, body);
     scavengerView.draw(fauna.scavengers.list, body.x, body.z, dt, now);
-    if (fauna.scavengers.calls > calls) { notice = fauna.scavengers.said; noticeUntil = now + 3.5; }
+    if (fauna.scavengers.calls > calls) say(fauna.scavengers.said, 3.5);
     calls = fauna.scavengers.calls;
     tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
-    if (fauna.tall.stares > stares) { notice = 'The Tall One looks at you, and the cold of it goes right through you.'; noticeUntil = now + 3; }
+    if (fauna.tall.stares > stares) say('The Tall One looks at you, and the cold of it goes right through you.', 3);
     stares = fauna.tall.stares;
     const fire = campfire.fire, lit = campfire.kindling(now);
     hearth.root.visible = !!fire;

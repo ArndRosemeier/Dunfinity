@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.044 — Sweep
+
+- Tidying behind the scenes after the last ten versions, with nothing new to see. Putting something onto a rock face (the chalk numbers, the water running uphill) is now done one way, and the game's passing notices go through one helper.
+
 ## v0.043 — Sunday Candle
 
 - A new card in grandma's tin: **Sunday Candle** (Light). Once it is cooked, G tosses a lit candle a few metres ahead. It stands where it lands and burns for 40 seconds, lighting the floor round it.

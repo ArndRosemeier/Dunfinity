@@ -59,6 +59,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Is this point rock or air, how far to rock? | `level.sdf(x, y, z)`: the single density function (positive in air) | `src/gen/level.ts` |
 | Where is the floor under a point? | `level.floorAt(x, z)` (the working's floor; ignores pillars) | `src/gen/level.ts` |
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
+| Put a point onto an upright rock face (chalk on a pillar, water running up it) | `level.ontoRock(x, y, z, n, fixed)` | `src/gen/level.ts` |
 | Is a spot dry ground? How far to the rock beside a column? | `level.dry(x, z, margin)`; `rockDistance(col)` | `src/gen/level.ts`, `src/gen/quarry.ts` |
 | Which band (Quarry, Salt Works, Cisterns, ...) a depth belongs to, and how it looks: rock colours, pillar fluting, floor steps between halls, water, glowing veins, what was left against the rock (carvings, waterworks), the share of natural caverns (`band.caverns`, `Working.cavern`, `Column.cavern` in `QuarryField`), its name | `bandOf(depth)`, `level.band` (passed to `QuarryField`) | `src/gen/bands.ts` |
 | Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |

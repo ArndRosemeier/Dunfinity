@@ -108,6 +108,25 @@ export class Level {
   }
 
   /**
+   * (x, y, z) moved sideways onto an upright rock face at height y, or null if there is none there.
+   * `fixed`: move along -n as given (a face whose way is known); else along the rock's own normal,
+   * written into `n` (made horizontal and unit) for the caller.
+   */
+  ontoRock(x: number, y: number, z: number, n: [number, number, number], fixed = false): [number, number, number] | null {
+    for (let k = 0; k < 4; k++) {
+      const d = this.sdf(x, y, z);
+      if (!fixed) this.normal(x, y, z, n);
+      x -= n[0] * d; z -= n[2] * d;
+    }
+    if (!fixed) {
+      const h = Math.hypot(n[0], n[2]);
+      if (h < 0.8) return null;
+      n[0] /= h; n[1] = 0; n[2] /= h;
+    }
+    return Math.abs(this.sdf(x, y, z)) > 0.06 ? null : [x, y, z];
+  }
+
+  /**
    * How far a ray from (x, y, z) along the unit direction (dx, dy, dz) travels before it reaches rock
    * (sphere tracing the field), up to `max` metres. Stops `skin` metres short of the surface.
    */
