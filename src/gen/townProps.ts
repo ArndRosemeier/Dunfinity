@@ -86,7 +86,11 @@ function shell(f: Furnish, H: House, door: boolean): void {
       s.upright(x, cy, (H.z0 - SHELL + D.z[0]) / 2, 0, SHELL, hy, (D.z[0] - H.z0 + SHELL) / 2, wall);
       s.upright(x, cy, (H.z1 + SHELL + D.z[1]) / 2, 0, SHELL, hy, (H.z1 + SHELL - D.z[1]) / 2, wall);
       s.upright(x, (top + H.eaves) / 2, cz, 0, SHELL, (H.eaves - top) / 2, (D.z[1] - D.z[0]) / 2, wall);
-    } else s.upright(x, cy, cz, 0, SHELL, hy, half + SHELL, wall);
+    } else {
+      // From where the ground meets it (her back wall stands in the hill; under the hill there is no wall to show, and the cellar stairs pass there).
+      const yb = Math.max(y0, townGround(x, cz).y - 0.4);
+      s.upright(x, (yb + H.eaves) / 2, cz, 0, SHELL, (H.eaves - yb) / 2, half + SHELL, wall);
+    }
   }
   // A stone plinth round the foot, over the field's fillet where its ground meets its walls.
   const P = { out: SHELL + 0.4, top: G + 0.55 }, py = (y0 + P.top) / 2, ph = (P.top - y0) / 2;

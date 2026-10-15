@@ -104,6 +104,36 @@ test("making straight for a way out from anywhere in her room gets one through: 
   assert.ok(!level.climbable(4.9, 1, 0.75) && !level.climbable(-11, 3.5, 4.1) && level.climbable(12, 1, 0.9), 'bricks and plaster no, the mine yes');
 });
 
+test('nothing drawn stands in the way up the stairs that one would walk through', () => {
+  // Segments up the middle of the stairs at knee and head height, against every solid prop triangle near them.
+  const S = CELLAR.stairs, floor = (x: number) => (x >= S.x[1] ? 0 : x <= S.x[0] ? S.top : ((S.x[1] - x) / (S.x[1] - S.x[0])) * S.top);
+  const meshes = [-1, 0].flatMap((tx) => [-1, 0].map((tz) => quarryProps(level, tx, tz).solid)).filter((m) => m !== null);
+  const hits: string[] = [];
+  for (const up of [0.6, 1.5]) for (let x = -3.2; x > -9; x -= 0.2) {
+    const a = [x, floor(x) + up, 0], b = [x - 0.2, floor(x - 0.2) + up, 0];
+    for (const m of meshes) for (let i = 0; i < m.indices.length; i += 3) {
+      const v = [0, 1, 2].map((k) => [0, 1, 2].map((c) => m.positions[m.indices[i + k] * 3 + c]));
+      if (crosses(a, b, v[0], v[1], v[2])) hits.push(`x ${x.toFixed(1)} +${up}: a triangle at ${v[0].map((c) => c.toFixed(2)).join(',')}`);
+    }
+  }
+  assert.deepEqual(hits.slice(0, 4), []);
+});
+
+/** Whether segment a–b crosses triangle p q r (Möller–Trumbore). */
+function crosses(a: number[], b: number[], p: number[], q: number[], r: number[]): boolean {
+  const sub = (u: number[], v: number[]) => [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
+  const cross = (u: number[], v: number[]) => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+  const dot = (u: number[], v: number[]) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const d = sub(b, a), e1 = sub(q, p), e2 = sub(r, p), h = cross(d, e2), det = dot(e1, h);
+  if (Math.abs(det) < 1e-12) return false;
+  const s = sub(a, p), u = dot(s, h) / det;
+  if (u < 0 || u > 1) return false;
+  const qv = cross(s, e1), v = dot(d, qv) / det;
+  if (v < 0 || u + v > 1) return false;
+  const t = dot(e2, qv) / det;
+  return t >= 0 && t <= 1;
+}
+
 test('its one way down is the old shaft, and level 1 has its way up', () => {
   assert.equal(level.descents.nearest(0, 0, 5000), CELLAR_SHAFT);
   assert.equal(level.descents.nearest(500, 500, 300), null);

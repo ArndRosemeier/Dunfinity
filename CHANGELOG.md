@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.061 — Nothing to walk through on the cellar stairs
+
+- Fix: the back wall of grandma's house, drawn from the street down, cut across the cellar stairs where they pass under the hill, and you walked straight through it. It now starts where the hill meets it.
+
 ## v0.060 — Kemal's hardware store
 
 - Next door to grandma's, up the street, Kemal's hardware store is lit, with crates, a coil of rope and a shovel outside. Stand at his door and press 1, 2 or 3 to buy, with euros from grandma's purse: work gloves (€20, climbing tires you less), a whetstone (€35, the knife bites deeper) or a miner's helmet (€45, blows hurt less; falls still hurt as much).
