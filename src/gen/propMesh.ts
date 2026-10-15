@@ -3,6 +3,8 @@
  * mesh with flat normals and vertex colours, the attribute layout of the solid and glow material kinds.
  */
 
+import type { Model } from './models';
+
 /** One merged mesh: positions, normals and colours (3 floats per vertex) and triangle indices. */
 export interface PropMesh {
   positions: Float32Array;
@@ -183,6 +185,28 @@ export class PropBuilder {
         this.i.push(i - 2, i, i + 1, i - 2, i + 1, i - 1);
       }
     }
+  }
+
+  /**
+   * A model made in Blender (src/gen/models.ts) standing at (x, y, z), turned by `yaw` as `upright`;
+   * `lean` tips its top back (towards its own -z: a tool leant on the rock behind it), `scale`
+   * sizes it, `tint` multiplies its baked colours.
+   */
+  stamp(m: Model, x: number, y: number, z: number, yaw: number, opts: { lean?: number; scale?: number; tint?: Rgb } = {}): void {
+    const ca = Math.cos(yaw), sa = Math.sin(yaw), cl = Math.cos(opts.lean ?? 0), sl = Math.sin(opts.lean ?? 0);
+    const s = opts.scale ?? 1, tint = opts.tint ?? [1, 1, 1], base = this.p.length / 3;
+    const { positions: P, normals: N, colors: C } = m;
+    // Lean about the model's x, then turn by yaw about y (the same frame as `local`).
+    const orient = (v: Float32Array, i: number, k: number, ox: number, oy: number, oz: number, out: number[]) => {
+      const lx = v[i] * k, ly = (v[i + 1] * cl + v[i + 2] * sl) * k, lz = (v[i + 2] * cl - v[i + 1] * sl) * k;
+      out.push(ox + ca * lx + sa * lz, oy + ly, oz - sa * lx + ca * lz);
+    };
+    for (let i = 0; i < P.length; i += 3) {
+      orient(P, i, s, x, y, z, this.p);
+      orient(N, i, 1, 0, 0, 0, this.n);
+      this.c.push(C[i] * tint[0], C[i + 1] * tint[1], C[i + 2] * tint[2]);
+    }
+    for (const j of m.indices) this.i.push(base + j);
   }
 
   build(): PropMesh | null {

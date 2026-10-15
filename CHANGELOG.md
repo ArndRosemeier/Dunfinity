@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.081 — Things made properly
+
+- The things miners left against the rock are now modelled in Blender instead of built from boxes: crates of nailed planks, barrels with staves and iron hoops, a pick and a shovel leant on the rock, a pail with its handle dropped to one side, and squared blocks with tool marks and knocked corners. Shadows sit in their creases and under them.
+- More props will follow the same way: the shacks, the carts and things for the new kinds of place.
+
 ## v0.080 — Dungeon rooms
 
 - A seventh kind of place, and the first one anybody built on purpose: rooms of dressed grey stone with flagged floors, joined by short corridors that dog-leg from door to door. Little cells, guard rooms, long halls with two rows of square pillars, and great rooms under a barrel vault. Each room stands a step or few higher or lower than the next, and the corridors ramp between them. Try `?style=dungeon`.

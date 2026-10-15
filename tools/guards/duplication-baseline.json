@@ -188,6 +188,10 @@
     "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
   },
   {
+    "key": "idiom: [.range .t] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each creature reads its own numbers' range and timer; surfaced by token rarity shifting when the prop models came in, not by new code in creatures (the shared Steer and Population already hold what is common)"
+  },
+  {
     "key": "idiom: [.gait .move .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },

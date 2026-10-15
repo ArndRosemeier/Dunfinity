@@ -17,6 +17,7 @@ import type { GrandmasCamp } from './grandmasCamp';
 import type { SaltCircle } from './lair';
 import { furnishCellar } from './cellarProps';
 import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
+import { propModel, type Model } from './models';
 
 /** Tile size, metres. */
 export const PROP_TILE = 64;
@@ -627,47 +628,42 @@ class TileBuilder {
    * and a barrel, tools and a bucket, or a stack of cut blocks waiting to be hauled.
    */
   private leftBehind(x: number, z: number, ox: number, oz: number, g: number, r: (k: number) => number): void {
-    const yaw = Math.atan2(ox, oz), ca = Math.cos(yaw), sa = Math.sin(yaw);
+    const yaw = Math.atan2(ox, oz);
     // (side, out) from the rock face to world: side runs along the face, out away from it.
     const at = local(x, z, yaw);
     const ground = (px: number, pz: number) => this.level.groundAt(px, pz);
     const kind = Math.floor(r(10) * 3);
+    // A model standing on the ground at (side, out), turned by `turn` from facing out, blocking its footprint.
+    const put = (into: PropBuilder, m: Model, side: number, out: number, turn: number, opts: { lean?: number; scale?: number; tint?: Rgb; y?: number } = {}) => {
+      const [px, pz] = at(side, out), s = opts.scale ?? 1, py = opts.y ?? ground(px, pz);
+      into.stamp(m, px, py, pz, yaw + turn, opts);
+      if (!opts.lean) this.block(px, pz, yaw + turn, m.max[0] * s, m.max[2] * s, py - 0.3, py + m.max[1] * s);
+      return py + m.max[1] * s;
+    };
     if (kind === 0) {
       // Crates, one on another sometimes, and a barrel.
-      const crate: Rgb = [WOOD[0] * 1.35, WOOD[1] * 1.25, WOOD[2] * 1.05];
+      const crate = propModel('prop_crate');
       for (let c = 0; c < 2 + Math.floor(r(11) * 2); c++) {
-        const size = 0.22 + 0.12 * r(12 + c), [cx, cz] = at(-0.9 + c * 0.62, size + 0.05);
-        const gy = ground(cx, cz);
-        const cyaw = yaw + (r(15 + c) - 0.5) * 0.4;
-        this.solid.upright(cx, gy + size, cz, cyaw, size, size, size, crate);
-        this.block(cx, cz, cyaw, size, size, gy - 0.3, gy + size * 2);
-        if (c === 0 && r(18) < 0.5) this.solid.upright(cx, gy + size * 2 + 0.17, cz, yaw + r(19), 0.17, 0.17, 0.17, crate);
+        const scale = 0.75 + 0.4 * r(12 + c), turn = (r(15 + c) - 0.5) * 0.4;
+        const top = put(this.solid, crate, -0.9 + c * 0.62, scale * 0.3 + 0.05, turn, { scale });
+        if (c === 0 && r(18) < 0.5) put(this.solid, crate, -0.9, scale * 0.3 + 0.05, r(19), { scale: 0.55, y: top });
       }
-      const [bx, bz] = at(1.05, 0.35), by = ground(bx, bz);
-      this.solid.cylinder(bx, by + 0.42, bz, 0.26, 0.42, [WOOD[0] * 0.9, WOOD[1] * 0.8, WOOD[2] * 0.7], 12, 0.12);
-      this.block(bx, bz, 0, 0.25, 0.25, by - 0.3, by + 0.84);
-      for (const h of [0.15, 0.69]) this.solid.cylinder(bx, by + h, bz, 0.29, 0.03, IRON, 12);
+      put(this.solid, propModel('prop_barrel'), 1.05, 0.37, r(20) * Math.PI * 2);
     } else if (kind === 1) {
       // A pick and a shovel leant on the rock, a bucket by them.
-      const handle: Rgb = [WOOD[0] * 1.5, WOOD[1] * 1.35, WOOD[2] * 1.1];
-      for (const [side, len, isPick] of [[-0.4, 0.95, true], [0.15, 1.1, false]] as const) {
-        const [fx, fz] = at(side, 0.55), [tx, tz] = at(side + 0.08, 0.04);
-        const gy = ground(fx, fz), top = gy + len;
-        this.solid.beam(fx, gy + 0.02, fz, tx, top, tz, 0.018, 0.018, handle);
-        if (isPick) this.solid.beam(tx - ca * 0.28, top + 0.02, tz + sa * 0.28, tx + ca * 0.28, top - 0.04, tz - sa * 0.28, 0.025, 0.025, IRON);
-        else this.solid.upright(fx + ox * 0.03, gy + 0.14, fz + oz * 0.03, yaw, 0.12, 0.15, 0.015, RUST);
-      }
-      const [kx, kz] = at(0.75, 0.4);
-      this.solid.cylinder(kx, ground(kx, kz) + 0.15, kz, 0.15, 0.15, RUST, 10, 0, 0.2);
+      put(this.solid, propModel('prop_pick'), -0.4, 0.42, (r(11) - 0.5) * 0.3, { lean: 0.42 });
+      put(this.solid, propModel('prop_shovel'), 0.15, 0.45, (r(12) - 0.5) * 0.3, { lean: 0.42 });
+      put(this.solid, propModel('prop_bucket'), 0.75, 0.4, r(13) * Math.PI * 2);
     } else {
       // Cut blocks, squared and stacked, the way they were never hauled up.
-      const rows = 1 + Math.floor(r(11) * 2), cols = 2 + Math.floor(r(12) * 2);
+      const block = propModel('prop_cut_block'), rows = 1 + Math.floor(r(11) * 2), cols = 2 + Math.floor(r(12) * 2);
       for (let y = 0; y < rows; y++) for (let c = 0; c < cols - y; c++) {
+        // The block is modelled white (its colours are only its shading): the band's stone paints it.
+        const tint = this.tone((0.9 + 0.2 * r(13 + c + y * 3)) * 1.08);
+        const turn = (r(20 + c) - 0.5) * 0.08 + (r(30 + c + y * 3) < 0.5 ? Math.PI : 0);
         const [cx, cz] = at(-0.85 + (c + y * 0.5) * 0.85, 0.5);
-        const tone = this.tone((0.9 + 0.2 * r(13 + c + y * 3)) * 1.08);
-        const byaw = yaw + (r(20 + c) - 0.5) * 0.08;
-        this.stones.upright(cx, g + 0.2 + y * 0.4, cz, byaw, 0.4, 0.2, 0.4, tone);
-        if (y === 0) this.block(cx, cz, byaw, 0.4, 0.4, g - 0.3, g + 0.4 * rows);
+        this.stones.stamp(block, cx, g + y * 0.4, cz, yaw + turn, { tint });
+        if (y === 0) this.block(cx, cz, yaw + turn, 0.4, 0.4, g - 0.3, g + 0.4 * rows);
       }
     }
     this.counts.leftovers++;
