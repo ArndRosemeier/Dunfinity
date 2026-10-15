@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.033 — Grandma's first camp
+
+- Somewhere on level 9, a good walk from where you arrive, is the camp grandma made in 1963 when she came down looking for her father: a canvas tent with her bedroll, a ring of stones round a fire long cold, and on a flat stone her thermos and a note. Bend down and read it (E).
+
 ## v0.032 — Ruins older than the mine
 
 - In the Threshold's caverns, against the rock, now and then stands something no miner made: the front of a crypt, columns and a heavy gable around a doorway of darkness, or a stair of steps far too tall for people, climbing into the rock towards nothing that is left.

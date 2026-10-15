@@ -12,6 +12,7 @@ import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
+import type { GrandmasCamp } from './grandmasCamp';
 import { PropBuilder, local, type PropMesh, type Rgb } from './propMesh';
 
 /** Tile size, metres. */
@@ -111,6 +112,8 @@ class TileBuilder {
         }
       }
     }
+    const camp = this.level.camp;
+    if (camp && this.inTile(camp.x, camp.z)) this.grandmasCamp(camp);
     this.nooks();
     this.debris();
     return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), counts: this.counts };
@@ -122,6 +125,7 @@ class TileBuilder {
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const r = (k: number) => hashToFloat(hash3i(s, this.x0 / DEBRIS.cell + i, this.z0 / DEBRIS.cell + j, k));
       const x = this.x0 + (i + r(1)) * DEBRIS.cell, z = this.z0 + (j + r(2)) * DEBRIS.cell;
+      if (this.byCamp(x, z)) continue;
       const col = this.level.columnAt(x, z);
       const foot = Math.max(0, 1 - rockDistance(col) / DEBRIS.footWidth);
       const chance = DEBRIS.base + DEBRIS.rubble * col.rubble + DEBRIS.collapse * col.collapse + DEBRIS.foot * foot;
@@ -423,6 +427,7 @@ class TileBuilder {
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const r = (k: number) => hashToFloat(hash3i(s, this.x0 / LEFT.cell + i, this.z0 / LEFT.cell + j, k));
       const x = this.x0 + (i + 0.15 + 0.7 * r(1)) * LEFT.cell, z = this.z0 + (j + 0.15 + 0.7 * r(2)) * LEFT.cell;
+      if (this.byCamp(x, z)) continue;
       const col = this.level.columnAt(x, z);
       if (col.collapse > 0 || col.rubble > 0.05 || col.border < 3 || this.level.descents.at(x, z, 4) || !this.level.dry(x, z, 0.1)) continue;
       // How far to the rock beside (a pillar or a wall; the floor and roof do not count).
@@ -642,6 +647,54 @@ class TileBuilder {
     this.counts.chapels++;
   }
 
+  /** Whether (x, z) is in grandma's camp (nothing else lies there). */
+  private byCamp(x: number, z: number): boolean {
+    const c = this.level.camp;
+    return !!c && Math.hypot(x - c.x, z - c.z) < 6;
+  }
+
+  /**
+   * Grandma's first camp (src/gen/grandmasCamp.ts): a canvas ridge tent, her bedroll showing in the
+   * door, a ring of stones round a long-cold fire, a flat stone with her thermos and her note on it.
+   */
+  private grandmasCamp(c: GrandmasCamp): void {
+    const { x, y: g, z, yaw } = c, at = local(x, z, yaw), ca = Math.cos(yaw), sa = Math.sin(yaw);
+    // World vectors along the camp's side, forward and up.
+    const side = (k: number): [number, number, number] => [ca * k, 0, -sa * k], fwd = (k: number): [number, number, number] => [sa * k, 0, ca * k];
+    // The tent: two canvas slopes from the ridge (1.3 m up) to the floor 0.9 m out, 2.2 m long, behind the door.
+    for (const s of [-1, 1]) {
+      const [px, pz] = at(s * 0.45, -1.1), n = Math.hypot(0.45, 0.65);
+      this.solid.box(px, g + 0.65, pz, fwd(1.1), [ca * s * 0.45, -0.65, -sa * s * 0.45], [ca * s * 0.65 / n * 0.015, 0.45 / n * 0.015, -sa * s * 0.65 / n * 0.015], CANVAS);
+    }
+    const [bx, bz] = at(0, -2.2);
+    this.solid.box(bx, g + 0.62, bz, side(0.85), [0, 0.62, 0], fwd(0.015), [CANVAS[0] * 0.8, CANVAS[1] * 0.8, CANVAS[2] * 0.8]); // the back
+    for (const fw of [0.02, -2.22]) { const [qx, qz] = at(0, fw); this.solid.upright(qx, g + 0.68, qz, yaw, 0.02, 0.68, 0.02, WOOD); } // poles
+    const [rx, rz] = at(0, -1.1);
+    this.solid.upright(rx, g + 0.06, rz, yaw, 0.32, 0.06, 0.95, BEDROLL);
+    const [tx, tz] = at(0, -1.1);
+    this.block(tx, tz, yaw, 0.95, 1.15, g - 0.3, g + 1.35);
+    // The fire: a ring of stones, ash and the ends of burnt sticks.
+    const [fx, fz] = at(0, 2.2);
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      this.stones.ellipsoid(fx + Math.sin(a) * 0.38, g + 0.05, fz + Math.cos(a) * 0.38, 0.1, 0.07, 0.09, this.tone(0.8), 6);
+    }
+    this.solid.ellipsoid(fx, g + 0.01, fz, 0.3, 0.02, 0.3, ASH, 8);
+    for (let k = 0; k < 3; k++) {
+      const a = k * 2.1 + 0.4;
+      this.solid.beam(fx + Math.sin(a) * 0.25, g + 0.03, fz + Math.cos(a) * 0.25, fx - Math.sin(a) * 0.05, g + 0.06, fz - Math.cos(a) * 0.05, 0.03, 0.03, CHAR);
+    }
+    // The flat stone, her thermos and the note.
+    const [sx, sz] = at(1.2, 2);
+    this.stones.ellipsoid(sx, g + 0.1, sz, 0.38, 0.13, 0.3, this.tone(1), 8);
+    this.block(sx, sz, yaw, 0.35, 0.3, g - 0.3, g + 0.22);
+    const [hx, hz] = at(1.38, 2.08);
+    this.solid.cylinder(hx, g + 0.4, hz, 0.045, 0.16, THERMOS, 10);
+    this.solid.cylinder(hx, g + 0.59, hz, 0.05, 0.035, IRON, 10);
+    const [nx, , nz] = c.note;
+    this.solid.box(nx, c.note[1], nz, side(0.1), [0, 0.003, 0], fwd(0.075), PAPER);
+  }
+
   /**
    * A ruin against a cavern's rock at (x, z), (ox, oz) pointing away from it, older than any mine
    * and made for something taller than people: the front of a crypt (steps, two columns, a lintel
@@ -855,6 +908,8 @@ export function carveMiner(b: PropBuilder, px: number, top: number, pz: number, 
 const LEFT = { cell: 6, chance: 0.22, derricks: 0.006 };
 /** A doorway into darkness. */
 const VOID: Rgb = [0.008, 0.008, 0.01];
+/** Grandma's camp (her tent is CANVAS): the bedroll, ash and charred sticks, her thermos, the note. */
+const BEDROLL: Rgb = [0.25, 0.1, 0.08], ASH: Rgb = [0.13, 0.125, 0.12], CHAR: Rgb = [0.04, 0.035, 0.03], THERMOS: Rgb = [0.12, 0.28, 0.18], PAPER: Rgb = [0.78, 0.75, 0.66];
 /** A hanging lamp's bulb height over the floor (low, high) and the longest chain it hangs on, m. */
 const HANG = { low: 3.6, high: 5, chain: 30 };
 /** A derrick's mast height and how far its boom reaches out, m. */

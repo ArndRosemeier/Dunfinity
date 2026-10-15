@@ -6,6 +6,7 @@
  */
 import { Timer, Vector3 } from 'three/webgpu';
 import { Level } from '../gen/level';
+import { CAMP, NOTE } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
 import { LevelView } from '../render/LevelView';
 import { OrbitCamera } from '../render/camera/OrbitCamera';
@@ -137,6 +138,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let stabAt = -Infinity, stabYaw = 0, stabDone = true;
   /** The find being picked up, and when that began. */
   let picking: Find | null = null, pickAt = -Infinity;
+  /** When the nobody last bent to read grandma's note. */
+  let readAt = -Infinity;
   const pickUp = (f: Find, now: number): void => {
     picking = f;
     pickAt = now;
@@ -249,11 +252,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Mouse0') && !busy && now - stabAt > STAB.dur) stab(now);
     const nearLadder = climb.active ? null : atLadder();
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
+    const note = level.camp?.note, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
     if (controls.tap('KeyE')) {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
+      else if (nearNote) { readAt = now; notice = `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`; noticeUntil = now + 20; }
     }
-    if (picking) input.forward = input.right = 0; // stooping, not walking
+    if (picking || now - readAt < PICKUP.dur) input.forward = input.right = 0; // stooping, not walking
     if (climb.active) {
       climb.advance(dt, timer.getElapsed());
       body.x = climb.pos.x; body.y = climb.pos.y; body.z = climb.pos.z;
@@ -275,7 +280,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         notice = `You pick up ${FINDS[picking.kind].name}.`;
         noticeUntil = now + 3;
       }
-      const stooping = picking !== null;
+      const reading = now - readAt < PICKUP.dur, stooping = picking !== null || reading;
       if (picking && (now - pickAt >= PICKUP.dur || body.dead)) picking = null;
       if (!stabDone && now - stabAt >= STAB.hit) {
         stabDone = true;
@@ -298,7 +303,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
-      const action = stooping ? { id: 'pickup', t0: pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
+      const action = stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
@@ -324,6 +329,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : ''];
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push('E: read the note');
     else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
