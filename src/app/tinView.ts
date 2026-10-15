@@ -1,6 +1,6 @@
 /**
- * Grandma's tin open by the fire (src/loot/recipes.ts): her cards by chapter, the dividers that will
- * not open yet, and the chosen card in full (what you'll need, the method, the lines she added at
+ * Grandma's tin open by the fire (src/loot/recipes.ts): her cards by chapter, the deeper cards whose
+ * divider will not open yet, and the chosen card in full (what you'll need, the method, the lines she added at
  * each rank, and in grey what it does). Keys: W/S choose, E cook, T or Escape close.
  */
 import { SKILLS, type Practice, type Skill } from '../loot/practice';
@@ -17,7 +17,7 @@ const STYLE = `
   #tin h2 { font-size: 17px; margin: 0 0 8px; }
   #tin .salt { color: #2f5d7a; }
   #tin .divider { margin: 10px 0 3px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6d5a3d; border-bottom: 1px solid #b9a582; }
-  #tin .divider.shut { color: #a8987c; }
+  #tin .row.shut { color: #a8987c; }
   #tin .row { padding: 2px 6px; display: flex; justify-content: space-between; border-radius: 3px; }
   #tin .practice { margin-top: 8px; font-size: 13px; }
   #tin .row.sel { background: #d6c59f; }
@@ -42,23 +42,21 @@ export class TinView {
 
   /** The cards the tin shows, in its order (only chapters that have cards; lost cards once found). */
   static order(cooked: Cooked): CardId[] {
-    return CHAPTERS.flatMap(([ch]) => CARDS.filter((c) => c.chapter === ch && cooked.has(c.id)).map((c) => c.id));
+    return CHAPTERS.flatMap((ch) => CARDS.filter((c) => c.chapter === ch && cooked.has(c.id)).map((c) => c.id));
   }
 
   /** Open (or redraw) the tin with card `sel` chosen; `why`: why it could not be cooked, if that was tried. */
   show(cooked: Cooked, tin: Tin, sel: CardId, why: string | null, practice: Practice): void {
     const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     let html = `<h2>Grandma's tin <span class="salt">· ${tin.salt} ${tin.salt === 1 ? 'pinch' : 'pinches'} of infused salt</span></h2><div class="cols"><div>`;
-    for (const [ch, opens] of CHAPTERS) {
+    for (const ch of CHAPTERS) {
       const cards = CARDS.filter((c) => c.chapter === ch && cooked.has(c.id));
-      const shut = tin.deepest < opens;
-      if (!cards.length && !shut) continue;
-      html += `<div class="divider${shut ? ' shut' : ''}">${esc(ch)}${shut ? ` · opens at level ${opens}` : ''}</div>`;
-      if (shut) continue;
+      if (!cards.length) continue;
+      html += `<div class="divider">${esc(ch)}</div>`;
       for (const c of cards) {
-        const r = cooked.rank(c.id), cost = cooked.costOf(c.id);
-        const state = cost === null ? `rank ${r}, all of it` : r ? `rank ${r} · next: ${cost} pinches` : `${cost} pinches`;
-        html += `<div class="row${c.id === sel ? ' sel' : ''}"><span>${esc(c.title)}</span><span class="cost">${state}</span></div>`;
+        const r = cooked.rank(c.id), cost = cooked.costOf(c.id), opens = c.opens ?? 0;
+        const state = tin.deepest < opens ? `opens at level ${opens}` : cost === null ? `rank ${r}, all of it` : r ? `rank ${r} · next: ${cost} pinches` : `${cost} pinches`;
+        html += `<div class="row${c.id === sel ? ' sel' : ''}${tin.deepest < opens ? ' shut' : ''}"><span>${esc(c.title)}</span><span class="cost">${state}</span></div>`;
       }
     }
     const c = CARDS.find((k) => k.id === sel)!, r = cooked.rank(sel);

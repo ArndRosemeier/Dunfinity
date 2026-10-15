@@ -37,7 +37,7 @@ test('cards change the numbers: the knife, resting, climbing', () => {
 
 test('every card belongs to a chapter of the tin, with a line for each rank after the first and a cost and effect per rank', () => {
   for (const k of CARDS) {
-    assert.ok(CHAPTERS.some(([ch]) => ch === k.chapter), k.title);
+    assert.ok(CHAPTERS.includes(k.chapter), k.title);
     assert.equal(k.ranks.length, k.cost.length - 1, k.title);
     assert.equal(k.does.length, k.cost.length, k.title);
   }
@@ -57,12 +57,11 @@ test('Chicken Soup: wounds close faster resting by the fire', () => {
   assert.ok(Math.abs(rest(2) - 2 * rest(1)) < 1, `${rest(2)} vs ${rest(1)}`);
 });
 
-test('Way Home opens only at level 8, and its second rank is the way back', () => {
+test('Way Home is open from the start, and its second rank is the way back', () => {
   const c = new Cooked(), tin = new Tin();
   tin.salt = 40;
   assert.equal(c.wayHome, 0);
-  assert.match(c.cantCook('way-home', tin, 7)!, /Way Home divider/);
-  assert.equal(c.cantCook('way-home', tin, 8), null);
+  assert.equal(c.cantCook('way-home', tin, 0), null);
   c.cook('way-home', tin);
   assert.equal(c.wayHome, 1);
   c.cook('way-home', tin);
@@ -70,11 +69,11 @@ test('Way Home opens only at level 8, and its second rank is the way back', () =
   assert.equal(tin.salt, 40 - 12 - 20);
 });
 
-test('Tenderising opens at level 5: one blow, then everything in reach', () => {
+test('Tenderising is open from the start: one blow, then everything in reach', () => {
   const c = new Cooked(), tin = new Tin();
   tin.salt = 20;
   assert.equal(c.tenderising === null, true);
-  assert.notEqual(c.cantCook('tenderising', tin, 4), null);
+  assert.equal(c.cantCook('tenderising', tin, 0), null);
   c.cook('tenderising', tin);
   assert.deepEqual(c.tenderising, { damage: [14, 20], all: false });
   c.cook('tenderising', tin);
@@ -93,4 +92,11 @@ test('grandma\'s salt-magic opens at level 0: Stove Flame, Cold Larder, Rolling 
   assert.ok(c.larder!.r > l1.r && c.larder!.slow < l1.slow && c.larder!.lasts > l1.lasts);
   assert.ok(c.pin!.reach > p1.reach && c.pin!.knock > p1.knock);
   assert.equal(tin.salt, 40 - 3 * (4 + 8));
+});
+
+test('every way of playing starts at level 0: each chapter with cards has one open from the start', () => {
+  for (const ch of CHAPTERS) {
+    const cards = CARDS.filter((k) => k.chapter === ch && !k.lost);
+    if (cards.length) assert.ok(cards.some((k) => !k.opens), ch);
+  }
 });
