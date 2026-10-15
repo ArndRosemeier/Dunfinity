@@ -28,6 +28,8 @@ export const CELLAR = {
   /** The infused-salt circle on its floor (the one fire that is always safe), and the armchair inside it. */
   circle: { x: 6.4, z: 0.1, r: 1.15 },
   chair: { x: 6.2, z: -0.25, yaw: -1.9 },
+  /** The notary's letter, on her side table (src/gen/notary.ts). */
+  letter: { x: 5.94, y: 0.645, z: 0.62 },
   /** The arch she bricked up, broken through: a round arch in the room's east wall. */
   arch: { x: [8.6, 9.6], z: [-0.7, 0.7], spring: 1.4, crown: 2.0 },
   /** The passage beyond, rough rock, and the chamber round the old shaft. */

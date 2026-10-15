@@ -51,6 +51,7 @@ export class Campfire {
 
   /** Why a fire cannot be lit by `r` facing `yaw` now, or '' if it can. */
   whyNot(r: Rester, yaw: number, hunted: boolean, now: number): string {
+    if (this.inHaven(r)) return 'No need for a fire in grandma\'s salt circle.';
     if (hunted) return 'Not with something after you.';
     if (this.burning(now) && this.by(r)) return '';
     const [x, z] = this.spot(r, yaw);
@@ -84,21 +85,35 @@ export class Campfire {
     return f ? Math.max(0, Math.min(1, 1 - (now - f.at - FIRE.kindle) / FIRE.burn)) : 0;
   }
 
-  /** One step: `r` rests (and heals) if it stands still by the burning fire with nothing after it. */
+  /**
+   * One step: `r` rests (and heals) if it stands still by the burning fire with nothing after it,
+   * or in the level's haven (grandma's salt circle: nothing comes in there).
+   */
   step(r: Rester, hunted: boolean, now: number, dt: number): void {
     if (this.fire && now - this.fire.at > FIRE.kindle + FIRE.burn) this.fire = null;
-    this.resting = this.burning(now) && !hunted && r.health > 0 && this.by(r) && Math.hypot(r.vx, r.vz) < 0.3;
+    this.resting = r.health > 0 && Math.hypot(r.vx, r.vz) < 0.3 && (this.inHaven(r) || (this.burning(now) && !hunted && this.by(r)));
     if (!this.resting) return;
     r.health = Math.min(this.maxHealth, r.health + FIRE.heal * this.soup * dt);
     r.stamina = Math.min(this.maxStamina, r.stamina + FIRE.breath * dt);
   }
 
+  /** Whether `r` is in the level's haven. */
+  inHaven(r: Rester): boolean {
+    const h = this.level.haven;
+    return !!h && within(r, h, h.r);
+  }
+
   private by(r: Rester): boolean {
     const f = this.fire;
-    return !!f && Math.hypot(r.x - f.x, r.z - f.z) < FIRE.reach && Math.abs(r.y - f.y) < 1.2;
+    return !!f && within(r, f, FIRE.reach);
   }
 
   private spot(r: Rester, yaw: number): [number, number] {
     return [r.x - Math.sin(yaw) * FIRE.ahead, r.z - Math.cos(yaw) * FIRE.ahead];
   }
+}
+
+/** Whether `r` is within `reach` of `p` across the floor, and on its floor. */
+function within(r: Rester, p: { readonly x: number; readonly y: number; readonly z: number }, reach: number): boolean {
+  return Math.hypot(r.x - p.x, r.z - p.z) < reach && Math.abs(r.y - p.y) < 1.2;
 }

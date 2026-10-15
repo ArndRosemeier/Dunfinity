@@ -109,7 +109,7 @@ export function furnishCellar(f: Furnish): void {
     f.light(bx - 0.08, 1.0, bz + 0.05);
     s.upright(bx + 0.1, 0.72, bz - 0.06, 0.3, 0.06, 0.1, 0.05, WOOD); // the knife block
     for (let k = 0; k < 4; k++) s.upright(bx + 0.07 + k * 0.02, 0.86, bz - 0.07 + k * 0.006, 0.3, 0.008, 0.045, 0.012, DARK);
-    s.upright(bx + 0.04, 0.85, bz + 0.1, 0.5, 0.06, 0.002, 0.08, [0.85, 0.83, 0.76]); // the notary's letter
+    s.upright(C.letter.x, C.letter.y, C.letter.z, 0.5, 0.08, 0.003, 0.11, [0.85, 0.83, 0.76]); // the notary's letter
     f.block(bx, bz, 0, 0.26, 0.26, 0, 1.2);
     // The bricks of the arch, broken out and lying where they fell.
     for (let k = 0; k < 26; k++) {
