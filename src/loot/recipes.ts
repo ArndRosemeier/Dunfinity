@@ -10,7 +10,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'duck' | 'soup' | 'kneading';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'soup' | 'kneading';
 
 export interface Card {
   readonly id: CardId;
@@ -34,6 +34,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['Now faster.', 'Show-off.'],
     cost: [3, 6, 10],
     does: ['knife damage +30%', 'and stabs 20% faster', 'knife damage +60%, stabs 20% faster'],
+  },
+  {
+    id: 'helpings', title: 'Second Helpings', chapter: 'Throwing',
+    need: 'the knife block. There are always more knives in it. Don\'t ask me how, I stopped asking in 1974.',
+    method: 'Throw one. Then another. Don\'t throw the bread knife, it\'s sentimental.',
+    ranks: ['Then another. Quicker.'],
+    cost: [4, 8],
+    does: ['right mouse: throw a kitchen knife (9–13 damage), one every 1.4 s', 'one every 0.8 s'],
   },
   {
     id: 'duck', title: 'Duck', chapter: 'Footwork',
@@ -105,6 +113,11 @@ export class Cooked {
   get knife(): { damage: number; time: number } {
     const r = this.rank('hold-it');
     return { damage: r >= 3 ? 1.6 : r >= 1 ? 1.3 : 1, time: r >= 2 ? 0.8 : 1 };
+  }
+
+  /** Seconds between thrown knives (right mouse), if cooked. */
+  get helpings(): number | null {
+    return [null, 1.4, 0.8][this.rank('helpings')];
   }
 
   /** The roll (Q), if cooked: its stamina cost and the seconds of it that blows miss. */

@@ -37,6 +37,8 @@ import { Tin, type Gain } from '../loot/tin';
 import { Cooked, card, type CardId } from '../loot/recipes';
 import { TinView } from '../app/tinView';
 import { SaltDrift } from '../render/loot/saltDrift';
+import { Thrown } from '../combat/thrown';
+import { ThrownView } from '../render/humans/thrownView';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -51,6 +53,8 @@ const CLIMB_SHOWN = 4.5;
 const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
 /** Picking a find up: seconds it takes, when it is in hand; how far round the nobody finds are drawn. */
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
+/** Throwing a knife (grandma's Second Helpings): seconds the throw takes, and when the knife leaves the hand. */
+const THROWING = { dur: 0.55, release: 0.22 };
 /** Cooking a card at the fire: seconds the nobody stirs. */
 const COOK = { dur: 2.4 };
 
@@ -91,6 +95,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     touchedView.level = foremanView.level = scavengerView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
+    thrown.knives.length = 0;
     view.go(l);
     cam.level = l;
     nobody.level = l;
@@ -145,6 +150,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
   await view.stage.add(drift.root);
+  /** Knives thrown (grandma's Second Helpings), and when the last throw began. */
+  const thrown = new Thrown();
+  const thrownView = new ThrownView();
+  await view.stage.add(thrownView.root);
+  let throwAt = -9, released = true;
   const tinView = new TinView(document.body);
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
   let tinSel: CardId = TinView.order()[0], cookAt = -9;
@@ -261,7 +271,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get pack() { return pack; }, tin, get cooked() { return cooked; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get finds() { return finds; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -292,6 +302,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, stabDur = STAB.dur * knife.time, stabHit = STAB.hit * knife.time;
     if (controls.tap('Mouse0') && !busy && !tinView.open && !body.rolling && now - stabAt > stabDur) stab(now);
+    // Grandma's Second Helpings: the right mouse button throws a knife.
+    const every = cooked.helpings;
+    if (controls.tap('Mouse2') && every !== null && !busy && !tinView.open && !body.rolling && now - throwAt > every) { throwAt = now; released = false; }
     // Grandma's Duck card: Q rolls the way you are going (back, standing still).
     const duck = cooked.duck;
     if (controls.tap('KeyQ') && duck && !busy && !tinView.open && !body.rolling) {
@@ -352,8 +365,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
       input.jump = false;
     } else {
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
-      const stabbing = now - stabAt < stabDur;
+      const stabbing = now - stabAt < stabDur, throwing = now - throwAt < THROWING.dur;
       if (stabbing) body.facing = stabYaw;
+      if (throwing) body.facing = cam.yaw;
+      if (!released && now - throwAt >= THROWING.release) {
+        released = true;
+        thrown.throw(body.x - Math.sin(cam.yaw) * 0.3, body.y + 1.45, body.z - Math.cos(cam.yaw) * 0.3, cam.yaw, foes());
+      }
+      thrown.fly(level, foes(), blows, dt);
       if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
         finds.take(picking);
         pack.add(picking);
@@ -388,7 +407,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       campfire.step(body, threat, now, dt);
       const lighting = campfire.kindling(now);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, campfire.resting && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
@@ -416,6 +435,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
+    thrownView.place(thrown.knives);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];

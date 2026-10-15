@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.042 — Second Helpings
+
+- A new card in grandma's tin: **Second Helpings** (Throwing). Once it is cooked, the right mouse button throws a kitchen knife. It flies in an arc to the nearest creature roughly where you look, turning end over end, and drops off it. A knife that misses sticks where it hits and fades after a while. There are always more knives in the block. At rank 2 you throw again sooner.
+
 ## v0.041 — Duck
 
 - A new card in grandma's tin: **Duck** (Footwork). Once it is cooked, Q rolls you the way you are going, or backwards if you are standing still. Blows miss you for most of the roll, but it costs stamina. At rank 2 it is cheaper and blows miss you for nearly all of it.
