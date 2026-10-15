@@ -67,11 +67,11 @@ export class Nobody {
 
   /**
    * Follow the body: place, turn and pose. `action`: a one-shot (a stab) playing over the movement;
-   * `combat`: the knife drawn and held ready (else sheathed at the hip).
+   * `combat`: the knife drawn and held ready (else sheathed at the hip); `move`: what the body does, if not what its state says (crouched by a fire).
    */
-  pose(b: Body, dt: number, time: number, action?: ActionAnim, combat = false): void {
+  pose(b: Body, dt: number, time: number, action?: ActionAnim, combat = false, move: MoveState = moveOf(b)): void {
     const yaw = b.mode === 'climb' ? Math.atan2(b.wall[0], b.wall[2]) : b.facing;
-    this.human.update({ pos: [b.x, b.y, b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move: moveOf(b), action }, combat }, dt, time, this.ground);
+    this.human.update({ pos: [b.x, b.y, b.z], vel: [b.vx, b.vy, b.vz], yaw, anim: { move, action }, combat }, dt, time, this.ground);
   }
 
   /** A blow landed on the nobody from direction (dx, dz) (towards them), strength 0..1: they flinch. */

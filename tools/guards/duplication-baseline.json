@@ -420,7 +420,7 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/slimeView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/slimeView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
@@ -490,10 +490,6 @@
   {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#deriveSeed + dunfinity/render/creatures/touchedView.ts#deriveSeed",
     "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/scavengerView.ts#pose + dunfinity/render/creatures/slimeView.ts#pose",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and poses; same per-frame verb"
   },
   {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",

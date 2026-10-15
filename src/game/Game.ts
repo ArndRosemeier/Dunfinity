@@ -27,6 +27,8 @@ import { DogView } from '../render/creatures/dogView';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
 import { TallOneView } from '../render/creatures/tallOneView';
+import { Hearth, hearthParts } from '../render/props/hearth';
+import { Campfire, FIRE } from '../world/fire';
 import { blowFrom, damage, nearestReached } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -74,6 +76,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const show = (l: Level) => {
     level = l;
     fauna = new Fauna(l);
+    campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     touchedView.level = foremanView.level = scavengerView.people.level = tallView.level = l;
     finds = findsOf(l);
     view.go(l);
@@ -85,6 +88,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     return arrive();
   };
   fauna = new Fauna(level);
+  /** The nobody's own fire to rest by (one at a time). */
+  let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
   finds = findsOf(level);
   // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
   const touchedView = await TouchedView.create(params.seed);
@@ -121,6 +126,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
   const lampDir = new Vector3();
+  const hearth = new Hearth(hearthParts());
+  hearth.root.visible = false;
+  await view.stage.add(hearth.root);
   const findView = new FindView();
   await view.stage.add(findView.root);
   const shownFinds: Find[] = [];
@@ -250,7 +258,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); pack = new Pack(); picking = null; }
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     if (controls.tap('Mouse0') && !busy && now - stabAt > STAB.dur) stab(now);
@@ -262,7 +270,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
       else if (nearFind) pickUp(nearFind, now);
       else if (nearNote) { readAt = now; notice = `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`; noticeUntil = now + 20; }
     }
-    if (picking || now - readAt < PICKUP.dur) input.forward = input.right = 0; // stooping, not walking
+    const kindling = campfire.kindling(now);
+    if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
+      const why = campfire.whyNot(body, body.facing, fauna.after(body), now);
+      if (why) { notice = why; noticeUntil = now + 2.5; } else campfire.light(body, body.facing, now);
+    }
+    if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0) input.forward = input.right = 0; // stooping or kneeling, not walking
     if (climb.active) {
       climb.advance(dt, timer.getElapsed());
       body.x = climb.pos.x; body.y = climb.pos.y; body.z = climb.pos.z;
@@ -306,9 +319,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
+      campfire.step(body, threat, now, dt);
+      const lighting = campfire.kindling(now);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
-      const action = stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
-      nobody.pose(body, dt, now, action, ready && !stooping);
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
+      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, campfire.resting && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
@@ -330,6 +345,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
     if (fauna.tall.stares > stares) { notice = 'The Tall One looks at you, and the cold of it goes right through you.'; noticeUntil = now + 3; }
     stares = fauna.tall.stares;
+    const fire = campfire.fire, lit = campfire.kindling(now);
+    hearth.root.visible = !!fire;
+    if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
@@ -337,6 +355,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push('E: read the note');
+    else if (campfire.resting) lines.push('Resting by the fire.');
+    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');
     else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
