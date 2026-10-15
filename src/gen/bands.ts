@@ -154,7 +154,7 @@ export const CELLAR_BAND: Band = {
 };
 
 /** How far each style's weight in a level's mix strays from its band's, either way (as a power of 2). */
-const MIX_VARY = 1;
+const MIX_VARY = 0.5;
 
 /**
  * A level's mix of styles: its band's, each weight scaled by up to 2^MIX_VARY either way, drawn

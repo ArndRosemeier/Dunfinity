@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.092 — Every level its own mix
+
+- Every level from 1 to 10 is now a mix of kinds of place, not one quarry with different stone. The Quarry is mostly old workings with some fallen ground and caves; the Salt Works adds more collapse and a rift or two; the Cisterns mix workings, caves, dungeon rooms and root hollows; the Threshold is everything at once, from catacombs to fungal grottoes.
+- No two levels of a band are alike: each level leans its own way, one more caves, the next more workings.
+- Where you arrive is always old workings with a ladder up, and a way down is never far, even on levels that are mostly caves.
 ## v0.091 — Real cave crickets
 
 - The cave crickets are new: sculpted, rigged and animated in Blender like the dogs and rats. Each one is a pale, humped cave cricket with banded plates, great chevroned hind legs with spined shins, and feelers longer than its body that never stop sweeping (fast and twitchy once it is after you).

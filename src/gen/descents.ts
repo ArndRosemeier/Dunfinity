@@ -29,6 +29,8 @@ export const SHAFT = {
   /** Chance of a shaft in a cell right outside the quiet zone, and far out. */
   near: 0.15,
   far: 0.75,
+  /** The least share of the level the excavation is counted as having (see `Descents`). */
+  least: 0.2,
 } as const;
 
 export interface Shaft {
@@ -99,8 +101,10 @@ export class Descents {
   /**
    * `arrival`: where a player arrives on this level (x, z); `ascent`: the way up there (null on the
    * first level). Both asked for lazily. `only`: the one way down there is (the cellar's old shaft).
+   * `share`: how much of the level is the excavation's (shafts are its own, E5): where it is little,
+   * a cell of it is likelier to have one, so a mix has as many ways down near you as a quarry.
    */
-  constructor(private readonly field: QuarryField, seed: number, depth: number, private readonly arrival: () => [number, number], private readonly ascent: () => Shaft | null, private readonly only?: Shaft) {
+  constructor(private readonly field: QuarryField, seed: number, depth: number, private readonly arrival: () => [number, number], private readonly ascent: () => Shaft | null, private readonly only?: Shaft, private readonly share = 1) {
     this.seed = deriveSeed(seed, 'descents', depth);
   }
 
@@ -156,7 +160,7 @@ export class Descents {
     const [ax, az] = this.arrival();
     const d = Math.hypot((i + 0.5) * c - ax, (j + 0.5) * c - az);
     if (d < SHAFT.quiet) return null;
-    const p = SHAFT.near + (SHAFT.far - SHAFT.near) * Math.min(1, (d - SHAFT.quiet) / SHAFT.ramp);
+    const p = (SHAFT.near + (SHAFT.far - SHAFT.near) * Math.min(1, (d - SHAFT.quiet) / SHAFT.ramp)) / Math.max(this.share, SHAFT.least);
     if (hash3f(this.seed, i, j, 0) > p) return null;
     for (let k = 0; k < 8; k++) {
       const px = i * c + edge + hash3f(this.seed, i, j, 1 + 2 * k) * (c - 2 * edge);

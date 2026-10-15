@@ -133,7 +133,8 @@ test('the Threshold has ruins against its cavern walls and no miners\' leavings 
     for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) s.ruins += quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts.ruins;
     return s;
   };
-  const deep = sum(new Level(1, 9), 3).ruins + sum(new Level(2, 10), 3).ruins;
+  // (Ruins stand in the excavation's caverns: how many near you depends on how much of the mix it is.)
+  const deep = sum(new Level(1, 9), 5).ruins + sum(new Level(2, 10), 5).ruins + sum(new Level(3, 9), 5).ruins;
   assert.ok(deep >= 2, `${deep} ruins`);
   assert.equal(sum(new Level(1, 3), 2).ruins + sum(new Level(1, 6), 2).ruins, 0);
 });

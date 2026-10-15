@@ -164,13 +164,15 @@ test('E6: the same level twice is the same, whatever was asked first', () => {
 });
 
 test('the karst is not the excavation: no pillars, smooth domes, a different share of open floor', () => {
-  const l = new Level(1, 9);
   let karstCols = 0, pillars = 0;
-  for (const [x, z] of spots(l, 4000, 2400, 18)) {
-    const c = l.columnAt(x, z);
-    if (c.mix || l.field.styles[c.style].id !== 'karst') continue;
-    karstCols++;
-    if (c.pillarD < 50) pillars++;
+  for (const seed of [1, 2, 3]) {
+    const l = new Level(seed, 9);
+    for (const [x, z] of spots(l, 4000, 2400, 18)) {
+      const c = l.columnAt(x, z);
+      if (c.mix || l.field.styles[c.style].id !== 'karst') continue;
+      karstCols++;
+      if (c.pillarD < 50) pillars++;
+    }
   }
   assert.ok(karstCols > 500, `${karstCols} karst columns`);
   assert.equal(pillars, 0);

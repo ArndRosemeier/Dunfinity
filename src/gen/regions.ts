@@ -33,6 +33,13 @@ export const REGIONS = {
 /** A level's styles and how much of it each covers (weights need not add up to 1). */
 export type Mix = readonly (readonly [StyleId, number])[];
 
+/** How much of a level of `mix` is style `id`'s: its weight over all of them. */
+export function shareOf(mix: Mix, id: StyleId): number {
+  let all = 0, own = 0;
+  for (const [s, w] of mix) { all += w; if (s === id) own += w; }
+  return all > 0 ? own / all : 0;
+}
+
 /** The shares of the styles at a point: `n` of them, `styles[i]` an index into the mix, `w[i]` its share (they add up to 1; the owner's first). `edge`: blend distance to the nearest region of another style (Infinity: none within `edge + far`). */
 export interface Shares {
   n: number;

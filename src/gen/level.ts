@@ -10,6 +10,7 @@ import { bandOf, mixOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
+import { shareOf } from './regions';
 import { owns, type StyleId } from './style';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
@@ -76,7 +77,7 @@ export class Level {
     const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
     const mix = style && depth > 0 ? onlyMix(style, excavation.id) : mixOf(seed, depth);
     this.field = new StyledField(excavation, stylesOf(mix, excavation, s, this.band), mix, s);
-    this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined);
+    this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined, shareOf(mix, excavation.id));
   }
 
   /** What this level is made from (for workers to make the same one). */
