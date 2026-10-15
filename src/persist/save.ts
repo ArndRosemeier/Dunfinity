@@ -1,6 +1,6 @@
 /**
  * The game kept between visits (decision D11: permadeath): the family's state that outlives every
- * grandchild (grandma's tin, which grandchild is next, the finds taken), and the grandchild now
+ * grandchild (grandma's tin, her purse, which grandchild is next, the finds taken), and the grandchild now
  * down there, if one is alive: where, how hurt, what they cooked, practised and picked up. A dead
  * grandchild is not kept, so a reload sends the next one down.
  *
@@ -35,6 +35,8 @@ export interface SaveData {
   readonly child: GrandchildData | null;
   /** The notary's list: the grandchildren who did not come back. */
   readonly fallen?: readonly Fallen[];
+  /** Grandma's purse: euros from Ilse's pawn shop (src/loot/pawn.ts). */
+  readonly euros?: number;
 }
 
 const key = (seed: number) => `dunfinity:save:${seed}`;

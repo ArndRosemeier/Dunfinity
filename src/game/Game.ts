@@ -10,6 +10,8 @@ import { readSave, writeSave, type GrandchildData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
 import { CELLAR } from '../gen/cellar';
+import { shopDoor } from '../gen/town';
+import { PAWN, sell } from '../loot/pawn';
 import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { Level } from '../gen/level';
 import { CAMP, NOTE } from '../gen/grandmasCamp';
@@ -128,6 +130,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let heir = saved?.heir ?? 0, reached = saved?.child?.reached ?? 0;
   /** The grandchildren who did not come back (the notary's list), and whether this one's death is on it yet. */
   const fallen: Fallen[] = [...(saved?.fallen ?? [])];
+  /** Grandma's purse: euros from Ilse, kept for the family. */
+  let euros = saved?.euros ?? 0, sales = 0;
   let mourned = false;
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
@@ -166,7 +170,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
       cooked: cooked.data, practice: practice.data, pack: [...pack.items], explored: explored.data,
     };
-    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen });
+    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros });
   };
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
@@ -408,6 +412,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const nearLadder = climb.active ? null : atLadder();
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
+    const pawn = level.depth === 0 ? shopDoor('pawn') : null, nearPawn = !busy && !nearLadder && !nearFind && !nearNote && body.grounded && !!pawn && Math.hypot(pawn.x - body.x, pawn.z - body.z) < PAWN.reach;
     // Grandma's tin, open by the fire: choose a card, cook it.
     if (tinView.open) {
       if (controls.tap('KeyT') || controls.tap('Escape') || !campfire.resting || body.dead) tinView.hide();
@@ -432,7 +437,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('KeyE')) {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
-      else if (nearNote) {
+      else if (nearPawn && pack.items.length) {
+        const r = sell(pack, sales++);
+        euros += r.paid; readAt = now; // (stooping over her counter)
+        say(r.line, 6);
+      } else if (nearNote) {
         readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}`, 20);
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
       }
@@ -582,6 +591,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : 'E: read the note');
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}. T: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');
@@ -590,7 +600,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (draft) lines.push(draft);
     }
-    lines.push(...fauna.tally(), `infused salt in grandma's tin: ${tin.salt}`);
+    lines.push(...fauna.tally(), `infused salt in grandma's tin: ${tin.salt}`, euros ? `euros in grandma's purse: €${euros}` : '');
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
     if (hud) hud.textContent = hudText(body, backend, body.dead ? notaryList(fallen, heir + 1, params.seed) : []) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
