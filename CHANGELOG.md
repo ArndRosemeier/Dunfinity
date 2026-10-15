@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.112 — The rift's story and two old scripts
+
+- The background story is written down: the dungeon is a rift through buried worlds down to the first one (docs/design/lore.md).
+- The dwarves' Kerf runes and the elves' Thread script are real alphabets you can learn to read.
+- Round grandma's salt circle in the cellar, traced in the same blue salt, runs a line of elven writing. Press E near it to read the marks; each new inscription you read teaches you one letter, pencilled into the key in her tin, and the next grandchild finds it there.
+
 ## v0.111 — Elven vaults, and the dwarven halls furnished
 
 - A new level style for the Old Halls (levels 21–40): elven vaults, long naves under pointed vaults 25–35 m high, with a lower aisle each side behind an arcade of slender clustered columns, ribs across the vault at every bay and transepts crossing between the naves. Pale silver-grey stone, the ribs and columns paler still, and a dark polished floor.
