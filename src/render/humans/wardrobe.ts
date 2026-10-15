@@ -164,6 +164,12 @@ const SCAVENGERS: readonly Outfit[] = [
   { clothes: [['chest', 'tunic', [0.16, 0.24, 0.3], [0.12, 0.16, 0.18], 0.8], ['legs', 'trousers', [0.26, 0.24, 0.18], [0.18, 0.16, 0.12], 0.8], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.65]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
 ];
 
+/** Frau Weber's cardigan over a long dark skirt, and her slippers: nothing in her hands. */
+const CARDIGAN: Outfit = {
+  clothes: [['chest', 'tunic', [0.42, 0.33, 0.36], [0.3, 0.25, 0.27], 0.35], ['legs', 'trousers', [0.12, 0.12, 0.16], [0.1, 0.1, 0.12], 0.3], ['feet', 'footwraps', [0.3, 0.12, 0.14], [0.2, 0.08, 0.1], 0.3]],
+  hand: null,
+};
+
 /** The Tall One's shroud: a long, dark, worn cloth, and nothing in the hand. */
 const SHROUD: Outfit = {
   clothes: [['chest', 'tunic', [0.06, 0.06, 0.07], [0.04, 0.04, 0.05], 0.95], ['legs', 'trousers', [0.05, 0.05, 0.06], [0.04, 0.04, 0.05], 0.95]],
@@ -186,3 +192,4 @@ export const rags = (seed: number, lid = false): EquipmentVisuals => dressIn(RAG
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
 export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);
+export const cardigan = (seed: number): EquipmentVisuals => dressIn(CARDIGAN, seed);

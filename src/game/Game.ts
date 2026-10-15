@@ -35,6 +35,8 @@ import { SlimeView } from '../render/creatures/slimeView';
 import { DogView } from '../render/creatures/dogView';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
+import { NeighbourView } from '../render/humans/neighbourView';
+import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { TallOneView } from '../render/creatures/tallOneView';
 import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
@@ -124,7 +126,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     doors = new Doors(l.doors);
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
-    touchedView.level = foremanView.level = scavengerView.people.level = tallView.level = l;
+    if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
+    touchedView.level = foremanView.level = scavengerView.people.level = neighbourView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
@@ -161,7 +164,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const foremanView = await ForemanView.create(params.seed);
   foremanView.level = level;
   const scavengerView = await ScavengerView.create(params.seed);
-  scavengerView.people.level = level;
+  const neighbourView = await NeighbourView.create();
+  const weber = new Neighbour();
+  scavengerView.people.level = neighbourView.people.level = level;
   const tallView = await TallOneView.create(params.seed);
   tallView.level = level;
   /** The grandchild kept from the last visit, where they were. */
@@ -188,12 +193,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // The nobody is built before the warm-up, which compiles its materials with the rest.
   const nobody = await Nobody.create(params.seed, level);
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
   await view.stage.add(scavengerView.people.root);
   await view.stage.add(scavengerView.camps.root);
+  await view.stage.add(neighbourView.people.root);
   await view.stage.add(tallView.root);
   const ratView = new RatView();
   await view.stage.add(ratView.root);
@@ -215,6 +221,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(doorView.root);
   doorView.hang(doors.list);
   doors.into(view.props.blockers);
+  if (level.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker);
   const findView = new FindView();
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
@@ -431,6 +438,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       return Math.hypot(d.x - body.x, d.z - body.z) < PAWN.reach;
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
+    const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
     const nearDoor = busy || nearLadder || nearFind || nearNote || !body.grounded ? null : doors.near(body.x, body.y, body.z);
     // Kemal's counter: 1, 2, 3 buy what is on it.
     if (nearKemal) GEAR_ORDER.forEach((k, i) => {
@@ -464,6 +472,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('KeyE')) {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
+      else if (nearWeber) say(weber.talk({ deepest: tin.deepest, fallen: fallen.length }, now), 7);
       else if (nearPawn && pack.items.length) {
         const r = sell(pack, sales++);
         euros += r.paid; readAt = now; // (stooping over her counter)
@@ -612,6 +621,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (fauna.scavengers.calls > calls) say(fauna.scavengers.said, 3.5);
     calls = fauna.scavengers.calls;
     tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
+    if (level.depth === 0) weber.turn(body.x, body.z, dt);
+    neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
     if (fauna.tall.stares > stares) say('The Tall One looks at you, and the cold of it goes right through you.', 3);
     stares = fauna.tall.stares;
     const fire = campfire.fire, lit = campfire.kindling(now);
@@ -629,6 +640,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearWeber) lines.push(weber.talking(now) ? '' : 'E: call on Frau Weber');
     else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);

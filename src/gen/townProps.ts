@@ -41,14 +41,18 @@ export function furnishTown(f: Furnish): void {
     const H = HOUSES[i], fx = H.faces > 0 ? H.x1 + SHELL + 0.02 : H.x0 - SHELL - 0.02, mid = (H.z0 + H.z1) / 2;
     if (!f.inTile(fx, mid)) continue;
     const pane = (z: number, y: number, k: number) => {
-      const lit = hash3f(TOWN_PROPS, i, k, 1) < 0.3;
+      const lit = (H.home && y < G + 3) || hash3f(TOWN_PROPS, i, k, 1) < 0.3; // (Frau Weber is up: her downstairs is lit)
       (lit ? f.glow : s).upright(fx, y, z, Math.PI / 2, 0.42, 0.55, 0.01, lit ? LIT : DARK_PANE);
       s.upright(fx + H.faces * 0.01, y, z, Math.PI / 2, 0.03, 0.55, 0.02, FRAME);
       s.upright(fx + H.faces * 0.03, y - 0.6, z, Math.PI / 2, 0.5, 0.04, 0.06, STONE); // the sill
     };
     const doorZ = H.door;
     if (H.shop) shopFront(f, H, fx);
-    s.upright(fx, G + 1.05, doorZ, Math.PI / 2, 0.5, 1.05, 0.03, DOOR);
+    if (H.home) {
+      // Frau Weber's door stands open on her lit hall, the leaf folded back against the front.
+      f.glow.upright(fx - H.faces * 0.02, G + 1.05, doorZ, Math.PI / 2, 0.5, 1.05, 0.01, LIT);
+      s.upright(fx + H.faces * 0.5, G + 1.05, doorZ - 0.53, 0, 0.5, 1.05, 0.03, DOOR);
+    } else s.upright(fx, G + 1.05, doorZ, Math.PI / 2, 0.5, 1.05, 0.03, DOOR);
     s.upright(fx + H.faces * 0.25, G + 0.08, doorZ, Math.PI / 2, 0.7, 0.08, 0.25, STONE); // the step
     f.block(fx + H.faces * 0.25, doorZ, Math.PI / 2, 0.7, 0.26, G, G + 0.16);
     let k = 0;

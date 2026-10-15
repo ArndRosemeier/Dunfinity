@@ -42,10 +42,15 @@ export interface House {
   /** Where along its front its door is (z), and what it is (a shop, or someone's home). */
   readonly door: number;
   readonly shop?: Shop;
+  /** Whose home it is, when that is someone one can call on. */
+  readonly home?: Neighbour;
 }
 
 /** The shops of the street (town-and-first-strata.md §3). */
 export type Shop = 'pawn' | 'hardware';
+
+/** The neighbours one can call on (town-and-first-strata.md §3): old Frau Weber, across the street. */
+export type Neighbour = 'weber';
 
 const SEED = 1931;
 
@@ -82,7 +87,7 @@ const GROUND_EAVES = TOWN.ground + 3.2;
 /** Every house of the street, grandma's first. */
 export const HOUSES: readonly House[] = [
   { x0: TOWN.grandma.x[0], x1: TOWN.grandma.x[1], z0: TOWN.grandma.z[0], z1: TOWN.grandma.z[1], eaves: TOWN.grandma.eaves, pitch: TOWN.grandma.pitch, faces: -1, look: 0.5, door: 0 },
-  ...shop(row(TOWN.across.x[0], TOWN.across.x[1], 1, 0, 3), 'pawn'), // a lane west, opposite her door
+  ...weber(shop(row(TOWN.across.x[0], TOWN.across.x[1], 1, 0, 3), 'pawn')), // a lane west, opposite her door
   ...shop(row(TOWN.side.x[0], TOWN.side.x[1], -1, 1, TOWN.grandma.z[1]), 'hardware'),
 ];
 
@@ -93,10 +98,26 @@ function shop(houses: House[], what: Shop): House[] {
   return houses;
 }
 
-/** The shop's house, and where one stands at its door to deal (on the street, before its step). */
-export function shopDoor(shop: Shop): { house: House; x: number; z: number } {
-  const house = HOUSES.find((h) => h.shop === shop)!;
+/** Frau Weber's is the house across the street just down from the lane opposite grandma's door, its door in the middle. */
+function weber(houses: House[]): House[] {
+  const i = houses.reduce((b, h, k) => (h.z1 < 0 && (b < 0 || h.z1 > houses[b].z1) ? k : b), -1);
+  houses[i] = { ...houses[i], home: 'weber', door: (houses[i].z0 + houses[i].z1) / 2 };
+  return houses;
+}
+
+/** Where one stands at a house's door (on the street, before its step). */
+export function atDoor(house: House): { house: House; x: number; z: number } {
   return { house, x: (house.faces > 0 ? house.x1 : house.x0) + house.faces * 1.0, z: house.door };
+}
+
+/** The shop's house, and where one stands at its door to deal. */
+export function shopDoor(shop: Shop): { house: House; x: number; z: number } {
+  return atDoor(HOUSES.find((h) => h.shop === shop)!);
+}
+
+/** The neighbour's house, and where one stands at her door. */
+export function homeDoor(who: Neighbour): { house: House; x: number; z: number } {
+  return atDoor(HOUSES.find((h) => h.home === who)!);
 }
 
 /** The ground's height at (x, z), and how steep it is there (for the field's distance). */
