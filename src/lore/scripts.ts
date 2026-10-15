@@ -229,6 +229,21 @@ export function parsePath(d: string): Pt[][] {
   return lines;
 }
 
+/** A line of `text` in either script. */
+export function letter(script: 'kerf' | 'thread', text: string): Lettering {
+  return script === 'kerf' ? kerf(text) : thread(text);
+}
+
+/** `text` broken at words into lines no longer than `units` each (a word longer than that gets a line of its own). */
+export function breakLines(script: 'kerf' | 'thread', text: string, units: number): string[] {
+  const lines: string[] = [];
+  for (const w of words(text)) {
+    const last = lines.length ? `${lines[lines.length - 1]} ${w}` : '';
+    if (last && letter(script, last).width <= units) lines[lines.length - 1] = last; else lines.push(w);
+  }
+  return lines;
+}
+
 /** The words of a text, lower case, letters only. */
 function words(text: string): string[] {
   return text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);

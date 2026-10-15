@@ -7,6 +7,7 @@
  */
 import { writeFileSync } from 'node:fs';
 import { KERF, THREAD, THREAD_VOWELS, kerf, thread, type Lettering } from '../../src/lore/scripts';
+import { letteringSvg } from '../../src/lore/svg';
 
 const W = 1600;
 const INK = '#2b2118', GOLD = '#a8792c', PAPER = '#efe6d2', SOFT = '#7a6a55';
@@ -14,12 +15,7 @@ const parts: string[] = [];
 let y = 0;
 
 /** Draw a lettering at (x, y) in pixels, `s` pixels to a unit, y up in the lettering. */
-function draw(l: Lettering, x: number, base: number, s: number, colour: string, width: number): void {
-  const p = (px: number, py: number) => `${(x + px * s).toFixed(1)},${(base - py * s).toFixed(1)}`;
-  for (const line of l.strokes) parts.push(`<polyline points="${line.map(([a, b]) => p(a, b)).join(' ')}" fill="none" stroke="${colour}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`);
-  for (const [cx, cy, r] of l.dots) parts.push(`<circle cx="${(x + cx * s).toFixed(1)}" cy="${(base - cy * s).toFixed(1)}" r="${(r * s).toFixed(1)}" fill="${colour}"/>`);
-  for (const [cx, cy, r] of l.rings) parts.push(`<circle cx="${(x + cx * s).toFixed(1)}" cy="${(base - cy * s).toFixed(1)}" r="${(r * s).toFixed(1)}" fill="none" stroke="${colour}" stroke-width="${width * 0.8}"/>`);
-}
+const draw = (l: Lettering, x: number, base: number, scale: number, colour: string, width: number) => parts.push(letteringSvg(l, x, base, { scale, colour, width }));
 const text = (x: number, ty: number, t: string, size: number, colour = INK, anchor = 'start', style = '') =>
   parts.push(`<text x="${x}" y="${ty}" font-family="Georgia, serif" font-size="${size}" fill="${colour}" text-anchor="${anchor}" ${style}>${t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>`);
 

@@ -43,7 +43,7 @@ One new fact per stratum, never a cutscene. The player gets it from places, obje
 | 11–20 | The Ossuaries | **People have done this before.** The buried town is ours, one world older; it too had a grandma | The town's echo of the street layout, its bricked cellar arch, medieval grave texts in plain words, the first elven wards on sealed doors |
 | 21–40 | The Old Halls | **It isn't a cave: it's a crack through worlds**, each level a world. The dwarves dug down for the first fire; the elves kept the way shut; the climbers come up | Kerf runes (dwarven) and Thread script (elven), two accounts that contradict each other; grandma's name at 40; her father's chalk |
 | 41–60 | Before People | **Every world is a copy.** Fossils and formations that are rough drafts of things from ours (a tree, a dog, a house shape in the rock) | Shapes, not text. The climbers' stairs, still going up |
-| 61+ | The Deep | **The first world is not dead.** The rules themselves were different down here | Scripts rolled per stratum (Xenoworld glyphs): unreadable, because no one copied them for us. Only the stairs and the salt continue |
+| 61+ | The Deep | **The first world is not dead.** The rules themselves were different down here | Each world's few laws ([generative-depth.md](generative-depth.md)); its writing a drifted copy of Kerf or Thread, harder to read the deeper it is (§4.3). The stairs and the salt continue |
 
 The tin carries it in grandma's voice, e.g. a deep-chapter margin note: *"Every recipe is a copy of a copy. Somewhere down there is the first one, and I bet it's terrible."*
 
@@ -61,7 +61,7 @@ Living dwarves and elves: none in 21–40 for now, only their halls, vaults and 
 
 ## 4. The scripts
 
-Both are **real writing: English, spelled by ear**, so every inscription in the dungeon can be read by a player with a notebook (as in Tunic or Fez). Nothing in either script is gibberish, ever: a decodable script that sometimes lies destroys the puzzle. Proper names may be invented words; everything else is English.
+Both are **real writing: English, spelled by ear**, and so are their drifted copies in the Deep (generative-depth.md G3), so every inscription in the dungeon can be read by a player with a notebook (as in Tunic or Fez). Nothing in either script is gibberish, ever: a decodable script that sometimes lies destroys the puzzle. Proper names may be invented words; everything else is English.
 
 Glyph sheet: `tools/lore/sheet.ts`. The glyphs are data (`src/lore/scripts.ts`): a line of text becomes polylines and dots, which the sheet draws as SVG and the game will draw as geometry.
 
@@ -89,7 +89,7 @@ Glyph sheet: `tools/lore/sheet.ts`. The glyphs are data (`src/lore/scripts.ts`):
 | Dwarven halls: wall friezes in the inlay bands, gate lintels, bridge parapets over the chasms, column bases | Kerf | Hall names, depths ("forty fathoms to the fire"), records, warnings, the diggers' account | 21–40 |
 | Elven vaults: along the ribs, round column clusters | Thread | Wards, laments, the keepers' account | 21–40 (when the vaults land) |
 | Grandma's name at level 40, her father's chalk | Latin letters, her hand | | 21–40 |
-| The Deep | rolled per stratum | Unreadable | 61+ |
+| The Deep | drifts of Kerf and Thread (decision G3) | Still English, still decodable: glyphs bent, mirrored, joined, sounds merged, more with strangeness; what was learned half-reads it | 61+ |
 
 ### 4.4 Reading them
 
@@ -125,5 +125,6 @@ Rendering note: the rock is meshed at 1 m, so glyphs cannot be carved into the S
 ---
 
 ## Changelog
+- 2026-10-15 draft 2.1: the Deep's scripts are drifted copies of Kerf and Thread, decodable (generative-depth.md G3), not unreadable.
 - 2026-10-15 draft 2: Arnd took all four picks (LO1–LO4).
 - 2026-10-15 draft 1: story bible, the two scripts, where they appear, reading, build plan.

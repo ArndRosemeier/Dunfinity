@@ -10,6 +10,7 @@
 import type { TinData } from '../loot/tin';
 import type { Find } from '../loot/finds';
 import type { Fallen } from '../gen/notary';
+import type { KeyData } from '../lore/key';
 
 export interface GrandchildData {
   readonly depth: number;
@@ -39,6 +40,8 @@ export interface SaveData {
   readonly fallen?: readonly Fallen[];
   /** Grandma's purse: euros from Ilse's pawn shop (src/loot/pawn.ts). */
   readonly euros?: number;
+  /** Grandma's key to the old scripts, with every grandchild's pencil marks (src/lore/key.ts). */
+  readonly key?: KeyData;
 }
 
 const key = (seed: number) => `dunfinity:save:${seed}`;
