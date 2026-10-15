@@ -31,7 +31,7 @@ import { ScavengerView } from '../render/creatures/scavengerView';
 import { TallOneView } from '../render/creatures/tallOneView';
 import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
-import { blowFrom, damage, nearestReached } from '../combat/combat';
+import { blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
@@ -53,6 +53,8 @@ const CLIMB_SHOWN = 4.5;
  * centre), sweep and heights, damage and knockback; and how far it turns the nobody to a rat.
  */
 const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
+/** Grandma's Tenderising (V): an overhead blow with the knife's handle, slower, wider, knocking far back; its stamina (damage: the card's). */
+const POUND = { dur: 0.9, hit: 0.5, range: 1.15, arc: 1.1, low: -0.3, high: 1.3, knock: 8, aim: 2.6, aimArc: 1.2, stamina: 3 };
 /** Picking a find up: seconds it takes, when it is in hand; how far round the nobody finds are drawn. */
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
 /** Throwing a knife (grandma's Second Helpings): seconds the throw takes, and when the knife leaves the hand. */
@@ -211,9 +213,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   /** Everyone the knife can hit. */
   const foes = (): Foe[] => fauna.foes();
-  const stab = (now: number): void => {
+  /** Which blow is in progress: a stab, or (grandma's Tenderising) a pound. */
+  let striking: 'stab' | 'pound' = 'stab';
+  const stab = (now: number, how: 'stab' | 'pound' = 'stab'): void => {
     stabAt = now;
     stabDone = false;
+    striking = how;
     // Turn to the nearest foe roughly where the camera looks, else where it looks.
     stabYaw = cam.yaw;
     let best = STAB.aim;
@@ -292,6 +297,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
+    /** Bring the knife's handle down, as V would (grandma's Tenderising). */
+    pound: () => stab(timer.getElapsed(), 'pound'),
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
     descend: (up = false) => {
       const s = up ? level.ascent : level.descents.nearest(body.x, body.z, 5000);
@@ -317,8 +324,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); cooked = new Cooked(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
-    const knife = cooked.knife, stabDur = STAB.dur * knife.time, stabHit = STAB.hit * knife.time;
-    if (controls.tap('Mouse0') && !busy && !tinView.open && !body.rolling && now - stabAt > stabDur) stab(now);
+    const knife = cooked.knife, pound = cooked.tenderising;
+    const stabDur = striking === 'pound' ? POUND.dur : STAB.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : STAB.hit * knife.time;
+    const canStrike = !busy && !tinView.open && !body.rolling && now - stabAt > stabDur;
+    if (controls.tap('Mouse0') && canStrike) stab(now);
+    // Grandma's Tenderising: V brings the knife's handle down overhead.
+    if (controls.tap('KeyV') && pound && canStrike) {
+      if (body.stamina < POUND.stamina) say('Too out of breath to put your back into it.', 2);
+      else { body.stamina -= POUND.stamina; stab(now, 'pound'); }
+    }
     // Grandma's Second Helpings: the right mouse button throws a knife.
     const every = cooked.helpings;
     const canThrow = !busy && !tinView.open && !body.rolling && released && now - throwAt > THROWING.dur;
@@ -413,9 +427,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (picking && (now - pickAt >= PICKUP.dur || body.dead)) picking = null;
       if (!stabDone && now - stabAt >= stabHit) {
         stabDone = true;
-        const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
-        if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage, body.x, body.z, STAB.knock, 'knife');
-        if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
+        if (striking === 'pound' && pound) {
+          const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
+          for (const r of pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : []) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage, body.x, body.z, POUND.knock, 'knife');
+        } else {
+          const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
+          if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage, body.x, body.z, STAB.knock, 'knife');
+          if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
+        }
       }
       const health = body.health;
       fauna.blockers = view.props.blockers;
@@ -458,7 +477,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       const lighting = campfire.kindling(now);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.resting || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
