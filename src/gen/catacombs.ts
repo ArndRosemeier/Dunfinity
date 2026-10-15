@@ -15,6 +15,7 @@ import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic
 import type { Band } from './bands';
 import { Grain, grainOf } from './grainLines';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
 import { scatter, type Dress } from './styleProps';
@@ -57,6 +58,8 @@ interface CryptColumn {
 
 export class Catacombs implements Style {
   readonly id: StyleId = 'catacombs';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ limestone: 0.6, shale: 0.3, sandstone: 0.1 });
   /** Bone-pale on the map (M). */
   readonly mapFloor = [0.7, 0.68, 0.6] as const;
   private readonly noise: Noise;

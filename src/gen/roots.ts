@@ -17,6 +17,7 @@ import type { Band } from './bands';
 import { CaveThings, THING_REACH, karstChambers, taperDist, taperPlan, type Chamber, type Taper } from './caveThings';
 import { Karst } from './karst';
 import type { Column } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
 import { roofOver, scatter, type Dress } from './styleProps';
@@ -45,6 +46,8 @@ const SEGS = 4;
 
 export class Roots implements Style {
   readonly id: StyleId = 'roots';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ sandstone: 0.4, shale: 0.35, limestone: 0.25 });
   /** Moss green on the map (M). */
   readonly mapFloor = [0.42, 0.55, 0.32] as const;
   private readonly cave: Karst;

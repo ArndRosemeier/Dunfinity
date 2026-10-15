@@ -15,6 +15,7 @@
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 
 export const KARST = {
@@ -51,6 +52,8 @@ interface Chamber {
 
 export class Karst implements Style {
   readonly id: StyleId = 'karst';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ limestone: 0.6, shale: 0.2, sandstone: 0.2 });
   /** Pale flowstone on the map. */
   readonly mapFloor = [0.62, 0.62, 0.58] as const;
   private readonly noise: Noise;

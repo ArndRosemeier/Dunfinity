@@ -11,6 +11,7 @@ import { newColumn } from '../src/gen/quarry';
 import { PASSAGE } from '../src/gen/styledField';
 import { MAP_FLOOR } from '../src/gen/style';
 import { farFromSurface } from '../src/gen/chunkMesh';
+import { NAMED_STYLES } from '../src/gen/styles';
 
 /** The levels with more than one style, one of each band. */
 // Levels 1–10's bands, and below them a level of each stratum the genome draws (src/gen/genome.ts).
@@ -481,4 +482,13 @@ test('the elven vaults are none of them: tall naves that narrow to a pointed vau
   assert.ok(st.elven.n > 500, `${st.elven.n} open elven columns`);
   assert.ok(pointed('elven') > 0.25, `a pointed vault over ${(pointed('elven') * 100).toFixed(0)}% of the elven vaults`);
   for (const id of Object.keys(st)) if (id !== 'elven' && st[id].n > 100) assert.ok(pointed(id) < pointed('elven') / 4, `${id}: a pointed vault over ${(pointed(id) * 100).toFixed(0)}%`);
+});
+
+test('no style is cut through one rock alone: each names several, none more than 80% (Arnd: walls are mixed rock)', () => {
+  for (const id of NAMED_STYLES) {
+    const l = new Level(1, 25, id), st = l.field.styles.find((s) => s.id === id)!;
+    assert.ok(st.rocks, `${id} names its rock`);
+    const sum = st.rocks.reduce((a, b) => a + b, 0), kinds = st.rocks.filter((w) => w > 0).length;
+    assert.ok(kinds >= 2 && Math.max(...st.rocks) / sum <= 0.8, `${id}: ${kinds} rocks, the most ${((Math.max(...st.rocks) / sum) * 100).toFixed(0)}%`);
+  }
 });

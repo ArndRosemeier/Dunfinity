@@ -17,6 +17,7 @@ import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
 import { GrainLines, grainOf } from './grainLines';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { boxDist3 } from './shapes';
 
@@ -68,6 +69,8 @@ const CS: number[] = new Array(5);
 
 export class Rift implements Style {
   readonly id: StyleId = 'rift';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ shale: 0.35, sandstone: 0.3, granite: 0.2, slate: 0.15 });
   /** Rust-grey on the map (M). */
   readonly mapFloor = [0.5, 0.42, 0.38] as const;
   private readonly noise: Noise;
