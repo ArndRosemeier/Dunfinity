@@ -104,8 +104,8 @@ export class LevelView {
     ROCK_VEINS.value = this.level_.band.veins; // a uniform: the same shader in every band
     ROCK_TOOLED.value = this.level_.band.tooled;
     this.lamps.power = this.level_.band.lamplight;
-    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.seed, this.level_.depth);
-    this.props_ = new Props(this.stage, this.things, this.level_.seed, this.level_.depth, this.lamps);
+    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key);
+    this.props_ = new Props(this.stage, this.things, this.level_.key, this.lamps);
   }
 
   get terrain(): Terrain { return need(this.terrain_); }

@@ -169,3 +169,18 @@ test('the karst is not the excavation: no pillars, smooth domes, a different sha
   assert.ok(karstCols > 500, `${karstCols} karst columns`);
   assert.equal(pillars, 0);
 });
+
+test('a level can be asked to be all one style (?style=): that style but where one arrives, with its way up', () => {
+  for (const d of [2, 7]) {
+    const l = new Level(1, d, 'karst');
+    assert.deepEqual(l.field.styles.map((s) => s.id), ['excavation', 'karst']);
+    let karst = 0, all = 0;
+    for (let z = -3000; z <= 3000; z += 100) for (let x = -3000; x <= 3000; x += 100) { all++; if (l.field.regions.styleAt(x, z) === 1) karst++; }
+    assert.ok(karst / all > 0.95, `level ${d}: karst ${((karst / all) * 100).toFixed(0)}%`);
+    const [ax, , az] = l.arrival;
+    assert.equal(l.field.regions.styleAt(ax, az), 0);
+    assert.ok(l.ascent?.up, `level ${d}: a way up`);
+    assert.deepEqual(new Level(1, d, 'karst').key, { seed: 1, depth: d, style: 'karst' });
+  }
+  assert.deepEqual(new Level(1, 0, 'karst').field.styles.map((s) => s.id), ['cellar']);
+});

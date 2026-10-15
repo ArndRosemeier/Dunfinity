@@ -1,9 +1,11 @@
 /**
- * URL options for the game and the Level Lab (`?lab`): `?seed=<text or number>&depth=<level>&pos=x,y,z&look=yaw,pitch&color=<mode>&dark&light&gl`
- * (look in degrees; color: rock, working or lod; dark: the Lab starts in headlamp darkness; light: the game starts lit; gl: force the WebGL 2 backend).
+ * URL options for the game and the Level Lab (`?lab`): `?seed=<text or number>&depth=<level>&pos=x,y,z&look=yaw,pitch&color=<mode>&dark&light&gl&style=<id>`
+ * (look in degrees; color: rock, working or lod; dark: the Lab starts in headlamp darkness; light: the game starts lit; gl: force the WebGL 2 backend; style: every level of that one style but where one arrives, for trying a style out, src/gen/styles.ts).
  */
 import { hashString } from '@futuremagic/core';
 import { COLOR_MODES, type ColorMode } from '../gen/level';
+import { NAMED_STYLES } from '../gen/styles';
+import type { StyleId } from '../gen/style';
 
 export interface ViewParams {
   seed: number;
@@ -17,6 +19,8 @@ export interface ViewParams {
   /** Game: start in the lit survey view instead of the dark. */
   light: boolean;
   forceWebGL: boolean;
+  /** Every level of this style (but where one arrives), or undefined for the bands' mixes. */
+  style?: StyleId;
 }
 
 export function parseViewParams(search: string): ViewParams {
@@ -30,5 +34,7 @@ export function parseViewParams(search: string): ViewParams {
   const look = l.length === 2 && l.every(Number.isFinite) ? (l as [number, number]) : null;
   const c = q.get('color') as ColorMode | null;
   const color = c && COLOR_MODES.includes(c) ? c : 'rock';
-  return { seed, depth, pos, look, color, dark: q.has('dark'), light: q.has('light'), forceWebGL: q.has('gl') };
+  const st = q.get('style') as StyleId | null;
+  const style = st && NAMED_STYLES.includes(st) ? st : undefined;
+  return { seed, depth, pos, look, color, dark: q.has('dark'), light: q.has('light'), forceWebGL: q.has('gl'), style };
 }

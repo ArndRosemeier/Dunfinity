@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.075 — Try one kind of place
+
+- For testing: add `?style=karst` to the address and every level below the cellar is all caves, but where you arrive. Each new kind of place gets its name here as it is added.
+
 ## v0.074 — Caves among the workings
 
 - Levels are no longer one kind of place. From the first level down, parts of a level are natural karst caves: big smooth domed chambers joined by round tubes, pale flowstone walls, no pillars and no miners' things. The rest is the old excavation. The Quarry is mostly workings with a few caves; the Cisterns are about a third cave; the Threshold is more cave than mine.

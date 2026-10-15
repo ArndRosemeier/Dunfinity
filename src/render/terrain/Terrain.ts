@@ -5,7 +5,7 @@
  */
 import type { Group, Mesh } from 'three/webgpu';
 import { chunksAround, CELLS, DEFAULT_VIEW, type ChunkKey, type ChunkView } from '../../world/chunks';
-import type { ColorMode } from '../../gen/level';
+import type { ColorMode, LevelKey } from '../../gen/level';
 import type { ChunkMesh } from '../../gen/chunkMesh';
 import { createMeshPool, type WorkerPool } from '../../workers/pool';
 import type { MeshJob } from '../../workers/mesh.worker';
@@ -33,7 +33,7 @@ export class Terrain {
   /** Totals for the HUD. */
   stats = { chunks: 0, triangles: 0, pending: 0 };
 
-  constructor(private readonly stage: Stage, private readonly group: Group, readonly seed: number, readonly depth: number, readonly view: ChunkView = DEFAULT_VIEW) {
+  constructor(private readonly stage: Stage, private readonly group: Group, readonly level: LevelKey, readonly view: ChunkView = DEFAULT_VIEW) {
     this.pool = createMeshPool();
   }
 
@@ -86,7 +86,7 @@ export class Terrain {
   private request(k: ChunkKey): void {
     const gen = this.generation;
     this.requested.add(k.id);
-    const job: MeshJob = { seed: this.seed, depth: this.depth, ox: k.ix * k.size, oy: k.iy * k.size, oz: k.iz * k.size, step: k.step, cells: CELLS, lod: k.lod, colorMode: this.colorMode, overlap: k.overlap };
+    const job: MeshJob = { level: this.level, ox: k.ix * k.size, oy: k.iy * k.size, oz: k.iz * k.size, step: k.step, cells: CELLS, lod: k.lod, colorMode: this.colorMode, overlap: k.overlap };
     void this.pool.run(job).then(async (data) => {
       if (gen !== this.generation || !this.wantedIds.has(k.id)) { this.requested.delete(k.id); return; }
       const shown: Shown = { key: k, mesh: data ? meshFromData(data, ROCK) : null };

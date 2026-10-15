@@ -87,7 +87,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
-  let level = new Level(params.seed, saved?.child?.depth ?? params.depth);
+  let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   view.headlampPower = { survey: 40, dark: 9 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
@@ -151,7 +151,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let euros = saved?.euros ?? 0, sales = 0;
   let mourned = false;
   const nextGrandchild = (): Body => {
-    if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
+    if (level.depth !== params.depth) show(new Level(params.seed, params.depth, params.style)); // the next grandchild starts at the top
     heir++;
     reached = level.depth;
     const b = arrive();
@@ -265,7 +265,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     },
     toLevel: (d) => {
       if (!canGo()) return;
-      show(new Level(params.seed, d));
+      show(new Level(params.seed, d, params.style));
       const [x, , z] = level.arrival;
       // Facing away from the ladder up, out over the level.
       const up = level.ascent, yaw = d === 0 ? CELLAR.start.yaw : up ? Math.atan2(up.x - x, up.z - z) : cam.yaw;
@@ -374,7 +374,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
    */
   const climbFrom = (s: Shaft): void => {
     const here = ladderOf(s), health = body.health;
-    const other = new Level(params.seed, level.depth + (s.up ? -1 : 1));
+    const other = new Level(params.seed, level.depth + (s.up ? -1 : 1), params.style);
     const steps: ClimbStep[] = [{ kind: 'walk', ladder: here }];
     if (s.up) {
       steps.push({ kind: 'foot', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: here.floor, to: here.floor + CLIMB_SHOWN, fade: 'out' });
@@ -660,7 +660,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         else if (t >= WAY_HOME.dur) {
           const to = homeTo;
           homeTo = null;
-          show(new Level(params.seed, to));
+          show(new Level(params.seed, to, params.style));
           const hp = body.health, st = body.stamina;
           body = arrive(null);
           body.health = hp; body.stamina = st;

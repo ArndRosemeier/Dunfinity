@@ -2,13 +2,13 @@
  * The worker side of the pool protocol (pool.ts): answer each `{ id, job }` with `{ id, result }` or
  * `{ id, error }`, handing over the result's buffers. Also keeps the worker's one Level.
  */
-import { Level } from '../gen/level';
+import { Level, type LevelKey } from '../gen/level';
 
 let level: Level | null = null;
 
-/** The level for (seed, depth), kept between jobs. */
-export function levelFor(seed: number, depth: number): Level {
-  if (!level || level.seed !== seed || level.depth !== depth) level = new Level(seed, depth);
+/** The level for `key`, kept between jobs. */
+export function levelFor(key: LevelKey): Level {
+  if (!level || level.seed !== key.seed || level.depth !== key.depth || level.style !== key.style) level = new Level(key.seed, key.depth, key.style);
   return level;
 }
 
