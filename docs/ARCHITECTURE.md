@@ -47,7 +47,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | A human's look (race, age, hair, skin) from a seed | `randomAppearance(race, seed, opts)` | `@futuremagic/humanoid` |
 | Which clothes and held items exist and how they sit | `WARDROBE` (the package's `Wardrobe` hook: clothes, and items like the kitchen knife) and outfits like `rags(seed)` | `src/render/humans/wardrobe.ts` |
 | What the animator plays for the body's state | `moveOf(body)` | `src/render/humans/move.ts` |
-| Play out a ladder climb (walk up, over a rim or at the foot, hands and feet on the rungs, a level change in the middle) | `LadderClimb` (`play(steps)`, `advance`) | `src/render/humans/ladderClimb.ts` |
+| Play out a ladder climb (walk up, over a rim or at the foot, hands and feet on the rungs, a level change in the middle), and the pull-up over the top of a climb on the rock (step `ledge`) | `LadderClimb` (`play(steps)`, `advance`) | `src/render/humans/ladderClimb.ts` |
 | Pose the nobody in a scripted scene (not from the body) | `nobody.puppet(...)` with the animator's `override` / `limbs` | `src/render/humans/nobody.ts` |
 | Where the human assets (bodies, clips) are served | `/humanoid/` from the package's `assets/` (Vite plugin), set by `setHumanAssetBase` | `vite.config.ts`, `src/render/humans/nobody.ts` |
 | The HUD line on shader health | `stage.hudLine()` | `src/render/stage.ts` |
@@ -85,7 +85,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where are a ladder's rungs, which way is its wall, where does one get on and off? | `ladderOf(shaft)` (a `Ladder`; `RUNG` spacing) | `src/gen/descents.ts` |
 | Sample the field on a grid fast | `level.sampleGrid` (one column pass per x, z) | `src/gen/level.ts` |
 | Turn a grid of distances into a mesh | `surfaceNets` | `src/gen/surfaceNets.ts` |
-| Mesh one chunk of a level | `meshChunk` (skips chunks far from any surface) | `src/gen/chunkMesh.ts` |
+| Mesh one chunk of a level | `meshChunk` (skips chunks far from any surface: `farFromSurface`, a sample per octant) | `src/gen/chunkMesh.ts` |
 | Which chunks, at which detail, around a viewer? | `chunksAround` (octree; marks sides next to coarser chunks) | `src/world/chunks.ts` |
 | Run work off the main thread | `WorkerPool` / `createMeshPool` / `createPropsPool` (guarded: `new Worker` only there) | `src/workers/pool.ts` |
 | Write a worker script | `serve(handle)` and `levelFor(seed, depth)` | `src/workers/serve.ts` |
@@ -97,7 +97,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where is the ceiling above a point? | `world.ceilingAt` | `src/world/query/` |
 | Can A see B? Can A shoot B? | `world.sight(a, b)` (rock, darkness and objects) | `src/world/query/` |
 | How lit is this point? | `world.light(x, y, z)` | `src/world/query/` |
-| Move a body on the rock: walk, climb, swim, fall | `Body.step(level, input, dt, blockers)` and its metrics `MOVE` (the reachability check will use the same); which walls can be climbed: `level.climbable` (the field's `climbable`: all rock, not built walls) | `src/world/traverse/body.ts` |
+| Move a body on the rock: walk, climb, swim, fall | `Body.step(level, input, dt, blockers)` and its metrics `MOVE` (the reachability check will use the same); which walls can be climbed: `level.climbable` (the field's `climbable`: all rock, not built walls); the top of a climb: `Body.ledge` (held until `overLedge()`, which the game calls once the pull-up has played) | `src/world/traverse/body.ts` |
 | Doors that open and shut (where they hang; swinging them, blocking while shut; drawing them) | `HOUSE_DOORS` / `DoorSpec`, `level.doors`; `Doors` (`near`, `toggle`, `step`, `into` the Blockers under `DOORS_KEY`); `DoorView` (`hang`, `draw`) | `src/gen/doorways.ts`, `src/world/doors.ts`, `src/render/props/doorView.ts` |
 | Is a prop in the way? Push out of the props | `Blockers` (`pushOut`, `hits`); the generator lists each tile's boxes (`PropTile.blockers`), `Props` keeps them (`view.props.blockers`) | `src/world/blockers.ts` |
 | A persisted change to the world | `persist.mark(chunk, change)` (guarded: `localStorage` only in `src/persist/`) | `src/persist/` |

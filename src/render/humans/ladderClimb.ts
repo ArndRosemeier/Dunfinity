@@ -11,12 +11,15 @@ import { Vector3 } from 'three/webgpu';
 import { kf, smooth, clamp, type LimbGoal, type LimbGoals, type Pose } from '@futuremagic/humanoid/three';
 import { lerpAngle } from '@futuremagic/core';
 import { RUNG, type Ladder } from '../../gen/descents';
+import type { Ledge } from '../../world/traverse/body';
 import type { Nobody } from './nobody';
 
 /** Climbing speed, metres per second (for a 1.8 m climber). */
 const CLIMB_V = 1.15;
 /** Two rungs: a limb's step (hands and feet leapfrog in pairs). */
 const STEP = 2 * RUNG;
+/** Seconds to pull up over a ledge (quicker than off a ladder: nothing to let go of). */
+const LEDGE_DUR = 1.5;
 
 /** One part of a climb. Heights are the feet's, world y. */
 export type ClimbStep =
@@ -24,6 +27,8 @@ export type ClimbStep =
   | { kind: 'rim'; ladder: Ladder; dir: 'on' | 'off' }
   | { kind: 'foot'; ladder: Ladder; dir: 'on' | 'off' }
   | { kind: 'climb'; ladder: Ladder; from: number; to: number; fade?: 'in' | 'out' }
+  /** Over the top of a climb on the rock (`Body.ledge`): the pull-up of a rim, with the feet at `feet` to start. */
+  | { kind: 'ledge'; ledge: Ledge; feet: number }
   | { kind: 'call'; then: () => void }
   /** Hold still in the dark until `ready` (the next level streamed in). */
   | { kind: 'wait'; ready: () => boolean };
@@ -129,6 +134,11 @@ export class LadderClimb {
     switch (s.kind) {
       case 'walk': return this.walkTo(s.ladder);
       case 'rim': return { dur: 1.9, pose: (u) => this.rim(s.ladder, s.dir === 'off' ? u : 1 - u) };
+      case 'ledge': {
+        // A rim with no ladder under it: the feet start one step over the "lowest rung", where the pull-up starts.
+        const l = s.ledge, edge: Ladder = { x: l.x, z: l.z, nx: l.nx, nz: l.nz, lo: s.feet - STEP, hi: s.feet, floor: l.floor, halfWidth: 0.25, rim: true };
+        return { dur: LEDGE_DUR, pose: (u) => this.rim(edge, u) };
+      }
       case 'foot': return {
         dur: 0.45, pose: (u) => {
           const w = s.dir === 'on' ? smooth(0, 1, u) : 1 - smooth(0, 1, u);

@@ -13,7 +13,8 @@ function setup(): { cr: Crickets; me: Fighter & { taken: number } } {
   let best: { x: number; z: number } | null = null, bd = Infinity;
   for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) {
     const g = cr.denAt(Math.floor(ax / CRICKET.cell) + i, Math.floor(az / CRICKET.cell) + j);
-    if (g && Math.hypot(g.x - ax, g.z - az) < bd) { bd = Math.hypot(g.x - ax, g.z - az); best = g; }
+    const room = g && level.sdf(g.x, level.groundAt(g.x, g.z) + 1, g.z) > 0.5; // (somewhere to stand among them)
+    if (g && room && Math.hypot(g.x - ax, g.z - az) < bd) { bd = Math.hypot(g.x - ax, g.z - az); best = g; }
   }
   assert.ok(best, 'a group near the arrival');
   const { x, z } = best;

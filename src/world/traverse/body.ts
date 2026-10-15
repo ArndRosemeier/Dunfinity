@@ -41,7 +41,24 @@ export const MOVE = {
   healRate: 0.8,
   /** A roll (grandma's Duck card): seconds it takes, its speed at the start, m/s (it slows to a stop). */
   roll: { dur: 0.6, speed: 7 },
+  /**
+   * Pulling up over the top of a climb: the climber starts once the ledge is no higher than `reach`
+   * over the feet, and ends standing `stand` metres past the edge (the edge is `edge` metres in front of the feet).
+   */
+  ledge: { reach: 1.5, edge: 0.36, stand: 0.62 },
 } as const;
+
+/**
+ * The top of a climb, reached (`Body.ledge`): the edge's line (x, z), the way over it (nx, nz, unit,
+ * horizontal), and the floor beyond. The body stands at the edge plus `MOVE.ledge.stand` along (nx, nz) once over.
+ */
+export interface Ledge {
+  x: number;
+  z: number;
+  nx: number;
+  nz: number;
+  floor: number;
+}
 
 /** What the player wants this step: move relative to the camera, which faces along `yaw`. */
 export interface BodyInput {
@@ -115,6 +132,11 @@ export class Body {
   /** A climbable wall the capsule touched in the last step, and its normal. */
   private touching = false;
   private readonly touch: [number, number, number] = [0, 0, 0];
+  /**
+   * The top of the climb, once reached: the body holds there until it is pulled over (`overLedge`;
+   * the game plays the pull-up first, src/render/humans/ladderClimb.ts).
+   */
+  ledge: Ledge | null = null;
 
   constructor(x: number, y: number, z: number) {
     this.x = x; this.y = y; this.z = z;
@@ -190,7 +212,7 @@ export class Body {
     if (this.mode === 'walk' && ml > 0.3 && this.stamina > 0.5) {
       const into = this.touching && (this.touch[0] * mx + this.touch[2] * mz) / ml < -0.5;
       this.pushing = into ? this.pushing + dt : 0;
-      if (this.pushing > 0.15) { this.mode = 'climb'; this.vx = this.vy = this.vz = 0; this.pushing = 0; }
+      if (this.pushing > 0.15) { this.mode = 'climb'; this.vx = this.vy = this.vz = 0; this.pushing = 0; this.wall[0] = this.touch[0]; this.wall[1] = this.touch[1]; this.wall[2] = this.touch[2]; }
     } else this.pushing = 0;
 
     // Stamina comes back after a moment's rest on the floor.
@@ -240,12 +262,46 @@ export class Body {
     if (input.jump) this.vy = 3; // a kick, to climb out onto a shore
   }
 
+  /** Over the ledge reached at the top of a climb: standing on its floor, walking. */
+  overLedge(): void {
+    const l = this.ledge;
+    if (!l) return;
+    this.x = l.x + l.nx * MOVE.ledge.stand; this.y = l.floor; this.z = l.z + l.nz * MOVE.ledge.stand;
+    this.vx = this.vy = this.vz = 0;
+    this.mode = 'walk';
+    this.facing = Math.atan2(-l.nx, -l.nz);
+    this.ledge = null;
+  }
+
+  /**
+   * At the top of a wall, climbing up (`input.forward > 0`): a floor beyond the edge, no higher than
+   * `MOVE.ledge.reach` over the feet, with room to stand on it. Null while there is wall above.
+   */
+  private ledgeAhead(level: Level): Ledge | null {
+    const w = this.wall, hl = Math.hypot(w[0], w[2]);
+    if (hl < 1e-3) return null;
+    const nx = -w[0] / hl, nz = -w[2] / hl, L = MOVE.ledge;
+    const x = this.x + nx * L.edge, z = this.z + nz * L.edge;
+    const sx = x + nx * L.stand, sz = z + nz * L.stand;
+    // Room over the top, then down to its floor.
+    let y = this.y + L.reach + MOVE.height;
+    if (level.sdf(sx, y, sz) < MOVE.radius) return null;
+    const lowest = this.y + 0.3;
+    for (y -= 0.1; y > lowest && level.sdf(sx, y, sz) > 0.03; y -= 0.1);
+    if (y <= lowest || y > this.y + L.reach) return null;
+    for (const h of SPHERES) if (level.sdf(sx, y + h + 0.05, sz) < MOVE.radius - 0.05) return null;
+    if (level.normal(sx, y, sz, this.n)[1] < MOVE.floorY) return null;
+    return { x, z, nx, nz, floor: y };
+  }
+
   private climb(level: Level, input: BodyInput, dt: number): void {
+    if (this.ledge) { this.vx = this.vy = this.vz = 0; return; } // holding on at the top until pulled over
+    if (input.forward > 0 && (this.ledge = this.ledgeAhead(level))) { this.vx = this.vy = this.vz = 0; return; }
     const cy = this.y + SPHERES[1];
     const d = level.sdf(this.x, cy, this.z);
     const n = level.normal(this.x, cy, this.z, this.n);
     if (d > MOVE.radius + 0.6 || n[1] > MOVE.floorY || n[1] < MOVE.overhangY || this.stamina <= 0) {
-      // Off the wall: over the top (a mantle onto the ledge), or let go.
+      // Off the wall: over the top (a hop, where no ledge to pull up onto was found), or let go.
       const over = d > MOVE.radius + 0.6 && input.forward > 0;
       this.mode = 'walk';
       this.vx = over ? -this.wall[0] * 2.5 : this.wall[0] * 0.5;
@@ -281,6 +337,11 @@ export class Body {
     this.vz += clampStep(tz - this.vz, 20 * dt);
   }
 
+  /** Whether the rock by the capsule at height cy (its normal `n`, if known) is a climbable wall: then it is touched. */
+  private feel(level: Level, cy: number, n: [number, number, number] = level.normal(this.x, cy, this.z, this.n)): void {
+    if (n[1] <= MOVE.floorY && n[1] > MOVE.overhangY && level.climbable(this.x, cy, this.z)) { this.touch[0] = n[0]; this.touch[1] = n[1]; this.touch[2] = n[2]; this.touching = true; }
+  }
+
   /** Push the capsule out of the props (not what it can step over), and stop the speed into them. */
   private collideProps(blockers: Blockers): void {
     const p = this.pushOut;
@@ -302,13 +363,18 @@ export class Body {
       for (const h of SPHERES) {
         const cy = this.y + h;
         const d = level.sdf(this.x, cy, this.z);
-        if (d >= MOVE.radius) continue;
+        if (d >= MOVE.radius) {
+          // A wall just in front of the chest or head counts as touched (at the foot of a steep bank
+          // the feet may never press into it).
+          if (h > SPHERES[0] && d < MOVE.radius + 0.12 && !this.touching) this.feel(level, cy);
+          continue;
+        }
         const n = level.normal(this.x, cy, this.z, this.n);
         const push = MOVE.radius - d;
         // Out of a floor straight up (no sliding down slopes while standing), out of a wall along its normal.
         if (n[1] > MOVE.floorY) this.y += push / n[1];
         else { this.x += n[0] * push; this.y += n[1] * push; this.z += n[2] * push; }
-        if (n[1] <= MOVE.floorY && n[1] > MOVE.overhangY && level.climbable(this.x, cy, this.z)) { this.touch[0] = n[0]; this.touch[1] = n[1]; this.touch[2] = n[2]; this.touching = true; }
+        this.feel(level, cy, n);
         const vn = this.vx * n[0] + this.vy * n[1] + this.vz * n[2];
         if (vn < 0) {
           impact = Math.max(impact, -vn);

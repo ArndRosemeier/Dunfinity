@@ -139,7 +139,8 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
         const a = hash3f(s, i, j, 30 + p) * Math.PI * 2, r = hash3f(s, i, j, 60 + p) * 2.5;
         const h = C.perch[0] + C.perch[1] * hash3f(s, i, j, 90 + p);
         const perch = this.perchNear(x + Math.cos(a) * r, g + h, z + Math.sin(a) * r);
-        if (perch && perches.every((q) => Math.hypot(q[0] - perch[0], q[1] - perch[1], q[2] - perch[2]) > 0.8)) perches.push(perch);
+        // (Up the wall over its own foot too: on a slope the floor there may be higher than here.)
+        if (perch && perch[1] - l.groundAt(perch[0], perch[2]) > C.perch[0] * 0.6 && perches.every((q) => Math.hypot(q[0] - perch[0], q[1] - perch[1], q[2] - perch[2]) > 0.8)) perches.push(perch);
       }
       if (perches.length) return { key, x, z, perches };
     }
@@ -234,7 +235,8 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
         if (c.bitten >= C.bites || c.t > C.grounded) { this.leapOff(c, prey); break; }
         // Hop to just short of you, on the line from you to it (a goal that turns as it moves is chased round).
         const stand = prey.radius + c.radius + 0.1;
-        const gx = prey.x - (dx / (d || 1)) * stand, gz = prey.z - (dz / (d || 1)) * stand;
+        // Nearer than that already (a lunge carried it in): it stays put, never backing off to come again.
+        const gx = d < stand ? c.x : prey.x - (dx / (d || 1)) * stand, gz = d < stand ? c.z : prey.z - (dz / (d || 1)) * stand;
         c.gait += this.steer.move(c, gx, gz, C.hop, dt, d - stand < 0.4 ? Math.atan2(-dx, -dz) : null) / (0.12 * c.size);
         if (d - prey.radius - c.radius < C.biteReach && c.biteT > C.biteEvery) { c.mode = 'bite'; c.biteT = 0; }
         break;
