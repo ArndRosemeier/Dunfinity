@@ -10,7 +10,7 @@
  */
 import type { Column } from './quarry';
 
-export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava';
+export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode';
 
 export interface Style {
   readonly id: StyleId;

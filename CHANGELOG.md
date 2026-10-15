@@ -1,8 +1,19 @@
 # Changelog
 
-## v0.090 — Rock you can see
+## v0.092 — Rock you can see
 
 - The rock no longer burns out to flat white near a light. The burning lamps were far too bright close up and the screen simply clipped everything over full white, so the walls round every lamp, and the floor at your feet in your headlamp, read as blank white. Now the picture is tone-mapped like a film camera (bright light rolls off into warm highlights instead of clipping), the lamps and the headlamp fall off more gently, and the headlamp is a touch whiter. The stone's colour, cracks and tool marks show right up to the light.
+
+## v0.091 — Real cave crickets
+
+- The cave crickets are new: sculpted, rigged and animated in Blender like the dogs and rats. Each one is a pale, humped cave cricket with banded plates, great chevroned hind legs with spined shins, and feelers longer than its body that never stop sweeping (fast and twitchy once it is after you).
+- Every move shows: the six-legged scuttle and the hops along the floor, the crouch before a leap, the hind legs kicked out straight behind in the air, the bite with the mandibles working, a flinch when hit, and over onto its back with its legs folding when it dies. On the rock it still clings head down.
+- Dogs and rats: their teeth and eyes now stay put when they move (a few were tied to the wrong bone).
+
+## v0.090 — Geodes
+
+- An eleventh kind of place, and a wonder: hollow shells in the rock, 20 to 70 m across, lined all over with a crust of glittering crystal in one hue each (amethyst, celestine, rose or emerald). Big crystals stand in from the walls, longest overhead, and a few rise out of the pale crystal sand underfoot to climb round. Pale agate rings show where the shell breaks open. Short cracks in the rock, the only ways in, join each hollow to its neighbours. Try `?style=geode`.
+- They belong to the deep strata, which aren't built yet, so for now they only appear when asked for by name.
 
 ## v0.089 — Lava tubes
 

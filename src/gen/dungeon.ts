@@ -14,6 +14,7 @@
  */
 import { deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
+import { joined } from './gridTree';
 import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
 
@@ -112,14 +113,6 @@ export class Dungeon implements Style {
     return r;
   }
 
-  /** Whether the corridor from cell (i, j) to the next one along u (axis 0) or v (axis 1) was built. */
-  private joined(i: number, j: number, axis: number): boolean {
-    // Every cell joins one neighbour behind it (west or south): a tree reaching every room. Some more, for loops.
-    const [ni, nj] = axis ? [i, j + 1] : [i + 1, j];
-    if ((hashToFloat(hash2i(this.cells ^ 0x7ee, ni, nj)) < 0.5 ? 0 : 1) === axis) return true;
-    return hashToFloat(hash2i(this.cells ^ 0x10b, i * 2 + axis, j)) < DUNGEON.corridor.extra;
-  }
-
   /** How far inside the corridor from room a to room b (along `axis`), dog-legging at the cells' border at `mid`. */
   private corridor(a: Room, b: Room, axis: number, mid: number, u: number, v: number): number {
     const H = DUNGEON.corridor.half;
@@ -158,7 +151,7 @@ export class Dungeon implements Style {
       // The corridors from this cell on along u and v, where the cell beyond is looked at too.
       for (let axis = 0; axis < 2; axis++) {
         const ni = axis ? i : i + 1, nj = axis ? j + 1 : j;
-        if (ni > i0 + 1 || nj > j0 + 1 || !this.joined(i, j, axis)) continue;
+        if (ni > i0 + 1 || nj > j0 + 1 || !joined(this.cells, i, j, axis, D.corridor.extra)) continue;
         const mid = (axis ? nj : ni) * G + (hashToFloat(hash2i(this.cells ^ 0xd06, i * 2 + axis, j)) - 0.5) * 2 * (D.margin - D.corridor.half);
         o.corridor = Math.max(o.corridor, this.corridor(r, this.room(ni, nj), axis, mid, u, v));
       }

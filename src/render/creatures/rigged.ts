@@ -155,6 +155,11 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size:
   /** How far it has walked (metres, at size 1): the phase of its stride clips. */
   protected abstract travelled(c: T): number;
 
+  /** Put the root where the creature is (and turned its way); a figure that climbs turns it to the rock. */
+  protected place(c: T): void {
+    placeFigure(this.root, c);
+  }
+
   /** Is it going faster than `band` (up past the first speed, back below the second, so it never flickers between two)? */
   protected faster(name: string, band: readonly [number, number]): boolean {
     const was = this.over.get(name) ?? false;
@@ -164,7 +169,7 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size:
   }
 
   pose(c: T, time: number): void {
-    placeFigure(this.root, c);
+    this.place(c);
     const dt = Math.min(0.1, Math.max(0, time - this.last));
     this.last = time;
     const fresh = c !== this.who;

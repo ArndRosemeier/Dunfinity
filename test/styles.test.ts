@@ -354,3 +354,28 @@ test('the lava tubes are none of them: long round tunnels, a dozen metres across
   assert.ok(tube('lava') > 0.3, `a tube's shape around ${(tube('lava') * 100).toFixed(0)}% of the lava tubes' floor`);
   for (const id of Object.keys(st)) if (id !== 'lava') assert.ok(tube(id) < tube('lava') / 2, `${id} tube-shaped around ${(tube(id) * 100).toFixed(0)}% of its floor`);
 });
+
+test('the geodes are none of them: closed hollows lined with crystals of one bright hue', () => {
+  // (No band has geodes yet, they belong to the deep strata: a level of them, against the Threshold's mix.)
+  const st: Record<string, { n: number; vivid: number }> = {};
+  const rgb = new Float32Array(3);
+  for (const l of [new Level(1, 9, 'geode'), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 15000; k++) {
+      const x = ax + (hash3f(43, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(43, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      // March up to the first rock overhead and look at its colour.
+      let y = c.floor + 1.5;
+      while (y < c.floor + 60 && l.sdf(x, y, z) > 0.05) y += Math.max(0.05, l.sdf(x, y, z) * 0.8);
+      if (y >= c.floor + 60) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, vivid: 0 });
+      s.n++;
+      l.field.color(c, x, y, z, rgb, 0);
+      if (Math.max(...rgb) - Math.min(...rgb) > 0.3) s.vivid++;
+    }
+  }
+  const vivid = (id: string) => st[id].vivid / st[id].n;
+  assert.ok(st.geode.n > 500, `${st.geode.n} open geode columns`);
+  assert.ok(vivid('geode') > 0.5, `crystal colour overhead in ${(vivid('geode') * 100).toFixed(0)}% of the geodes`);
+  for (const id of Object.keys(st)) if (id !== 'geode') assert.ok(vivid(id) < vivid('geode') / 3, `${id} as vivid overhead: ${(vivid(id) * 100).toFixed(0)}%`);
+});
