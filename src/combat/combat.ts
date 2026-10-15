@@ -19,6 +19,8 @@ export interface Fighter {
   readonly dead: boolean;
   /** Out of the way of blows just now (the nobody mid-roll): a blow misses, and pushes nothing. */
   readonly evading?: boolean;
+  /** Not to be hurt at all (the debug menu's invulnerability): a blow does nothing, not even push. */
+  readonly invulnerable?: boolean;
   /**
    * The share of a blow from (fromX, fromZ) that gets through its guard (1: no guard), called once
    * per blow (it may cost the guard something).
@@ -84,7 +86,7 @@ export function nearestReached<T extends Fighter>(b: Blow, targets: Iterable<T>)
 
 /** `amount` of damage to `t` from a blow struck at (fromX, fromZ), knocking it back at `knock` m/s. */
 export function damage(t: Fighter, amount: number, fromX: number, fromZ: number, knock: number, cause: string): void {
-  if (t.dead || amount <= 0 || t.evading) return;
+  if (t.dead || amount <= 0 || t.evading || t.invulnerable) return;
   const through = t.shield?.(fromX, fromZ) ?? 1;
   amount *= through; knock *= through;
   if (amount > 0) t.hurt(amount, cause);

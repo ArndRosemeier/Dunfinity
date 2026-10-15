@@ -100,7 +100,7 @@ export class Body {
   climbCost = 1;
   /** What share of a blow hurts (a miner's helmet from Kemal's, src/loot/hardware.ts). */
   armour = 1;
-  /** The debug menu's invulnerability: blows and falls still land (the red flash), but take nothing. */
+  /** The debug menu's invulnerability: blows (`combat.damage`) and falls do nothing at all: no health lost, no flash, flinch or cry. */
   invulnerable = false;
   /** Seconds since a roll began (Infinity: none yet), which way it goes, and the part of it that blows miss (seconds from its start). */
   rollT = Infinity;
@@ -226,8 +226,8 @@ export class Body {
 
   /** Take damage: a hard landing, or a blow (through `combat.damage`, src/combat/combat.ts; `armour` takes a share off a blow). */
   hurt(amount: number, cause: string): void {
+    if (this.invulnerable) return;
     if (cause !== 'fall') amount *= this.armour;
-    if (this.invulnerable) amount = 0;
     this.health = Math.max(0, this.health - amount);
     this.lastHurt = amount;
     this.hurtAt = this.time;
