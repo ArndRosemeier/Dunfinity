@@ -97,7 +97,7 @@ export const SALT: Band = {
   stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
   touched: 0.35, crickets: 0.25, dogs: 0, eels: 0.5, scavengers: 0.3, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.75], ['karst', 0.15], ['rift', 0.1]],
+  styles: [['excavation', 0.65], ['karst', 0.15], ['rift', 0.1], ['collapse', 0.1]],
 };
 
 /**

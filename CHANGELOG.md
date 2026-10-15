@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.078 — Collapses
+
+- A fourth kind of place: chambers whose roofs came down. Huge domed halls, walled off from each other by thick rock that is broken through here and there. Where slabs fell, the roof has angular scars reaching higher into the rock, and under each one the floor heaps up into a hill of fallen blocks: tilted, freshly broken and pale, a few standing on end. You climb over them or find the valleys between. Try `?style=collapse`.
+- You meet them in the Salt Works, where the old mine has given way in places. On the map (M) they show as pale broken stone.
+
 ## v0.077 — Rifts
 
 - A third kind of place: rifts, where the rock was torn apart. Long canyons run side by side through the stone, all one way, a few metres wide at the bottom and thirty to eighty metres tall, their walls leaning in and out as they rise and pinching shut far overhead. Ledges run along both walls at different heights, broken in places; boulders hang wedged between the walls high up; now and then a low cut leads across to the next canyon. Between them, solid rock. The beds of the rock are tilted and banded, rust-stained low down. Try `?style=rift`.
