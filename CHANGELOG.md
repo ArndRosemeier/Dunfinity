@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.083 — Fungal grottoes
+
+- A second living kind of place: warm, wet caves overgrown with giant mushrooms, from knee-high ones to giants 14 m tall. Pale fibrous stalks hold up broad caps in the level's own hue (violet, teal, amber or rose) with paler spots, and their gills glow faintly underneath. The big caps are wide and flat enough to climb onto and walk across, a second storey over the dark loam. Try `?style=fungal`.
+- A share of the Threshold (levels 9–10). On the map (M) they show violet.
+
 ## v0.082 — Root hollows
 
 - The first living kind of place: caves a forest grew into from above. Giant roots as thick as a cart come down through the roof, writhe across the chambers, split and plunge into the floor. Some cross low enough to walk along their backs, and root tips hang from the roof. The floor is a moss carpet over humps of tangled root mat, and the walls are damp dark soil. Try `?style=roots`.

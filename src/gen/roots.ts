@@ -12,9 +12,10 @@
  *
  * Pure, like every style.
  */
-import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
+import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
-import { KARST, Karst } from './karst';
+import { CaveThings, THING_REACH, type Chamber } from './caveThings';
+import { Karst } from './karst';
 import type { Column } from './quarry';
 import type { Style, StyleId } from './style';
 
@@ -36,8 +37,7 @@ export const ROOTS = {
   mat: [0.35, 4] as const,
 } as const;
 
-/** The field never counts further than this from rock, metres (so roots further than this need not be asked). */
-const REACH = 3;
+
 /** Segments a curved root is made of. */
 const SEGS = 4;
 
@@ -54,68 +54,13 @@ export class Roots implements Style {
   readonly mapFloor = [0.42, 0.55, 0.32] as const;
   private readonly cave: Karst;
   private readonly noise: Noise;
-  private readonly seedRoots: number;
-  private readonly segsOf = new Map<number, Seg[]>();
-  private readonly near = new WeakMap<Column, Seg[]>();
+  private readonly roots: CaveThings<Seg>;
 
   constructor(readonly seed: number, readonly band: Band) {
     this.cave = new Karst(deriveSeed(seed, 'roots', 'cave'), band);
     this.noise = new Noise(deriveSeed(seed, 'roots', 'shape'));
-    this.seedRoots = deriveSeed(seed, 'roots', 'roots');
-  }
-
-  /** The roots in the chamber of karst cell (i, j), as straight pieces. */
-  private rootsOf(i: number, j: number): Seg[] {
-    const key = hash2i(this.seedRoots, i, j);
-    let segs = this.segsOf.get(key);
-    if (segs) return segs;
-    segs = [];
-    const c = this.cave.chamber(i, j);
-    if (c) {
-      const R = ROOTS;
-      let m = 0;
-      const f = () => hashToFloat(hash2i(key, m++, 5));
-      const foot = (reach: number): [number, number] => {
-        const a = f() * Math.PI * 2, d = Math.sqrt(f()) * reach * c.r;
-        return [c.x + Math.cos(a) * d, c.z + Math.sin(a) * d];
-      };
-      const roof = c.floor + c.dome + 3, under = c.floor - 1.5;
-      // A curved root from p to q bending through the side by `bend`, thinning from ra to rb.
-      const curve = (p: number[], q: number[], bend: number, ra: number, rb: number) => {
-        const a = f() * Math.PI * 2, mx = (p[0] + q[0]) / 2 + Math.cos(a) * bend, mz = (p[2] + q[2]) / 2 + Math.sin(a) * bend;
-        const my = (p[1] + q[1]) / 2 + (f() - 0.5) * bend * 0.5;
-        const at = (t: number) => [0, 1, 2].map((k) => (1 - t) * (1 - t) * p[k] + 2 * t * (1 - t) * [mx, my, mz][k] + t * t * q[k]);
-        for (let s = 0; s < SEGS; s++) {
-          const A = at(s / SEGS), B = at((s + 1) / SEGS);
-          segs!.push({ ax: A[0], ay: A[1], az: A[2], bx: B[0], by: B[1], bz: B[2], ra: ra + (rb - ra) * (s / SEGS), rb: ra + (rb - ra) * ((s + 1) / SEGS) });
-        }
-        return at(0.5);
-      };
-      const trunks = Math.round((R.trunks[0] + R.trunks[1] * f()) * c.r * c.r * Math.PI / 100);
-      for (let k = 0; k < trunks; k++) {
-        const [tx, tz] = foot(0.5), [bx, bz] = foot(0.75);
-        const ra = R.top[0] + R.top[1] * f(), rb = R.bottom[0] + R.bottom[1] * f();
-        const mid = curve([tx, roof, tz], [bx, under, bz], c.r * (0.15 + 0.25 * f()), ra, rb);
-        if (f() < R.fork) {
-          const [fx, fz] = foot(0.8);
-          curve(mid, [fx, under, fz], c.r * 0.2 * f(), (ra + rb) / 2, rb * 0.8);
-        }
-      }
-      const bridges = R.bridges[0] + Math.floor(f() * R.bridges[1]);
-      for (let k = 0; k < bridges; k++) {
-        const a = f() * Math.PI * 2, b = a + Math.PI * (0.7 + 0.6 * f()), y = c.floor + R.bridgeHeight[0] + R.bridgeHeight[1] * f();
-        const reach = c.r * 1.15, r = R.bridgeRadius[0] + R.bridgeRadius[1] * f();
-        curve([c.x + Math.cos(a) * reach, y + 1, c.z + Math.sin(a) * reach], [c.x + Math.cos(b) * reach, y + 1, c.z + Math.sin(b) * reach], c.r * 0.25, r, r);
-      }
-      const tips = R.tips[0] + Math.floor(f() * R.tips[1]);
-      for (let k = 0; k < tips; k++) {
-        const [tx, tz] = foot(0.55), len = R.tipLength[0] + R.tipLength[1] * f();
-        curve([tx, roof, tz], [tx + (f() - 0.5) * 3, c.floor + c.dome - len, tz + (f() - 0.5) * 3], 1.5, 0.7, 0.45);
-      }
-    }
-    if (this.segsOf.size > 4096) this.segsOf.clear();
-    this.segsOf.set(key, segs);
-    return segs;
+    // (No root reaches further than 1.15 radii from its chamber's middle, plus its own thickness.)
+    this.roots = new CaveThings(this.cave, deriveSeed(seed, 'roots', 'roots'), { make: rootsOf, plan, dist: rootDist, radii: 1.2, pad: ROOTS.top[0] + ROOTS.top[1] });
   }
 
   column(x: number, z: number, col: Column): Column {
@@ -123,29 +68,16 @@ export class Roots implements Style {
     // Root mats: low tangled humps over the floor.
     const M = ROOTS.mat, n = 1 - Math.abs(this.noise.n2(x / M[1] + 3.1, z / M[1] - 7.7));
     col.floor += M[0] * n * n;
-    // The roots that pass near this column.
-    let near = this.near.get(col);
-    if (!near) { near = []; this.near.set(col, near); }
-    near.length = 0;
-    const i0 = Math.floor(x / KARST.cell), j0 = Math.floor(z / KARST.cell);
-    for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
-      // (No root reaches further than 1.2 radii from its chamber's middle, plus its own thickness.)
-      const c = this.cave.chamber(i, j);
-      if (!c || Math.hypot(x - c.x, z - c.z) > c.r * 1.2 + ROOTS.top[0] + ROOTS.top[1] + REACH) continue;
-      for (const s of this.rootsOf(i, j)) if (plan(s, x, z) < REACH) near.push(s);
-    }
+    this.roots.column(x, z, col);
     return col;
   }
 
   /** How far from the nearest root near this column (positive outside them). */
   private root(col: Column, x: number, y: number, z: number): number {
-    let d = Infinity;
-    for (const s of this.near.get(col)!) d = Math.min(d, rootDist(s, x, y, z));
-    return d;
+    return this.roots.at(col, x, y, z);
   }
-
   at(col: Column, x: number, y: number, z: number): number {
-    return Math.min(this.cave.at(col, x, y, z), this.root(col, x, y, z), REACH);
+    return Math.min(this.cave.at(col, x, y, z), this.root(col, x, y, z), THING_REACH);
   }
 
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
@@ -173,6 +105,49 @@ export class Roots implements Style {
   climbable(): boolean {
     return true;
   }
+}
+
+/** The roots of chamber `c`, as straight pieces. */
+function rootsOf(c: Chamber, f: () => number): Seg[] {
+  const R = ROOTS, segs: Seg[] = [];
+  const foot = (reach: number): [number, number] => {
+    const a = f() * Math.PI * 2, d = Math.sqrt(f()) * reach * c.r;
+    return [c.x + Math.cos(a) * d, c.z + Math.sin(a) * d];
+  };
+  const roof = c.floor + c.dome + 3, under = c.floor - 1.5;
+  // A curved root from p to q bending through the side by `bend`, thinning from ra to rb.
+  const curve = (p: number[], q: number[], bend: number, ra: number, rb: number) => {
+    const a = f() * Math.PI * 2, mx = (p[0] + q[0]) / 2 + Math.cos(a) * bend, mz = (p[2] + q[2]) / 2 + Math.sin(a) * bend;
+    const my = (p[1] + q[1]) / 2 + (f() - 0.5) * bend * 0.5;
+    const at = (t: number) => [0, 1, 2].map((k) => (1 - t) * (1 - t) * p[k] + 2 * t * (1 - t) * [mx, my, mz][k] + t * t * q[k]);
+    for (let s = 0; s < SEGS; s++) {
+      const A = at(s / SEGS), B = at((s + 1) / SEGS);
+      segs.push({ ax: A[0], ay: A[1], az: A[2], bx: B[0], by: B[1], bz: B[2], ra: ra + (rb - ra) * (s / SEGS), rb: ra + (rb - ra) * ((s + 1) / SEGS) });
+    }
+    return at(0.5);
+  };
+  const trunks = Math.round((R.trunks[0] + R.trunks[1] * f()) * c.r * c.r * Math.PI / 100);
+  for (let k = 0; k < trunks; k++) {
+    const [tx, tz] = foot(0.5), [bx, bz] = foot(0.75);
+    const ra = R.top[0] + R.top[1] * f(), rb = R.bottom[0] + R.bottom[1] * f();
+    const mid = curve([tx, roof, tz], [bx, under, bz], c.r * (0.15 + 0.25 * f()), ra, rb);
+    if (f() < R.fork) {
+      const [fx, fz] = foot(0.8);
+      curve(mid, [fx, under, fz], c.r * 0.2 * f(), (ra + rb) / 2, rb * 0.8);
+    }
+  }
+  const bridges = R.bridges[0] + Math.floor(f() * R.bridges[1]);
+  for (let k = 0; k < bridges; k++) {
+    const a = f() * Math.PI * 2, b = a + Math.PI * (0.7 + 0.6 * f()), y = c.floor + R.bridgeHeight[0] + R.bridgeHeight[1] * f();
+    const reach = c.r * 1.15, r = R.bridgeRadius[0] + R.bridgeRadius[1] * f();
+    curve([c.x + Math.cos(a) * reach, y + 1, c.z + Math.sin(a) * reach], [c.x + Math.cos(b) * reach, y + 1, c.z + Math.sin(b) * reach], c.r * 0.25, r, r);
+  }
+  const tips = R.tips[0] + Math.floor(f() * R.tips[1]);
+  for (let k = 0; k < tips; k++) {
+    const [tx, tz] = foot(0.55), len = R.tipLength[0] + R.tipLength[1] * f();
+    curve([tx, roof, tz], [tx + (f() - 0.5) * 3, c.floor + c.dome - len, tz + (f() - 0.5) * 3], 1.5, 0.7, 0.45);
+  }
+  return segs;
 }
 
 /** Plan distance from (x, z) to a piece of root's outside (a lower bound on the 3D distance). */
