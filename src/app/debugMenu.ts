@@ -4,7 +4,7 @@
  * it lets go of the mouse while open (click the game to look round again).
  */
 import { bandOf } from '../gen/bands';
-import { panel } from './panel';
+import { child, panel } from './panel';
 
 /** What the menu asks the game to do. */
 export interface DebugActions {
@@ -51,12 +51,10 @@ export class DebugMenu {
 
   constructor(host: HTMLElement, private readonly act: DebugActions) {
     this.el = panel(host, 'div', 'debug', STYLE);
-    const h = (text: string) => { const e = document.createElement('h3'); e.textContent = text; this.el.appendChild(e); };
+    const heading = (text: string) => child(this.el, 'h3', '', text);
     const button = (parent: HTMLElement, text: string, click: () => void): HTMLButtonElement => {
-      const b = document.createElement('button');
-      b.textContent = text;
+      const b = child(parent, 'button', '', text);
       b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
-      parent.appendChild(b);
       return b;
     };
     const toggle = (text: string, set: (on: boolean) => void) => {
@@ -66,30 +64,22 @@ export class DebugMenu {
       l.append(c, ` ${text}`);
       this.el.appendChild(l);
     };
-    h('Debug');
+    heading('Debug');
     button(this.el, 'Give me all abilities', () => this.say(act.allAbilities()));
     toggle('Invulnerable', (on) => { this.invulnerable = on; });
     toggle('Tireless (stamina stays full)', (on) => { this.tireless = on; });
-    h('Go to level');
-    this.levels = document.createElement('div');
-    this.el.appendChild(this.levels);
+    heading('Go to level');
+    this.levels = child(this.el, 'div');
     for (let d = 0; d <= LEVELS; d++) button(this.levels, String(d), () => act.toLevel(d)).title = d ? `Level ${d} · ${bandOf(d).name}` : bandOf(0).name;
     const any = document.createElement('div'), n = document.createElement('input');
     n.type = 'number'; n.min = '0'; n.value = String(LEVELS + 1);
     any.append(n, ' ');
     button(any, 'Go', () => { const d = Math.max(0, Math.floor(Number(n.value) || 0)); act.toLevel(d); });
     this.el.appendChild(any);
-    h('Teleport on this level');
-    this.list = document.createElement('div');
-    this.list.className = 'places';
-    this.el.appendChild(this.list);
-    this.said = document.createElement('div');
-    this.said.className = 'said';
-    this.el.appendChild(this.said);
-    const hint = document.createElement('div');
-    hint.className = 'hint';
-    hint.textContent = 'Kept in the save like anything you do. ` (^) closes; click the game to look round.';
-    this.el.appendChild(hint);
+    heading('Teleport on this level');
+    this.list = child(this.el, 'div', 'places');
+    this.said = child(this.el, 'div', 'said');
+    child(this.el, 'div', 'hint', 'Kept in the save like anything you do. ` (^) closes; click the game to look round.');
     // The game's keys still work with the menu open; typing a level number must not walk.
     n.addEventListener('keydown', (e) => e.stopPropagation());
   }

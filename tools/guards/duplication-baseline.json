@@ -84,10 +84,6 @@
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
   {
-    "key": "idiom: [.cells .grain] in dunfinity/gen/catacombs.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts",
-    "reason": "each cell-grid style seeds its own cells and turns them by its own grain (Grain from grainOf, src/gen/grainLines.ts, the seam); the plan drawn on the cells is the style's own"
-  },
-  {
     "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
@@ -2214,5 +2210,13 @@
   {
     "key": "same name: dunfinity/gen/cellar.ts#surface + dunfinity/gen/quarry.ts#surface",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/surface/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "idiom: [.columnAt .level] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/gen/quarryProps.ts",
+    "reason": "each asks the level which working it is in (level.columnAt, the one seam); one call each. The finder's word weights shift as files are added, so this comes and goes"
+  },
+  {
+    "key": "idiom: [.noise .rough] in dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/karst.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
+    "reason": "each style colours and shapes with its own seeded Noise (its own roughness field); the shared parts are already one seam each (Noise, Band)"
   }
 ]
