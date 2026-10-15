@@ -10,7 +10,7 @@
  */
 import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
-import type { Working } from './quarry';
+import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
 import { PropBuilder, type PropMesh, type Rgb } from './propMesh';
 
@@ -120,7 +120,7 @@ class TileBuilder {
       const r = (k: number) => hashToFloat(hash3i(s, this.x0 / DEBRIS.cell + i, this.z0 / DEBRIS.cell + j, k));
       const x = this.x0 + (i + r(1)) * DEBRIS.cell, z = this.z0 + (j + r(2)) * DEBRIS.cell;
       const col = this.level.columnAt(x, z);
-      const foot = Math.max(0, 1 - Math.min(col.pillarD, col.wall) / DEBRIS.footWidth);
+      const foot = Math.max(0, 1 - rockDistance(col) / DEBRIS.footWidth);
       const chance = DEBRIS.base + DEBRIS.rubble * col.rubble + DEBRIS.collapse * col.collapse + DEBRIS.foot * foot;
       if (r(0) >= chance) continue;
       // Mostly chippings; a big block where the rubble is.
@@ -148,11 +148,6 @@ class TileBuilder {
   private blockLine(x0: number, z0: number, x1: number, z1: number, half: number, y0: number, y1: number): void {
     const dx = x1 - x0, dz = z1 - z0;
     this.block((x0 + x1) / 2, (z0 + z1) / 2, Math.atan2(-dz, dx), Math.hypot(dx, dz) / 2, half, y0, y1);
-  }
-
-  /** Is (x, z) dry ground, `margin` metres above the water? */
-  private dry(x: number, z: number, margin: number): boolean {
-    return this.level.groundAt(x, z) > this.level.waterAt(x, z) + margin;
   }
 
   /** The water surface: cells whose floor lies below the table, merged into runs along x. */
@@ -306,7 +301,7 @@ class TileBuilder {
     const col = this.level.columnAt(x, z);
     if (col.working.id !== w.id || col.pillarD < 0.4 || this.level.descents.at(x, z, 1)) return;
     const g = this.level.groundAt(x, z);
-    if (this.level.sdf(x, g + 1.5, z) < 0.4 || !this.dry(x, z, 0.1)) return;
+    if (this.level.sdf(x, g + 1.5, z) < 0.4 || !this.level.dry(x, z, 0.1)) return;
     this.solid.upright(x, g + 1.25, z, 0, 0.05, 1.25, 0.05, IRON);
     this.block(x, z, 0, 0.07, 0.07, g, g + 2.5);
     const ax = x + dx * 0.55, az = z + dz * 0.55;
@@ -328,7 +323,7 @@ class TileBuilder {
     const col = this.level.columnAt(ox, oz);
     if (col.working.id !== w.id || col.rubble > 0.05 || this.level.descents.at(ox, oz, 1)) return;
     const g = this.level.groundAt(ox, oz);
-    if (this.level.sdf(ox, g + 3, oz) < 0.3 || !this.dry(ox, oz, 0.1)) return;
+    if (this.level.sdf(ox, g + 3, oz) < 0.3 || !this.level.dry(ox, oz, 0.1)) return;
     this.solid.beam(x, g + 3.3, z, ox, g + 3.3, oz, 0.03, 0.03, IRON);
     this.lamp(ox, g + 3.15, oz, r < 0.06);
   }
@@ -425,9 +420,9 @@ class TileBuilder {
       const r = (k: number) => hashToFloat(hash3i(s, this.x0 / LEFT.cell + i, this.z0 / LEFT.cell + j, k));
       const x = this.x0 + (i + 0.15 + 0.7 * r(1)) * LEFT.cell, z = this.z0 + (j + 0.15 + 0.7 * r(2)) * LEFT.cell;
       const col = this.level.columnAt(x, z);
-      if (col.collapse > 0 || col.rubble > 0.05 || col.border < 3 || this.level.descents.at(x, z, 4) || !this.dry(x, z, 0.1)) continue;
+      if (col.collapse > 0 || col.rubble > 0.05 || col.border < 3 || this.level.descents.at(x, z, 4) || !this.level.dry(x, z, 0.1)) continue;
       // How far to the rock beside (a pillar or a wall; the floor and roof do not count).
-      const g = this.level.groundAt(x, z), d = Math.min(col.pillarD, col.wall);
+      const g = this.level.groundAt(x, z), d = rockDistance(col);
       if (d < 0.3 || this.level.sdf(x, g + 2, z) < 0.3) continue;
       if (d < 2.2) {
         if (r(0) > LEFT.chance) continue;
@@ -524,7 +519,7 @@ class TileBuilder {
     const at = (side: number, out: number): [number, number] => [x + ca * side + ox * out, z - sa * side + oz * out];
     for (const [sd, out] of [[-1.4, 1], [1.4, 1], [0, 1.6]]) {
       const [cx, cz] = at(sd, out);
-      if (!this.dry(cx, cz, 0.1) || Math.abs(this.level.groundAt(cx, cz) - g) > 0.35) return;
+      if (!this.level.dry(cx, cz, 0.1) || Math.abs(this.level.groundAt(cx, cz) - g) > 0.35) return;
     }
     const [hx, hz] = at(0, 0.6);
     if (this.level.sdf(hx, g + 3.2, hz) < 0.4) return;
@@ -587,7 +582,7 @@ class TileBuilder {
       const f = k / 4;
       if (this.level.sdf(x, g + 1 + (H - 1) * f, z) < 0.5 || this.level.sdf(x + (tx - x) * f, g + 1.5 + (ty - g - 1.5) * f, z + (tz - z) * f) < 0.5) return;
     }
-    if (!this.dry(tx, tz, 0.1) || this.level.descents.at(tx, tz, 3)) return;
+    if (!this.level.dry(tx, tz, 0.1) || this.level.descents.at(tx, tz, 3)) return;
     const wood: Rgb = [WOOD[0] * 1.05, WOOD[1] * 0.95, WOOD[2] * 0.8];
     for (const a of [yaw, yaw + Math.PI / 2]) this.solid.upright(x, g + 0.12, z, a, 0.12, 0.12, 1.4, wood);
     this.solid.upright(x, g + H / 2, z, yaw, 0.13, H / 2, 0.13, wood);
@@ -646,7 +641,7 @@ class TileBuilder {
       if (this.roll(w, 54 + c, iu, iv) < 0.4) continue;
       const size = 0.28 + 0.2 * this.roll(w, 57 + c, iu, iv);
       const [cx, cz] = at(-2.2 - 0.4 - size - c * 0.1, -1.2 + c * 1.1);
-      if (this.level.sdf(cx, this.level.groundAt(cx, cz) + 0.5, cz) < 0.6 || !this.dry(cx, cz, 0.05)) continue;
+      if (this.level.sdf(cx, this.level.groundAt(cx, cz) + 0.5, cz) < 0.6 || !this.level.dry(cx, cz, 0.05)) continue;
       const cy = this.level.groundAt(cx, cz), cyaw = yaw + this.roll(w, 60 + c, iu, iv);
       this.solid.upright(cx, cy + size, cz, cyaw, size, size, size, [WOOD[0] * 1.4, WOOD[1] * 1.3, WOOD[2] * 1.1]);
       this.block(cx, cz, cyaw, size, size, cy - 0.3, cy + size * 2);

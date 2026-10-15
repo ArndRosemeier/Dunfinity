@@ -8,7 +8,7 @@ const level = new Level(1, 1);
 
 function nests(r: Rats, n = 12) {
   const out = [];
-  for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) { const s = r.nestAt(i, j); if (s) out.push([s.x, s.z, s.count]); }
+  for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) { const s = r.denAt(i, j); if (s) out.push([s.x, s.z, s.count]); }
   return out;
 }
 

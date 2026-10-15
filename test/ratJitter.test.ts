@@ -11,7 +11,7 @@ function prey(r: Rats): Fighter & { taken: number } {
   const [ax, , az] = level.arrival;
   let nest = null;
   for (let j = -15; j <= 15 && !nest; j++) for (let i = -15; i <= 15 && !nest; i++) {
-    const n = r.nestAt(Math.floor(ax / RAT.cell) + i, Math.floor(az / RAT.cell) + j);
+    const n = r.denAt(Math.floor(ax / RAT.cell) + i, Math.floor(az / RAT.cell) + j);
     if (n && Math.hypot(n.x - ax, n.z - az) > 30) nest = n;
   }
   const x = nest!.x + 1.5, z = nest!.z;

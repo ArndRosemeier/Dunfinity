@@ -72,7 +72,7 @@ export class Finds {
   private readonly cells: CellMemo<Find[]>;
 
   /**
-   * `nestAt(i, j)`: the nest in cell (i, j) (Rats.nestAt), whose hoard lies round it.
+   * `nestAt(i, j)`: the nest in cell (i, j) (Rats.denAt), whose hoard lies round it.
    * `taken`: ids already picked up on this level (kept by the caller, added to by `take`).
    */
   constructor(private readonly level: Level, private readonly nestAt: (i: number, j: number) => Hoard | null, readonly taken: Set<number>) {

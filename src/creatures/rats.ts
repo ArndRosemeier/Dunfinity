@@ -9,12 +9,11 @@
  * rats of a nest exist only while you are near it, and the ones you killed stay dead on this visit.
  */
 import { Rng, deriveSeed, hash3f, angleDiff } from '@futuremagic/core';
-import type { Blockers } from '../world/blockers';
-import { Steer } from './steer';
 import { Creature } from './creature';
+import { Population, type Den } from './population';
+import { brake } from './steer';
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from '../combat/combat';
-import { CellMemo } from '../gen/cellMemo';
 
 export const RAT = {
   /** Body radius and height at size 1, metres. */
@@ -57,16 +56,11 @@ export const RAT = {
 
 export type RatMode = 'sniff' | 'scurry' | 'alert' | 'chase' | 'bite' | 'flee' | 'dead';
 
-export interface Nest {
-  readonly key: number;
-  readonly x: number;
-  readonly z: number;
+export interface Nest extends Den {
   readonly y: number;
   readonly count: number;
   /** The nest is up in arms (one of them was hurt, or it saw you). */
   alarmed: boolean;
-  /** Its rats while it is awake, else null. */
-  rats: Rat[] | null;
 }
 
 export class Rat extends Creature<RatMode> {
@@ -86,88 +80,36 @@ export class Rat extends Creature<RatMode> {
   }
 }
 
-export class Rats {
-  /** Rats near you (dead ones included, while their nest is awake). */
-  readonly list: Rat[] = [];
-  /** Rats killed on this visit to the level. */
-  killed = 0;
-  private readonly nests = new CellMemo<Nest | null>((i, j, key) => this.nestIn(key, i, j));
-  private readonly awake = new Set<Nest>();
-  private readonly dead = new Set<number>();
-  private readonly seed: number;
-  private readonly rng: Rng;
-  /** How they walk the floor. */
-  private readonly steer: Steer;
+export class Rats extends Population<Nest, Rat> {
   private readonly chance: number;
 
-  constructor(private readonly level: Level) {
-    this.seed = deriveSeed(level.seed, 'rats', level.depth);
-    this.rng = new Rng(deriveSeed(level.seed, 'rats', 'behaviour', level.depth));
+  constructor(level: Level) {
+    super(level, 'rats', RAT, { arrive: RAT.arrive, still: RAT.still, step: RAT.step, drop: RAT.drop, accel: 10, turn: 12, face: 15 });
     this.chance = Math.min(0.8, RAT.chance + 0.08 * (level.depth - 1));
-    this.steer = new Steer(level, { arrive: RAT.arrive, still: RAT.still, step: RAT.step, drop: RAT.drop, accel: 10, turn: 12, face: 15 });
   }
 
-  /** The props in the way (src/world/blockers.ts): rats run round them. */
-  set blockers(b: Blockers | null) { this.steer.blockers = b; }
-
-  /** Advance by dt seconds. `prey`: the player; bites go through combat.damage. Returns the bites landed this step. */
-  advance(dt: number, prey: Fighter): number {
-    this.steer.keepOff = prey;
-    this.wakeNests(prey.x, prey.z);
-    // In steps of at most 1/60 s: a rat looks one step ahead for floor, and a long step overreaches.
-    const n = Math.ceil(dt * 60 - 1e-6), h = dt / Math.max(1, n);
-    let bites = 0;
-    for (let k = 0; k < n; k++) {
-      for (const r of this.list) bites += this.think(r, prey, h);
-      this.separate();
-    }
-    this.noteDeaths();
-    return bites;
-  }
-
-  /** The nest of cell (i, j), if it has one. */
-  nestAt(i: number, j: number): Nest | null {
-    return this.nests.at(i, j);
-  }
-
-  // ------------------------------------------------------------------ nests
-
-  private wakeNests(px: number, pz: number): void {
-    const c = RAT.cell, n = Math.ceil(RAT.wake / c);
-    const ci = Math.floor(px / c), cj = Math.floor(pz / c);
-    for (let j = cj - n; j <= cj + n; j++) for (let i = ci - n; i <= ci + n; i++) {
-      const nest = this.nestAt(i, j);
-      if (nest && !nest.rats && Math.hypot(nest.x - px, nest.z - pz) < RAT.wake) this.wake(nest);
-    }
-    for (const nest of this.awake) {
-      if (Math.hypot(nest.x - px, nest.z - pz) < RAT.sleep) continue;
-      // Gone back into their holes (the dead stay dead).
-      for (const r of nest.rats!) this.list.splice(this.list.indexOf(r), 1);
-      nest.rats = null;
-      nest.alarmed = false;
-      this.awake.delete(nest);
-    }
-  }
-
-  private wake(nest: Nest): void {
-    const rng = new Rng(deriveSeed(this.seed, 'nest', nest.key));
-    nest.rats = [];
+  protected hatch(nest: Nest, killed: (id: number) => boolean): Rat[] {
+    const rng = new Rng(deriveSeed(this.seed, 'nest', nest.key)), born: Rat[] = [];
     for (let k = 0; k < nest.count; k++) {
       const id = nest.key * 16 + k;
       const a = rng.range(0, Math.PI * 2), d = rng.range(0.3, 2.5), size = rng.range(0.85, 1.25), yaw = rng.range(0, Math.PI * 2);
-      if (this.dead.has(id)) continue;
+      if (killed(id)) continue;
       const x = nest.x + Math.cos(a) * d, z = nest.z + Math.sin(a) * d;
       const y = this.level.groundAt(x, z);
       const r = new Rat(id, nest, x, Math.abs(y - nest.y) < 1 ? y : nest.y, z, yaw, size, k);
       r.t = rng.range(0.5, 3);
-      nest.rats.push(r);
-      this.list.push(r);
+      born.push(r);
     }
-    this.awake.add(nest);
+    return born;
+  }
+
+  /** Gone back into their holes: calm again. */
+  protected sleep(nest: Nest): void {
+    nest.alarmed = false;
   }
 
   /** Where in cell (i, j) a nest is, if any: open, dry floor, away from the arrival and the shafts. */
-  private nestIn(key: number, i: number, j: number): Nest | null {
+  protected denIn(key: number, i: number, j: number): Nest | null {
     const c = RAT.cell, s = this.seed;
     if (hash3f(s, i, j, 0) > this.chance) return null;
     const [ax, , az] = this.level.arrival;
@@ -177,9 +119,9 @@ export class Rats {
       const col = this.level.columnAt(x, z);
       if (col.pillarD < 2 || col.wall < 2) continue;
       const y = this.level.groundAt(x, z);
-      if (y < this.level.waterAt(x, z) + 0.05 || this.level.sdf(x, y + 0.6, z) < 0.4 || this.level.descents.at(x, z, 4)) continue;
+      if (!this.level.dry(x, z, 0.05) || this.level.sdf(x, y + 0.6, z) < 0.4 || this.level.descents.at(x, z, 4)) continue;
       const count = RAT.count[0] + Math.floor(hash3f(s, i, j, 20) * (RAT.count[1] - RAT.count[0] + 1));
-      return { key, x, z, y, count, alarmed: false, rats: null };
+      return { key, x, z, y, count, alarmed: false };
     }
     return null;
   }
@@ -187,7 +129,7 @@ export class Rats {
   // ------------------------------------------------------------------ behaviour
 
   /** One rat's step; returns 1 if it bit. */
-  private think(r: Rat, prey: Fighter, dt: number): number {
+  protected act(r: Rat, prey: Fighter, _ctx: null, dt: number): number {
     r.biteT += dt;
     r.hurtT += dt;
     const provoked = r.provoked;
@@ -196,7 +138,7 @@ export class Rats {
     if (r.dead) {
       r.deadT += dt;
       this.slide(r, dt);
-      r.vx *= Math.max(0, 1 - dt * 6); r.vz *= Math.max(0, 1 - dt * 6);
+      brake(r, 6, dt);
       return 0;
     }
     const dx = prey.x - r.x, dz = prey.z - r.z, d = Math.hypot(dx, dz);
@@ -268,7 +210,7 @@ export class Rats {
   }
 
   /** Keep the living from standing in each other. */
-  private separate(): void {
+  protected settle(): void {
     const L = this.list;
     for (let a = 0; a < L.length; a++) {
       if (L[a].dead) continue;
@@ -281,10 +223,5 @@ export class Rats {
         L[b].x += dx * push; L[b].z += dz * push;
       }
     }
-  }
-
-  /** Remember the dead: they stay dead when their nest wakes again. */
-  private noteDeaths(): void {
-    for (const r of this.list) if (r.dead && !this.dead.has(r.id)) { this.dead.add(r.id); this.killed++; }
   }
 }

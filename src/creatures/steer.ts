@@ -77,8 +77,7 @@ export class Steer {
       w.vx += (fx - w.vx) * Math.min(1, dt * G.accel);
       w.vz += (fz - w.vz) * Math.min(1, dt * G.accel);
     } else {
-      w.vx *= Math.max(0, 1 - dt * G.accel);
-      w.vz *= Math.max(0, 1 - dt * G.accel);
+      brake(w, G.accel, dt);
     }
     if (face !== null) w.yaw += angleDiff(w.yaw, face) * Math.min(1, dt * G.face);
     return this.slide(w, dt);
@@ -112,4 +111,11 @@ export class Steer {
     if (g - w.y > this.gait.step || w.y - g > this.gait.drop) return false;
     return l.waterAt(x, z) < g + 0.2;
   }
+}
+
+/** Slow w down at `rate` (per second) over dt. */
+export function brake(w: { vx: number; vz: number }, rate: number, dt: number): void {
+  const k = Math.max(0, 1 - dt * rate);
+  w.vx *= k;
+  w.vz *= k;
 }

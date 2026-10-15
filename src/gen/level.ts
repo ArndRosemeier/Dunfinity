@@ -123,6 +123,11 @@ export class Level {
    * Height of the rock surface under (x, z) on open floor, roughness included (where props stand).
    * Starts at the floor and steps along the field, at most a metre; under a pillar or a wall the answer means little.
    */
+  /** Is (x, z) dry ground, its floor `margin` metres or more above the water? */
+  dry(x: number, z: number, margin: number): boolean {
+    return this.groundAt(x, z) > this.waterAt(x, z) + margin;
+  }
+
   groundAt(x: number, z: number): number {
     const f = this.floorAt(x, z);
     let y = f;

@@ -8,6 +8,7 @@
  * A fixed pool of rats, built once and added with the Stage before play (the kinds are compiled in
  * the warm-up), so nothing is compiled or added to the scene later.
  */
+import { FigurePool, type Figure } from './figures';
 import { groundSpeed } from '../../creatures/creature';
 import { Group, type Object3D } from 'three/webgpu';
 import type { Rgb } from '../../gen/propMesh';
@@ -55,7 +56,7 @@ function parts() {
 }
 
 /** One drawn rat: a root at its feet (turned by yaw), a body that bobs and lunges, legs, a tail. */
-class RatFigure {
+class RatFigure implements Figure<Rat> {
   readonly root = new Group();
   readonly body = new Group();
   readonly legs: Object3D[] = [];
@@ -135,25 +136,9 @@ class RatFigure {
   }
 }
 
-export class RatView {
-  /** Put into the scene once (Stage.add), after the warm-up. */
-  readonly root = new Group();
-  private readonly figures: RatFigure[] = [];
-
+export class RatView extends FigurePool<Rat> {
   constructor() {
-    this.root.name = 'rats';
     const p = parts();
-    for (let k = 0; k < POOL; k++) {
-      const f = new RatFigure(p);
-      this.figures.push(f);
-      this.root.add(f.root);
-    }
-  }
-
-  /** Pose the pool after the rats; the rest is hidden. */
-  draw(rats: readonly Rat[], time: number): void {
-    let k = 0;
-    for (const r of rats) if (k < POOL) this.figures[k++].pose(r, time);
-    for (; k < POOL; k++) this.figures[k].root.visible = false;
+    super('rats', POOL, () => new RatFigure(p));
   }
 }
