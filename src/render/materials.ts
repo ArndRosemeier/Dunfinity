@@ -112,10 +112,13 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const grey = smoothstep(0.25, 0.6, mx_noise_float(p.mul(0.6).add(vec3(-5.2, 2.4, 9.9))));
   const texture = float(1).add(fleck.mul(0.32)).add(blotch.mul(0.22));
   const stain = mix(mix(vec3(1, 1, 1), vec3(1.16, 0.9, 0.68), iron.mul(0.7)), vec3(0.82, 0.88, 0.95), grey.mul(0.6));
-  // Rock salt (the Salt Works): beds of grey, white and pink salt with dark clay partings, and the
-  // walls cut smooth by the miners' machines, which leave rings of fine grooves where each cut ended.
+  // Rock salt (the Salt Works), as it looks in a real mine: dark grey-brown salt with pale, near white
+  // beds and thin streaks running level along the walls, a pinkish bed here and there, dark clay
+  // partings, and rings of fine grooves where the miners' cutting machines stopped.
   const saltBed = mx_noise_float(vec3(p.x.mul(0.03), p.y.mul(1.4).add(mottle.mul(0.25)), p.z.mul(0.03)));
-  const saltHue = mix(mix(vec3(0.78, 0.8, 0.84), vec3(1.25, 1.24, 1.2), smoothstep(-0.2, 0.3, saltBed)), vec3(1.2, 0.95, 0.9), smoothstep(0.35, 0.6, saltBed));
+  const saltStreak = mx_noise_float(vec3(p.x.mul(0.35), p.y.mul(6.5).add(mottle.mul(0.6)), p.z.mul(0.35)));
+  const saltPale = smoothstep(-0.1, 0.35, saltBed).mul(0.7).add(smoothstep(0.2, 0.5, saltStreak).mul(0.45)).add(blotch.mul(0.2)).clamp(0, 1);
+  const saltHue = mix(mix(vec3(0.62, 0.58, 0.55), vec3(1.45, 1.43, 1.38), saltPale), vec3(1.3, 1.02, 0.95), smoothstep(0.4, 0.62, saltBed));
   const clay = thinLine(saltBed.sub(-0.45).abs().mul(0.4), float(0.01)).mul(steep);
   const ringCell = vec3(u.div(1.7).floor(), p.y.div(1.3).floor(), 2.9), ringJ = mx_cell_noise_float(ringCell).sub(0.5);
   const ringU = u.div(1.7).floor().add(0.5).add(ringJ.mul(0.5)).mul(1.7), ringY = p.y.div(1.3).floor().add(0.5).sub(ringJ.mul(0.4)).mul(1.3);
@@ -150,7 +153,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const shutter = worked.mul(steep).mul(ROCK_FINISH.formwork);
 
   // Height for the bump: per surface kind, blended.
-  const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7)).sub(ROCK_FINISH.salt.mul(worked).mul(0.6))).sub(ring.mul(0.04).mul(ROCK_FINISH.salt).mul(worked));
+  const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7))).sub(ring.mul(0.04).mul(ROCK_FINISH.salt).mul(worked));
   const hMasonry = edge.oneMinus().mul(0.12).sub(joint.mul(0.2)).add(mottle.mul(0.1)).add(lumps.mul(0.06)).add(grain.mul(0.03));
   const hFlow = mottle.mul(0.25).add(drip.mul(0.18).mul(steep)).add(rim.mul(0.1)).add(sin(p.y.mul(38).add(drip.mul(9))).mul(0.006).mul(smoothstep(0.5, 0.2, p.y.mul(38).fwidth())));
   const height = mix(mix(hNatural, hMasonry, masonry), hFlow, flow).sub(boardLine.mul(0.05).add(tie.mul(0.15)).mul(shutter));
@@ -158,7 +161,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
 
   // Colour: broad warmer and cooler stretches of stone, darker in the hollows, the seams and cracks
   // darker still, rust-brown streaks down the walls, damp darker floors.
-  const tint = mx_fractal_noise_float(p.mul(0.06).add(17.0), 2, 2.0, 0.5);
+  const tint = mx_fractal_noise_float(p.mul(0.3).add(17.0), 2, 2.0, 0.5); // a few metres across: one wall shows both
   const hue = mix(mix(vec3(1, 1, 1), vec3(1.14, 0.96, 0.78), smoothstep(0.0, 0.5, tint)), vec3(0.86, 0.92, 1.0), smoothstep(0.0, -0.5, tint));
   const natShade = float(0.9).add(mottle.mul(0.22)).add(strata.mul(0.16).mul(steep)).add(grain.mul(0.07)).add(grit.mul(0.1)).add(speck)
     .sub(seam.mul(0.4)).sub(tool.mul(0.1)).sub(crack.mul(0.65)).sub(damp.mul(0.3)).sub(clay.mul(0.4).add(ring.mul(0.05)).mul(ROCK_FINISH.salt));
@@ -199,8 +202,8 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
 export const ROCK_VEINS = uniform(0);
 
 /**
- * The band's finish of its rock (`band.finish`), set by `LevelView`: rock salt (layered grey, white
- * and pink, cut smooth by the mining machines' rotating heads, glinting in the headlamp), worked
+ * The band's finish of its rock (`band.finish`), set by `LevelView`: rock salt (dark grey-brown with pale,
+ * level white beds and streaks, the cutting machines' groove rings, glinting in the headlamp), worked
  * walls cast in concrete against board shuttering, how wet the rock runs.
  */
 export const ROCK_FINISH = { salt: uniform(0), formwork: uniform(0), wet: uniform(0) };
