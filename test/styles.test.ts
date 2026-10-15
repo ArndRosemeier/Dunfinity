@@ -434,3 +434,23 @@ test('the flooded galleries are none of them: water nearly to the roof, a narrow
   assert.ok(sump('flooded') > 0.25, `a sump over ${(sump('flooded') * 100).toFixed(0)}% of the flooded galleries`);
   for (const id of Object.keys(st)) if (id !== 'flooded' && st[id].n > 100) assert.ok(sump(id) < sump('flooded') / 4, `${id}: a sump over ${(sump(id) * 100).toFixed(0)}%`);
 });
+
+test('the dwarven halls are none of them: tall carved halls, crossed by chasms that drop far below the floor', () => {
+  // (The Old Halls draw them: a level all of them, against the Old Halls', Before People's and the Threshold's mixes.)
+  const st: Record<string, { n: number; deep: number }> = {};
+  for (const l of [new Level(1, 25, 'dwarven'), new Level(1, 25), new Level(1, 45), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 5000; k++) {
+      const x = ax + (hash3f(59, k, 25, 0) - 0.5) * 3000, z = az + (hash3f(59, k, 25, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, deep: 0 });
+      s.n++;
+      // A chasm: open air 15 m under the floor.
+      if (l.sdf(x, c.floor - 15, z) > 0.3) s.deep++;
+    }
+  }
+  const deep = (id: string) => st[id].deep / st[id].n;
+  assert.ok(st.dwarven.n > 500, `${st.dwarven.n} open dwarven columns`);
+  assert.ok(deep('dwarven') > 0.04, `a chasm under ${(deep('dwarven') * 100).toFixed(1)}% of the dwarven halls`);
+  for (const id of Object.keys(st)) if (id !== 'dwarven' && st[id].n > 100) assert.ok(deep(id) < deep('dwarven') / 4, `${id}: a chasm under ${(deep(id) * 100).toFixed(1)}%`);
+});
