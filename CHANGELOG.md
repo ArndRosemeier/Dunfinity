@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.101 — Tidy-up: one box shape
+
+- Behind the scenes: the styles that build with boxes (workings, rifts, catacombs, fallen blocks, dungeon rooms) now share one box-distance helper instead of seven copies. Nothing looks different.
+
 ## v0.100 — Smoother cave floors
 
 - Where a cave's tube meets a chamber whose floor lies a few metres higher or lower, the floor now rises over a longer stretch instead of jumping. That is gentler underfoot and leaves fewer odd ledges in the karst caves, root hollows and fungal grottoes.
