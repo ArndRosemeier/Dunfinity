@@ -11,7 +11,7 @@
 import type { Column } from './quarry';
 import type { Dress } from './styleProps';
 
-export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt';
+export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt' | 'flooded';
 
 export interface Style {
   readonly id: StyleId;

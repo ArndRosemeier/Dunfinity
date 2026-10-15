@@ -19,10 +19,11 @@ import { Fungal } from './fungal';
 import { Lava } from './lava';
 import { Geode } from './geode';
 import { Basalt } from './basalt';
+import { Flooded, type WaterTable } from './flooded';
 import type { Style, StyleId } from './style';
 
-/** Makes the style for a level, from the level's seed and band. */
-type Make = (seed: number, band: Band) => Style;
+/** Makes the style for a level, from the level's seed and band, and its water table (the excavation's, one per level, E5). */
+type Make = (seed: number, band: Band, water: WaterTable) => Style;
 
 const MAKE: Partial<Record<StyleId, Make>> = {
   karst: (seed, band) => new Karst(seed, band),
@@ -35,6 +36,7 @@ const MAKE: Partial<Record<StyleId, Make>> = {
   lava: (seed, band) => new Lava(seed, band),
   geode: (seed, band) => new Geode(seed, band),
   basalt: (seed, band) => new Basalt(seed, band),
+  flooded: (seed, band, water) => new Flooded(seed, band, water),
 };
 
 /** The styles that can be asked for by name (`?style=`), the excavation and the cellar aside. */
@@ -46,7 +48,7 @@ export function stylesOf(mix: Mix, excavation: QuarryField, seed: number, band: 
     if (id === excavation.id) return excavation;
     const make = MAKE[id];
     if (!make) throw new Error(`no style '${id}' (src/gen/styles.ts)`);
-    return make(seed, band);
+    return make(seed, band, (x, z) => excavation.water(x, z));
   });
 }
 

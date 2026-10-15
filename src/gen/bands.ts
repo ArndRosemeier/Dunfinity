@@ -120,7 +120,7 @@ export const CISTERN: Band = {
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
   touched: 0.12, crickets: 0, dogs: 0.35, eels: 0.6, scavengers: 0.35, caverns: 0, ruins: 0, older: 0.14, uphill: 0.12, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.4], ['karst', 0.2], ['collapse', 0.1], ['dungeon', 0.15], ['roots', 0.15]],
+  styles: [['excavation', 0.4], ['karst', 0.2], ['collapse', 0.1], ['dungeon', 0.15], ['roots', 0.15], ['flooded', 0.12]],
 };
 
 /**
