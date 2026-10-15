@@ -285,3 +285,45 @@ test('the dungeon rooms are none of them: built rooms with dead flat floors, joi
     assert.ok(open('dungeon') < open('excavation') / 2, `the dungeon ${(open('dungeon') * 100).toFixed(0)}% open, the excavation ${(open('excavation') * 100).toFixed(0)}%`);
   }
 });
+
+test('the root hollows are none of them: chambers crossed by giant roots from roof to floor', () => {
+  for (const depth of [6, 7]) {
+    const l = new Level(1, depth), [ax, , az] = l.arrival;
+    const st: Record<string, { inner: number; crossed: number }> = {};
+    for (let k = 0; k < 40000; k++) {
+      const x = ax + (hash3f(31, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(31, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || c.wall < 6 || c.ceiling - c.floor < 6) continue;
+      // Well inside a big space: is there anything in the air between floor and roof?
+      const s = (st[l.field.styles[c.style].id] ??= { inner: 0, crossed: 0 });
+      s.inner++;
+      for (let y = c.floor + 2; y < c.ceiling - 2; y += 0.5) if (l.sdf(x, y, z) < 0) { s.crossed++; break; }
+    }
+    const crossed = (id: string) => st[id].crossed / st[id].inner;
+    assert.ok(st.roots.inner > 200, `${st.roots.inner} root hollow columns inside chambers on level ${depth}`);
+    assert.ok(crossed('roots') > 0.3 && crossed('roots') > 2 * crossed('excavation') && crossed('karst') < 0.05, `roots cross ${(crossed('roots') * 100).toFixed(0)}% of the root hollows' chambers on level ${depth}, pillars ${(crossed('excavation') * 100).toFixed(0)}% of the excavation's, karst ${(crossed('karst') * 100).toFixed(0)}%`);
+  }
+});
+
+test('the fungal grotto is none of them: giant mushrooms whose broad caps make a second storey', () => {
+  const l = new Level(1, 9), [ax, , az] = l.arrival;
+  // The top of the first rock under air between y0 and y1 (NaN: none).
+  const top = (x: number, z: number, y0: number, y1: number) => {
+    for (let y = y0; y < y1; y += 0.25) if (l.sdf(x, y, z) < 0 && l.sdf(x, y + 0.25, z) >= 0) return y;
+    return NaN;
+  };
+  const st: Record<string, { inner: number; storey: number }> = {};
+  for (let k = 0; k < 40000; k++) {
+    const x = ax + (hash3f(37, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(37, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+    if (c.mix || c.passage > -20 || c.wall < 6 || c.ceiling - c.floor < 6) continue;
+    const s = (st[l.field.styles[c.style].id] ??= { inner: 0, storey: 0 });
+    s.inner++;
+    // Something to stand on up in the air, and broad: there is ground at about that height 2 m off every way.
+    const y = top(x, z, c.floor + 1.5, c.ceiling - 1.5);
+    if (Number.isNaN(y)) continue;
+    if ([[2, 0], [-2, 0], [0, 2], [0, -2]].every(([dx, dz]) => !Number.isNaN(top(x + dx, z + dz, y - 1, y + 1)))) s.storey++;
+  }
+  const storey = (id: string) => st[id].storey / st[id].inner;
+  assert.ok(st.fungal.inner > 150, `${st.fungal.inner} fungal grotto columns inside chambers`);
+  assert.ok(storey('fungal') > 0.06, `a second storey over ${(storey('fungal') * 100).toFixed(1)}% of the fungal grotto's chambers`);
+  for (const id of Object.keys(st)) if (id !== 'fungal') assert.ok(storey(id) < storey('fungal') / 4, `${id} has a second storey over ${(storey(id) * 100).toFixed(1)}%`);
+});

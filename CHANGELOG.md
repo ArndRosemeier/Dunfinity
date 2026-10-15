@@ -1,10 +1,20 @@
 # Changelog
 
-## v0.082 — Carts and shacks
+## v0.084 — Carts and shacks
 
 - The ore carts on the rails are modelled now: a riveted iron tub on four flanged wheels, some still heaped with ore.
 - The miners' shacks too: plank walls on a timber frame, a door, a window and a tarred roof with eaves.
 - Ten kinds of mushroom are made and waiting for the damp places: fly agarics, penny buns, inkcaps, honey clusters, chanterelles, puffballs, morels, pale cave caps, brackets on the rock and a giant three metres tall.
+
+## v0.083 — Fungal grottoes
+
+- A second living kind of place: warm, wet caves overgrown with giant mushrooms, from knee-high ones to giants 14 m tall. Pale fibrous stalks hold up broad caps in the level's own hue (violet, teal, amber or rose) with paler spots, and their gills glow faintly underneath. The big caps are wide and flat enough to climb onto and walk across, a second storey over the dark loam. Try `?style=fungal`.
+- A share of the Threshold (levels 9–10). On the map (M) they show violet.
+
+## v0.082 — Root hollows
+
+- The first living kind of place: caves a forest grew into from above. Giant roots as thick as a cart come down through the roof, writhe across the chambers, split and plunge into the floor. Some cross low enough to walk along their backs, and root tips hang from the roof. The floor is a moss carpet over humps of tangled root mat, and the walls are damp dark soil. Try `?style=roots`.
+- A share of the Cisterns (levels 6–8). On the map (M) they show moss green.
 
 ## v0.081 — Things made properly
 
