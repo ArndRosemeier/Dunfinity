@@ -8,6 +8,7 @@ import { HOUSE_DOORS, type DoorSpec } from './doorways';
 import { deriveSeed } from '@futuremagic/core';
 import { bandOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
+import { StyledField } from './styledField';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
@@ -46,7 +47,8 @@ export interface Haven {
 }
 
 export class Level {
-  readonly field: QuarryField;
+  /** The level's field, from its styles (src/gen/styledField.ts). */
+  readonly field: StyledField;
   /** What kind of place this level is. */
   readonly band: Band;
   /** The ways down to the next level (shafts). */
@@ -61,8 +63,8 @@ export class Level {
     this.band = bandOf(depth);
     // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
     const s = deriveSeed(seed, 'level', depth);
-    this.field = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
-    this.descents = new Descents(this.field, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined);
+    this.field = new StyledField(depth === 0 ? new CellarField() : new QuarryField(s, this.band));
+    this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined);
   }
 
   /** Grandma's first camp, if it is on this level (level 9). */
@@ -97,7 +99,7 @@ export class Level {
       // In the arrival hall, else in one further out.
       for (let k = 0; k < 6 && this.depth > 0 && !this.ascent_; k++) {
         const [x, , z] = this.spawn(k ? Math.cos(k) * 300 : 0, k ? Math.sin(k) * 300 : 0);
-        this.ascent_ = findAscent(this.field, x, z);
+        this.ascent_ = findAscent(this.field.excavation, x, z);
       }
     }
     return this.ascent_;
@@ -183,7 +185,7 @@ export class Level {
   }
 
   workingAt(x: number, z: number): Working {
-    return this.field.workingAt(x, z);
+    return this.field.excavation.workingAt(x, z);
   }
 
   /** Floor height under column (x, z) of the working there (ignores pillars). */

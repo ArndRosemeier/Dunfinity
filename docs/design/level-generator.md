@@ -50,7 +50,7 @@ For comparison, real caves of this size exist: Son Doong's main passage is ~200 
 - shafts and chimneys
 - hanging rock (stalactite curtains), floor spikes, fallen blocks
 
-**Formation processes, not biomes.** A low-frequency *process field* (km scale, soft blends) decides what formed each area, and each process has its own SDF signature:
+**Formation processes, not biomes** (built as *level styles*: see [level-styles.md](level-styles.md), with the contract for where two styles meet). A low-frequency *process field* (km scale, soft blends) decides what formed each area, and each process has its own SDF signature:
 
 | Process | What it makes | Feels like |
 |---|---|---|

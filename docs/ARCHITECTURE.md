@@ -57,6 +57,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Is this point rock or air, how far to rock? | `level.sdf(x, y, z)`: the single density function (positive in air) | `src/gen/level.ts` |
+| A kind of place (a level style: the excavation halls, grandma's cellar; karst, rift, collapse to come), and the level's field put together from its styles | `Style` (`column`, `at`, `color`, `climbable`; its column's floor and ceiling are its envelope); `StyledField` (`level.field`; `field.styles`, and `field.excavation` for the workings' own business: `workingAt`, `toGrid`, `fromGrid`, `pillarAt`) | `src/gen/style.ts`, `src/gen/styledField.ts`, plan: `docs/design/level-styles.md` |
 | Where is the floor under a point? | `level.floorAt(x, z)` (the working's floor; ignores pillars) | `src/gen/level.ts` |
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
 | Put a point onto an upright rock face (chalk on a pillar, water running up it) | `level.ontoRock(x, y, z, n, fixed)` | `src/gen/level.ts` |
