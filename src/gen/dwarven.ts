@@ -18,11 +18,14 @@
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
+import { Envelope } from './envelope';
 import { Grain, grainOf } from './grainLines';
 import { joined } from './gridTree';
 import { unworked, type Column, type Working } from './quarry';
+import { propModel } from './models';
 import { boxDist2, boxDist3 } from './shapes';
 import type { Style, StyleId } from './style';
+import type { Dress } from './styleProps';
 
 export const DWARVEN = {
   /** One hall to a cell this long (along u) and wide (along v), metres; the hall's middle strays along u by up to `jitter`. */
@@ -46,12 +49,16 @@ export const DWARVEN = {
   extra: 0.3,
   /** A stair step's rise and tread, metres. */
   stair: { rise: 0.5, tread: 0.9 },
+  /** What stands before each wall panel: the chances of a king's statue, a forge, a brazier by the column (half of them lit), and of a chain hanging over the nave at each column. */
+  things: { statue: 0.3, forge: 0.25, brazier: 0.3, lit: 0.5, chain: 0.35 },
 } as const;
+
+/** Where a forge's coals lie in it (the forge model's frame: x across, y up, z out of its front). */
+const COALS = [0.2, 0.62, 0.25] as const;
+const FLAME = [1, 0.62, 0.3] as const;
 
 /** Rock further than this from a hall or passage counts as this far, metres; every feature this near is looked at. */
 const FAR = 16;
-/** The envelope's roof falls away outside a feature this steeply (so one leaving the list, FAR out, is under every other's). */
-const FALL = 3;
 
 /** What a dwarven column is to the code that asks about workings: dug, but not by the miners. */
 const CARVED: Working = { id: 0x64776172, angle: 0, spacing: 1e9, pillar: 0, floor: 0, height: 20, collapse: 0, cavern: false, cx: 0, cz: 0 };
@@ -145,21 +152,14 @@ export class Dwarven implements Style {
     o.halls.length = o.passages.length = 0;
     o.pillar = Infinity; o.panel = -FAR; o.panelHall = null; o.u = u; o.v = v;
     const i0 = Math.floor(u / GU), j0 = Math.floor(v / GV);
-    // The envelope: floors weighted by how near each feature is, all but its own inside it, none at FAR (and a
-    // little weight on the level's own floor, so a feature coming into reach changes nothing); a roof over all of them.
-    let wsum = 0.002, fsum = 0, roof = -FAR;
-    const envelope = (inside: number, floor: number, top: number) => {
-      const out = Math.max(0, -inside), k = Math.max(0, 1 / (out * out + 0.01) - 1 / (FAR * FAR));
-      wsum += k; fsum += k * floor;
-      roof = Math.max(roof, top + FALL * Math.min(0, inside));
-    };
+    const env = new Envelope(FAR);
     for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
       const a = this.hall(i, j);
       const inside = -boxDist2(Math.abs(u - a.u) - a.hu, Math.abs(v - a.v) - a.hv);
       if (inside > -FAR) {
         const chasm = a.ch ? -boxDist2(Math.abs(u - a.cu) - a.ch, Math.abs(v - a.v) - a.hv) : -Infinity;
         o.halls.push({ hall: a, inside, chasm });
-        envelope(inside, a.floor, a.floor + a.height);
+        env.add(inside, a.floor, a.floor + a.height);
         const p = nave(a, u, v);
         if (p < o.pillar) o.pillar = p;
       }
@@ -181,11 +181,11 @@ export class Dwarven implements Style {
         if (n.inside <= -FAR) continue;
         o.passages.push(n);
         const ramp = rampAt(n);
-        envelope(n.inside, ramp, ramp + n.height);
+        env.add(n.inside, ramp, ramp + n.height);
       }
     }
-    col.floor = fsum / wsum;
-    col.ceiling = Math.max(roof, col.floor + 3) + 0.5;
+    col.floor = env.floor();
+    col.ceiling = env.ceiling();
     let wall = -FAR;
     for (const h of o.halls) wall = Math.max(wall, h.inside);
     for (const p of o.passages) wall = Math.max(wall, p.inside);
@@ -242,6 +242,63 @@ export class Dwarven implements Style {
     const [GU, GV] = DWARVEN.cell, u = this.grain.u(x, z), v = this.grain.v(x, z);
     const a = this.hall(Math.floor(u / GU), Math.floor(v / GV));
     return this.grain.xz(a.u, a.v);
+  }
+
+  /**
+   * The halls' things: before each wall panel a dwarf king's statue or a forge with its coals
+   * burning; by the columns braziers, some lit; chains hanging over the nave. Forges and lit braziers
+   * light the hall.
+   */
+  props(d: Dress): void {
+    const D = DWARVEN, T = D.things, [GU, GV] = D.cell, pitch = D.pillar.pitch;
+    const statue = propModel('prop_dwarf_statue'), forge = propModel('prop_forge'), coals = propModel('prop_forge_fire');
+    const brazier = propModel('prop_brazier'), chain = propModel('prop_chain');
+    // The cells whose halls may reach into the tile: those of its corners and one beyond.
+    const us: number[] = [], vs: number[] = [];
+    for (const [x, z] of [[d.x0, d.z0], [d.x0 + d.size, d.z0], [d.x0, d.z0 + d.size], [d.x0 + d.size, d.z0 + d.size]]) { us.push(this.grain.u(x, z)); vs.push(this.grain.v(x, z)); }
+    for (let j = Math.floor(Math.min(...vs) / GV) - 1; j <= Math.floor(Math.max(...vs) / GV) + 1; j++) {
+      for (let i = Math.floor(Math.min(...us) / GU) - 1; i <= Math.floor(Math.max(...us) / GU) + 1; i++) {
+        const a = this.hall(i, j), n = Math.max(0, Math.floor((a.hu - 4) / pitch)), s = d.seed ^ hash2i(this.cells, i, j);
+        const clear = (u: number, r: number) => !a.ch || Math.abs(u - a.cu) > a.ch + r;
+        for (let k = -n; k <= n; k++) for (const side of [-1, 1]) {
+          const r = (m: number) => hashToFloat(hash2i(s, k * 2 + (side > 0 ? 1 : 0), m));
+          // Facing the nave's middle.
+          const [fx, fz] = this.grain.xz(0, -side), face = Math.atan2(fx, fz);
+          const put = (u: number, v: number, f: (x: number, z: number, g: number) => void) => {
+            const [x, z] = this.grain.xz(u, v);
+            if (d.mine(x, z) && clear(u, 3)) { f(x, z, a.floor); d.placed(); }
+          };
+          // Before the panel between this column and the next.
+          if (k < n) {
+            const pu = a.u + (k + 0.5) * pitch, roll = r(0);
+            if (roll < T.statue) put(pu, a.v + side * (a.hv - 1.1), (x, z, g) => {
+              d.solid.stamp(statue, x, g, z, face, { scale: 1 + 0.25 * r(1) });
+              d.block(x, z, face, 0.9, 0.85, g, g + 4);
+            });
+            else if (roll < T.statue + T.forge) put(pu, a.v + side * (a.hv - 1.4), (x, z, g) => {
+              d.solid.stamp(forge, x, g, z, face);
+              const ca = Math.cos(face), sa = Math.sin(face), cx = x + ca * COALS[0] + sa * COALS[2], cz = z - sa * COALS[0] + ca * COALS[2];
+              d.glow.stamp(coals, cx, g + COALS[1], cz, face);
+              d.light(cx, g + COALS[1] + 0.5, cz);
+              d.block(x, z, face, 1.15, 0.57, g, g + 1.6);
+            });
+          }
+          // A brazier on the nave's side of the column.
+          if (r(2) < T.brazier) put(a.u + k * pitch, a.v + side * (a.hv * D.pillar.row - D.pillar.half - 0.9), (x, z, g) => {
+            d.solid.stamp(brazier, x, g, z, face);
+            if (r(3) < T.lit) {
+              d.glow.ellipsoid(x, g + 1.25, z, 0.3, 0.18, 0.3, FLAME, 8);
+              d.light(x, g + 1.6, z);
+            }
+            d.block(x, z, face, 0.42, 0.42, g, g + 1.22);
+          });
+          // A chain from the roof over the nave, by the column (one side only).
+          if (side > 0 && r(4) < T.chain) put(a.u + k * pitch, a.v + (r(5) - 0.5) * a.hv * 0.6, (x, z) => {
+            d.solid.stamp(chain, x, a.floor + a.height + 0.1, z, r(6) * Math.PI, { scale: 1 + 2 * r(7), lean: Math.PI });
+          });
+        }
+      }
+    }
   }
 
   climbable(): boolean {
