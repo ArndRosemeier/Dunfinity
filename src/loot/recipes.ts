@@ -1,8 +1,9 @@
 /**
  * Grandma's recipe cards (docs/design/recipe-box.md): skills, cooked at a fire with infused salt from
  * her tin (src/loot/tin.ts). Cooking a card unlocks it; cooking it again (rank 2, 3) changes how it
- * works, and grandma adds a line. Chapters open with depth: the tin will not open past a divider
- * until one of the family has been that deep.
+ * works, and grandma adds a line. Every chapter opens from the start, so every way of playing has
+ * its first cards at once; a chapter's stronger cards open with depth (`Card.opens`): the tin keeps
+ * them behind a divider until one of the family has been that deep.
  *
  * Lost cards (recipe-box.md §7) are not in the tin: torn-out pages found down there. Found, one is
  * the grandchild's and is cooked like any other; the next grandchild has to find it again.
@@ -21,6 +22,8 @@ export interface Card {
   readonly chapter: string;
   /** A lost card: cooked only once found (`Cooked.find`). */
   readonly lost?: true;
+  /** The depth one of the family must have reached before it can be cooked (none: from the start). */
+  readonly opens?: number;
   /** "You'll need", the method, and the line she adds at each rank after the first. */
   readonly need: string;
   readonly method: string;
@@ -122,11 +125,11 @@ export const CARDS: readonly Card[] = [
   },
 ];
 
-/** The chapters in the tin's order, and the depth each opens at (recipe-box.md §6). */
-export const CHAPTERS: readonly (readonly [string, number])[] = [
-  ['Kitchen Work', 0], ['Throwing', 0], ['Footwork', 0], ['Climbing & Water', 0], ['Light', 0], ['Grandma\'s Remedies', 0],
-  ['Heavy Things', 5], ['Quiet', 5], ['Way Home', 8], ['Guard', 10], ['Fire & Frost', 15], ['Force', 25],
-  ['Lost Cards', 0],
+/** The chapters in the tin's order (recipe-box.md §6). Every one is open from the start; its stronger cards open with depth (`Card.opens`). */
+export const CHAPTERS: readonly string[] = [
+  'Kitchen Work', 'Throwing', 'Footwork', 'Climbing & Water', 'Light', 'Grandma\'s Remedies',
+  'Heavy Things', 'Quiet', 'Way Home', 'Guard', 'Fire & Frost', 'Force',
+  'Lost Cards',
 ];
 
 /** Grandma's Salt Line at each rank: the circle's radius, metres, and how long it keeps once closed, seconds. */
@@ -181,9 +184,9 @@ export class Cooked {
 
   /** Why `id` cannot be cooked now (null: it can). `deepest`: the deepest level the family has reached. */
   cantCook(id: CardId, tin: Tin, deepest: number): string | null {
-    const c = card(id), cost = this.costOf(id), opens = CHAPTERS.find(([n]) => n === c.chapter)?.[1] ?? 0;
+    const c = card(id), cost = this.costOf(id), opens = c.opens ?? 0;
     if (!this.has(id)) return 'That card is not in the tin.';
-    if (deepest < opens) return `The tin won't open past the ${c.chapter} divider yet.`;
+    if (deepest < opens) return `The tin won't open past the level ${opens} divider in ${c.chapter} yet.`;
     if (cost === null) return 'Nothing more to learn from that card.';
     if (tin.salt < cost) return `Not enough salt: it needs ${cost} pinches.`;
     return null;
