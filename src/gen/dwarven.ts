@@ -230,9 +230,9 @@ export class Dwarven implements Style {
     const inlay = deep ? 0 : h > 0.5 ? 1 - smoothstep(0.25, 0.5, Math.abs(line - 3)) : h < 0.3 ? 1 - smoothstep(0.3, 0.55, Math.abs(band - 4.5)) : 0;
     const soot = deep ? 0.55 : 1 - 0.35 * (1 - smoothstep(1, 6, h));
     const glow = deep ? smoothstep(-25, -40, h) : 0;
-    const GOLD = [0.62, 0.42, 0.16], EMBER = [0.75, 0.22, 0.05];
+    const GOLD = [0.85, 0.58, 0.2], EMBER = [0.95, 0.3, 0.06];
     for (let c = 0; c < 3; c++) {
-      const stone = (0.16 + B.rock[c] * 0.12) * course * grain * soot;
+      const stone = (0.26 + B.rock[c] * 0.14) * course * grain * soot;
       out[o + c] = (stone * (1 - inlay) + GOLD[c] * inlay) * (1 - glow) + EMBER[c] * glow;
     }
   }
