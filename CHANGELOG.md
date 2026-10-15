@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.096 — Rock you can see
+
+- The rock no longer burns out to flat white near a light. The burning lamps were far too bright close up and the screen simply clipped everything over full white, so the walls round every lamp, and the floor at your feet in your headlamp, read as blank white. Now the picture is tone-mapped like a film camera (bright light rolls off into warm highlights instead of clipping), the lamps and the headlamp fall off more gently, and the headlamp is a touch whiter. The stone's colour, cracks and tool marks show right up to the light.
+
 ## v0.095 — Strata below the Threshold
 
 - Below level 10 the world goes on in strata, each a place of its own: the Ossuaries (levels 11–20, catacombs and fallen ground), the Old Halls (21–40, rifts, halls and the first lava), Before People (41–60, fungal grottoes, geodes, root hollows, lava tubes), and from 61 the Deep, where any kind of place can turn up, a new make-up every ten levels.
@@ -20,6 +24,7 @@
 - Every level from 1 to 10 is now a mix of kinds of place, not one quarry with different stone. The Quarry is mostly old workings with some fallen ground and caves; the Salt Works adds more collapse and a rift or two; the Cisterns mix workings, caves, dungeon rooms and root hollows; the Threshold is everything at once, from catacombs to fungal grottoes.
 - No two levels of a band are alike: each level leans its own way, one more caves, the next more workings.
 - Where you arrive is always old workings with a ladder up, and a way down is never far, even on levels that are mostly caves.
+
 ## v0.091 — Real cave crickets
 
 - The cave crickets are new: sculpted, rigged and animated in Blender like the dogs and rats. Each one is a pale, humped cave cricket with banded plates, great chevroned hind legs with spined shins, and feelers longer than its body that never stop sweeping (fast and twitchy once it is after you).
