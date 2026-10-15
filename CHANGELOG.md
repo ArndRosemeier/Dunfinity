@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.056 — The map
+
+- Press M for a map of what this grandchild has seen: the floor they have walked by, lighter where it is higher and darker where it is lower, water in blue, the ways down they have found (the way up in yellow), their fire, and themselves as a red arrow. Nothing they have not seen is shown.
+- Each level is remembered separately, and the map is kept with the save. A new grandchild starts with a blank map.
+
 ## v0.055 — Room to get out
 
 - The doorway out of grandma's room and the broken arch behind her chair were narrower than they looked: you could get stuck in them. Both are passable now, and so is the way from the cellar onto the stairs.

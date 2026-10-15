@@ -7,6 +7,8 @@
 import { Timer, Vector3 } from 'three/webgpu';
 import { Practice, SKILLS, type Skill } from '../loot/practice';
 import { readSave, writeSave, type GrandchildData } from '../persist/save';
+import { Explored } from '../world/explored';
+import { MapView } from '../app/mapView';
 import { CELLAR } from '../gen/cellar';
 import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { Level } from '../gen/level';
@@ -70,7 +72,7 @@ const COOK = { dur: 2.4 };
 
 export async function startGame(host: HTMLElement): Promise<void> {
   const params = parseViewParams(location.search);
-  // Kept between visits (src/app/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
+  // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth);
@@ -104,6 +106,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let cooked = saved?.child ? Cooked.from(saved.child.cooked) : new Cooked();
   /** What this grandchild has practised (the next one starts at none). */
   let practice = saved?.child ? Practice.from(saved.child.practice) : new Practice();
+  /** What this grandchild has seen of each level (the map, M). */
+  let explored = saved?.child?.explored ? Explored.from(saved.child.explored) : new Explored();
+  let exploredAt = 0;
   /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   const show = (l: Level) => {
@@ -159,7 +164,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, practice: practice.data, pack: [...pack.items],
+      cooked: cooked.data, practice: practice.data, pack: [...pack.items], explored: explored.data,
     };
     writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen });
   };
@@ -203,6 +208,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(thrownView.root);
   let throwAt = -9, released = true, tossing: 'knife' | 'candle' = 'knife';
   const tinView = new TinView(document.body);
+  const mapView = new MapView(document.body);
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
   let tinSel: CardId = TinView.order()[0], cookAt = -9;
   /** When the last roll began (grandma's Duck card). */
@@ -366,7 +372,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); cooked = new Cooked(); practice = new Practice(); picking = null; }
+    if (controls.tap('KeyM')) mapView.toggle();
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, pound = cooked.tenderising;
@@ -569,6 +576,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     thrownView.arrange(thrown.missiles, now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
+    // The map: mark the floor round the nobody seen, now and then; draw it while open.
+    if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
+    mapView.draw(level, explored, body.x, body.y, body.z, cam.yaw, campfire.burning(timer.getElapsed()) ? campfire.fire : null, timer.getElapsed());
     const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
@@ -622,6 +632,6 @@ function hudText(b: Body, backend: string, list: readonly string[]): string {
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
   if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light  ·  ${backend}`);
+  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light · M map  ·  ${backend}`);
   return lines.join('\n');
 }

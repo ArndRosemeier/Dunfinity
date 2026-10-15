@@ -98,7 +98,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Move a body on the rock: walk, climb, swim, fall | `Body.step(level, input, dt, blockers)` and its metrics `MOVE` (the reachability check will use the same) | `src/world/traverse/body.ts` |
 | Is a prop in the way? Push out of the props | `Blockers` (`pushOut`, `hits`); the generator lists each tile's boxes (`PropTile.blockers`), `Props` keeps them (`view.props.blockers`) | `src/world/blockers.ts` |
 | A persisted change to the world | `persist.mark(chunk, change)` (guarded: `localStorage` only in `src/persist/`) | `src/persist/` |
-| Keep the game between visits (the family's tin, heirs and finds taken; the living grandchild) | `readSave(seed)`, `writeSave(seed, data)`; each kept thing gives its `data` and takes it back with `from` (`Tin`, `Cooked`, `Practice`) | `src/persist/save.ts` |
+| Keep the game between visits (the family's tin, heirs and finds taken; the living grandchild) | `readSave(seed)`, `writeSave(seed, data)`; each kept thing gives its `data` and takes it back with `from` (`Tin`, `Cooked`, `Practice`, `Explored`) | `src/persist/save.ts` |
 
 ### Gameplay
 
@@ -150,6 +150,9 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Grandma's recipe cards: what each is and costs, what a grandchild has cooked, and what that does to the numbers (knife, resting, climbing) | `CARDS`, `CHAPTERS`, `card(id)`; `Cooked` (`rank`, `costOf`, `cantCook`, `cook`, and the effects `knife`, `helpings`, `duck`, `candles`, `soup`, `climbing`) | `src/loot/recipes.ts` |
 | Practice: what a grandchild got better at by doing it, and what that does to the numbers | `Practice` (`use(skill, n)`, `tier`, `more`, `less`), `SKILLS`, `TIERS` | `src/loot/practice.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
+| Remember what a grandchild has seen of each level (exploration memory) | `Explored` (`see(level, x, y, z)`, `has(depth, i, j)`, `cells`, `data`/`from`), `EXPLORE` | `src/world/explored.ts` |
+| A DOM panel of the game (its stylesheet and element) | `panel(host, tag, id, css)`, `addStyle(css)` | `src/app/panel.ts` |
+| Show the map of what was seen (M) | `MapView` (`toggle`, `draw(level, explored, x, y, z, yaw, fire, now)`) | `src/app/mapView.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
 
