@@ -10,7 +10,7 @@ export interface Figure<T> {
   pose(t: T, time: number): void;
 }
 
-export class FigurePool<T> {
+export class FigurePool<T extends { readonly x: number; readonly z: number }> {
   /** Put into the scene once (Stage.add), after the warm-up. */
   readonly root = new Group();
   private readonly figures: Figure<T>[] = [];
@@ -24,8 +24,9 @@ export class FigurePool<T> {
     }
   }
 
-  /** Pose the pool after `list` (as many as it holds); the rest is hidden. */
-  draw(list: readonly T[], time: number): void {
+  /** Pose the pool after `list` (as many as it holds: the nearest to `from`, if given); the rest is hidden. */
+  draw(list: readonly T[], time: number, from?: { readonly x: number; readonly z: number }): void {
+    if (from && list.length > this.figures.length) list = [...list].sort((a, b) => Math.hypot(a.x - from.x, a.z - from.z) - Math.hypot(b.x - from.x, b.z - from.z));
     let k = 0;
     for (const t of list) if (k < this.figures.length) this.figures[k++].pose(t, time);
     for (; k < this.figures.length; k++) this.figures[k].root.visible = false;

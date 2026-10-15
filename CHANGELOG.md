@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.029 — Brine eels
+
+- From level 5 there is something in the water. Pale brine eels, three metres long, lie deep in the brine lakes of the Salt Works and the flooded halls of the Cisterns. Wade into their water, or stand at its edge, and one comes for you, its back breaking the surface. It rears its head out of the water (your warning), strikes, and sinks back to come round again. They never leave the water: get out of it.
+- Fix: when more creatures of a kind are near than can be drawn, the nearest are the ones you see.
+
 ## v0.028 — Feral dogs
 
 - In the Cisterns, packs of feral dogs lie up in dry corners. Once they have seen you they do not rush you. The pack spreads out round you and circles, and one at a time the dog furthest behind your back drops onto its haunches (that is your warning), lunges in, bites and springs back to its place. Keep turning to face them.
