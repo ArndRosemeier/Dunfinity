@@ -8,7 +8,7 @@
  * Pure: positions on the level's floor, blows through src/combat. Nests are fixed by the seed; the
  * rats of a nest exist only while you are near it, and the ones you killed stay dead on this visit.
  */
-import { Rng, deriveSeed, angleDiff } from '@futuremagic/core';
+import { angleDiff } from '@futuremagic/core';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { brake } from './steer';
@@ -90,16 +90,13 @@ export class Rats extends Population<Nest, Rat> {
   }
 
   protected hatch(nest: Nest, killed: (id: number) => boolean): Rat[] {
-    const rng = new Rng(deriveSeed(this.seed, 'nest', nest.key)), born: Rat[] = [];
-    for (let k = 0; k < nest.count; k++) {
-      const id = nest.key * 16 + k, [x, y, z] = this.around(nest, rng, 0.3, 2.5), size = rng.range(0.85, 1.25), yaw = rng.range(0, Math.PI * 2);
-      if (killed(id)) continue;
-      const r = new Rat(id, nest, x, y, z, yaw, size, k);
+    return this.brood(nest, 'nest', 16, 0.3, 2.5, killed, (id, x, y, z, rng, k) => {
+      const size = rng.range(0.85, 1.25), yaw = rng.range(0, Math.PI * 2), r = new Rat(id, nest, x, y, z, yaw, size, k);
       r.t = rng.range(0.5, 3);
-      born.push(r);
-    }
-    return born;
+      return r;
+    });
   }
+
 
   /** Gone back into their holes: calm again. */
   protected sleep(nest: Nest): void {
@@ -146,8 +143,7 @@ export class Rats extends Population<Nest, Rat> {
       case 'sniff':
         if ((r.t -= dt) <= 0) {
           // Off somewhere near the nest.
-          const a = this.rng.range(0, Math.PI * 2), dd = this.rng.range(0, RAT.roam);
-          r.tx = r.nest.x + Math.cos(a) * dd; r.tz = r.nest.z + Math.sin(a) * dd;
+          [r.tx, r.tz] = this.roamFrom(r.nest, RAT.roam);
           r.mode = 'scurry'; r.t = 4;
         }
         break;

@@ -43,6 +43,8 @@ export interface Band {
   readonly touched: number;
   /** The chance per cell of a group of cave crickets on the rock (src/creatures/crickets.ts). */
   readonly crickets: number;
+  /** The chance per cell of a pack of feral dogs (src/creatures/dogs.ts). */
+  readonly dogs: number;
 }
 
 export const QUARRY: Band = {
@@ -56,7 +58,7 @@ export const QUARRY: Band = {
   rock: [0.46, 0.42, 0.35], layers: [0.05, 0.045, 0.035], dust: [0.08, 0.075, 0.065], natural: [0.82, 0.82, 0.85],
   veins: 0,
   stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
-  touched: 0, crickets: 0.22,
+  touched: 0, crickets: 0.22, dogs: 0,
 };
 
 /** The salt mine proper (levels 3–5): cathedral chambers carved by miners, fluted pillars, brine lakes, the first veins of infused salt. */
@@ -71,7 +73,7 @@ export const SALT: Band = {
   rock: [0.31, 0.32, 0.34], layers: [0.12, 0.12, 0.125], dust: [0.1, 0.1, 0.1], natural: [0.7, 0.72, 0.76],
   veins: 1,
   stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
-  touched: 0.35, crickets: 0.25,
+  touched: 0.35, crickets: 0.25, dogs: 0,
 };
 
 /**
@@ -90,7 +92,7 @@ export const CISTERN: Band = {
   rock: [0.37, 0.36, 0.33], layers: [0.025, 0.025, 0.022], dust: [0.06, 0.06, 0.055], natural: [0.62, 0.6, 0.56],
   veins: 0.1,
   stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
-  touched: 0.12, crickets: 0,
+  touched: 0.12, crickets: 0, dogs: 0.35,
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */

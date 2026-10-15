@@ -110,13 +110,15 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Draw the cave crickets | `CricketView` (a `FigurePool` added once with the Stage; `draw(crickets, time)`) | `src/render/creatures/cricketView.ts` |
 | Slimes: Lumen and Murk colonies, their war, pulses, the squash-and-throw blow | `Slimes` (a `Population` per faction: `advance(dt, prey, otherFaction.list)`), numbers `SLIME`; a hurt creature's `cause` says who hurt it | `src/creatures/slimes.ts` |
 | Draw the slimes | `SlimeView` (`lumen` and `murk` `FigurePool`s added once with the Stage) | `src/render/creatures/slimeView.ts` |
+| Feral dogs: packs that circle you and lunge from behind one at a time | `Dogs` (a `Population`: `advance(dt, prey, facing)`), numbers `DOG`; how many per band: `band.dogs` | `src/creatures/dogs.ts` |
+| Draw the feral dogs | `DogView` (a `FigurePool` added once with the Stage; `draw(dogs, time)`) | `src/render/creatures/dogView.ts` |
 | The Foreman (level 5 boss): his hall in a cathedral, the bell that calls the Salt-Touched, his salt crust (front blows glance off) | `Foreman` (a `Population` with one hall: `advance(dt, prey, touched)`, `hall`), numbers `FOREMAN`; the bell's call: `SaltTouched.call(x, z, r)`; his crew: `SaltTouched.gather` | `src/creatures/foreman.ts` |
 | Draw the Foreman and his bell | `ForemanView` (one human built tall, added once with the Stage; `draw(boss, hall, dt, time)`) | `src/render/creatures/foremanView.ts` |
 | Everything living on a level, together: made, stepped, the foes a blow can hit, whether something is after you, the HUD tally | `Fauna` (`advance(dt, prey, lamp)`, `foes()`, `after(prey)`, `tally()`, `bossLine(prey)`) | `src/creatures/fauna.ts` |
 | The pick blow over the head (wind-up, commit, land) | `pickSwing(w, t, S, prey, aim, steer, rng, cause, dt)` with a `PickSwing` | `src/creatures/pick.ts` |
 | A blow struck by someone standing somewhere | `blowFrom(at, yaw, swing)` | `src/combat/combat.ts` |
 | What every creature is (health, hurt, death, `provoked`) | `Creature`; `groundSpeed(v)` | `src/creatures/creature.ts` |
-| A kind of creature on a level: dens per cell, waking near you, sleeping far off, the dead staying dead, stepping | `Population` (subclass: `denIn`, `hatch`, `act`, using `sites`, `floorFor`, `countIn`, `around`, `apart`, and `placed` for dens off the grid; callers: `advance(dt, prey, ctx)`, `list`, `denAt`, `killed`, `blockers`) | `src/creatures/population.ts` |
+| A kind of creature on a level: dens per cell, waking near you, sleeping far off, the dead staying dead, stepping | `Population` (subclass: `denIn`, `hatch`, `act`, using `sites`, `floorFor`, `countIn`, `around`, `brood` to hatch a den, `roamFrom` to wander, `apart`, and `placed` for dens off the grid; callers: `advance(dt, prey, ctx)`, `list`, `denAt`, `killed`, `blockers`) | `src/creatures/population.ts` |
 | Draw a pool of creature figures | `FigurePool` (a `Figure` per creature: `root`, `pose`) | `src/render/creatures/figures.ts` |
 | Slow a walker down | `brake(w, rate, dt)` | `src/creatures/steer.ts` |
 | What lies about to be found (floor finds, rat hoards), what is in reach, what is taken | `Finds` (`near`, `inReach`, `take`), kinds and values in `FINDS` | `src/loot/finds.ts` |

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.028 — Feral dogs
+
+- In the Cisterns, packs of feral dogs lie up in dry corners. Once they have seen you they do not rush you. The pack spreads out round you and circles, and one at a time the dog furthest behind your back drops onto its haunches (that is your warning), lunges in, bites and springs back to its place. Keep turning to face them.
+- They glare: their eyes throw your headlamp back.
+
 ## v0.027 — The Cisterns
 
 - Levels 6 to 8 are a new place: the Cisterns, a forgotten water-works and wartime bunker built into the mine. Long, regular halls of plain concrete pillars, about half of them standing in water you wade through, a few flooded deep enough to swim.

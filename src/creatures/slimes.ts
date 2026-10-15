@@ -9,7 +9,7 @@
  * puddle. Pure: floor walking with src/creatures/steer.ts, blows through src/combat. Colonies are
  * fixed by the seed; the dead stay dead on this visit.
  */
-import { Rng, deriveSeed, angleDiff } from '@futuremagic/core';
+import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from '../combat/combat';
 import { Creature } from './creature';
@@ -99,16 +99,13 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
   }
 
   protected hatch(c: Colony, killed: (id: number) => boolean): Slime[] {
-    const rng = new Rng(deriveSeed(this.seed, 'colony', c.key)), born: Slime[] = [];
-    for (let k = 0; k < c.count; k++) {
-      const id = c.key * 8 + k, [x, y, z] = this.around(c, rng, 0.5, 2.5), size = rng.range(0.75, 1.3), phase = rng.range(0, Math.PI * 2);
-      if (killed(id)) continue;
-      const sl = new Slime(id, c, x, y, z, size, phase);
+    return this.brood(c, 'colony', 8, 0.5, 2.5, killed, (id, x, y, z, rng) => {
+      const size = rng.range(0.75, 1.3), phase = rng.range(0, Math.PI * 2), sl = new Slime(id, c, x, y, z, size, phase);
       sl.t = rng.range(0.5, 3);
-      born.push(sl);
-    }
-    return born;
+      return sl;
+    });
   }
+
 
   /** Lumen calm down again while you are away. */
   protected sleep(c: Colony): void {
@@ -143,8 +140,7 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
         brake(sl, 4, dt);
         this.steer.slide(sl, dt);
         if ((sl.t -= dt) <= 0) {
-          const a = this.rng.range(0, Math.PI * 2), d = this.rng.range(0, C.roam);
-          sl.tx = sl.colony.x + Math.cos(a) * d; sl.tz = sl.colony.z + Math.sin(a) * d;
+          [sl.tx, sl.tz] = this.roamFrom(sl.colony, C.roam);
           sl.mode = 'ooze'; sl.t = 6;
         }
         break;
