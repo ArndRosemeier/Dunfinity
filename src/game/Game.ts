@@ -22,6 +22,7 @@ import { ForemanView } from '../render/creatures/foremanView';
 import type { Lamp } from '../creatures/crickets';
 import { CricketView } from '../render/creatures/cricketView';
 import { SlimeView } from '../render/creatures/slimeView';
+import { DogView } from '../render/creatures/dogView';
 import { blowFrom, damage, nearestReached } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -102,6 +103,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(cricketView.root);
   const slimeView = new SlimeView();
   await view.stage.add(slimeView.root);
+  const dogView = new DogView();
+  await view.stage.add(dogView.root);
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
   const lampDir = new Vector3();
@@ -206,7 +209,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get finds() { return finds; }, get pack() { return pack; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get finds() { return finds; }, get pack() { return pack; },
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -277,7 +280,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       view.camera.getWorldDirection(lampDir);
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
-      const struck = fauna.advance(dt, body, lamp);
+      const struck = fauna.advance(dt, body, lamp, body.facing);
       if (body.health < health) {
         // Flinch away from the nearest foe (thrown back by a pick).
         let near: Foe | undefined, nd = Infinity;
@@ -302,6 +305,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     cricketView.draw(fauna.crickets.list, now);
     slimeView.lumen.draw(fauna.lumen.list, now);
     slimeView.murk.draw(fauna.murk.list, now);
+    dogView.draw(fauna.dogs.list, now);
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
@@ -338,6 +342,7 @@ function bar(value: number, max: number): string {
 const HURT: Record<string, [string, string]> = {
   rat: ['a rat bites', 'The rats got you.'],
   cricket: ['a cave cricket', 'The cave crickets got you.'],
+  dog: ['a feral dog bites', 'The dogs pulled you down.'],
   lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
   murk: ['a Murk slime burns', 'The Murk swallowed you.'],
   'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],

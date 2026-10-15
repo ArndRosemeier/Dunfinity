@@ -122,6 +122,26 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     return [x, Math.abs(y - den.y) < 1 ? y : den.y, z];
   }
 
+  /**
+   * The `den.count` of a den, born round it: a seeded rng per den (`name`), ids `den.key * stride + k`,
+   * each `near`–`far` metres out on the den's floor; `make` builds one there (its own seeded looks
+   * from `rng`). The ones killed on this visit are left out.
+   */
+  protected brood(den: D & { readonly y: number; readonly count: number }, name: string, stride: number, near: number, far: number, killed: (id: number) => boolean, make: (id: number, x: number, y: number, z: number, rng: Rng, k: number) => C): C[] {
+    const rng = new Rng(deriveSeed(this.seed, name, den.key)), born: C[] = [];
+    for (let k = 0; k < den.count; k++) {
+      const id = den.key * stride + k, [x, y, z] = this.around(den, rng, near, far), c = make(id, x, y, z, rng, k);
+      if (!killed(id)) born.push(c);
+    }
+    return born;
+  }
+
+  /** A spot to wander to, up to `roam` metres from the den (behaviour rng). */
+  protected roamFrom(den: Den, roam: number): [number, number] {
+    const a = this.rng.range(0, Math.PI * 2), d = this.rng.range(0, roam);
+    return [den.x + Math.cos(a) * d, den.z + Math.sin(a) * d];
+  }
+
   /** How many live in the den of cell (i, j): seeded, lo to hi. */
   protected countIn(i: number, j: number, [lo, hi]: readonly [number, number]): number {
     return lo + Math.floor(hash3f(this.seed, i, j, 20) * (hi - lo + 1));
