@@ -47,7 +47,7 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
  * Grandma's kitchen knife, in grip space (the fist round the handle at the origin, the blade up +y,
  * the edge towards -x): a dark wooden handle with two rivets, a steel blade with a curved belly.
  */
-function kitchenKnife(): Object3D {
+export function kitchenKnife(): Object3D {
   // Built blade up (+Y, out of the thumb side of the fist), edge along +Z, then turned about the
   // fist's x so the blade carries on the line of the forearm: held for a thrust, not like a hammer.
   const steel = new PropBuilder(), wood = new PropBuilder();

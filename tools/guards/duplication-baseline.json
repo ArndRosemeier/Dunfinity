@@ -416,7 +416,7 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/slimeView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/slimeView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
@@ -512,7 +512,7 @@
     "reason": "the swing mode's two lines: the blow itself is pickSwing and the approach closeIn (src/creatures/pick.ts); what each kind does after a swing (chase on, go home, wait by the bell) is its own"
   },
   {
-    "key": "idiom: [.damage .range] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
+    "key": "idiom: [.damage .range] in dunfinity/combat/thrown.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
     "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
   },
   {
