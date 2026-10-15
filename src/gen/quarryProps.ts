@@ -12,7 +12,7 @@ import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
-import { PropBuilder, type PropMesh, type Rgb } from './propMesh';
+import { PropBuilder, local, type PropMesh, type Rgb } from './propMesh';
 
 /** Tile size, metres. */
 export const PROP_TILE = 64;
@@ -284,8 +284,7 @@ class TileBuilder {
 
   /** An ore cart on the rails, sometimes still loaded. */
   private cart(x: number, g: number, z: number, yaw: number, r: number): void {
-    const ca = Math.cos(yaw), sa = Math.sin(yaw);
-    const at = (side: number, fwd: number): [number, number] => [x + ca * side + sa * fwd, z - sa * side + ca * fwd];
+    const at = local(x, z, yaw);
     for (const sd of [-0.42, 0.42]) for (const fw of [-0.45, 0.45]) {
       const [wx, wz] = at(sd, fw);
       this.solid.upright(wx, g + 0.42, wz, yaw, 0.05, 0.17, 0.17, IRON);
@@ -447,7 +446,7 @@ class TileBuilder {
   private leftBehind(x: number, z: number, ox: number, oz: number, g: number, r: (k: number) => number): void {
     const yaw = Math.atan2(ox, oz), ca = Math.cos(yaw), sa = Math.sin(yaw);
     // (side, out) from the rock face to world: side runs along the face, out away from it.
-    const at = (side: number, out: number): [number, number] => [x + ca * side + ox * out, z - sa * side + oz * out];
+    const at = local(x, z, yaw);
     const ground = (px: number, pz: number) => this.level.groundAt(px, pz);
     const kind = Math.floor(r(10) * 3);
     if (kind === 0) {
@@ -515,8 +514,8 @@ class TileBuilder {
    * a cross cut into the rock above it, and candles still burning.
    */
   private chapel(x: number, z: number, ox: number, oz: number, g: number, r: (k: number) => number): void {
-    const yaw = Math.atan2(ox, oz), ca = Math.cos(yaw), sa = Math.sin(yaw);
-    const at = (side: number, out: number): [number, number] => [x + ca * side + ox * out, z - sa * side + oz * out];
+    const yaw = Math.atan2(ox, oz);
+    const at = local(x, z, yaw);
     for (const [sd, out] of [[-1.4, 1], [1.4, 1], [0, 1.6]]) {
       const [cx, cz] = at(sd, out);
       if (!this.level.dry(cx, cz, 0.1) || Math.abs(this.level.groundAt(cx, cz) - g) > 0.35) return;
@@ -608,8 +607,7 @@ class TileBuilder {
     if (!this.inTile(x, z) || this.level.descents.at(x, z, 6)) return;
     // Square to the pillar grid (its +v is yaw = angle), the door to any of the four aisles.
     const yaw = w.angle + Math.floor(this.roll(w, 51, iu, iv) * 4) * (Math.PI / 2);
-    const ca = Math.cos(yaw), sa = Math.sin(yaw);
-    const at = (side: number, fwd: number): [number, number] => [x + ca * side + sa * fwd, z - sa * side + ca * fwd];
+    const at = local(x, z, yaw);
     let g = Infinity;
     for (const [sd, fw] of [[0, 0], [-2.5, -2], [2.5, -2], [-2.5, 2], [2.5, 2]]) {
       const [cx, cz] = at(sd, fw);
@@ -659,9 +657,8 @@ const WATCHERS = 0.3;
  * (sin yaw, cos yaw); pose 0 leans on his pick, 1 prays, 2 holds a lamp up into the dark.
  */
 export function carveMiner(b: PropBuilder, px: number, top: number, pz: number, yaw: number, pose: number, salt: Rgb): void {
-  const ca = Math.cos(yaw), sa = Math.sin(yaw), ox = sa, oz = ca;
   // (side, out, up) on the figure to world: out is where it faces, up from the top of the plinth.
-  const at = (side: number, out: number): [number, number] => [px + ca * side + ox * out, pz - sa * side + oz * out];
+  const at = local(px, pz, yaw);
   const limb = (p: readonly [number, number, number], q: readonly [number, number, number], half: number) => {
     const [ax, az] = at(p[0], p[1]), [bx, bz] = at(q[0], q[1]);
     b.beam(ax, top + p[2], az, bx, top + q[2], bz, half, half, salt);
