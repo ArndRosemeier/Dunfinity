@@ -8,6 +8,7 @@
  * A fixed pool of rats, built once and added with the Stage before play (the kinds are compiled in
  * the warm-up), so nothing is compiled or added to the scene later.
  */
+import { groundSpeed } from '../../creatures/creature';
 import { Group, type Object3D } from 'three/webgpu';
 import type { Rgb } from '../../gen/propMesh';
 import { meshOf as mesh } from '../meshes';
@@ -89,7 +90,7 @@ class RatFigure {
     R.position.set(r.x, r.y, r.z);
     R.rotation.y = r.yaw;
     R.scale.setScalar(r.size);
-    const speed = Math.hypot(r.vx, r.vz);
+    const speed = groundSpeed(r);
     const moving = Math.min(1, speed / 1.5);
     const g = r.gait;
     B.position.set(0, Math.abs(Math.sin(g)) * 0.012 * moving, 0);

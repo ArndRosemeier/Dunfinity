@@ -17,6 +17,8 @@ import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderCli
 import { DRAFT_RANGE, draftLine } from './draft';
 import { Rats, type Rat } from '../creatures/rats';
 import { RatView } from '../render/creatures/ratView';
+import { SaltTouched, type Touched } from '../creatures/touched';
+import { TouchedView } from '../render/creatures/touchedView';
 import { damage, nearestReached, type Blow } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -53,6 +55,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
   let rats: Rats;
+  let touched: SaltTouched;
   /** Finds taken so far, per level: they stay taken for every grandchild (D13). */
   const taken = new Map<number, Set<number>>();
   let finds: Finds;
@@ -64,6 +67,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const show = (l: Level) => {
     level = l;
     rats = new Rats(l);
+    touched = new SaltTouched(l);
+    touchedView.level = l;
     finds = findsOf(l);
     view.go(l);
     cam.level = l;
@@ -74,15 +79,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
     return arrive();
   };
   rats = new Rats(level);
+  touched = new SaltTouched(level);
   finds = findsOf(level);
+  // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
+  const touchedView = await TouchedView.create(params.seed);
+  touchedView.level = level;
   let body = nextGrandchild();
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
   const nobody = await Nobody.create(params.seed, level);
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root]);
+  await view.start([nobody.root, ...touchedView.figures]);
   await view.stage.add(nobody.root);
+  await view.stage.add(touchedView.root);
   const ratView = new RatView();
   await view.stage.add(ratView.root);
   const findView = new FindView();
@@ -111,13 +121,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
     pickAt = now;
     body.facing = Math.atan2(-(f.x - body.x), -(f.z - body.z));
   };
+  /** Everyone the knife can hit. */
+  const foes = (): (Rat | Touched)[] => [...rats.list, ...touched.list];
   const stab = (now: number): void => {
     stabAt = now;
     stabDone = false;
-    // Turn to the nearest rat roughly where the camera looks, else where it looks.
+    // Turn to the nearest foe roughly where the camera looks, else where it looks.
     stabYaw = cam.yaw;
     let best = STAB.aim;
-    for (const r of rats.list) {
+    for (const r of foes()) {
       if (r.dead) continue;
       const d = Math.hypot(r.x - body.x, r.z - body.z), yaw = Math.atan2(-(r.x - body.x), -(r.z - body.z));
       if (d < best && Math.abs(angleDiff(cam.yaw, yaw)) < STAB.aimArc && Math.abs(r.y - body.y) < 1.5) { best = d; stabYaw = yaw; }
@@ -182,7 +194,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return rats; }, get finds() { return finds; }, get pack() { return pack; },
+    view, cam, get body() { return body; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return rats; }, get touched() { return touched; }, get finds() { return finds; }, get pack() { return pack; },
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -208,7 +220,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); rats = new Rats(level); pack = new Pack(); picking = null; }
+    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); rats = new Rats(level); touched = new SaltTouched(level); pack = new Pack(); picking = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     if (controls.tap('Mouse0') && !busy && now - stabAt > STAB.dur) stab(now);
@@ -245,20 +257,23 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (!stabDone && now - stabAt >= STAB.hit) {
         stabDone = true;
         const blow: Blow = { x: body.x, y: body.y, z: body.z, yaw: stabYaw, range: STAB.range, arc: STAB.arc, low: STAB.low, high: STAB.high };
-        const r = nearestReached(blow, rats.list);
+        const r = nearestReached(blow, foes());
         if (r) damage(r, blows.range(STAB.damage[0], STAB.damage[1]), body.x, body.z, STAB.knock, 'knife');
       }
       const health = body.health;
       rats.blockers = view.props.blockers;
       rats.advance(dt, body);
+      touched.blockers = view.props.blockers;
+      const struck = touched.advance(dt, body) > 0;
       if (body.health < health) {
-        // Flinch away from the nearest rat.
-        let near: Rat | undefined, nd = Infinity;
-        for (const r of rats.list) { const d = Math.hypot(r.x - body.x, r.z - body.z); if (!r.dead && d < nd) { nd = d; near = r; } }
-        if (near) nobody.hit(body.x - near.x, body.z - near.z, 0.5);
+        // Flinch away from the nearest foe (thrown back by a pick).
+        let near: Rat | Touched | undefined, nd = Infinity;
+        for (const r of foes()) { const d = Math.hypot(r.x - body.x, r.z - body.z); if (!r.dead && d < nd) { nd = d; near = r; } }
+        if (near) nobody.hit(body.x - near.x, body.z - near.z, struck ? 1 : 0.5);
       }
-      // The knife comes out when rats are after the nobody or it is used, and goes back after a while.
-      const threat = rats.list.some((r) => (r.mode === 'chase' || r.mode === 'bite') && Math.hypot(r.x - body.x, r.z - body.z) < 14);
+      // The knife comes out when something is after the nobody or it is used, and goes back after a while.
+      const threat = rats.list.some((r) => (r.mode === 'chase' || r.mode === 'bite') && Math.hypot(r.x - body.x, r.z - body.z) < 14)
+        || touched.list.some((t) => t.angry && !t.dead && Math.hypot(t.x - body.x, t.z - body.z) < 14);
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4);
       const action = stooping ? { id: 'pickup', t0: pickAt, dur: PICKUP.dur } : stabbing ? { id: 'swing_1h', t0: stabAt, dur: STAB.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping);
@@ -267,6 +282,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
 
     ratView.draw(rats.list, now);
+    touchedView.draw(touched.list, body.x, body.z, dt, now);
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     nobody.shown = !cam.firstPerson;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
@@ -279,6 +295,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (draft) lines.push(draft);
     }
     if (rats.killed) lines.push(`rats killed: ${rats.killed}`);
+    if (touched.killed) lines.push(`Salt-Touched laid to rest: ${touched.killed}`);
     if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
     if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
@@ -299,13 +316,20 @@ function bar(value: number, max: number): string {
   return '█'.repeat(n) + '░'.repeat(20 - n);
 }
 
+/** What hurt you, per cause: the HUD line, and the death line. */
+const HURT: Record<string, [string, string]> = {
+  rat: ['a rat bites', 'The rats got you.'],
+  'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],
+  fall: ['a hard landing', 'You fell to your death.'],
+};
+
 function hudText(b: Body, backend: string): string {
   const lines = [
     `health   ${bar(b.health, MOVE.maxHealth)}  ${b.health.toFixed(0)}`,
     `stamina  ${bar(b.stamina, MOVE.stamina)}${b.mode === 'climb' ? '  climbing' : b.mode === 'swim' ? '  swimming' : ''}`,
   ];
-  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${b.lastCause === 'rat' ? 'a rat bites' : 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
-  if (b.dead) lines.push('', b.lastCause === 'rat' ? 'The rats got you.' : 'You fell to your death.', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
+  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
+  if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
   lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · wheel zoom · F light  ·  ${backend}`);
   return lines.join('\n');
 }

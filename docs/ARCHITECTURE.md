@@ -98,6 +98,9 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Does a blow, blast or effect reach someone? Who does it hit? | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
 | Rats: nests, waking, chasing, biting | `Rats` (`advance(dt, prey)`, `list`, `nestAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
 | Draw the rats | `RatView` (a pool added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
+| Walk a creature over the floor: steer to a goal round what is in the way, arrive without overshooting (no jitter), keep out of its prey's legs | `Steer` (`move`, `slide`, `walkable`) with the kind's `Gait` | `src/creatures/steer.ts` |
+| The Salt-Touched: where they work, noticing, chasing, the pick blow | `SaltTouched` (`advance(dt, prey)`, `list`, `spotAt`) and its numbers `TOUCHED`; how many per band: `band.touched` | `src/creatures/touched.ts` |
+| Draw the Salt-Touched | `TouchedView` (a pool of humans built before the warm-up: `figures` go to `view.start`; `draw(list, x, z, dt, time)`) | `src/render/creatures/touchedView.ts` |
 | What lies about to be found (floor finds, rat hoards), what is in reach, what is taken | `Finds` (`near`, `inReach`, `take`), kinds and values in `FINDS` | `src/loot/finds.ts` |
 | What the nobody carries up | `Pack` (`items`, `worth`) | `src/loot/finds.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
