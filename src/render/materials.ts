@@ -196,6 +196,9 @@ export const CRICKET_COAT = defineCoat('cricketCoat');
 export const LUMEN_COAT = defineCoat('lumenCoat', 0.25);
 export const MURK_COAT = defineCoat('murkCoat', 0.18);
 
+/** The brine eels' skin (AssetGenerator spec creature_brine_eel): slimy. */
+export const EEL_COAT = defineCoat('eelCoat', 0.35);
+
 /** Where the headlamp is and which way it shines (world), for the dust in its beam: set every frame by `Dust`. */
 export const DUST_LAMP = { at: uniform(new Vector3()), dir: uniform(new Vector3(0, 0, -1)) };
 /** The dust box: motes fill a cube this many metres wide that travels with the camera. */
