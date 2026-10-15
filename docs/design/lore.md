@@ -1,6 +1,6 @@
 # Dunfinity: the rift (story bible and the two scripts)
 
-Status: **draft 1, for Arnd's review, no in-game text yet.** Part of [dunfinity-plan.md](dunfinity-plan.md). Builds on the story spine in [town-and-first-strata.md](town-and-first-strata.md) §1 and the strata in dunfinity-plan.md §4.4 / `src/gen/genome.ts`. Glyph sheet: run `npx tsx tools/lore/sheet.ts glyphs.svg glyphs.png` (drawn by `tools/lore/sheet.ts` from `src/lore/scripts.ts`).
+Status: **draft 2, decided by Arnd 2026-10-15 (LO1–LO4 below), no in-game text yet.** Part of [dunfinity-plan.md](dunfinity-plan.md). Builds on the story spine in [town-and-first-strata.md](town-and-first-strata.md) §1 and the strata in dunfinity-plan.md §4.4 / `src/gen/genome.ts`. Glyph sheet: run `npx tsx tools/lore/sheet.ts glyphs.svg glyphs.png` (drawn by `tools/lore/sheet.ts` from `src/lore/scripts.ts`).
 
 Arnd's ask (2026-10-15): *the dungeon is a rift to the first world, and the deeper the player gets the clearer this becomes. Dwarven runes and elven script visible in game.*
 
@@ -113,14 +113,17 @@ Glyph sheet: `tools/lore/sheet.ts`. The glyphs are data (`src/lore/scripts.ts`):
 
 Rendering note: the rock is meshed at 1 m, so glyphs cannot be carved into the SDF. They are thin geometry laid on the rock (inlay strips, like props) or a decal kind in `materials.ts`; I'll agree that with "Rock materials".
 
-## 6. Questions for Arnd
+## 6. Decisions (Arnd, 2026-10-15)
 
-1. **Stacked worlds** (each level below the Threshold is a buried world, ours copied from the first) as the meaning of "rift to the first world" **(my pick)**, or a simpler reading where the rift is a tunnel to one other world at the bottom?
-2. **Real ciphers of English** that players can decode **(my pick)**, or invented languages that only the game translates?
-3. **Knowledge carries over** through pencil marks in the tin **(my pick)**, or every grandchild starts from grandma's key?
-4. The climbers' motive left open, with the dwarves and elves disagreeing **(my pick)**, or decided now?
+| # | Decision |
+|---|---|
+| LO1 | **Stacked worlds:** below the Threshold each level is a buried world, each copied from the one below; the rift runs down to the first world, which is never reached |
+| LO2 | **Real ciphers of English** that players can decode; never gibberish in either script (names aside) |
+| LO3 | **Decoding carries over** as pencil marks in grandma's key in the tin; grandma's key starts partial, each new inscription read adds a letter |
+| LO4 | **The climbers' motive stays open**; dwarves (take back) and elves (going home) disagree |
 
 ---
 
 ## Changelog
+- 2026-10-15 draft 2: Arnd took all four picks (LO1–LO4).
 - 2026-10-15 draft 1: story bible, the two scripts, where they appear, reading, build plan.
