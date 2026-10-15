@@ -1,9 +1,13 @@
 # Changelog
 
-## v0.085 — Real dogs
+## v0.086 — Real dogs
 
 - The feral dogs are new. They were built from a few ellipsoids in code; now each one is a gaunt street dog sculpted, rigged and animated in Blender (AssetGenerator). It has a deep narrow chest, ribs and spine showing, bristling hackles and tail, a rough coat with a dark saddle and a black muzzle, a mouth that opens on its teeth, and eyes that throw your headlamp back.
 - Everything they do has its own animation: lying up at the den, standing and looking about, a trot, a gallop round you, a low stalk with the head down and lips drawn back while they circle, down on the haunches before a lunge (the tell), the lunge with the jaw wide, the snap, a flinch when you stab one, and a fall onto its side when it dies. The paws stay planted at every speed, and one action fades into the next, so nothing pops or flickers.
+
+## v0.085 — Things for the new places
+
+- Props are modelled for the new kinds of place and ready to set out. For the crypts there are skulls, heaps of bones for the niches, candles standing in their own wax and an iron gate to close a gallery. For the rifts, a coil of old rope on its piton and plank bridges with rope rails. For the root hollows, ferns, moss cushions, hanging vines and pale flowers. For the geodes, crystal clusters and great single spars. For the lava tubes, drips of cooled lava and a fallen basalt block.
 
 ## v0.084 — Carts and shacks
 
