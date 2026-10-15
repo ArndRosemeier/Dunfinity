@@ -1,19 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { QUARRY, SALT, bandOf } from '../src/gen/bands';
+import { CISTERN, QUARRY, SALT, bandOf } from '../src/gen/bands';
 import { ladderOf } from '../src/gen/descents';
 
-test('levels 1–2 are the Quarry, 3–5 the Salt Works', () => {
+test('levels 1–2 are the Quarry, 3–5 the Salt Works, 6–8 the Cisterns', () => {
   assert.equal(bandOf(1), QUARRY);
   assert.equal(bandOf(2), QUARRY);
   for (const d of [3, 4, 5]) assert.equal(bandOf(d), SALT);
+  for (const d of [6, 7, 8]) assert.equal(bandOf(d), CISTERN);
   assert.equal(new Level(1, 3).band.name, 'The Salt Works');
 });
 
-test('in the Salt Works one arrives at a way up, dry, with a way down within reach', () => {
-  for (const seed of [1, 2, 3, 4, 5]) {
-    const l = new Level(seed, 3), a = l.ascent;
+test('in the Salt Works and the Cisterns one arrives at a way up, dry, with a way down within reach', () => {
+  for (const [seed, depth] of [[1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [1, 6], [2, 6], [3, 7], [4, 8]]) {
+    const l = new Level(seed, depth), a = l.ascent;
     assert.ok(a && a.up, `seed ${seed}: no way up`);
     const [x, y, z] = l.arrival;
     assert.ok(l.waterAt(x, z) < y, `seed ${seed}: arrival under the brine`);

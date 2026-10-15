@@ -111,3 +111,29 @@ test('the Salt Works has salt statues, chapels and electric lamps hanging from t
   assert.ok(sum.statues > sum.watchers && sum.watchers > 0 && sum.chapels > 0 && sum.hanging > 0, JSON.stringify(sum));
   assert.equal(total('statues') + total('chapels') + total('hanging'), 0);
 });
+
+test('the Cisterns have pipes, pumps and bunker furniture, and no salt statues; the Salt Works has no waterworks', () => {
+  const sum = (l: Level) => {
+    const [ax, , az] = l.arrival, s = { machines: 0, statues: 0, chapels: 0 };
+    for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+      const c = quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts;
+      s.machines += c.machines; s.statues += c.statues; s.chapels += c.chapels;
+    }
+    return s;
+  };
+  const cis = sum(new Level(1, 6)), salt = sum(new Level(1, 3));
+  assert.ok(cis.machines > 5, JSON.stringify(cis));
+  assert.equal(cis.statues + cis.chapels, 0);
+  assert.equal(salt.machines, 0);
+});
+
+test('a tube runs between its ends, round', () => {
+  const b = new PropBuilder();
+  b.tube(0, 1, 0, 2, 1, 0, 0.1, [1, 1, 1], 8);
+  const m = b.build()!;
+  for (let v = 0; v < m.positions.length / 3; v++) {
+    const x = m.positions[v * 3], y = m.positions[v * 3 + 1], z = m.positions[v * 3 + 2];
+    assert.ok(Math.abs(x) < 1e-6 || Math.abs(x - 2) < 1e-6, 'at an end');
+    assert.ok(Math.abs(Math.hypot(y - 1, z) - 0.1) < 1e-6, 'on the radius');
+  }
+});

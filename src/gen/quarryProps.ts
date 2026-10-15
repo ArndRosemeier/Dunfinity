@@ -32,7 +32,7 @@ export interface PropTile {
   blockers: Float32Array;
   /** Statues whose figure the view draws (and turns): x, top of the plinth, z, yaw, pose, each. */
   watchers: Float32Array;
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -60,6 +60,9 @@ const DEEP: Rgb = [0.015, 0.03, 0.035];
 const ENAMEL: Rgb = [0.09, 0.13, 0.1];
 const BULB: Rgb = [1.0, 0.85, 0.6];
 const WAX: Rgb = [0.5, 0.47, 0.38];
+/** The waterworks' and the bunker's paint: army green, and the canvas of the bunks. */
+const ARMY: Rgb = [0.07, 0.085, 0.05];
+const CANVAS: Rgb = [0.3, 0.28, 0.21];
 
 /**
  * Loose stones: one try per DEBRIS.cell metres of floor. The chance of a stone there: a few
@@ -80,7 +83,7 @@ class TileBuilder {
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -431,7 +434,9 @@ class TileBuilder {
         if (h < 0.5) continue;
         const ox = o[0] / h, oz = o[2] / h;
         const rx = x - ox * (d - 0.05), rz = z - oz * (d - 0.05);
-        if (r(5) >= this.level.band.carvings) this.leftBehind(rx, rz, ox, oz, g, r);
+        const b = this.level.band;
+        if (r(5) < b.machines) this.waterworks(rx, rz, ox, oz, g, r);
+        else if (r(5) >= b.machines + b.carvings) this.leftBehind(rx, rz, ox, oz, g, r);
         else if (r(6) < 0.2) this.chapel(rx, rz, ox, oz, g, r);
         else this.statue(rx, rz, ox, oz, r);
       } else if (r(0) < LEFT.derricks && d > 5) this.derrick(x, z, r(3) * Math.PI * 2, r);
@@ -488,6 +493,96 @@ class TileBuilder {
       }
     }
     this.counts.leftovers++;
+  }
+
+  /**
+   * A waterworks fitting against the rock at (x, z), (ox, oz) pointing away from it: pipes along the
+   * rock on brackets with a valve on a branch, a pump on its plinth with its motor, or the wartime
+   * bunker's furniture (a table and chairs by a filing cabinet, or a bunk bed).
+   */
+  private waterworks(x: number, z: number, ox: number, oz: number, g: number, r: (k: number) => number): void {
+    const yaw = Math.atan2(ox, oz), at = local(x, z, yaw);
+    const ground = (px: number, pz: number) => this.level.groundAt(px, pz);
+    const kind = Math.floor(r(10) * 3);
+    if (kind === 0) {
+      // Two pipes along the rock, flanged, on brackets; a branch out and down with a valve wheel.
+      const [qx, qz] = at(0, 0.8);
+      if (this.level.sdf(qx, g + 2.4, qz) < 0.3) return;
+      for (const [h, rad] of [[1.25, 0.16], [2.1, 0.11]] as const) {
+        const [ax, az] = at(-2.2, 0.32), [bx, bz] = at(2.2, 0.32);
+        this.solid.tube(ax, g + h, az, bx, g + h, bz, rad, RUST, 12);
+        for (const sd of [-1.6, 0, 1.6]) {
+          const [fx, fz] = at(sd - 0.04, 0.32), [gx, gz] = at(sd + 0.04, 0.32), [kx, kz] = at(sd, 0.02);
+          this.solid.tube(fx, g + h, fz, gx, g + h, gz, rad * 1.3, IRON, 12);
+          this.solid.beam(kx, g + h - rad - 0.04, kz, gx, g + h - rad - 0.04, gz, 0.03, 0.03, IRON);
+        }
+      }
+      const [ex, ez] = at(0.9, 0.32), [dx, dz] = at(0.9, 0.62), dy = ground(dx, dz);
+      this.solid.tube(ex, g + 1.25, ez, dx, g + 1.25, dz, 0.1, RUST);
+      this.solid.tube(dx, g + 1.35, dz, dx, dy, dz, 0.1, RUST);
+      this.solid.upright(dx, dy + 0.8, dz, yaw, 0.16, 0.12, 0.16, IRON);
+      // The wheel, facing out: a rim of eight bars and two spokes.
+      const [wx, wz] = at(0.9, 0.84), wy = dy + 0.8, R = 0.22;
+      this.solid.beam(dx, wy, dz, wx, wy, wz, 0.02, 0.02, IRON);
+      for (let k = 0; k < 8; k++) {
+        const a0 = (k / 8) * Math.PI * 2, a1 = ((k + 1) / 8) * Math.PI * 2;
+        const [p0x, p0z] = at(0.9 + Math.cos(a0) * R, 0.84), [p1x, p1z] = at(0.9 + Math.cos(a1) * R, 0.84);
+        this.solid.tube(p0x, wy + Math.sin(a0) * R, p0z, p1x, wy + Math.sin(a1) * R, p1z, 0.018, RUST, 6);
+      }
+      for (const a of [0, Math.PI / 2]) {
+        const [p0x, p0z] = at(0.9 + Math.cos(a) * R, 0.84), [p1x, p1z] = at(0.9 - Math.cos(a) * R, 0.84);
+        this.solid.beam(p0x, wy + Math.sin(a) * R, p0z, p1x, wy - Math.sin(a) * R, p1z, 0.012, 0.012, RUST);
+      }
+      this.block(dx, dz, yaw, 0.15, 0.3, dy - 0.3, g + 1.4);
+      this.blockLine(...at(-2.2, 0.32), ...at(2.2, 0.32), 0.18, g + 1.05, g + 2.25);
+    } else if (kind === 1) {
+      // A pump on its concrete plinth, the motor beside it on one shaft, the outlet up and into the rock.
+      const [px, pz] = at(0, 1.0), py = ground(px, pz);
+      if (this.level.sdf(px, py + 2, pz) < 0.5 || !this.level.dry(px, pz, 0.05)) return;
+      this.stones.upright(px, py + 0.11, pz, yaw, 1.1, 0.11, 0.7, this.tone(1.05));
+      const [bx, bz] = at(-0.4, 1.0), [mx, mz] = at(0.5, 1.0), top = py + 0.22;
+      this.solid.cylinder(bx, top + 0.45, bz, 0.4, 0.45, ARMY, 16, 0.08);
+      this.solid.ellipsoid(bx, top + 0.9, bz, 0.4, 0.16, 0.4, ARMY, 14);
+      this.solid.upright(mx, top + 0.3, mz, yaw, 0.38, 0.3, 0.3, [ARMY[0] * 0.8, ARMY[1] * 0.8, ARMY[2] * 0.8]);
+      for (const sd of [-0.18, 0.18]) { const [fx, fz] = at(0.5 + sd, 1.0); this.solid.upright(fx, top + 0.3, fz, yaw, 0.02, 0.33, 0.33, IRON); }
+      this.solid.beam(bx, top + 0.45, bz, mx, top + 0.3, mz, 0.06, 0.06, IRON);
+      const [wx, wz] = at(-0.4, 0.05);
+      this.solid.tube(bx, top + 0.95, bz, bx, top + 1.73, bz, 0.13, RUST, 12);
+      this.solid.tube(bx, top + 1.6, bz, wx, top + 1.6, wz, 0.13, RUST, 12);
+      this.block(px, pz, yaw, 1.1, 0.7, py - 0.3, py + 1.4);
+    } else {
+      const [cx, cz] = at(0, 1.1), gy = ground(cx, cz);
+      if (this.level.sdf(cx, gy + 1.8, cz) < 0.4 || !this.level.dry(cx, cz, 0.05)) return;
+      const wood: Rgb = [WOOD[0] * 1.6, WOOD[1] * 1.45, WOOD[2] * 1.2];
+      if (r(12) < 0.55) {
+        // A table, two chairs pulled up to it, a filing cabinet against the rock.
+        this.solid.upright(cx, gy + 0.76, cz, yaw, 0.7, 0.025, 0.4, wood);
+        for (const [a, b] of [[-0.64, 0.75], [0.64, 0.75], [-0.64, 1.45], [0.64, 1.45]]) { const [lx, lz] = at(a, b); this.solid.upright(lx, gy + 0.37, lz, yaw, 0.025, 0.37, 0.025, wood); }
+        this.block(cx, cz, yaw, 0.7, 0.4, gy - 0.3, gy + 0.8);
+        for (const sd of [-0.35, 0.4]) {
+          const [sx, sz] = at(sd, 1.72), [kx, kz] = at(sd, 1.92), syaw = yaw;
+          this.solid.upright(sx, gy + 0.45, sz, syaw, 0.2, 0.02, 0.2, wood);
+          this.solid.upright(kx, gy + 0.7, kz, syaw, 0.2, 0.25, 0.02, wood);
+          for (const [a, b] of [[-0.17, 1.55], [0.17, 1.55], [-0.17, 1.9], [0.17, 1.9]]) { const [lx, lz] = at(sd + a, b); this.solid.upright(lx, gy + 0.22, lz, syaw, 0.018, 0.22, 0.018, wood); }
+          this.block(sx, sz, syaw, 0.22, 0.22, gy - 0.3, gy + 0.9);
+        }
+        const [fx, fz] = at(1.45, 0.32), fy = ground(fx, fz);
+        this.solid.upright(fx, fy + 0.66, fz, yaw, 0.24, 0.66, 0.3, ARMY);
+        for (let k = 0; k < 4; k++) { const [hx, hz] = at(1.45, 0.63); this.solid.upright(hx, fy + 0.2 + k * 0.32, hz, yaw, 0.06, 0.012, 0.012, IRON); }
+        this.block(fx, fz, yaw, 0.24, 0.3, fy - 0.3, fy + 1.32);
+      } else {
+        // A bunk bed along the rock: posts, two frames, thin canvas mattresses.
+        for (const [a, b] of [[-0.95, 0.12], [0.95, 0.12], [-0.95, 0.98], [0.95, 0.98]]) { const [px, pz] = at(a, b); this.solid.upright(px, gy + 0.85, pz, yaw, 0.025, 0.85, 0.025, ARMY); }
+        for (const h of [0.38, 1.28]) {
+          const [mx, mz] = at(0, 0.55);
+          this.solid.upright(mx, gy + h, mz, yaw, 0.95, 0.03, 0.43, ARMY);
+          this.solid.upright(mx, gy + h + 0.07, mz, yaw, 0.92, 0.05, 0.4, CANVAS);
+        }
+        const [bx, bz] = at(0, 0.55);
+        this.block(bx, bz, yaw, 1.0, 0.46, gy - 0.3, gy + 1.7);
+      }
+    }
+    this.counts.machines++;
   }
 
   /**
