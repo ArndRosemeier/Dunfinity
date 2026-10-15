@@ -13,6 +13,7 @@ import { ROCK_VEINS } from './materials';
 import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
+import { Watchers } from './props/watchers';
 
 /** Fog distances: a lit survey view, and roughly what a headlamp shows. */
 const FOG = { survey: [80, 900], dark: [10, 140] } as const;
@@ -37,6 +38,8 @@ export class LevelView {
   private readonly rock = new Group();
   private readonly things = new Group();
   private readonly dust: Dust;
+  private readonly watchers = new Watchers();
+  private lastTime = 0;
   private terrain_: Terrain | null = null;
   private props_: Props | null = null;
   private dark_ = false;
@@ -82,6 +85,7 @@ export class LevelView {
     await this.stage.warmUp(extra);
     this.scene.add(this.rock, this.things);
     await this.stage.add(this.dust.mesh);
+    await this.stage.add(this.watchers.root);
     this.stream();
   }
 
@@ -92,6 +96,7 @@ export class LevelView {
     this.terrain_?.dispose();
     this.props_?.dispose();
     this.level_ = level;
+    this.watchers.reset();
     this.stream();
   }
 
@@ -142,6 +147,8 @@ export class LevelView {
     this.dust.follow(this.headlamp);
     this.terrain.update(x, y, z);
     this.props.update(x, y, z, time);
+    this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
+    this.lastTime = time;
     this.renderer.render(this.scene, this.camera);
   }
 }

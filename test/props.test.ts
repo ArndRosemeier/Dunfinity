@@ -103,11 +103,11 @@ test('loose stones lie on the floor, out of the water', () => {
 test('the Salt Works has salt statues, chapels and electric lamps hanging from the roof; the quarry has none', () => {
   const salt = new Level(1, 3);
   const [ax, , az] = salt.arrival;
-  const sum = { statues: 0, chapels: 0, hanging: 0 };
+  const sum = { statues: 0, watchers: 0, chapels: 0, hanging: 0 };
   for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
     const c = quarryProps(salt, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts;
-    sum.statues += c.statues; sum.chapels += c.chapels; sum.hanging += c.hanging;
+    sum.statues += c.statues; sum.watchers += c.watchers; sum.chapels += c.chapels; sum.hanging += c.hanging;
   }
-  assert.ok(sum.statues > 0 && sum.chapels > 0 && sum.hanging > 0, JSON.stringify(sum));
+  assert.ok(sum.statues > sum.watchers && sum.watchers > 0 && sum.chapels > 0 && sum.hanging > 0, JSON.stringify(sum));
   assert.equal(total('statues') + total('chapels') + total('hanging'), 0);
 });
