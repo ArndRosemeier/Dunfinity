@@ -9,6 +9,10 @@ import { HOUSE_DOORS } from '../gen/doorways';
 import { ladderTop, type Shaft } from '../gen/descents';
 import { openFloor } from '../gen/searchOut';
 import type { Level } from '../gen/level';
+import { REGIONS, shareOf } from '../gen/regions';
+import { mixOf } from '../gen/bands';
+import { owns, type StyleId } from '../gen/style';
+import { NAMED_STYLES } from '../gen/styles';
 import type { Fauna } from '../creatures/fauna';
 
 /** A place to go: what it is, where one stands (feet), which way one looks. */
@@ -84,11 +88,52 @@ export function placesOn(level: Level, fauna: Fauna, x: number, z: number): Plac
   const dens: [string, { nearestDen(x: number, z: number, rings?: number): { x: number; z: number } | null }][] = [
     ['A rat nest', fauna.rats], ['Salt-Touched at work', fauna.touched], ['Cave crickets', fauna.crickets],
     ['A Lumen slime colony', fauna.lumen], ['A Murk slime colony', fauna.murk], ['A feral dog pack', fauna.dogs],
-    ['Brine eels', fauna.eels], ['A scavenger camp', fauna.scavengers],
+    ['Brine eels', fauna.eels], ['A scavenger camp', fauna.scavengers], ['Toadstools', fauna.toadstools], ['Puffcaps', fauna.puffcaps],
   ];
   for (const [name, pop] of dens) {
     const d = pop.nearestDen(x, z, DEN_RINGS);
     if (d) out.push(standBy(level, `${name} (${Math.round(Math.hypot(d.x - x, d.z - z))} m)`, d.x, d.z, 6, 10));
   }
   return out;
+}
+
+/** Every level style one can be sent to: the excavation, then the registry's (src/gen/styles.ts). */
+export const DEBUG_STYLES: readonly StyleId[] = ['excavation', ...NAMED_STYLES];
+
+/** How far out (metres) a style's ground is looked for on a level, and how many levels up and down for one that has it. */
+const STYLE_SEARCH = { far: 3000, levels: 200 } as const;
+
+/**
+ * A place on the open floor inside the nearest region of style `id` on `level` from (x, z): out in
+ * rings a region's half-width apart, the first region of that style whose open space (its portal)
+ * has floor to stand on. Null if there is none within `STYLE_SEARCH.far`.
+ */
+export function styleSpot(level: Level, id: StyleId, x: number, z: number): Place | null {
+  const f = level.field, at = f.styles.findIndex((s) => s.id === id);
+  if (at < 0) return null;
+  const style = f.styles[at], step = REGIONS.size / 3, tried = new Set<number>();
+  for (let r = 0; r <= STYLE_SEARCH.far; r += step) {
+    const n = Math.max(1, Math.ceil((2 * Math.PI * r) / step));
+    for (let k = 0; k < n; k++) {
+      const t = (k / n) * Math.PI * 2, sx = x + Math.cos(t) * r, sz = z + Math.sin(t) * r;
+      if (f.regions.styleAt(sx, sz) !== at) continue;
+      const region = f.regions.regionAt(sx, sz);
+      if (tried.has(region.id)) continue;
+      tried.add(region.id);
+      for (const [cx, cz] of [style.portal(region.px, region.pz), style.portal(sx, sz)]) {
+        if (!owns(style, cx, cz)) continue;
+        const p = standBy(level, '', cx, cz, 0, 8);
+        if (openFloor(level, [[p.x, p.z]], p.y, 0.5, 1.2, 0.5)) return { ...p, name: `${id} (${Math.round(Math.hypot(p.x - x, p.z - z))} m)` };
+      }
+    }
+  }
+  return null;
+}
+
+/** The level nearest `depth` (itself first, then one up, one down, ...) whose mix has style `id`, or null. */
+export function depthWithStyle(seed: number, depth: number, id: StyleId): number | null {
+  for (let k = 0; k <= STYLE_SEARCH.levels; k++) for (const d of k ? [depth - k, depth + k] : [depth]) {
+    if (d >= 1 && shareOf(mixOf(seed, d), id) > 0) return d;
+  }
+  return null;
 }

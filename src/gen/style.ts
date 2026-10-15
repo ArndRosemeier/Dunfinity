@@ -10,8 +10,9 @@
  */
 import type { Column } from './quarry';
 import type { Dress } from './styleProps';
+import type { RockMix } from './rockTypes';
 
-export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt' | 'flooded' | 'dwarven';
+export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt' | 'flooded' | 'dwarven' | 'elven';
 
 export interface Style {
   readonly id: StyleId;
@@ -21,6 +22,16 @@ export interface Style {
   at(col: Column, x: number, y: number, z: number): number;
   /** Rock colour at a surface point (linear RGB, into out at o). */
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void;
+  /**
+   * How the rock's surface is worked at a surface point (`Surface`, four numbers into out at o), for
+   * the rock shader's finer detail than the 1 m mesh can carry. Natural rough rock if left out.
+   */
+  surface?: (col: Column, x: number, y: number, z: number, out: Float32Array, o: number) => void;
+  /**
+   * Which rock it is cut through (src/gen/rockTypes.ts `RockMix`, e.g. `rockMix({ granite: 0.6, marble: 0.2 })`):
+   * the shader shows the types in patches and beds. The band's rock (`band.rocks`) if left out.
+   */
+  readonly rocks?: RockMix;
   /** Whether the rock nearest (x, y, z), a point in the air, can be climbed. */
   climbable(x: number, y: number, z: number): boolean;
   /**
@@ -42,6 +53,31 @@ export interface Style {
    * its own business (src/gen/quarryProps.ts). Pure.
    */
   props?(d: Dress): void;
+}
+
+/**
+ * How rock is worked, per surface point, as the rock shader reads it (src/render/materials.ts `ROCK`):
+ * - `tooled`: how strongly it shows the miners' pick marks (above 0 it is worked rock: where the band's
+ *   finish casts walls in concrete, these are);
+ * - `masonry`: built of dressed blocks or bricks laid in courses, flagged floors;
+ * - `flowstone`: smooth, creamy, wet-looking sheets and drips (natural caves);
+ * - `course`: the height of a course of masonry, metres (0: the shader's own, big blocks).
+ * All 0 is natural, broken rock. Blended across style edges like the colour.
+ */
+export type Surface = readonly [tooled: number, masonry: number, flowstone: number, course: number];
+
+/**
+ * Numbers per mesh vertex of the rock's surface (`Level.surfaces`, the rock shader's `surface`, `rocks`
+ * and `rocks2` attributes): its `Surface` (four), then its `RockMix` (eight, src/gen/rockTypes.ts).
+ */
+export const SURFACE_STRIDE = 12;
+
+/** Natural rock: no tool marks, no masonry, no flowstone. */
+export const NATURAL: Surface = [0, 0, 0, 0];
+
+/** Write `s` into out at o. */
+export function putSurface(s: Surface, out: Float32Array, o: number): void {
+  out[o] = s[0]; out[o + 1] = s[1]; out[o + 2] = s[2]; out[o + 3] = s[3];
 }
 
 /** Worked stone on the map (M): the excavation's, and any style's that does not say. */

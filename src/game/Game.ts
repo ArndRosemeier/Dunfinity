@@ -9,6 +9,10 @@ import { Practice, SKILLS, type Skill } from '../loot/practice';
 import { readSave, writeSave, type GrandchildData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
+import { ReadView } from '../app/readView';
+import { Key } from '../lore/key';
+import { letter, breakLines } from '../lore/scripts';
+import { canRead } from '../gen/inscriptions';
 import { CELLAR } from '../gen/cellar';
 import { shopDoor } from '../gen/town';
 import { PAWN, sell } from '../loot/pawn';
@@ -50,7 +54,10 @@ import { FindView } from '../render/loot/findView';
 import { Tin, type Gain } from '../loot/tin';
 import { CARDS, Cooked, SALT_RINGS, card, type CardId } from '../loot/recipes';
 import { DebugMenu } from '../app/debugMenu';
-import { placesOn, type Place } from './debugPlaces';
+import { DEBUG_STYLES, depthWithStyle, placesOn, styleSpot, type Place } from './debugPlaces';
+import type { StyleId } from '../gen/style';
+import { positionReport, readPosition } from './report';
+import { VERSION } from '../app/whatsNew';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
 import { TinView } from '../app/tinView';
@@ -145,6 +152,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     nobody.level = l;
   };
   /** Which grandchild this is (1: the first); the notary writes to each. The deepest level this one has reached. */
+  const key = new Key(saved?.key);
   let heir = saved?.heir ?? 0, reached = saved?.child?.reached ?? 0;
   /** The grandchildren who did not come back (the notary's list), and whether this one's death is on it yet. */
   const fallen: Fallen[] = [...(saved?.fallen ?? [])];
@@ -192,7 +200,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
       cooked: cooked.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data,
     };
-    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros });
+    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data });
   };
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
@@ -247,6 +255,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const saltLineView = new SaltLineView(SALT_RINGS.map((k) => k.r));
   await view.stage.add(saltLineView.root);
   const tinView = new TinView(document.body);
+  const readView = new ReadView(document.body);
   const mapView = new MapView(document.body);
   /** The debug menu (`): every ability, invulnerable, tireless, any level, anything worth checking out. */
   let debugPlaces: Place[] = [];
@@ -287,6 +296,32 @@ export async function startGame(host: HTMLElement): Promise<void> {
       debug.toggle();
     },
     depth: () => level.depth,
+    position: () => positionReport(VERSION, location.origin + location.pathname, level, body, { yaw: cam.yaw, pitch: cam.pitch, distance: cam.distance }, view.props.blockers),
+    goTo: (text) => {
+      const p = readPosition(text);
+      if (!p?.pos) return 'No position in that (it needs the link with ?pos=).';
+      if (p.seed !== params.seed) { location.search = /\?\S*/.exec(text)![0]; return 'Another seed: loading it.'; }
+      if (!canGo()) return 'Not now (climbing, going home or dead).';
+      if (p.depth !== level.depth || p.style !== level.style) show(new Level(params.seed, p.depth, p.style));
+      const yaw = p.look ? (p.look[0] * Math.PI) / 180 : cam.yaw;
+      putDown(p.pos[0], p.pos[1] - 0.2, p.pos[2], yaw);
+      if (p.look) cam.pitch = (p.look[1] * Math.PI) / 180;
+      debug.refresh();
+      return `There: level ${p.depth}, ${p.pos.map((v) => v.toFixed(1)).join(' ')}.`;
+    },
+    styles: DEBUG_STYLES,
+    toStyle: (s) => {
+      if (!canGo()) return;
+      const id = s as StyleId;
+      // Here, else on the nearest level that has it, else on a level all of it (as ?style= makes).
+      let p = level.depth > 0 ? styleSpot(level, id, body.x, body.z) : null;
+      const d = p ? level.depth : depthWithStyle(params.seed, Math.max(1, level.depth), id);
+      if (!p && d !== null) { show(new Level(params.seed, d, params.style)); p = styleSpot(level, id, level.arrival[0], level.arrival[2]); }
+      if (!p) { show(new Level(params.seed, Math.max(1, level.depth), id)); p = styleSpot(level, id, level.arrival[0], level.arrival[2]); }
+      const [ax, , az] = level.arrival;
+      if (p) putDown(p.x, p.y, p.z, p.yaw); else putDown(ax, level.groundAt(ax, az), az, cam.yaw);
+      say(`${levelName(level)}\n${p ? p.name : `no ${id} found: at the arrival`}`, 5);
+    },
   });
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
   let tinSel: CardId = TinView.order(cooked)[0], cookAt = -9;
@@ -511,7 +546,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
-    const nearDoor = busy || nearLadder || nearFind || nearNote || !body.grounded ? null : doors.near(body.x, body.y, body.z);
+    const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : level.inscriptions.find((i) => canRead(i, body.x, body.y, body.z));
+    if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
+    const nearDoor = busy || nearLadder || nearFind || nearNote || nearMarks || !body.grounded ? null : doors.near(body.x, body.y, body.z);
     // Kemal's counter: 1, 2, 3 buy what is on it.
     if (nearKemal) GEAR_ORDER.forEach((k, i) => {
       if (!controls.tap(`Digit${i + 1}`)) return;
@@ -556,6 +593,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (nearDoor) {
         const line = doors.toggle(nearDoor, now);
         if (line) say(line, 4);
+      } else if (nearMarks && readView.open) readView.hide();
+      else if (nearMarks) {
+        const learned = key.read(nearMarks.id, nearMarks.script, nearMarks.text);
+        readAt = now;
+        readView.show(breakLines(nearMarks.script, nearMarks.text, 22).map((t) => letter(nearMarks.script, t)), nearMarks.script === 'kerf' ? '#8a6420' : '#2f4f6a', nearMarks.where,
+          key.makeOut(nearMarks.script, nearMarks.text), learned && `Looking long enough, you are sure of one: ${learned.toUpperCase()}. You pencil it into the key in her tin.`);
       } else if (nearNote) {
         const found = writing!.kind !== 'letter' && cooked.find('salt-line');
         readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}`, 20);
@@ -729,6 +772,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     else if (nearWeber) lines.push(weber.talking(now) ? '' : 'E: call on Frau Weber');
     else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
+    else if (nearMarks && !readView.open) lines.push('E: read the marks');
     else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : 'E: read the note');
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. T: open grandma's tin (${tin.salt} salt)`);

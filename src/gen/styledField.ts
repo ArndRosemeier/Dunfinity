@@ -17,7 +17,8 @@
  */
 import { newColumn, type Column, type ColumnMix, type QuarryField } from './quarry';
 import { REGIONS, Regions, newShares, type Mix, type Shares } from './regions';
-import { SHARE_OWN, type Style } from './style';
+import { NATURAL, SHARE_OWN, putSurface, type Style } from './style';
+import { putRocks, rockMix, type RockMix } from './rockTypes';
 
 /**
  * How far from zero the field counts (E4), on a level of more than one style: CLAMP metres on a
@@ -57,6 +58,10 @@ export class StyledField {
   /** The styles' weights in the field (see `weigh`). */
   private readonly weights: Weights = { n: 0, styles: [], w: [] };
   private readonly passages = new Map<string, Passage | null>();
+  /** Scratch for blending a colour, a surface or a rock mix over a mix of styles. */
+  private readonly sum = new Float64Array(8);
+  /** The band's rock, for styles that do not say theirs. */
+  private readonly bandRocks: RockMix;
 
   /**
    * `styles`: the level's styles, in the order of `mix` (one style: `mix` may be left out).
@@ -65,6 +70,7 @@ export class StyledField {
    */
   constructor(readonly excavation: QuarryField, readonly styles: readonly Style[] = [excavation], mix: Mix = [[styles[0].id, 1]], seed = excavation.seed) {
     this.regions = new Regions(seed, mix);
+    this.bandRocks = rockMix(excavation.band.rocks);
     if (styles.length > 1) {
       const probe = newShares();
       styles.forEach((s, i) => {
@@ -190,14 +196,30 @@ export class StyledField {
   }
 
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    this.blend(col, out, o, 3, (st, c) => st.color(c, x, y, z, out, o));
+  }
+
+  /** How the rock is worked at a surface point (`Surface`), blended across edges like the colour. */
+  surface(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    this.blend(col, out, o, 4, (st, c) => { if (st.surface) st.surface(c, x, y, z, out, o); else putSurface(NATURAL, out, o); });
+  }
+
+  /** Which rock it is at a surface point (`RockMix`, eight numbers), blended across edges like the colour. */
+  rocks(col: Column, out: Float32Array, o: number): void {
+    this.blend(col, out, o, 8, (st) => putRocks(st.rocks ?? this.bandRocks, out, o));
+  }
+
+  /** `size` numbers at out[o] written by `one` for the column's style, or weighted over its mix of styles. */
+  private blend(col: Column, out: Float32Array, o: number, size: number, one: (style: Style, col: Column) => void): void {
     const m = col.mix;
-    if (!m) { this.styles[col.style].color(col, x, y, z, out, o); return; }
-    let r = 0, g = 0, b = 0;
+    if (!m) { one(this.styles[col.style], col); return; }
+    const sum = this.sum;
+    sum.fill(0);
     for (let i = 0; i < m.n; i++) {
-      this.styles[m.styles[i]].color(m.cols[i], x, y, z, out, o);
-      r += m.w[i] * out[o]; g += m.w[i] * out[o + 1]; b += m.w[i] * out[o + 2];
+      one(this.styles[m.styles[i]], m.cols[i]);
+      for (let k = 0; k < size; k++) sum[k] += m.w[i] * out[o + k];
     }
-    out[o] = r; out[o + 1] = g; out[o + 2] = b;
+    for (let k = 0; k < size; k++) out[o + k] = sum[k];
   }
 
   climbable(x: number, y: number, z: number): boolean {

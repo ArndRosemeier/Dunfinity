@@ -1,5 +1,45 @@
 # Changelog
 
+## v0.112 — The rift's story and two old scripts
+
+- The background story is written down: the dungeon is a rift through buried worlds down to the first one (docs/design/lore.md).
+- The dwarves' Kerf runes and the elves' Thread script are real alphabets you can learn to read.
+- Round grandma's salt circle in the cellar, traced in the same blue salt, runs a line of elven writing. Press E near it to read the marks; each new inscription you read teaches you one letter, pencilled into the key in her tin, and the next grandchild finds it there.
+
+## v0.111 — Elven vaults, and the dwarven halls furnished
+
+- A new level style for the Old Halls (levels 21–40): elven vaults, long naves under pointed vaults 25–35 m high, with a lower aisle each side behind an arcade of slender clustered columns, ribs across the vault at every bay and transepts crossing between the naves. Pale silver-grey stone, the ribs and columns paler still, and a dark polished floor.
+- The dwarven halls are furnished: a stern dwarf king before some wall panels and a burning forge before others, braziers by the columns (half of them lit) and heavy chains hanging over the nave. The forges and lit braziers light the halls.
+- The dwarven halls and elven vaults keep their floors clear of the water table, so you no longer swim down a nave or wade into a hall.
+
+## v0.110 — Debug menu: level styles, copy position, invulnerable for real
+
+- "Copy position" in the debug menu (the key left of 1) puts a small block on the clipboard to paste into the chat: the version, a link straight back to the spot (seed, level, position, where the camera looks), the level style and region underfoot, what the body is doing, and how far the rock and any props are. "Go there" takes such a block, or just the link, and puts you back on that spot.
+- A button for every level style (karst, rift, collapse, catacombs, dungeon, roots, fungal, lava, geode, basalt, flooded, dwarven and the excavation halls) puts you inside the nearest region of that style: on this level if it has one, else on the nearest level that does. Lava first turns up very deep, so that button goes a long way down.
+- Invulnerable now means nothing touches you at all: no red flash, flinch or cry, no knockback, no "a rat bites: -0", and falls do nothing either. Health never actually dropped before, but every other sign of a hit still showed.
+- The places listed on a level now include the nearest toadstools and puffcaps.
+
+## v0.109 — Each place its own rock
+
+- Level styles can now say which rock they are cut through, as a mix of rock types the walls show in patches and beds; where two styles meet, their rock blends across the edge like their colour. Styles that don't say keep their band's rock.
+- Three new kinds of rock: black basalt with pale specks, white marble with grey veins, and blue-grey slate split along its cleavage. The Threshold now shows slate between its granite and shale.
+- Broad colour changes across a cave are a little less orange.
+
+## v0.108 — Every way of playing starts at level 0
+
+- Every chapter of grandma's tin is open from the start; depth now opens a chapter's stronger cards (`Card.opens`), not whole chapters.
+- Tenderising, Tiptoe, Way Home and Pot Lid can be cooked from the first fire.
+- Plan: the salt-worker path starts in the kitchen (Stove Flame, Cold Larder, Rolling Pin) in docs/design/recipe-box.md §6.
+
+## v0.107 — Stone of every kind
+
+- The rock is no longer one flat colour. The stone itself now has colour texture at several sizes: fine grain, mineral flecks, iron and grey stains, and lighter and darker patches and warmer and cooler stretches a few metres across, on floors as well as walls; across the cave, whole stretches of wall tens of metres long run lighter or darker, ochre or grey-brown.
+- Each kind of place has its own surface on top: in the old workings the walls show rows of pick marks, each row slanting its own way; natural rock has its beds and partings, hairline cracks, and specks of other minerals; caves are smooth creamy flowstone with drip ribs and coloured bands; dungeon rooms are dressed blocks in courses with worn edges and sunk joints over flagged floors; grandma's cellar is brick; the catacombs' tuff is chisel-marked.
+- Each band finishes its stone its own way too: the Salt Works are cut in rock as in a real salt mine: rough, lumpy, mostly dark grey-brown, with salt showing as pale, near white layers and streaks running level through it, a tan bed here and there, thin clay seams and the cutting machines' groove rings; the Cisterns' walls are concrete cast against boards, with the boards' lines and the tie holes; the Cisterns and the Threshold run wet and shine in the lamps.
+- Water is no longer flat grey: it is clear over the shallows so the floor shows through, near black where it is deep, and slow ripples move across it so the lamps glint on it.
+- The lamps burn a little less orange.
+- No band is one stone any more: each cuts through several rock types that change in patches and beds 5 to 30 metres across, as layers along a wall and lenses in it. There's pale cream limestone, ochre sandstone in hand-thick beds, dark shale split into thin layers, and grey speckled granite. The Salt Works are salt only in places, with dark shale and other rock between. Each band has its own mix (`band.finish.rocks`).
+
 ## v0.106 — Mushroom monsters, and creatures that move
 
 - New in the fungal grotto: toadstools. Each looks like one of the grotto's giant fly agarics until you come close. Then it shivers, tears six roots out of the ground and stands up on them, tipping its cap back to show two yellow eyes under the gills. It scuttles after you, rears back and slams its cap down on you. Lose it, and it walks back to its spot and roots itself again.

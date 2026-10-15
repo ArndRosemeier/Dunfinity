@@ -18,6 +18,7 @@
     { "from": "src/render", "deny": ["src/lab", "src/game"], "why": "the renderer does not know about the Lab or the game" },
     { "from": "src/game", "deny": ["src/lab"], "why": "the game does not depend on the Lab (shared setup lives in src/render and src/app)" },
     { "from": "src/audio", "deny": ["three", "src/render", "src/lab", "src/game"], "why": "sound reads the world and plays it: the game drives it, the renderer does not know it" },
+    { "from": "src/lore", "deny": ["three", "src/render", "src/lab", "src/game", "src/world", "src/creatures"], "why": "the scripts and the story are pure data: the generator, the game and tools read them" },
     { "from": "src/input", "deny": ["three", "src/render", "src/lab", "src/game"], "why": "input is plain DOM: both the Lab and the game read it" }
   ],
   "duplication": {

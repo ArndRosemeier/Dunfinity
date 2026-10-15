@@ -1,6 +1,6 @@
 /**
  * The debug menu (the key left of 1: ` or ^): give yourself every ability, become invulnerable or
- * tireless, go to any level, and teleport to anything worth checking out on this one. A DOM panel;
+ * tireless, go to any level, teleport into any level style, and to anything worth checking out on this level. A DOM panel;
  * it lets go of the mouse while open (click the game to look round again).
  */
 import { bandOf } from '../gen/bands';
@@ -18,6 +18,13 @@ export interface DebugActions {
   toPlace(i: number): void;
   /** The level one is on. */
   depth(): number;
+  /** The level styles one can be sent to, and sending one into the nearest region of one (another level if this one has none). */
+  readonly styles: readonly string[];
+  toStyle(id: string): void;
+  /** What to copy for a report of where one stands (a link back, and what the level says there). */
+  position(): string;
+  /** Go to the place in a pasted report or link; what to say about it. */
+  goTo(text: string): string;
 }
 
 /** The levels with a button of their own (any other through the number box). */
@@ -35,6 +42,8 @@ const STYLE = `
   #debug button.here { border-color: #e8d27a; color: #e8d27a; }
   #debug .places button { display: block; width: 100%; text-align: left; }
   #debug label { display: block; margin: 2px 0; cursor: pointer; }
+  #debug input[type=text] { width: 180px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; font: inherit; }
+  #debug textarea { width: 100%; height: 120px; margin-top: 4px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; font: 11px monospace; }
   #debug input[type=number] { width: 52px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; font: inherit; }
   #debug .said { color: #a8c98a; min-height: 1em; margin-top: 4px; white-space: pre-wrap; }
   #debug .hint { color: #8d8270; margin-top: 8px; }`;
@@ -48,6 +57,8 @@ export class DebugMenu {
   private readonly said: HTMLDivElement;
   private readonly levels: HTMLDivElement;
   private readonly list: HTMLDivElement;
+  /** Where the position shows to copy by hand when the clipboard will not take it. */
+  private readonly copy: HTMLTextAreaElement;
 
   constructor(host: HTMLElement, private readonly act: DebugActions) {
     this.el = panel(host, 'div', 'debug', STYLE);
@@ -79,6 +90,26 @@ export class DebugMenu {
     any.append(n, ' ');
     button(any, 'Go', () => { const d = Math.max(0, Math.floor(Number(n.value) || 0)); act.toLevel(d); });
     this.el.appendChild(any);
+    h('Report a spot');
+    button(this.el, 'Copy position', () => {
+      const text = act.position();
+      const done = () => this.say('Copied. Paste it into the chat.');
+      navigator.clipboard?.writeText(text).then(done, () => this.showCopy(text)) ?? this.showCopy(text);
+    });
+    const paste = document.createElement('div'), box = document.createElement('input');
+    box.type = 'text'; box.placeholder = 'paste a position or link';
+    box.addEventListener('keydown', (e) => e.stopPropagation());
+    paste.append(box, ' ');
+    button(paste, 'Go there', () => this.say(act.goTo(box.value)));
+    this.el.appendChild(paste);
+    this.copy = document.createElement('textarea');
+    this.copy.readOnly = true;
+    this.copy.style.display = 'none';
+    this.el.appendChild(this.copy);
+    h('Teleport to a level style');
+    const styles = document.createElement('div');
+    this.el.appendChild(styles);
+    for (const id of act.styles) button(styles, id, () => { act.toStyle(id); if (this.open) this.toggle(); }).title = 'The nearest region of this style, here or on the nearest level that has one';
     h('Teleport on this level');
     this.list = document.createElement('div');
     this.list.className = 'places';
@@ -118,6 +149,14 @@ export class DebugMenu {
       b.addEventListener('click', (e) => { e.stopPropagation(); this.act.toPlace(i); b.blur(); });
       this.list.appendChild(b);
     });
+  }
+
+  /** The clipboard refused: show the text selected, to copy with Ctrl+C. */
+  private showCopy(text: string): void {
+    this.copy.value = text;
+    this.copy.style.display = 'block';
+    this.copy.select();
+    this.say('Press Ctrl+C to copy it, then paste it into the chat.');
   }
 
   private say(text: string): void {

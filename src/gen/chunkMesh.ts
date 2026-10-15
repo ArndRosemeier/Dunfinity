@@ -6,6 +6,8 @@ import { surfaceNets, PAD, type MeshData } from './surfaceNets';
 
 export interface ChunkMesh extends MeshData {
   colors: Float32Array;
+  /** How the rock is worked, four numbers per vertex (`Surface`, src/gen/style.ts). */
+  surfaces: Float32Array;
 }
 
 export interface ChunkRequest {
@@ -52,5 +54,5 @@ export function meshChunk(level: Level, r: ChunkRequest): ChunkMesh | null {
   const grid = level.sampleGrid(r.ox - PAD * r.step, r.oy - PAD * r.step, r.oz - PAD * r.step, r.step, r.cells + 2 * PAD + 1);
   const mesh = surfaceNets(grid, r.ox, r.oy, r.oz, r.step, r.overlap);
   if (!mesh) return null;
-  return { ...mesh, colors: level.colors(grid, mesh.positions, r.colorMode, r.lod) };
+  return { ...mesh, colors: level.colors(grid, mesh.positions, r.colorMode, r.lod), surfaces: level.surfaces(grid, mesh.positions) };
 }

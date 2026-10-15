@@ -134,6 +134,11 @@ export class Karst implements Style {
     return d + r;
   }
 
+  /** Flowstone everywhere, a little rougher on the floor. */
+  surface(col: Column, _x: number, y: number, _z: number, out: Float32Array, o: number): void {
+    out[o] = 0; out[o + 1] = 0; out[o + 2] = y - col.floor < 0.4 ? 0.7 : 1; out[o + 3] = 0;
+  }
+
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     const B = this.band;
     // Flowstone: pale, creamy, streaked downwards; darker and damp low down.

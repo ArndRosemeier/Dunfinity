@@ -11,11 +11,12 @@ import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
 import { shareOf } from './regions';
-import { owns, type StyleId } from './style';
+import { owns, SURFACE_STRIDE, type StyleId } from './style';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
 import { CELLAR, CELLAR_SHAFT, CellarField } from './cellar';
+import { inscriptionsAt, type Inscription } from './inscriptions';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -96,6 +97,11 @@ export class Level {
     if (this.depth === 0) return { kind: 'letter', at: [CELLAR.letter.x, CELLAR.letter.y, CELLAR.letter.z] };
     const c = this.camp;
     return c && { kind: 'note', at: c.note };
+  }
+
+  /** Writing in the old scripts on this level (docs/design/lore.md): the ward round grandma's salt circle. */
+  get inscriptions(): readonly Inscription[] {
+    return inscriptionsAt(this.depth);
   }
 
   /** A place always safe to rest in, as by a fire: grandma's salt circle in the cellar. */
@@ -264,15 +270,26 @@ export class Level {
   /** Vertex colours (linear RGB) for mesh positions inside a sampled grid, from its nearest columns. */
   colors(grid: SampledGrid, positions: Float32Array, mode: ColorMode, lod: number): Float32Array {
     const out = new Float32Array(positions.length);
-    const { n, ox, oz, step, columns } = grid;
     for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i], y = positions[i + 1], z = positions[i + 2];
-      const ci = Math.min(n - 1, Math.max(0, Math.round((x - ox) / step)));
-      const ck = Math.min(n - 1, Math.max(0, Math.round((z - oz) / step)));
-      const col = columns[ci + n * ck];
+      const x = positions[i], y = positions[i + 1], z = positions[i + 2], col = columnIn(grid, x, z);
       if (mode === 'rock') this.field.color(col, x, y, z, out, i);
       else if (mode === 'working') hueOf(col.working.id, out, i);
       else hueOf(lod * 0x9e3779b9, out, i);
+    }
+    return out;
+  }
+
+  /**
+   * The rock's surface at mesh positions inside a sampled grid, `SURFACE_STRIDE` numbers per vertex:
+   * how it is worked (`Surface`, four), then which rock it is (`RockMix`, eight).
+   */
+  surfaces(grid: SampledGrid, positions: Float32Array): Float32Array {
+    const out = new Float32Array((positions.length / 3) * SURFACE_STRIDE);
+    for (let i = 0, o = 0; i < positions.length; i += 3, o += SURFACE_STRIDE) {
+      const x = positions[i], y = positions[i + 1], z = positions[i + 2];
+      const col = columnIn(grid, x, z);
+      this.field.surface(col, x, y, z, out, o);
+      this.field.rocks(col, out, o + 4);
     }
     return out;
   }
@@ -308,4 +325,12 @@ function hueOf(id: number, out: Float32Array, o: number): void {
     return 0.15 + 0.55 * Math.max(0, Math.min(1, Math.abs(t - 3) - 1));
   };
   out[o] = k(0); out[o + 1] = k(4); out[o + 2] = k(2);
+}
+
+/** The sampled grid's column nearest (x, z). */
+function columnIn(grid: SampledGrid, x: number, z: number): Column {
+  const { n, ox, oz, step, columns } = grid;
+  const ci = Math.min(n - 1, Math.max(0, Math.round((x - ox) / step)));
+  const ck = Math.min(n - 1, Math.max(0, Math.round((z - oz) / step)));
+  return columns[ci + n * ck];
 }

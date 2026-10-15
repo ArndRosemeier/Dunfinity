@@ -454,3 +454,31 @@ test('the dwarven halls are none of them: tall carved halls, crossed by chasms t
   assert.ok(deep('dwarven') > 0.04, `a chasm under ${(deep('dwarven') * 100).toFixed(1)}% of the dwarven halls`);
   for (const id of Object.keys(st)) if (id !== 'dwarven' && st[id].n > 100) assert.ok(deep(id) < deep('dwarven') / 4, `${id}: a chasm under ${(deep(id) * 100).toFixed(1)}%`);
 });
+
+test('the elven vaults are none of them: tall naves that narrow to a pointed vault, wide at the floor', () => {
+  // (The Old Halls draw them: a level all of them, against the Old Halls', Before People's and the Threshold's mixes.)
+  const st: Record<string, { n: number; pointed: number }> = {};
+  // How open the cave is at height y round (x, z): air at 2, 4 and 6 m out each way along x and along z, the narrower way.
+  const open = (l: Level, x: number, y: number, z: number) => {
+    let ax = 0, az = 0;
+    for (const r of [-6, -4, -2, 2, 4, 6]) { if (l.sdf(x + r, y, z) > 0) ax++; if (l.sdf(x, y, z + r) > 0) az++; }
+    return Math.min(ax, az);
+  };
+  const roof = (l: Level, x: number, y: number, z: number) => { while (y < 60 && l.sdf(x, y, z) > 0.05) y += Math.max(0.05, l.sdf(x, y, z) * 0.8); return y; };
+  for (const l of [new Level(1, 25, 'elven'), new Level(1, 25), new Level(1, 45), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 3000; k++) {
+      const x = ax + (hash3f(61, k, 25, 0) - 0.5) * 3000, z = az + (hash3f(61, k, 25, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, pointed: 0 });
+      s.n++;
+      // Pointed: a roof over 18 m up, wide open at the floor, and narrow near the top.
+      const r0 = roof(l, x, c.floor + 1.5, z) - c.floor;
+      if (r0 >= 18 && open(l, x, c.floor + 3, z) >= 5 && open(l, x, c.floor + 0.9 * r0, z) <= 3) s.pointed++;
+    }
+  }
+  const pointed = (id: string) => st[id].pointed / st[id].n;
+  assert.ok(st.elven.n > 500, `${st.elven.n} open elven columns`);
+  assert.ok(pointed('elven') > 0.25, `a pointed vault over ${(pointed('elven') * 100).toFixed(0)}% of the elven vaults`);
+  for (const id of Object.keys(st)) if (id !== 'elven' && st[id].n > 100) assert.ok(pointed(id) < pointed('elven') / 4, `${id}: a pointed vault over ${(pointed(id) * 100).toFixed(0)}%`);
+});
