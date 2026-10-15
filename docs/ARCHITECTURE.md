@@ -140,7 +140,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | The pick blow over the head (wind-up, commit, land), and closing in to swing it | `pickSwing(w, t, S, prey, aim, steer, rng, cause, dt)` and `closeIn(w, swingT, prey, S, speed, steer, dt, face)` with a `PickSwing` | `src/creatures/pick.ts` |
 | A blow struck by someone standing somewhere | `blowFrom(at, yaw, swing)` | `src/combat/combat.ts` |
 | What every creature is (health, hurt, death, `provoked`) | `Creature`; `groundSpeed(v)` | `src/creatures/creature.ts` |
-| A kind of creature on a level: dens per cell, waking near you, sleeping far off, the dead staying dead, stepping | `Population` (subclass: `denIn`, `hatch`, `act`, using `sites`, `floorFor`, `countIn`, `around`, `brood` to hatch a den, `roamFrom` to wander, `lieDead` for the step of the dead, `apart`, and `placed` for dens off the grid; it ticks every creature's `hurtT`/`deadT`; callers: `advance(dt, prey, ctx)`, `list`, `denAt`, `killed`, `blockers`) | `src/creatures/population.ts` |
+| A kind of creature on a level: dens per cell, waking near you, sleeping far off, the dead staying dead, stepping | `Population` (subclass: `denIn`, `hatch`, `act`, using `sites`, `floorFor`, `countIn`, `around`, `brood` to hatch a den, `roamFrom` to wander, `lieDead` for the step of the dead, `apart`, and `placed` for dens off the grid; it ticks every creature's `hurtT`/`deadT`; callers: `advance(dt, prey, ctx)`, `list`, `denAt`, `nearestDen`, `killed`, `blockers`) | `src/creatures/population.ts` |
 | Draw a pool of creature figures | `FigurePool` (a `Figure` per creature: `root`, `pose`; `draw(list, time, from)` draws the nearest when there are more than it holds) | `src/render/creatures/figures.ts` |
 | Slow a walker down | `brake(w, rate, dt)` | `src/creatures/steer.ts` |
 | What lies about to be found (floor finds, rat hoards), what is in reach, what is taken | `Finds` (`near`, `inReach`, `take`), kinds and values in `FINDS` | `src/loot/finds.ts` |
@@ -159,6 +159,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Show the map of what was seen (M) | `MapView` (`toggle`, `draw(level, explored, x, y, z, yaw, fire, now)`) | `src/app/mapView.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
+| The debug menu (`): every ability, invulnerable (`Body.invulnerable`), tireless, any level; the places worth checking out on a level and where to stand by each | `DebugMenu` (`toggle`, `refresh`, with the game's `DebugActions`); `placesOn(level, fauna, x, z)` | `src/app/debugMenu.ts`, `src/game/debugPlaces.ts` |
 
 ### The Lab
 

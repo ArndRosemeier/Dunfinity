@@ -61,6 +61,22 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     return this.dens.at(i, j);
   }
 
+  /** The den nearest (x, z), looking out ring by ring up to `rings` cells (and the dens placed off the grid), or null. */
+  nearestDen(x: number, z: number, rings = 8): D | null {
+    const c = this.spread.cell, ci = Math.floor(x / c), cj = Math.floor(z / c);
+    let best: D | null = null, bd = Infinity;
+    const consider = (d: D | null) => { const k = d ? Math.hypot(d.x - x, d.z - z) : Infinity; if (k < bd) { bd = k; best = d; } };
+    for (const d of this.placed) consider(d);
+    for (let r = 0; r <= rings; r++) {
+      // A den in ring r is at least (r - 1) cells off: stop once nothing nearer can be found.
+      if (best && bd < (r - 1) * c) break;
+      for (let j = cj - r; j <= cj + r; j++) for (let i = ci - r; i <= ci + r; i++) {
+        if (Math.max(Math.abs(i - ci), Math.abs(j - cj)) === r) consider(this.dens.at(i, j));
+      }
+    }
+    return best;
+  }
+
   /** Advance by dt seconds. `prey`: the player (blows go through combat.damage). Returns the blows landed this step. */
   advance(dt: number, prey: Fighter, ctx: Ctx = null as Ctx): number {
     this.steer.keepOff = prey;
