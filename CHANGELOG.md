@@ -1,10 +1,14 @@
 # Changelog
 
-## v0.088 — Real cave crickets
+## v0.089 — Real cave crickets
 
 - The cave crickets are new: sculpted, rigged and animated in Blender like the dogs and rats. Each one is a pale, humped cave cricket with banded plates, great chevroned hind legs with spined shins, and feelers longer than its body that never stop sweeping (fast and twitchy once it is after you).
 - Every move shows: the six-legged scuttle and the hops along the floor, the crouch before a leap, the hind legs kicked out straight behind in the air, the bite with the mandibles working, a flinch when hit, and over onto its back with its legs folding when it dies. On the rock it still clings head down.
 - Dogs and rats: their teeth and eyes now stay put when they move (a few were tied to the wrong bone).
+
+## v0.088 — Rats that stop fidgeting
+
+- Rats (and every other walking creature) no longer jiggle on the spot when they cannot get where they want to be. Shoved back by a nest-mate, stuck behind a block of fallen rock, or under a ledge they cannot climb, a rat used to try this way and that, a few centimetres back and forth, again and again. Now one that gets no nearer for a moment stands still for about half a second, then tries again. Over 48 nests in four kinds of rock, back-and-forth twitches dropped from 429 to 49.
 
 ## v0.087 — Real rats
 
