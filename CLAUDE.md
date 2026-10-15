@@ -6,7 +6,7 @@
 4. **Every PR description has a `COPIES:` line** ([no-duplicates.md](docs/design/no-duplicates.md) layer 4): `COPIES: 1 — checked (grepped: ...)` or `COPIES: 3→1 — <seam>`.
 5. **`npm test` must be green.** It runs the guards: banned patterns, layer boundaries and the duplication ratchet. A `NEW` duplication finding means fold the copy into one seam, or list it in `tools/guards/duplication-baseline.json` with a reason. A `STALE` one means delete its baseline line.
 6. **Every ~10 PRs, a sweep:** run both finders (`npm run dup`, `npm run repeated -- --min-info 0 --clone-floor 0.6`; reports land in `reports/`), read for concept duplicates, fold what is worth folding.
-7. **Each PR bumps the version** in `CHANGELOG.md` (v0.001, v0.002, ...).
+7. **Each PR adds a change note** `changes/<slug>.md` (`# Title`, then `- ` bullets; see [changes/README.md](changes/README.md)). Never edit `CHANGELOG.md` or pick a version: after the merge a workflow folds the notes into it as the next versions (v0.001 + 0.001 per merge). PR titles carry no version.
 
 Design: [docs/design/](docs/design/) (the main plan is `dunfinity-plan.md`).
 
