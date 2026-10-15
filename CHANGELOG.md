@@ -1,8 +1,12 @@
 # Changelog
 
-## v0.093 — Rock you can see
+## v0.094 — Rock you can see
 
 - The rock no longer burns out to flat white near a light. The burning lamps were far too bright close up and the screen simply clipped everything over full white, so the walls round every lamp, and the floor at your feet in your headlamp, read as blank white. Now the picture is tone-mapped like a film camera (bright light rolls off into warm highlights instead of clipping), the lamps and the headlamp fall off more gently, and the headlamp is a touch whiter. The stone's colour, cracks and tool marks show right up to the light.
+
+## v0.093 — Up from the fire
+
+- Resting by a fire you sit only while your wounds close or you get your breath back; once you are whole you stand up again. Walking on always gets you up, and the hint by the fire says so.
 
 ## v0.092 — Every level its own mix
 

@@ -44,6 +44,8 @@ export class Campfire {
   fire: Fire | null = null;
   /** Resting by it this step. */
   resting = false;
+  /** Resting and not yet whole (hurt or out of breath): sitting by it, not standing (the nobody gets up once mended). */
+  mending = false;
   /** How much faster wounds close here than FIRE.heal (grandma's Chicken Soup card). */
   soup = 1;
 
@@ -92,6 +94,7 @@ export class Campfire {
   step(r: Rester, hunted: boolean, now: number, dt: number): void {
     if (this.fire && now - this.fire.at > FIRE.kindle + FIRE.burn) this.fire = null;
     this.resting = r.health > 0 && Math.hypot(r.vx, r.vz) < 0.3 && (this.inHaven(r) || (this.burning(now) && !hunted && this.by(r)));
+    this.mending = this.resting && (r.health < this.maxHealth || r.stamina < this.maxStamina);
     if (!this.resting) return;
     r.health = Math.min(this.maxHealth, r.health + FIRE.heal * this.soup * dt);
     r.stamina = Math.min(this.maxStamina, r.stamina + FIRE.breath * dt);

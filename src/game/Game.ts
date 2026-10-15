@@ -679,7 +679,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
       const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
-      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.resting || homeTo !== null) && !stabbing ? 'crouch' : undefined);
+      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
@@ -724,7 +724,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : 'E: read the note');
-    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}. T: open grandma's tin (${tin.salt} salt)`);
+    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. T: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');
     else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
