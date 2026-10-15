@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.115 — The ability bar and Tab targeting
+
+- A bar along the bottom of the screen shows every cooked card that is used by a key: its number, its key, how soon it is ready again, and whether it is on (the lid up, tiptoeing, a salt circle keeping).
+- The slots answer to 1–8 as well as their own keys (not at Kemal's counter, where 1–3 still buy). With the mouse free (Esc), a click on a slot uses it; a click on the lid or Tiptoe holds it until the next click.
+- The cards that work by themselves (Hold It Properly, Chicken Soup, Kneading) are listed under the bar as always on.
+- Tab targeting (optional): Tab picks the foe nearest where the camera looks, and each further Tab the next one. A red mark with its health shows over it. Stabs, the Pound and thrown knives turn to it; Escape (with the mouse free), its death or 30 m of distance let it go.
+
+## v0.114 — Every level style cut through its own mix of rock
+
+- Each of the thirteen level styles now names the rocks it is cut through, so no area is one stone: the karst is limestone with beds of shale and sandstone, the rift shale, sandstone, granite and slate, the catacombs limestone and clay-dark shale, the lava tubes and basalt columns basalt with slate, the geodes and flooded galleries limestone with marble, the dwarven halls granite with marble and slate, the elven vaults marble with limestone, and so on.
+
 ## v0.113 — Swimming with the head out of the water
 
 - The swimmer was drawn completely under water: the body floats with its feet 1.4 m down, but the swim pose lies flat at hip height, so head and back sat about a quarter metre under the surface.
