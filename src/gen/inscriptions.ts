@@ -35,6 +35,22 @@ export interface WallPlace {
   readonly scale: number;
 }
 
+/**
+ * Writing along a line through the air before an upright face (a vault's rib, a spiral up a
+ * column): the line runs through `pts` from left to right as one faces it, the face looking out
+ * along (nx, nz); it starts `from` metres along; `scale` metres to a unit.
+ */
+export interface PathPlace {
+  readonly kind: 'path';
+  readonly pts: readonly V3[];
+  readonly nx: number;
+  readonly nz: number;
+  readonly from: number;
+  readonly scale: number;
+}
+
+export type Place = RingPlace | WallPlace | PathPlace;
+
 export interface Inscription {
   /** Stable across loads (the key remembers which were read). */
   readonly id: string;
@@ -42,7 +58,7 @@ export interface Inscription {
   readonly text: string;
   /** What one sees on reading it, before any of it can be made out. */
   readonly where: string;
-  readonly place: RingPlace | WallPlace;
+  readonly place: Place;
 }
 
 /** Grandma's ward round the salt circle. */
@@ -62,13 +78,21 @@ export function inscriptionsAt(depth: number): readonly Inscription[] {
   }];
 }
 
-/** How far from an inscription's line one can stand to read it, metres: round a ring on the floor, and in front of a face (writing on a wall is big, and often high). */
-export const READ_REACH = { ring: 0.8, wall: 4 };
+/** How far from an inscription's line one can stand to read it, metres: round a ring on the floor, in front of a face (writing on a wall is big, and often high), and before a path (under a rib, say). */
+export const READ_REACH = { ring: 0.8, wall: 4, path: 8 };
 
 /** Whether one at (x, y, z) can read `ins`. */
 export function canRead(ins: Inscription, x: number, y: number, z: number): boolean {
   const p = ins.place;
   if (p.kind === 'ring') return Math.abs(Math.hypot(x - p.x, z - p.z) - p.r) < READ_REACH.ring && Math.abs(y - p.y) < 1.5;
+  if (p.kind === 'path') {
+    // In front of the face, between the line's two ends as one faces it, and under it (it may be high: a rib is).
+    const a = p.pts[0], b = p.pts[p.pts.length - 1], out = (x - a[0]) * p.nx + (z - a[2]) * p.nz;
+    const across = (x - a[0]) * p.nz - (z - a[2]) * p.nx, span = (b[0] - a[0]) * p.nz - (b[2] - a[2]) * p.nx;
+    let top = -Infinity;
+    for (const q of p.pts) top = Math.max(top, q[1]);
+    return out > 0.2 && out < READ_REACH.path && across > 0 && across < span && y < top + 2 && y > top - 35;
+  }
   // In front of the face, within reach of its middle, and not far above or below it.
   const half = (letteringOf(ins).width * p.scale) / 2, mx = p.x + p.rx * half, mz = p.z + p.rz * half;
   const out = (x - mx) * p.nx + (z - mz) * p.nz;
@@ -98,9 +122,26 @@ export function onRing(p: RingPlace, u: number, v: number): [number, number] {
   return [p.x + Math.cos(a) * r, p.z + Math.sin(a) * r];
 }
 
+/** Where a point of the lettering (u along the line, v up from it) lies on a path: u runs along it, v up across it in the face (up × out is the way it runs). */
+export function onPath(p: PathPlace): (u: number, v: number) => V3 {
+  const at = [0];
+  for (let i = 1; i < p.pts.length; i++) at.push(at[i - 1] + Math.hypot(p.pts[i][0] - p.pts[i - 1][0], p.pts[i][1] - p.pts[i - 1][1], p.pts[i][2] - p.pts[i - 1][2]));
+  return (u, v) => {
+    const s = p.from + u * p.scale;
+    let i = 1;
+    while (i < p.pts.length - 1 && at[i] < s) i++;
+    const a = p.pts[i - 1], b = p.pts[i], len = at[i] - at[i - 1] || 1, t = (s - at[i - 1]) / len;
+    const tx = (b[0] - a[0]) / len, ty = (b[1] - a[1]) / len, tz = (b[2] - a[2]) / len;
+    // Up across the line: out × along.
+    const ux = -p.nz * ty, uy = p.nz * tx - p.nx * tz, uz = p.nx * ty, k = v * p.scale;
+    return [a[0] + (b[0] - a[0]) * t + ux * k, a[1] + (b[1] - a[1]) * t + uy * k, a[2] + (b[2] - a[2]) * t + uz * k];
+  };
+}
+
 /** A point of the lettering in the world, and which way its face looks. */
-function placer(p: RingPlace | WallPlace): { point: (u: number, v: number) => V3; normal: V3 } {
+function placer(p: Place): { point: (u: number, v: number) => V3; normal: V3 } {
   if (p.kind === 'ring') return { point: (u, v) => { const [x, z] = onRing(p, u, v); return [x, p.y, z]; }, normal: [0, 1, 0] };
+  if (p.kind === 'path') return { point: onPath(p), normal: [p.nx, 0, p.nz] };
   return { point: (u, v) => [p.x + p.rx * u * p.scale, p.y + v * p.scale, p.z + p.rz * u * p.scale], normal: [p.nx, 0, p.nz] };
 }
 

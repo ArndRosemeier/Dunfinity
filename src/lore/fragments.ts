@@ -71,3 +71,33 @@ export function frieze(r: (k: number) => number): string {
   if (pick < 0.85) return `here ${name} fell`;
   return `${numberWords(20 + 10 * Math.floor(r(3) * 5))} fathoms to the fire`;
 }
+
+/**
+ * Written along the ribs of the elven vaults (levels 21–40), in Thread script: the keepers' account.
+ * They grew the vaults over the crack and sang the doors shut, and believed the climbers are only
+ * going home (lore.md §3). Wards, laments, the names of the lost.
+ */
+export const KEEPERS: readonly string[] = [
+  'they are only going home',
+  'sleep now and do not climb',
+  'we sang the doors shut for their sake and for ours',
+  'the diggers woke the fire and the fire woke them',
+  'keep the way shut and keep it kind',
+  'we grew this roof over the crack',
+  'what comes up is not angry it is lost',
+  'every world is a door that someone closed',
+  'salt of the first sea holds the line',
+  'the tall ones were old when we were young',
+  'do not follow the diggers down',
+  'here the thread is thin so sing',
+];
+
+/** Elves' names (invented words). */
+const ELF_NAMES = ['aelin', 'sirith', 'maelor', 'lune', 'tavrin', 'elowen', 'nimra', 'ithiel', 'oren', 'faleth'];
+
+/** A line along an elven rib: one of the keepers' lines, or (filler) a lament for one of the lost. `r(k)` gives a number in [0, 1) for each k (k < 3). */
+export function ribLine(r: (k: number) => number): string {
+  const name = ELF_NAMES[Math.floor(r(1) * ELF_NAMES.length)];
+  if (r(0) < 0.7) return KEEPERS[Math.floor(r(2) * KEEPERS.length)];
+  return r(0) < 0.85 ? `remember ${name} who went down singing` : `${name} kept this door and did not come back`;
+}

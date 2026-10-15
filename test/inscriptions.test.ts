@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GRANDMA_KERF, Key } from '../src/lore/key';
-import { DIGGERS, THRESHOLD_LINTELS, frieze, numberWords } from '../src/lore/fragments';
+import { DIGGERS, KEEPERS, THRESHOLD_LINTELS, frieze, numberWords, ribLine } from '../src/lore/fragments';
 import { Level } from '../src/gen/level';
 import { PROP_TILE, quarryProps } from '../src/gen/quarryProps';
 import { breakLines, letter } from '../src/lore/scripts';
 import { CELLAR } from '../src/gen/cellar';
-import { CELLAR_WARD, type Inscription, type RingPlace, type WallPlace, canRead, inscriptionsAt, letteringOf, onRing } from '../src/gen/inscriptions';
+import { CELLAR_WARD, type Inscription, type PathPlace, onPath, type RingPlace, type WallPlace, canRead, inscriptionsAt, letteringOf, onRing } from '../src/gen/inscriptions';
 import { PropBuilder } from '../src/gen/propMesh';
 import { inscribe } from '../src/gen/inscriptions';
 import { DWARVEN } from '../src/gen/dwarven';
@@ -117,4 +117,27 @@ test('frieze texts are English the dwarves could cut: the diggers\' lines and th
   // Every one fits a panel in runes at least 28 cm tall.
   const P = DWARVEN.panel, room = DWARVEN.pillar.pitch * P.share - 1.2;
   for (const t of [...DIGGERS, ...seen]) assert.ok(letter('kerf', t).width * 0.14 <= room, t);
+});
+
+test('the elven vaults carry the keepers\' Thread script up over their ribs, salt-white, readable from the nave floor under it', () => {
+  // The arrival is in the excavation's ground; the vaults stand further out.
+  const l = new Level(1, 25, 'elven'), [ax, , az] = l.arrival, found: Inscription[] = [];
+  for (let j = 1; j <= 2; j++) for (let i = -1; i <= 1; i++) found.push(...quarryProps(l, Math.floor((ax - 1000) / PROP_TILE) + i, Math.floor((az - 1000) / PROP_TILE) + j).inscriptions.filter((s) => s.id.startsWith('rib:')));
+  assert.ok(found.length >= 3, `${found.length} ribs written`);
+  for (const ins of found) {
+    assert.equal(ins.script, 'thread');
+    const p = ins.place as PathPlace, apex = p.pts[(p.pts.length - 1) / 2], at = onPath(p);
+    assert.ok(p.scale >= 0.3, `${ins.text}: ${p.scale}`);
+    // The line runs left to right as one faces it, its letters' tops towards the vault.
+    const [x0, , z0] = at(0, 0), [x1, , z1] = at(letteringOf(ins).width, 0), up = at(letteringOf(ins).width / 2, 1);
+    assert.ok((x1 - x0) * p.nz - (z1 - z0) * p.nx > 0, 'runs right to left');
+    assert.ok(up[1] > at(letteringOf(ins).width / 2, 0)[1], 'upside down at the point of the arch');
+    const fx = apex[0] + p.nx * 3, fz = apex[2] + p.nz * 3, g = l.groundAt(fx, fz);
+    assert.ok(apex[1] - g > 15, 'not high under the vault');
+    assert.ok(canRead(ins, fx, g, fz), `${ins.id} not readable from the floor under it`);
+    assert.ok(!canRead(ins, apex[0] - p.nx * 3, g, apex[2] - p.nz * 3), `${ins.id} readable from behind`);
+  }
+  const lines = new Set<string>();
+  for (let s = 0; s < 300; s++) lines.add(ribLine((k) => ((s * 7919 + k * 104729) % 997) / 997));
+  assert.ok([...lines].some((t) => KEEPERS.includes(t)) && [...lines].some((t) => t.startsWith('remember ')));
 });

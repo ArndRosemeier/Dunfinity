@@ -2348,6 +2348,22 @@
     "reason": "a local helper of the same name in each file for its own thing (a nave, a vault, a floor, a seeded roll); the shapes and rolls differ"
   },
   {
+    "key": "same name: dunfinity/gen/elven.ts#props + dunfinity/gen/geode.ts#props",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/elven.ts#props + dunfinity/gen/roots.ts#props",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/elven.ts#r + dunfinity/gen/quarryProps.ts#r",
+    "reason": "a local helper of the same name in each file for its own thing (a nave, a vault, a floor, a seeded roll); the shapes and rolls differ"
+  },
+  {
+    "key": "same name: dunfinity/gen/elven.ts#r + dunfinity/gen/styleProps.ts#r",
+    "reason": "a local helper of the same name in each file for its own thing (a nave, a vault, a floor, a seeded roll); the shapes and rolls differ"
+  },
+  {
     "key": "same name: dunfinity/gen/dwarven.ts#r + dunfinity/gen/quarryProps.ts#r",
     "reason": "a local helper of the same name in each file for its own thing (a nave, a vault, a floor, a seeded roll); the shapes and rolls differ"
   },
