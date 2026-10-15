@@ -27,6 +27,8 @@ export interface Dress {
   mine(x: number, z: number): boolean;
   /** Something in the way: an upright box (as `TileBuilder.block`). */
   block(x: number, z: number, yaw: number, hx: number, hz: number, y0: number, y1: number): void;
+  /** A burning light at (x, y, z) (a fire, a lit brazier): one of the lamps that light the level near the viewer. */
+  light(x: number, y: number, z: number): void;
   /** Counts a thing placed. */
   placed(): void;
 }
