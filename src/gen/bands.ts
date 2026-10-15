@@ -4,7 +4,7 @@
  * many looks: a band is data, not a second generator.
  */
 export interface Band {
-  readonly id: 'quarry' | 'salt';
+  readonly id: 'quarry' | 'salt' | 'cistern';
   /** Shown on arrival: "Level 3 · The Salt Works". */
   readonly name: string;
   /** Workings: the chance of a grand hall (few, massive pillars) and of a cathedral (very tall). */
@@ -16,6 +16,8 @@ export interface Band {
   readonly height: readonly [number, number];
   readonly grandHeight: readonly [number, number];
   readonly cathedralHeight: readonly [number, number];
+  /** How far apart the floors of neighbouring workings may lie, metres (one step up or down). */
+  readonly step: number;
   /** Chance that a working has collapsed. */
   readonly collapse: number;
   /** Carved pillars: flutes cut into the sides (depth, metres; 0: plain cut stone), and how many per side (even: a ridge down the middle of each side, where a ladder can go). */
@@ -35,6 +37,8 @@ export interface Band {
   /** What the miners left (src/gen/quarryProps.ts): the share of things against the rock that are carvings (statues of miners, chapels), and the chance per open spot of an electric lamp hanging from the roof. */
   readonly carvings: number;
   readonly hanging: number;
+  /** The share of things against the rock that are waterworks fittings (pipes and valves, pumps, the wartime bunker's furniture). */
+  readonly machines: number;
   /** Creatures: the chance per cell that one of the Salt-Touched works there (src/creatures/touched.ts). */
   readonly touched: number;
   /** The chance per cell of a group of cave crickets on the rock (src/creatures/crickets.ts). */
@@ -46,12 +50,12 @@ export const QUARRY: Band = {
   grand: 0.3, cathedral: 0.15,
   spacing: [14, 12], grandSpacing: [32, 22],
   height: [12, 26], grandHeight: [28, 22], cathedralHeight: [45, 20],
-  collapse: 0.3,
+  step: 4, collapse: 0.3,
   flutes: 0, fluteCount: 0,
   water: [-3.7, 1.3],
   rock: [0.46, 0.42, 0.35], layers: [0.05, 0.045, 0.035], dust: [0.08, 0.075, 0.065], natural: [0.82, 0.82, 0.85],
   veins: 0,
-  stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0,
+  stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
   touched: 0, crickets: 0.22,
 };
 
@@ -61,16 +65,35 @@ export const SALT: Band = {
   grand: 0.45, cathedral: 0.35,
   spacing: [16, 10], grandSpacing: [34, 18],
   height: [16, 22], grandHeight: [32, 20], cathedralHeight: [55, 25],
-  collapse: 0.15,
+  step: 4, collapse: 0.15,
   flutes: 0.35, fluteCount: 4,
   water: [-2.4, 1.6],
   rock: [0.31, 0.32, 0.34], layers: [0.12, 0.12, 0.125], dust: [0.1, 0.1, 0.1], natural: [0.7, 0.72, 0.76],
   veins: 1,
-  stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05,
+  stone: [0.4, 0.41, 0.43], carvings: 0.45, hanging: 0.05, machines: 0,
   touched: 0.35, crickets: 0.25,
+};
+
+/**
+ * The Cisterns (levels 6–8): a forgotten water-works and wartime bunker built into the mine. Vast,
+ * regular halls of plain concrete pillars, many of them flooded; pipes, valves and pumps along the
+ * walls, and the bunker's 1940s furniture where it was dry.
+ */
+export const CISTERN: Band = {
+  id: 'cistern', name: 'The Cisterns',
+  grand: 0.5, cathedral: 0.2,
+  spacing: [17, 4], grandSpacing: [26, 8],
+  height: [14, 12], grandHeight: [24, 14], cathedralHeight: [40, 15],
+  step: 1.2, collapse: 0.08,
+  flutes: 0, fluteCount: 0,
+  water: [-0.5, 0.6],
+  rock: [0.37, 0.36, 0.33], layers: [0.025, 0.025, 0.022], dust: [0.06, 0.06, 0.055], natural: [0.62, 0.6, 0.56],
+  veins: 0.1,
+  stone: [0.42, 0.41, 0.38], carvings: 0, hanging: 0.08, machines: 0.6,
+  touched: 0.12, crickets: 0,
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
 export function bandOf(depth: number): Band {
-  return depth >= 3 ? SALT : QUARRY;
+  return depth >= 6 ? CISTERN : depth >= 3 ? SALT : QUARRY;
 }

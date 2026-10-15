@@ -91,7 +91,7 @@ function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Work
     angle: f(0) * Math.PI * 0.5,
     spacing,
     pillar: spacing * (grand ? 0.22 + 0.12 * f(2) : 0.32 + 0.18 * f(2)),
-    floor: (Math.floor(f(3) * 3) - 1) * 4,
+    floor: (Math.floor(f(3) * 3) - 1) * b.step,
     height: h0 + h1 * f(4),
     collapse: f(6) < b.collapse ? 0.3 + 0.5 * f(8) : 0,
     cx,

@@ -65,6 +65,32 @@ export class PropBuilder {
     this.box(x0 + dx, y0 + dy, z0 + dz, [dx, dy, dz], [0, up, 0], [(-dz / h) * side, 0, (dx / h) * side], color);
   }
 
+  /** A round tube of radius r from (x0, y0, z0) to (x1, y1, z1), open at the ends, `seg` sides: pipes, rims. */
+  tube(x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, r: number, color: Rgb, seg = 10): void {
+    const ax = x1 - x0, ay = y1 - y0, az = z1 - z0, len = Math.hypot(ax, ay, az) || 1;
+    const tx = ax / len, ty = ay / len, tz = az / len;
+    // Two directions across the tube: away from whichever world axis is least along it.
+    let ux = 0, uy = 0, uz = 0;
+    if (Math.abs(ty) < 0.9) { ux = tz; uz = -tx; } else { uy = -tz; uz = ty; }
+    const ul = Math.hypot(ux, uy, uz);
+    ux /= ul; uy /= ul; uz /= ul;
+    const vx = ty * uz - tz * uy, vy = tz * ux - tx * uz, vz = tx * uy - ty * ux;
+    const base = this.p.length / 3;
+    for (const [px, py, pz] of [[x0, y0, z0], [x1, y1, z1]]) {
+      for (let k = 0; k <= seg; k++) {
+        const th = (k / seg) * Math.PI * 2, c = Math.cos(th), sn = Math.sin(th);
+        const nx = ux * c + vx * sn, ny = uy * c + vy * sn, nz = uz * c + vz * sn;
+        this.p.push(px + nx * r, py + ny * r, pz + nz * r);
+        this.n.push(nx, ny, nz);
+        this.c.push(color[0], color[1], color[2]);
+      }
+    }
+    for (let k = 0; k < seg; k++) {
+      const a = base + k, b = a + seg + 1;
+      this.i.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  }
+
   /**
    * A smooth ellipsoid centred at (x, y, z) with radii (rx, ry, rz) along x, y, z, tilted by `pitch`
    * about x (nose down for positive pitch): `seg` around, `seg / 2` rings. For creatures and round things.

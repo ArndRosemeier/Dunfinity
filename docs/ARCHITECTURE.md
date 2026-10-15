@@ -60,7 +60,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where is the floor under a point? | `level.floorAt(x, z)` (the working's floor; ignores pillars) | `src/gen/level.ts` |
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
 | Is a spot dry ground? How far to the rock beside a column? | `level.dry(x, z, margin)`; `rockDistance(col)` | `src/gen/level.ts`, `src/gen/quarry.ts` |
-| Which band (Quarry, Salt Works, ...) a depth belongs to, and how it looks: rock colours, pillar fluting, water, glowing veins, its name | `bandOf(depth)`, `level.band` (passed to `QuarryField`) | `src/gen/bands.ts` |
+| Which band (Quarry, Salt Works, Cisterns, ...) a depth belongs to, and how it looks: rock colours, pillar fluting, floor steps between halls, water, glowing veins, what was left against the rock (carvings, waterworks), its name | `bandOf(depth)`, `level.band` (passed to `QuarryField`) | `src/gen/bands.ts` |
 | Where does a viewer start? | `level.spawn()` | `src/gen/level.ts` |
 | Where exactly is the rock surface under a point (where props stand)? | `level.groundAt(x, z)` | `src/gen/level.ts` |
 | Which way does the rock face here? | `level.normal(x, y, z, out)` | `src/gen/level.ts` |
@@ -73,7 +73,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where a human's feet find the floor (foot IK) | `floorUnder(() => level)` | `src/render/humans/nobody.ts` |
 | Carve a salt miner (statues, and the watchers' figures) | `carveMiner(builder, x, top, z, yaw, pose, colour)` | `src/gen/quarryProps.ts` |
 | Draw the watcher statues (turn to you while unseen) | `Watchers` (`draw(props.watcherLists, x, z, camera, dt)`, in `LevelView.frame`); the tiles list them in `PropTile.watchers` | `src/render/props/watchers.ts` |
-| Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts, `cylinder` for barrels and buckets) | `src/gen/propMesh.ts` |
+| Build merged box geometry for props | `PropBuilder` (`box`, `upright`, `beam`, `ellipsoid` for smooth round parts, `cylinder` for barrels and buckets, `tube` for pipes and rims between any two points) | `src/gen/propMesh.ts` |
 | One thing per grid cell (shafts, rat nests), decided once per cell | `CellMemo` (`at(i, j)`) | `src/gen/cellMemo.ts` |
 | Where are the ways down (shafts), which is nearest, where is its ladder? | `level.descents` (`of`, `at`, `nearest`, `within`), `ladderTop(shaft)`; the field already contains them | `src/gen/descents.ts` |
 | Where does a player arrive on a level? | `level.arrival` (below the first level: the foot of `level.ascent`, the way up) | `src/gen/level.ts` |

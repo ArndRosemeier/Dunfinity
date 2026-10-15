@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.027 — The Cisterns
+
+- Levels 6 to 8 are a new place: the Cisterns, a forgotten water-works and wartime bunker built into the mine. Long, regular halls of plain concrete pillars, about half of them standing in water you wade through, a few flooded deep enough to swim.
+- Along the walls: rusted pipes on brackets with valve wheels, old pumps on their concrete plinths, and where it stayed dry the bunker's 1940s furniture (a table and chairs by a filing cabinet, bunk beds).
+- Fewer Salt-Touched down here, and no cave crickets; the slimes are still about.
+
 ## v0.026 — The Foreman
 
 - Level 5 has a boss. In a salt cathedral, beside an old mine bell on its timber frame, waits the Foreman: a Salt-Touched three metres tall. Rouse him and he strikes the bell with his pick, and every Salt-Touched of his crew working the rock round the hall comes for you, however far off. Then he comes himself: slow, with a long wind-up, and a blow that takes nearly half your health.
