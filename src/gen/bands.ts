@@ -139,7 +139,7 @@ export const THRESHOLD: Band = {
   stone: [0.36, 0.33, 0.3], carvings: 0, hanging: 0.12, machines: 0,
   touched: 0.06, crickets: 0.3, dogs: 0, eels: 0.4, scavengers: 0.2, caverns: 0.5, ruins: 0.2, older: 0, uphill: 0, chalk: 0,
   lamplight: 1,
-  styles: [['excavation', 0.3], ['karst', 0.45], ['rift', 0.25]],
+  styles: [['excavation', 0.3], ['karst', 0.4], ['rift', 0.2], ['catacombs', 0.1]],
 };
 
 /** The band a depth belongs to. Deeper bands land here as they are built; until then the deepest built one continues. */
