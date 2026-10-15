@@ -51,6 +51,8 @@ interface Chamber {
 
 export class Karst implements Style {
   readonly id: StyleId = 'karst';
+  /** Pale flowstone on the map. */
+  readonly mapFloor = [0.62, 0.62, 0.58] as const;
   private readonly noise: Noise;
   private readonly rough: Noise;
   private readonly cellSeed: number;

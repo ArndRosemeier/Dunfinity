@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.076 — Caves on the map
+
+- The map (M) shows what kind of place you walked through: the miners' worked stone stays its warm brown, the natural caves show as pale flowstone. So you can see where the workings break into the caves and find your way back to them.
+
 ## v0.075 — Try one kind of place
 
 - For testing: add `?style=karst` to the address and every level below the cellar is all caves, but where you arrive. Each new kind of place gets its name here as it is added.

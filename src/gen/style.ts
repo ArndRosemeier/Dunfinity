@@ -28,12 +28,17 @@ export interface Style {
    * least SHARE_OWN (E2, E5). Styles without such things need not listen.
    */
   share?: (x: number, z: number) => number;
+  /** How its floor shows on the map (M): the shade of a level floor, 0–1 RGB. Worked stone if left out (`MAP_FLOOR`). */
+  readonly mapFloor?: readonly [number, number, number];
   /**
    * Where a passage from another style's region may end in this one (E3): a point of its open
    * space near (x, z), a point well inside its region. Pure.
    */
   portal(x: number, z: number): [number, number];
 }
+
+/** Worked stone on the map (M): the excavation's, and any style's that does not say. */
+export const MAP_FLOOR = [0.59, 0.53, 0.44] as const;
 
 /**
  * A style places its own things (pillars, props, dens, ways down) only where its share is at least

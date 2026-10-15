@@ -1,9 +1,11 @@
 /**
  * The map (M): what this grandchild has seen of the level (src/world/explored.ts), drawn from above
- * round them, north up: the floor they have walked by, shaded by height, the ways down and up they
+ * round them, north up: the floor they have walked by, shaded by height and coloured by the kind of
+ * place it is (worked stone, pale flowstone: `Style.mapFloor`), the ways down and up they
  * have seen, their fire, and themselves as an arrow. Never what they have not seen.
  */
 import type { Level } from '../gen/level';
+import { MAP_FLOOR } from '../gen/style';
 import { EXPLORE, type Explored } from '../world/explored';
 import { panel } from './panel';
 
@@ -47,9 +49,10 @@ export class MapView {
     const i0 = Math.floor((x - w / 2 / S) / c), i1 = Math.ceil((x + w / 2 / S) / c), j0 = Math.floor((z - h / 2 / S) / c), j1 = Math.ceil((z + h / 2 / S) / c);
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       if (!seen.has(level.depth, i, j)) continue;
-      const f = level.floorAt((i + 0.5) * c, (j + 0.5) * c), t = Math.max(-1, Math.min(1, (f - y) / 8));
-      const l = Math.round(150 + 60 * t);
-      g.fillStyle = level.waterAt((i + 0.5) * c, (j + 0.5) * c) > f + 0.1 ? '#3d5a6e' : `rgb(${l}, ${Math.round(l * 0.9)}, ${Math.round(l * 0.75)})`;
+      const mx = (i + 0.5) * c, mz = (j + 0.5) * c;
+      const f = level.floorAt(mx, mz), t = Math.max(-1, Math.min(1, (f - y) / 8));
+      const [r, gr, b] = level.field.styles[level.field.regions.styleAt(mx, mz)].mapFloor ?? MAP_FLOOR, l = 255 * (1 + 0.4 * t);
+      g.fillStyle = level.waterAt(mx, mz) > f + 0.1 ? '#3d5a6e' : `rgb(${Math.round(l * r)}, ${Math.round(l * gr)}, ${Math.round(l * b)})`;
       g.fillRect(px(i * c), pz(j * c), c * S + 0.5, c * S + 0.5);
     }
     const seenAt = (sx: number, sz: number) => seen.has(level.depth, Math.floor(sx / c), Math.floor(sz / c));
