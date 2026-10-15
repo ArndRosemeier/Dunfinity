@@ -594,5 +594,13 @@
   {
     "key": "same name: dunfinity/gen/cellar.ts#color + dunfinity/gen/quarry.ts#color",
     "reason": "CellarField overrides QuarryField's field method: the same seam, the cellar's own shape (one density function per level)."
+  },
+  {
+    "key": "idiom: [.body .root] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts + dunfinity/render/creatures/slimeView.ts",
+    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes, rig and poses; the shared pool lives in figures.ts"
+  },
+  {
+    "key": "same name: dunfinity/loot/practice.ts#data + dunfinity/loot/recipes.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin, Cooked and Practice each know their own fields"
   }
 ]

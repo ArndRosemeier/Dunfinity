@@ -24,6 +24,17 @@ export const TIERS = [10, 30, 70] as const;
 export class Practice {
   private readonly counts = new Map<Skill, number>();
 
+  /** The counts, to keep (src/persist/save.ts); `Practice.from` puts them back (unknown skills are dropped). */
+  get data(): Partial<Record<Skill, number>> {
+    return Object.fromEntries(this.counts);
+  }
+
+  static from(d: Partial<Record<string, number>>): Practice {
+    const p = new Practice();
+    for (const [s, n] of Object.entries(d)) if (s in SKILLS && n) p.counts.set(s as Skill, n);
+    return p;
+  }
+
   count(s: Skill): number {
     return this.counts.get(s) ?? 0;
   }

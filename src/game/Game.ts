@@ -6,6 +6,7 @@
  */
 import { Timer, Vector3 } from 'three/webgpu';
 import { Practice, SKILLS, type Skill } from '../loot/practice';
+import { readSave, writeSave, type GrandchildData } from '../persist/save';
 import { CELLAR } from '../gen/cellar';
 import { notaryLetter } from '../gen/notary';
 import { Level } from '../gen/level';
@@ -69,7 +70,10 @@ const COOK = { dur: 2.4 };
 
 export async function startGame(host: HTMLElement): Promise<void> {
   const params = parseViewParams(location.search);
-  let level = new Level(params.seed, params.depth);
+  // Kept between visits (src/app/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
+  const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
+  const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
+  let level = new Level(params.seed, saved?.child?.depth ?? params.depth);
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   view.headlampPower = { survey: 40, dark: 9 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
@@ -85,20 +89,21 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   let fauna: Fauna;
   /** Finds taken so far, per level: they stay taken for every grandchild (D13). */
-  const taken = new Map<number, Set<number>>();
+  const taken = new Map<number, Set<number>>(saved?.taken.map(([d, ids]) => [d, new Set(ids)]) ?? []);
   let finds: Finds;
   const findsOf = (l: Level): Finds => {
     if (!taken.has(l.depth)) taken.set(l.depth, new Set());
     return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!);
   };
   let pack = new Pack();
+  for (const f of saved?.child?.pack ?? []) pack.add(f);
   /** Grandma's tin: the infused salt outlives every grandchild. */
-  const tin = new Tin();
-  tin.deepest = level.depth;
+  const tin = saved ? Tin.from(saved.tin) : new Tin();
+  tin.deepest = Math.max(tin.deepest, level.depth);
   /** The cards this grandchild has cooked (the next one starts with none). */
-  let cooked = new Cooked();
+  let cooked = saved?.child ? Cooked.from(saved.child.cooked) : new Cooked();
   /** What this grandchild has practised (the next one starts at none). */
-  let practice = new Practice();
+  let practice = saved?.child ? Practice.from(saved.child.practice) : new Practice();
   /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   const show = (l: Level) => {
@@ -115,7 +120,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     nobody.level = l;
   };
   /** Which grandchild this is (1: the first); the notary writes to each. The deepest level this one has reached. */
-  let heir = 0, reached = 0;
+  let heir = saved?.heir ?? 0, reached = saved?.child?.reached ?? 0;
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth)); // the next grandchild starts at the top
     heir++;
@@ -138,7 +143,25 @@ export async function startGame(host: HTMLElement): Promise<void> {
   scavengerView.people.level = level;
   const tallView = await TallOneView.create(params.seed);
   tallView.level = level;
-  let body = nextGrandchild();
+  /** The grandchild kept from the last visit, where they were. */
+  const resume = (c: GrandchildData): Body => {
+    const b = new Body(c.pos[0], c.pos[1] + 0.05, c.pos[2]);
+    b.health = c.health; b.stamina = c.stamina;
+    b.facing = cam.yaw = c.facing;
+    return b;
+  };
+  let body = saved?.child ? resume(saved.child) : nextGrandchild();
+  /** Keep the game (every few seconds, and when the page goes). */
+  const keepGame = (): void => {
+    if (!keep) return;
+    const child: GrandchildData | null = body.dead ? null : {
+      depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
+      cooked: cooked.data, practice: practice.data, pack: [...pack.items],
+    };
+    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child });
+  };
+  let keptAt = 0, keptDead = false;
+  addEventListener('pagehide', keepGame);
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
@@ -326,6 +349,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
+    // Keep the game every few seconds (not mid-climb or mid-way home), and at once when the grandchild dies.
+    if (!climb.active && homeTo === null && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
     const [mx, my] = controls.takeLook();
     cam.look(mx, my, controls.takeWheel());
     input.forward = (controls.held('KeyW') ? 1 : 0) - (controls.held('KeyS') ? 1 : 0);
