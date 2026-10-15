@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.064 — Rock with a surface
+
+- The rock no longer looks untextured. Its walls show cracks, rust-brown streaks running down, warmer and cooler stretches of stone, and darker hollows. Damp patches on the floors are darker and a little shiny.
+- In the Quarry and the Salt Works, the walls carry the miners' pick marks: shallow parallel scallops slanting one way or the other course by course. Natural caverns and the cisterns' concrete barely show them.
+
 ## v0.063 — The right knee
 
 - Fix: running (and walking over uneven ground), the right knee turned inward or sideways, sometimes all the way round. The legs' footing worked out which way is forward from the wrong thing for the right leg (the left hip's turn). Both knees now bend forward.
