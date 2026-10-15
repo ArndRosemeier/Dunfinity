@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.094 — Real slimes
+
+- The slimes are new: sculpted, rigged and animated in Blender. Lumen is a pale, glossy jelly with glowing motes in its skin; Murk is black, lumpy and oily.
+- Every move shows: they slump and tremble at rest, crawl in pulses (heaping up, then pouring forward, the front lobe first), squash down before a blow and throw themselves at you with it, quiver when hit, and melt into a puddle when they die.
+
 ## v0.093 — Up from the fire
 
 - Resting by a fire you sit only while your wounds close or you get your breath back; once you are whole you stand up again. Walking on always gets you up, and the hint by the fire says so.
