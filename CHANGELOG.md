@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.068 — Tidying up
+## v0.069 — Tidying up
 
 - Behind the scenes: a sweep for repeated code. The dogs, rats, slimes and cave crickets now share one way of putting their figures where they stand. Nothing changes in play.
 
