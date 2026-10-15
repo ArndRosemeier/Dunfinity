@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.098 — Wet slimes
+
+- The slimes shine wet now, and Murk is properly black and oily instead of grey.
+
 ## v0.097 — Change notes instead of version fights
 
 - Behind the scenes: each change now brings its own short note, and the version number is given when it lands. Several helpers working at once no longer trip over each other's version numbers, so fixes reach the game sooner.
