@@ -12,6 +12,7 @@
  */
 import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import { CELLAR_BAND } from './bands';
+import type { StyleId } from './style';
 import { QuarryField, type Column, type Working } from './quarry';
 import type { Shaft } from './descents';
 import { TOWN, houseColors, nearestHouse, townAir, townGround } from './town';
@@ -70,6 +71,7 @@ function vault(t: number, half: number, spring: number, crown: number): number {
 }
 
 export class CellarField extends QuarryField {
+  override readonly id: StyleId = 'cellar';
   private readonly grain: Noise;
 
   /** (No seed: the cellar is the same for every seed.) */

@@ -14,6 +14,7 @@
  */
 import { QUARRY, type Band } from './bands';
 import { Noise, hash2i, hashToFloat, deriveSeed, smoothstep, clamp } from '@futuremagic/core';
+import type { Style, StyleId } from './style';
 
 /**
  * Pillars older than the Cisterns (docs/design/town-and-first-strata.md §4): the drum's radius as a
@@ -172,7 +173,9 @@ function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Work
   };
 }
 
-export class QuarryField {
+/** The excavation style (src/gen/style.ts). */
+export class QuarryField implements Style {
+  readonly id: StyleId = 'excavation';
   private readonly noise: Noise;
   private readonly rough: Noise;
   private readonly cellSeed: number;

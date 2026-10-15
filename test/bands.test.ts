@@ -34,10 +34,10 @@ test("salt pillars are carved: their sides are fluted, the Quarry's are flat", (
       const w = l.workingAt(sx + k * 37, sz - k * 23);
       const s = w.spacing, half = w.pillar / 2;
       for (let iu = -3; iu <= 3 && !found; iu++) {
-        if (l.field.pillarAt(w, iu, 0) !== 'whole') continue;
+        if (l.field.excavation.pillarAt(w, iu, 0) !== 'whole') continue;
         const ds: number[] = [];
         for (let t = -0.6; t <= 0.6; t += 0.05) {
-          const [x, z] = l.field.fromGrid(w, (iu + 0.5) * s + half + 0.6, 0.5 * s + t * half);
+          const [x, z] = l.field.excavation.fromGrid(w, (iu + 0.5) * s + half + 0.6, 0.5 * s + t * half);
           const col = l.columnAt(x, z);
           if (col.working.id !== w.id || col.wall < 5) { ds.length = 0; break; }
           ds.push(col.pillarD);
@@ -62,7 +62,7 @@ test('in the Threshold, natural caverns break through: no pillars, a walkable fl
       const col = l.columnAt(x, z);
       if (col.cavern < 0.99) continue;
       cave++;
-      assert.equal(l.field.pillarAt(col.working, 0, 0), 'none');
+      assert.equal(l.field.excavation.pillarAt(col.working, 0, 0), 'none');
       if (col.pillarD < 1 || col.border < 15 || col.rubble > 0.05) continue;
       open++;
       // The floor rises and falls no more than a slope one can walk.

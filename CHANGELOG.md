@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.073 — Ready for more kinds of place
+
+- Behind the scenes: the first step towards levels that really differ. The way a level's rock is made is now one "style" of several to come, with a plan for how two styles meet so their edges look natural ([level-styles.md](docs/design/level-styles.md)). Nothing changes in play yet: every level is exactly as it was.
+
 ## v0.072 — Salt Line
 
 - Grandma's first lost card. Read her note at the camp on level 9 and you find a card torn out of her tin, tucked under the thermos: Salt Line. It shows up in the tin once found and is cooked at a fire like the others.

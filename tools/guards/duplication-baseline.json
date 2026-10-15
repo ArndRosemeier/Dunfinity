@@ -686,5 +686,17 @@
   {
     "key": "same name: dunfinity/audio/music/mood.ts#update + dunfinity/render/props/lamps.ts#update",
     "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#at + dunfinity/gen/styledField.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): StyledField puts the level's styles together behind the same calls; Level is the one entry point"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellarProps.ts#at + dunfinity/gen/styledField.ts#at",
+    "reason": "a props builder's placement helper vs the field's distance; same short name, unrelated"
+  },
+  {
+    "key": "same name: dunfinity/gen/level.ts#climbable + dunfinity/gen/styledField.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): StyledField puts the level's styles together behind the same calls; Level is the one entry point"
   }
 ]

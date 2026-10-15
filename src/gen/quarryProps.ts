@@ -308,7 +308,7 @@ class TileBuilder {
   private gridBounds(w: Working): [number, number, number, number] {
     const b: [number, number, number, number] = [Infinity, -Infinity, Infinity, -Infinity];
     for (const [x, z] of [[this.x0, this.z0], [this.x0 + PROP_TILE, this.z0], [this.x0, this.z0 + PROP_TILE], [this.x0 + PROP_TILE, this.z0 + PROP_TILE]]) {
-      const [u, v] = this.level.field.toGrid(w, x, z);
+      const [u, v] = this.level.field.excavation.toGrid(w, x, z);
       b[0] = Math.min(b[0], u); b[1] = Math.max(b[1], u); b[2] = Math.min(b[2], v); b[3] = Math.max(b[3], v);
     }
     return b;
@@ -333,8 +333,8 @@ class TileBuilder {
   /** World position of point t along aisle k, and the aisle's world direction. */
   private aisle(w: Working, dir: number, k: number, t: number): [number, number, number, number] {
     const at = k * w.spacing;
-    const [x, z] = dir === 0 ? this.level.field.fromGrid(w, at, t) : this.level.field.fromGrid(w, t, at);
-    const [x1, z1] = dir === 0 ? this.level.field.fromGrid(w, at, t + 1) : this.level.field.fromGrid(w, t + 1, at);
+    const [x, z] = dir === 0 ? this.level.field.excavation.fromGrid(w, at, t) : this.level.field.excavation.fromGrid(w, t, at);
+    const [x1, z1] = dir === 0 ? this.level.field.excavation.fromGrid(w, at, t + 1) : this.level.field.excavation.fromGrid(w, t + 1, at);
     return [x, z, x1 - x, z1 - z];
   }
 
@@ -420,7 +420,7 @@ class TileBuilder {
     const s = w.spacing, half = w.pillar / 2;
     const face = Math.floor(this.roll(w, 41, iu, iv) * 4);
     const du = face === 0 ? 1 : face === 1 ? -1 : 0, dv = face === 2 ? 1 : face === 3 ? -1 : 0;
-    const field = this.level.field;
+    const field = this.level.field.excavation;
     const [x, z] = field.fromGrid(w, (iu + 0.5) * s + du * (half + 0.05), (iv + 0.5) * s + dv * (half + 0.05));
     if (!this.inTile(x, z) || field.pillarAt(w, iu, iv) !== 'whole' || this.level.columnAt(x, z).olderTop !== -Infinity) return; // (not on an older drum)
     const [ox, oz] = field.fromGrid(w, (iu + 0.5) * s + du * (half + 0.6), (iv + 0.5) * s + dv * (half + 0.6));
@@ -440,7 +440,7 @@ class TileBuilder {
   private chalk(w: Working, iu: number, iv: number): void {
     const b = this.level.band;
     if (b.chalk <= 0 || this.roll(w, 50, iu, iv) > b.chalk) return;
-    const s = w.spacing, half = w.pillar / 2, field = this.level.field;
+    const s = w.spacing, half = w.pillar / 2, field = this.level.field.excavation;
     const face = Math.floor(this.roll(w, 51, iu, iv) * 4);
     const du = face === 0 ? 1 : face === 1 ? -1 : 0, dv = face === 2 ? 1 : face === 3 ? -1 : 0;
     const [cx, cz] = field.fromGrid(w, (iu + 0.5) * s, (iv + 0.5) * s);
@@ -991,7 +991,7 @@ class TileBuilder {
   private shack(w: Working, iu: number, iv: number): void {
     const s = w.spacing;
     if (s - w.pillar < 7.5 || this.hasRail(w, 0, iu) || this.hasRail(w, 1, iv) || this.roll(w, 50, iu, iv) > 0.07) return;
-    const field = this.level.field;
+    const field = this.level.field.excavation;
     const [x, z] = field.fromGrid(w, iu * s, iv * s);
     if (!this.inTile(x, z) || this.level.descents.at(x, z, 6)) return;
     // Square to the pillar grid (its +v is yaw = angle), the door to any of the four aisles.
