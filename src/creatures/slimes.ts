@@ -115,7 +115,6 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
   /** One slime's step; `enemies`: the other faction's slimes. Returns 1 if it hurt you. */
   protected act(sl: Slime, prey: Fighter, enemies: readonly Slime[], dt: number): number {
     const C = SLIME;
-    sl.hurtT += dt;
     sl.blowT += dt;
     sl.phase += dt * C.pulse * Math.PI * 2;
     if (sl.provoked) {
@@ -123,12 +122,7 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
       // Hurt by you (not by a slime): a Lumen colony turns on you.
       if (sl.cause === 'knife') sl.colony.angry = true;
     }
-    if (sl.dead) {
-      sl.deadT += dt;
-      brake(sl, 6, dt);
-      this.steer.slide(sl, dt);
-      return 0;
-    }
+    if (sl.dead) return this.lieDead(sl, dt, 6);
     sl.foe = this.foeOf(sl, prey, enemies);
     const f = sl.foe;
     let hurt = 0;

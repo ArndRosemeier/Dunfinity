@@ -138,15 +138,9 @@ export class Dogs extends Population<Pack, Dog, number> {
   /** One dog's step; `facing`: which way you face. Returns 1 if it bit you. */
   protected act(g: Dog, prey: Fighter, facing: number, dt: number): number {
     const D = DOG, p = g.pack;
-    g.hurtT += dt;
     g.t += g.mode === 'rest' || g.mode === 'trot' ? -dt : dt;
     if (g.provoked) { g.provoked = false; p.hunting = true; }
-    if (g.dead) {
-      g.deadT += dt;
-      brake(g, 6, dt);
-      this.steer.slide(g, dt);
-      return 0;
-    }
+    if (g.dead) return this.lieDead(g, dt, 6);
     const dx = prey.x - g.x, dz = prey.z - g.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     if (!prey.dead && d < D.notice && Math.abs(prey.y - g.y) < 2.5) p.hunting = true;
     if (p.hunting && (prey.dead || d > D.forget || Math.abs(prey.y - g.y) > 4)) p.hunting = false;

@@ -8,7 +8,7 @@
  * Built before the warm-up (his materials compile with the rest) and added with the Stage once.
  */
 import { Group, type Object3D } from 'three/webgpu';
-import { Humanoid, type ActionAnim } from '@futuremagic/humanoid/three';
+import type { Humanoid, ActionAnim } from '@futuremagic/humanoid/three';
 import { deriveSeed } from '@futuremagic/core';
 import type { Rgb } from '../../gen/propMesh';
 import { meshOf as mesh } from '../meshes';
@@ -16,8 +16,8 @@ import { METAL, VERTEX_COLOR_SOLID } from '../materials';
 import { FOREMAN, type Boss, type Hall } from '../../creatures/foreman';
 import { groundSpeed } from '../../creatures/creature';
 import type { Level } from '../../gen/level';
-import { WARDROBE, minersClothes } from '../humans/wardrobe';
-import { floorUnder } from '../humans/nobody';
+import { minersClothes } from '../humans/wardrobe';
+import { HumanPool, humans } from './humanPool';
 import { touchedLook } from './touchedView';
 
 const WOOD: Rgb = [0.3, 0.22, 0.15], BRONZE: Rgb = [0.42, 0.3, 0.14];
@@ -40,36 +40,46 @@ function bellParts() {
 
 export class ForemanView {
   readonly root = new Group();
-  /** The level he stands on (the feet find its floor). */
-  level: Level | null = null;
-  private readonly ground = floorUnder(() => this.level);
+  private readonly man: HumanPool<Boss>;
   private readonly frame = new Group();
   private readonly swing = new Group();
-  private health = 0;
 
   static async create(seed: number): Promise<ForemanView> {
-    const human = await Humanoid.create({ ...touchedLook(seed, 0), scale: FOREMAN.height / 1.78, muscle: 1, weight: 0.85 }, { wardrobe: WARDROBE, expressions: true });
-    human.dress(minersClothes(deriveSeed(seed, 'foreman', 'clothes')));
-    return new ForemanView(human);
+    return new ForemanView(await humans(1, () => ({ ...touchedLook(seed, 0), scale: FOREMAN.height / 1.78, muscle: 1, weight: 0.85 }), () => minersClothes(deriveSeed(seed, 'foreman', 'clothes'))));
   }
 
-  private constructor(private readonly human: Humanoid) {
+  private constructor(man: Humanoid[]) {
+    this.man = new HumanPool(man, Infinity, (f, time) => {
+      const S = FOREMAN.swing;
+      let action: ActionAnim | undefined;
+      if (f.mode === 'swing') action = { id: 'slam', t0: time - f.swingT, dur: S.dur };
+      else if (f.mode === 'ring') action = { id: 'swing_1h', t0: time - (f.ringT % STRIKE), dur: STRIKE };
+      return { anim: { move: f.dead ? 'dead' : groundSpeed(f) > 0.15 ? 'walk' : 'idle', action, mood: f.angry ? 'angry' : 'neutral' }, combat: f.angry && !f.dead };
+    }, 0.4);
     const p = bellParts();
     this.frame.add(p.frame, this.swing);
     this.swing.position.y = 2.6;
     this.swing.add(p.bell);
-    this.root.add(human.object, this.frame);
+    this.root.add(this.man.root, this.frame);
+  }
+
+  /** The level he stands on (the feet find its floor). */
+  get level(): Level | null {
+    return this.man.level;
+  }
+
+  set level(l: Level | null) {
+    this.man.level = l;
   }
 
   /** His figure, for the warm-up (`stage.warmUp(extra)`). */
   get figures(): Object3D[] {
-    return [this.human.object, this.frame];
+    return [...this.man.figures, this.frame];
   }
 
   /** Draw him (if he is about) and the bell of `hall` (if this level has one). */
   draw(f: Boss | null, hall: Hall | null, dt: number, time: number): void {
     this.frame.visible = !!hall;
-    this.human.object.visible = !!f;
     if (hall) {
       this.frame.position.set(hall.bx, this.level?.groundAt(hall.bx, hall.bz) ?? hall.y, hall.bz);
       this.frame.rotation.y = Math.atan2(hall.bx - hall.x, hall.bz - hall.z) + Math.PI / 2;
@@ -77,17 +87,6 @@ export class ForemanView {
       const t = f ? f.ringT : 99, k = t < FOREMAN.ring.dur + 4 ? Math.exp(-0.5 * Math.max(0, t - FOREMAN.ring.at)) : 0;
       this.swing.rotation.x = t >= FOREMAN.ring.at ? Math.sin((t - FOREMAN.ring.at) * 5) * 0.45 * k : 0;
     }
-    if (!f) return;
-    if (f.health < this.health) this.human.animator.onHit(Math.sin(f.yaw), Math.cos(f.yaw), f.dead ? 1 : 0.4);
-    this.health = f.health;
-    const S = FOREMAN.swing;
-    let action: ActionAnim | undefined;
-    if (f.mode === 'swing') action = { id: 'slam', t0: time - f.swingT, dur: S.dur };
-    else if (f.mode === 'ring') action = { id: 'swing_1h', t0: time - (f.ringT % STRIKE), dur: STRIKE };
-    this.human.update({
-      pos: [f.x, f.y, f.z], vel: [f.vx, 0, f.vz], yaw: f.yaw,
-      anim: { move: f.dead ? 'dead' : groundSpeed(f) > 0.15 ? 'walk' : 'idle', action, mood: f.angry ? 'angry' : 'neutral' },
-      combat: f.angry && !f.dead,
-    }, dt, time, this.ground);
+    this.man.draw(f ? [f] : [], f?.x ?? 0, f?.z ?? 0, dt, time);
   }
 }

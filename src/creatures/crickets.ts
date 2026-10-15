@@ -176,7 +176,6 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
   /** One cricket's step (`lamp`: the headlamp, null when off); returns 1 if it hurt the prey. */
   protected act(c: Cricket, prey: Fighter, lamp: Lamp | null, dt: number): number {
     const C = CRICKET;
-    c.hurtT += dt;
     c.biteT += dt;
     if (c.provoked) { c.provoked = false; c.angry = true; }
     if (c.dead) return this.fall(c, dt);
@@ -301,7 +300,6 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
 
   /** Dead: off the wall (or out of the air) to the floor. */
   private fall(c: Cricket, dt: number): number {
-    c.deadT += dt;
     const g = this.level.groundAt(c.x, c.z);
     if (c.y > g + 0.01) {
       c.vy -= 18 * dt;

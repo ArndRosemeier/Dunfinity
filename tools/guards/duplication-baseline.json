@@ -412,16 +412,8 @@
     "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
   },
   {
-    "key": "idiom: [.aim .dur .mode .radius .rest .rng .start .steer .swingT] in dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/touched.ts",
-    "reason": "the walking fighters (Salt-Touched, Foreman, scavengers) each run their own chase/swing modes; the shared parts already live in Steer.close and pickSwing (src/creatures/pick.ts)"
-  },
-  {
     "key": "idiom: [.band .level .sites] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
-  },
-  {
-    "key": "idiom: [.close .radius .start .steer] in dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/touched.ts",
-    "reason": "the walking fighters (Salt-Touched, Foreman, scavengers) each run their own chase/swing modes; the shared parts already live in Steer.close and pickSwing (src/creatures/pick.ts)"
   },
   {
     "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
@@ -432,16 +424,8 @@
     "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
   },
   {
-    "key": "idiom: [.dead .deadT .slide .steer] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
-    "reason": "the death step runs after each kind's own handling of the blow that killed it, so it stays in the kind"
-  },
-  {
     "key": "idiom: [.health .height .radius] in dunfinity/creatures/eels.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
-  },
-  {
-    "key": "idiom: [.human .update .vx .x .y .z] in dunfinity/render/creatures/foremanView.ts + dunfinity/render/creatures/humanPool.ts + dunfinity/render/humans/nobody.ts",
-    "reason": "each human view feeds its own state into Humanoid.update (the seam): the nobody, the Foreman, and HumanPool for the pools"
   },
   {
     "key": "idiom: [.mode .move .steer] in dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/touched.ts",
@@ -534,5 +518,25 @@
   {
     "key": "idiom: [.collapse .rubble] in dunfinity/gen/descents.ts + dunfinity/gen/grandmasCamp.ts + dunfinity/gen/quarryProps.ts",
     "reason": "each placement (shafts, props, grandma's camp) reads the column's collapse and rubble against its own thresholds; the column (QuarryField.column) is the seam"
+  },
+  {
+    "key": "idiom: [.aim .dur .mode .rng .steer .swingT] in dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/touched.ts",
+    "reason": "the swing mode's two lines: the blow itself is pickSwing and the approach closeIn (src/creatures/pick.ts); what each kind does after a swing (chase on, go home, wait by the bell) is its own"
+  },
+  {
+    "key": "same name: dunfinity/render/LevelView.ts#level + dunfinity/render/creatures/foremanView.ts#level",
+    "reason": "a getter/setter for the level each view stands on; the Foreman's hands it on to his HumanPool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/creatures/foremanView.ts#draw",
+    "reason": "each view draws its own thing per frame; the Foreman's draws his bell and hands him to HumanPool.draw"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/scavengerView.ts#create",
+    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
+    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
   }
 ]

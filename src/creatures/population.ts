@@ -9,7 +9,7 @@ import type { Blockers } from '../world/blockers';
 import type { Level } from '../gen/level';
 import type { Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
-import { Steer, type Gait } from './steer';
+import { Steer, brake, type Gait } from './steer';
 import type { Creature } from './creature';
 
 /** Where some of a kind live. */
@@ -65,7 +65,11 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     const n = Math.ceil(dt * 60 - 1e-6), h = dt / Math.max(1, n);
     let hits = 0;
     for (let k = 0; k < n; k++) {
-      for (const c of this.list) hits += this.act(c, prey, ctx, h);
+      for (const c of this.list) {
+        c.hurtT += h;
+        if (c.dead) c.deadT += h;
+        hits += this.act(c, prey, ctx, h);
+      }
       this.settle();
     }
     for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (c.cause === 'knife') this.killed++; }
@@ -145,6 +149,12 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   /** How many live in the den of cell (i, j): seeded, lo to hi. */
   protected countIn(i: number, j: number, [lo, hi]: readonly [number, number]): number {
     return lo + Math.floor(hash3f(this.seed, i, j, 20) * (hi - lo + 1));
+  }
+  /** The step of one of the dead that walked: it slides to a stop where it fell (`k`: how fast). Returns 0 (no blow). */
+  protected lieDead(c: C, dt: number, k = 6): number {
+    brake(c, k, dt);
+    this.steer.slide(c, dt);
+    return 0;
   }
   /** A den going back to sleep. */
   protected sleep(_den: D): void {}

@@ -11,9 +11,8 @@
 import { hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import type { Fighter } from '../combat/combat';
-import { pickSwing } from './pick';
+import { closeIn, pickSwing } from './pick';
 import { Population, type Den } from './population';
-import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
 import { Creature } from './creature';
 
@@ -131,15 +130,9 @@ export class SaltTouched extends Population<Spot, Touched> {
   protected act(t: Touched, prey: Fighter, _ctx: null, dt: number): number {
     t.swingT += dt;
     t.strokeT += dt;
-    t.hurtT += dt;
     t.called = Math.max(0, t.called - dt);
     if (t.provoked) { t.provoked = false; t.angry = true; }
-    if (t.dead) {
-      t.deadT += dt;
-      brake(t, 6, dt);
-      this.steer.slide(t, dt);
-      return 0;
-    }
+    if (t.dead) return this.lieDead(t, dt, 6);
     const T = TOUCHED, S = T.swing;
     const dx = prey.x - t.x, dz = prey.z - t.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     const near = !prey.dead && Math.abs(prey.y - t.y) < 3;
@@ -163,8 +156,7 @@ export class SaltTouched extends Population<Spot, Touched> {
         if ((t.t -= dt) <= 0) t.mode = 'chase';
         break;
       case 'chase':
-        this.steer.close(t, prey, prey.radius + t.radius + S.start * 0.5, T.chase, dt, 0.8);
-        if (d - prey.radius - t.radius < S.start && t.swingT > S.dur + S.rest) { t.mode = 'swing'; t.swingT = 0; }
+        if (closeIn(t, t.swingT, prey, S, T.chase, this.steer, dt, 0.8)) { t.mode = 'swing'; t.swingT = 0; }
         break;
       case 'swing':
         hit = pickSwing(t, t.swingT, S, prey, T.aim, this.steer, this.rng, 'salt-touched', dt);

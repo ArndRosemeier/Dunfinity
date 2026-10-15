@@ -119,13 +119,11 @@ export class Eels extends Population<Pool, Eel> {
   /** One eel's step. Returns 1 if it bit you. */
   protected act(e: Eel, prey: Fighter, _ctx: null, dt: number): number {
     const E = EEL;
-    e.hurtT += dt;
     e.t += e.mode === 'cruise' ? -dt : dt;
     const water = this.level.waterAt(e.x, e.z);
     if (e.provoked) { e.provoked = false; if (e.mode === 'cruise') e.mode = 'hunt'; }
     if (e.dead) {
       // Belly up at the surface, drifting.
-      e.deadT += dt;
       this.swimStep(e, e.yaw, 0, dt);
       e.y += (water - 0.05 - e.y) * Math.min(1, dt * 2);
       this.drawOut(e);

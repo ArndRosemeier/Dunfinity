@@ -1,5 +1,5 @@
 /**
- * A fixed pool of drawn humans (the Salt-Touched, scavengers): Scale's humans built before the
+ * A fixed pool of drawn humans (the Salt-Touched, scavengers, the Foreman): Scale's humans built before the
  * warm-up (their materials compile with the rest) and added with the Stage once; each frame the
  * nearest of a list are drawn with them. Who is drawn keeps their human while they stay near, and
  * a newcomer takes the human of its own look where it can. A blow makes them flinch.
@@ -21,8 +21,8 @@ export interface Drawn {
   readonly yaw: number;
   readonly health: number;
   readonly dead: boolean;
-  /** Which human of the pool suits them best. */
-  readonly look: number;
+  /** Which human of the pool suits them best (any, if none). */
+  readonly look?: number;
 }
 
 /** `n` humans for a pool: human k with `look(k)`, dressed in `clothes(k)` (from the WARDROBE). */
@@ -49,8 +49,8 @@ export class HumanPool<T extends Drawn> {
   private readonly ground = floorUnder(() => this.level);
   private readonly slots: Slot<T>[];
 
-  /** `shown`: how far off they are drawn, metres; `anim`: what the animator plays for one of them, and whether they hold their weapon ready. */
-  constructor(humans: Humanoid[], private readonly shown: number, private readonly anim: (t: T, time: number) => { anim: AnimState; combat: boolean }) {
+  /** `shown`: how far off they are drawn, metres; `anim`: what the animator plays for one of them, and whether they hold their weapon ready; `flinch`: how hard a blow jerks them (a death always fully). */
+  constructor(humans: Humanoid[], private readonly shown: number, private readonly anim: (t: T, time: number) => { anim: AnimState; combat: boolean }, private readonly flinch = 0.7) {
     this.slots = humans.map((human) => ({ human, who: null, health: 0 }));
     for (const s of this.slots) this.root.add(s.human.object);
   }
@@ -75,7 +75,7 @@ export class HumanPool<T extends Drawn> {
       const t = s.who;
       s.human.object.visible = !!t;
       if (!t) continue;
-      if (t.health < s.health) s.human.animator.onHit(Math.sin(t.yaw), Math.cos(t.yaw), t.dead ? 1 : 0.7);
+      if (t.health < s.health) s.human.animator.onHit(Math.sin(t.yaw), Math.cos(t.yaw), t.dead ? 1 : this.flinch);
       s.health = t.health;
       const { anim, combat } = this.anim(t, time);
       s.human.update({ pos: [t.x, t.y, t.z], vel: [t.vx, 0, t.vz], yaw: t.yaw, anim, combat }, dt, time, this.ground);

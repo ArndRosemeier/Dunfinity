@@ -11,7 +11,6 @@
 import { angleDiff } from '@futuremagic/core';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
-import { brake } from './steer';
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from '../combat/combat';
 
@@ -119,16 +118,10 @@ export class Rats extends Population<Nest, Rat> {
   /** One rat's step; returns 1 if it bit. */
   protected act(r: Rat, prey: Fighter, _ctx: null, dt: number): number {
     r.biteT += dt;
-    r.hurtT += dt;
     const provoked = r.provoked;
     r.provoked = false;
     if (provoked) r.nest.alarmed = true;
-    if (r.dead) {
-      r.deadT += dt;
-      this.slide(r, dt);
-      brake(r, 6, dt);
-      return 0;
-    }
+    if (r.dead) return this.lieDead(r, dt, 6);
     const dx = prey.x - r.x, dz = prey.z - r.z, d = Math.hypot(dx, dz);
     const sees = !prey.dead && d < RAT.notice && Math.abs(prey.y - r.y) < 2.5;
     if (sees && r.mode !== 'chase' && r.mode !== 'bite' && r.mode !== 'flee') r.nest.alarmed = true;
