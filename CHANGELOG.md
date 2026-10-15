@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.036 — A fire to rest by
+
+- Press C to kneel and light a small fire, anywhere dry, as long as nothing is after you. Stand still by it and you rest: your wounds close far faster than they do on their own and you get your breath back. The fire burns for two minutes, then dies down to ash. When you are badly hurt the game reminds you that you can.
+
 ## v0.035 — The Tall One
 
 - Level 10 has its guardian. In a cavern a long walk from where you arrive stands the Tall One: four metres, gaunt, grey, quiet, its eyes white. Once it has seen you it follows, never hurrying and never giving up while you are near. From a distance it opens its arms and stares, and the cold of it goes through you. Close up it reaches down with its long arm.
