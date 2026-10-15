@@ -1,5 +1,5 @@
 name: Pages
-# Every push to main is playable at https://arndrosemeier.github.io/dunfinity/ (a preview, not a release).
+# Every push to main is playable at https://arndrosemeier.github.io/Dunfinity/ (a preview, not a release).
 on:
   push:
     branches: [main]
