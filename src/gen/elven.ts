@@ -16,7 +16,7 @@
  * Pure, like every style.
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
-import type { Band } from './bands';
+import { dryAbove, type Band } from './bands';
 import { Envelope } from './envelope';
 import { Grain, grainOf } from './grainLines';
 import { unworked, type Column, type Working } from './quarry';
@@ -39,9 +39,9 @@ export const ELVEN = {
   rib: { half: 0.6, deep: 1.2 },
   /** Transepts: one to a stretch of nave this long, metres, with this chance; half span and spring. */
   transept: { every: 110, chance: 0.6, half: 4, spring: 7 },
-  /** How far the floor dishes down to a nave's middle, and how far it rolls along it over what distance, metres. */
+  /** How far the floor dishes down to a nave's middle, and how far it rolls along it (up from clear of the water) over what distance, metres. */
   dish: 0.4,
-  roll: [5, 320] as const,
+  roll: [3, 320] as const,
 } as const;
 
 /** Rock further than this from a nave or transept counts as this far, metres; every one this near is looked at. */
@@ -103,10 +103,10 @@ export class Elven implements Style {
     return { v: k * E.spacing + (f(0) - 0.5) * 2 * E.jitter, half: E.half[0] + E.half[1] * f(1), spring: E.spring[0] + E.spring[1] * f(2) };
   }
 
-  /** Nave k's floor (its middle's) at u: rolling slowly along it. */
+  /** Nave k's floor (its middle's) at u: rolling slowly along it, never under the water. */
   private floor(k: number, u: number): number {
     const R = ELVEN.roll;
-    return this.noise.n2(u / R[1], k * 3.7 + 0.5) * R[0];
+    return dryAbove(this.band) + (1 + this.noise.n2(u / R[1], k * 3.7 + 0.5)) * R[0];
   }
 
   column(x: number, z: number, col: Column): Column {

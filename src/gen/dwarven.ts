@@ -17,7 +17,7 @@
  * Pure, like every style.
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
-import type { Band } from './bands';
+import { dryAbove, type Band } from './bands';
 import { Envelope } from './envelope';
 import { Grain, grainOf } from './grainLines';
 import { joined } from './gridTree';
@@ -31,7 +31,7 @@ export const DWARVEN = {
   /** One hall to a cell this long (along u) and wide (along v), metres; the hall's middle strays along u by up to `jitter`. */
   cell: [120, 72] as const,
   jitter: 3,
-  /** A hall's half length and half width (min, extra), its height (min, extra), metres; its floor on one of `levels` steps `step` apart. */
+  /** A hall's half length and half width (min, extra), its height (min, extra), metres; its floor on one of `levels` steps `step` apart, the lowest clear of the water. */
   long: [25, 20] as const,
   wide: [9, 6] as const,
   height: [18, 22] as const,
@@ -133,7 +133,7 @@ export class Dwarven implements Style {
       v: (j + 0.5) * D.cell[1],
       hu,
       hv: D.wide[0] + D.wide[1] * f(2),
-      floor: (Math.floor(f(3) * D.levels) - (D.levels - 1) / 2) * D.step,
+      floor: dryAbove(this.band) + Math.floor(f(3) * D.levels) * D.step,
       height: D.height[0] + D.height[1] * f(6),
       // (Off to one end, clear of where the side passages come in.)
       cu: 0, ch: chasm ? D.chasm.half[0] + D.chasm.half[1] * f(7) : 0,
