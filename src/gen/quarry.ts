@@ -42,6 +42,8 @@ export interface Working {
   height: number;
   /** 0 intact … 1 badly collapsed. */
   collapse: number;
+  /** Not a working at all: a natural cavern the mine broke into (no pillars; rough, domed, uneven; rock columns, stalagmites and stalactites). */
+  cavern: boolean;
   /** Feature point (centre) of the working. */
   cx: number;
   cz: number;
@@ -65,6 +67,8 @@ export interface Column {
   border: number;
   /** Collapse here, blended across the border like the floor. */
   collapse: number;
+  /** 0..1, how much this is a natural cavern (blended across the border like the floor). */
+  cavern: number;
 }
 
 /** Whether a pillar stands at a grid position: not at all, whole, or broken. */
@@ -76,7 +80,7 @@ export function rockDistance(col: Column): number {
 }
 
 export function newColumn(): Column {
-  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0 };
+  return { floor: 0, ceiling: 0, pillarD: Infinity, stumpTop: Infinity, stubBottom: -Infinity, wall: Infinity, working: workingFrom(0, 0, 0), rubble: 0, border: 0, collapse: 0, cavern: 0 };
 }
 
 function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Working {
@@ -94,6 +98,7 @@ function workingFrom(id: number, cx: number, cz: number, b: Band = QUARRY): Work
     floor: (Math.floor(f(3) * 3) - 1) * b.step,
     height: h0 + h1 * f(4),
     collapse: f(6) < b.collapse ? 0.3 + 0.5 * f(8) : 0,
+    cavern: f(10) < b.caverns,
     cx,
     cz,
   };
@@ -148,8 +153,10 @@ export class QuarryField {
     const floor = lerp(nb.floor, w.floor, t);
     const height = lerp(nb.height, w.height, t);
     const collapse = lerp(nb.collapse, w.collapse, t);
+    const cavern = lerp(nb.cavern ? 1 : 0, w.cavern ? 1 : 0, t);
     col.border = border;
     col.collapse = collapse;
+    col.cavern = cavern;
 
     // Walls between workings: natural rock, broken through where the opening noise is high.
     const thick = 7 + 5 * n.n2(x / 90 + 31.7, z / 90);
@@ -173,11 +180,14 @@ export class QuarryField {
       }
     }
     col.rubble = clamp(rubble / 6, 0, 1);
-    col.floor = floor + n.fbm2(x / 30, z / 30, 3) * 0.6 + rubble;
+    // A cavern's floor rolls in long swells (gentle enough to walk), its roof vaults and dips.
+    const swell = cavern * n.fbm2(x / 45 + 3.1, z / 45 - 8.2, 3) * 2.8;
+    col.floor = floor + n.fbm2(x / 30, z / 30, 3) * 0.6 + rubble + swell;
 
     // Ceiling: a cut ceiling with a slight sag; collapsed workings break upwards into domes.
     const dome = collapse * (10 + 14 * n.n2(x / 60 + 7.7, z / 60 - 3.3));
-    col.ceiling = floor + height + n.n2(x / 50, z / 50) * 1.2 + Math.max(0, dome);
+    const vault = cavern * n.fbm2(x / 38 - 5.5, z / 38 + 2.9, 3) * 9;
+    col.ceiling = floor + height + n.n2(x / 50, z / 50) * 1.2 + Math.max(0, dome) + swell + vault;
 
     // Pillars: a rotated square grid; some missing, in collapsed workings many broken.
     const [u, v] = this.toGrid(w, x, z);
@@ -212,6 +222,23 @@ export class QuarryField {
         }
       }
     }
+    // A cavern's rock: columns where the rock was never dissolved, and where they did not join up,
+    // a stalagmite from the floor and a stalactite from the roof. They fade out at the border.
+    if (cavern > 0) {
+      const blob = (0.42 - n.n2(x / 26 - 21.7, z / 26 + 13.9)) * 14 + (1 - cavern) * 24;
+      if (blob < col.pillarD) {
+        col.pillarD = blob;
+        const join = n.n2(x / 70 + 9.1, z / 70 - 4.4);
+        if (join < 0.15) {
+          const h = col.ceiling - col.floor;
+          col.stumpTop = col.floor + h * (0.15 + 0.3 * (0.5 + 0.5 * n.n2(x / 9, z / 9)));
+          col.stubBottom = col.ceiling - h * (0.12 + 0.25 * (0.5 + 0.5 * n.n2(x / 11 + 4, z / 11)));
+        } else {
+          col.stumpTop = Infinity;
+          col.stubBottom = -Infinity;
+        }
+      }
+    }
     // Safety: nothing of a pillar reaches the border itself.
     col.pillarD = Math.max(col.pillarD, 1.5 - border);
     return col;
@@ -235,6 +262,7 @@ export class QuarryField {
    * skips the border check, for callers that know the pillar is far inside the working.
    */
   pillarAt(w: Working, iu: number, iv: number, nearBorder = true): PillarState {
+    if (w.cavern) return 'none';
     const roll = hashToFloat(hash2i(this.pillarSeed ^ w.id, iu, iv));
     if (roll < 0.04 + 0.45 * w.collapse) return 'none';
     // Crews left no pillar standing across the border of their working.
@@ -273,7 +301,9 @@ export class QuarryField {
     const k = smoothstep(9, 3, col.wall);
     const wall = k > 0 ? col.wall + k * (this.rough.n3(x / 8, y / 8, z / 8) * 1.6 + this.rough.n3(x / 3, y / 3, z / 3) * 0.5) : col.wall;
     const d = Math.min(y - col.floor, col.ceiling - y, pillar, wall);
-    const r = this.rough.n3(x / 6, y / 6, z / 6) * 0.35 + this.rough.n3(x / 1.7, y / 1.7, z / 1.7) * 0.08;
+    let r = this.rough.n3(x / 6, y / 6, z / 6) * 0.35 + this.rough.n3(x / 1.7, y / 1.7, z / 1.7) * 0.08;
+    // A cavern is all natural rock: rough everywhere above the floor (which stays walkable).
+    if (col.cavern > 0) r += col.cavern * smoothstep(0.8, 3, y - col.floor) * (this.rough.n3(x / 10 + 3, y / 10, z / 10) * 1.8 + this.rough.n3(x / 3.5, y / 3.5, z / 3.5) * 0.45);
     return d + r;
   }
 
@@ -284,7 +314,7 @@ export class QuarryField {
     const dust = smoothstep(2.5, 0, y - col.floor); // floors are dusty and lighter
     const soot = smoothstep(col.ceiling - 3, col.ceiling, y) * 0.35; // lamp soot under the ceiling
     let r = B.rock[0] + B.layers[0] * band, g = B.rock[1] + B.layers[1] * band, b = B.rock[2] + B.layers[2] * band;
-    if (col.wall < 1.5 && y - col.floor > 0.5) { r *= B.natural[0]; g *= B.natural[1]; b *= B.natural[2]; } // natural rock between workings
+    if ((col.wall < 1.5 || col.cavern > 0.5) && y - col.floor > 0.5) { r *= B.natural[0]; g *= B.natural[1]; b *= B.natural[2]; } // natural rock between workings
     r += dust * B.dust[0]; g += dust * B.dust[1]; b += dust * B.dust[2];
     r += col.rubble * 0.04; g += col.rubble * 0.03;
     const k = 1 - soot;

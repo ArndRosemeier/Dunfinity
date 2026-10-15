@@ -99,7 +99,7 @@ class TileBuilder {
     if (workings.some((w) => w.floor < 0)) this.flood();
     for (const sh of this.level.descents.within(this.x0, this.z0, this.x0 + PROP_TILE, this.z0 + PROP_TILE)) this.shaft(sh);
     for (const w of workings) {
-      if (w.collapse > 0) continue; // nobody works a collapsed working any more
+      if (w.collapse > 0 || w.cavern) continue; // nobody works a collapsed working any more (or a cavern: nobody cut it)
       const [umin, umax, vmin, vmax] = this.gridBounds(w);
       const s = w.spacing;
       for (let k = Math.floor(umin / s); k <= Math.ceil(umax / s); k++) if (this.hasRail(w, 0, k)) this.track(w, 0, k, vmin, vmax);
@@ -133,10 +133,12 @@ class TileBuilder {
       const g = this.level.groundAt(x, z);
       if (g < this.level.waterAt(x, z) + 0.02 || this.level.descents.at(x, z, 1) || this.level.sdf(x, g + rad + 0.05, z) < rad * 0.5) continue;
       const c = this.tone(0.85 + 0.3 * r(5));
-      // Limestone breaks blocky: a slab turned any way, tipped a little, half sunk in the dust.
+      // Limestone breaks blocky: a slab turned any way, tipped a little, half sunk in the dust. In a
+      // natural cavern the water wore it round: a boulder.
       const hx = rad * (0.6 + 0.5 * r(7)), hy = rad * (0.3 + 0.35 * r(6)), hz = rad * (0.6 + 0.5 * r(8));
       const a = r(9) * Math.PI, ca = Math.cos(a), sa = Math.sin(a), t1 = (r(10) - 0.5) * 0.6, t2 = (r(11) - 0.5) * 0.6;
-      this.stones.box(x, g + hy * 0.25, z, [ca * hx, t1 * hx, -sa * hx], [-t1 * ca * hy, hy, t2 * hy], [sa * hz, -t2 * hz, ca * hz], c);
+      if (col.cavern > 0.5) this.stones.ellipsoid(x, g + hy * 0.25, z, hx, hy * 1.3, hz, c, 7, t1);
+      else this.stones.box(x, g + hy * 0.25, z, [ca * hx, t1 * hx, -sa * hx], [-t1 * ca * hy, hy, t2 * hy], [sa * hz, -t2 * hz, ca * hz], c);
       if (big && hy > 0.12) this.block(x, z, a, hx * 0.9, hz * 0.9, g - 0.2, g + hy * 1.25);
       this.counts.stones++;
     }

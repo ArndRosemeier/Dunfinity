@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.031 — The Threshold
+
+- Levels 9 and 10 are the Threshold, where the mine runs out. Natural caverns break through between the last, deepest workings: wide, rough caves with vaulted roofs and rolling floors, columns of rock the water never dissolved, and stalagmites rising to meet stalactites. The fallen stones in them are round boulders, and the veins of infused salt glow in the walls.
+- No crew ever worked the caverns: no rails, lamps or shacks in them.
+
 ## v0.030 — Scavengers
 
 - From level 4 you are not the only living person down here. Scavengers camp in twos and threes round small fires, sitting on crates. Most want to be left alone: they get up as you come near, one of them warns you off, and they let you pass at a distance. Walk into their camp or stab one and they all come for you with crowbars.

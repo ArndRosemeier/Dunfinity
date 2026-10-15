@@ -187,7 +187,7 @@ export class Level {
       for (let a = 0; a < 16; a++) {
         const px = x + Math.cos(a * 0.39) * r, pz = z + Math.sin(a * 0.39) * r;
         const w = this.workingAt(px, pz);
-        if (w.collapse > 0 || w.height < above + 6 || w.spacing < minSpacing) continue;
+        if (w.collapse > 0 || w.cavern || w.height < above + 6 || w.spacing < minSpacing) continue;
         const f = this.floorAt(px, pz);
         if (f < this.waterAt(px, pz) + 1) continue;
         // (The field without shafts: the shafts are placed from the arrival, which is found here.)
