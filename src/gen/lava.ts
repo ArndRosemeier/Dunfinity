@@ -19,6 +19,8 @@ import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
 import { GrainLines } from './grainLines';
 import type { Style, StyleId } from './style';
+import { propModel } from './models';
+import { roofOver, scatter, type Dress } from './styleProps';
 
 export const LAVA = {
   /** Tubes lie this far apart, metres, each strayed by up to `jitter`, meandering by up to `meander[0]` over `meander[1]` metres. */
@@ -182,6 +184,24 @@ export class Lava implements Style {
   /** A passage from another style ends on the middle line of the nearest tube (E3). */
   portal(x: number, z: number): [number, number] {
     return this.lines.nearest(x, z);
+  }
+
+  /** Lava stalactites dripping from the roof where the flow ran high; now and then a block fallen from it. */
+  props(d: Dress): void {
+    const drips = propModel('lava_drips'), block = propModel('basalt_block');
+    scatter(d, 2.5, 0x1a7, 2, (x, z, g, r) => {
+      const roll = r(3), yaw = r(4) * Math.PI * 2;
+      if (roll < 0.2) {
+        const roof = roofOver(d.level, x, g + 1, z, 20);
+        if (!Number.isFinite(roof) || roof - g < 4) return;
+        d.solid.stamp(drips, x, roof + 0.1, z, yaw, { scale: 1 + 1.5 * r(5), lean: Math.PI });
+      } else if (roll < 0.21) {
+        const scale = 0.5 + 0.5 * r(5);
+        d.solid.stamp(block, x, g - 0.2, z, yaw, { scale, lean: (r(6) - 0.5) * 0.5 });
+        d.block(x, z, yaw, 1.5 * scale, 1.2 * scale, g, g + 1.7 * scale);
+      } else return;
+      d.placed();
+    });
   }
 
   climbable(): boolean {

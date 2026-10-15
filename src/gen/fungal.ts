@@ -17,6 +17,8 @@ import { CaveThings, THING_REACH, karstChambers, type Chamber } from './caveThin
 import { Karst } from './karst';
 import type { Column } from './quarry';
 import type { Style, StyleId } from './style';
+import { propModel, type ModelName } from './models';
+import { scatter, type Dress } from './styleProps';
 
 export const FUNGAL = {
   /** Mushrooms per 100 m² of chamber floor (min, extra). */
@@ -107,10 +109,25 @@ export class Fungal implements Style {
     return this.cave.portal(x, z);
   }
 
+  /** Small mushrooms in clumps over the loam, a giant's scale of the woods' kinds (the giant ones are the field's own). */
+  props(d: Dress): void {
+    const n = this.noise;
+    scatter(d, 2.5, 0x5f0, 0.8, (x, z, g, r) => {
+      const clump = smoothstep(0.1, 0.6, n.n2(x / 9 - 2.2, z / 9 + 6.1));
+      if (r(3) >= 0.03 + 0.3 * clump) return;
+      const kind = SMALL_SHROOMS[Math.floor(r(4) * SMALL_SHROOMS.length)];
+      d.solid.stamp(propModel(kind), x, g - 0.03, z, r(5) * Math.PI * 2, { scale: 2 + 3 * r(6) * r(6) });
+      d.placed();
+    });
+  }
+
   climbable(): boolean {
     return true;
   }
 }
+
+/** The packed mushrooms strewn over the floor (src/gen/models.ts). */
+const SMALL_SHROOMS: readonly ModelName[] = ['mush_fly_agaric', 'mush_porcini', 'mush_inkcaps', 'mush_honey_cluster', 'mush_chanterelles', 'mush_puffballs', 'mush_morels', 'mush_cave_pale'];
 
 /** Cap colours round the wheel: violet, teal, amber, rose. */
 const CAP_HUES = [[0.5, 0.25, 0.6], [0.15, 0.5, 0.48], [0.68, 0.45, 0.15], [0.66, 0.28, 0.36]] as const;

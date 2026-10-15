@@ -15,6 +15,8 @@ import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
+import { propModel } from './models';
+import { scatter, type Dress } from './styleProps';
 
 export const CATACOMBS = {
   /** Galleries run along grid lines this far apart, metres; this share of the grid's stretches was dug. */
@@ -184,6 +186,19 @@ export class Catacombs implements Style {
     }
     const pu = bi * G, pv = bj * G;
     return [pu * this.cos - pv * this.sin, pu * this.sin + pv * this.cos];
+  }
+
+  /** What was left on the galleries' floors: piles of bones, a skull, burnt-down candles. */
+  props(d: Dress): void {
+    const pile = propModel('prop_bone_pile'), skull = propModel('prop_skull'), candles = propModel('prop_candles');
+    scatter(d, 3.5, 0xb0e, 1.5, (x, z, g, r) => {
+      const roll = r(3), yaw = r(4) * Math.PI * 2;
+      if (roll < 0.04) { d.solid.stamp(pile, x, g - 0.03, z, yaw, { scale: 1 + 0.8 * r(5) }); d.block(x, z, yaw, 0.35, 0.35, g, g + 0.4); }
+      else if (roll < 0.16) d.solid.stamp(skull, x, g - 0.01, z, yaw, { scale: 1.2 + 0.5 * r(5) });
+      else if (roll < 0.22) d.solid.stamp(candles, x, g - 0.01, z, yaw, { scale: 1.3 });
+      else return;
+      d.placed();
+    });
   }
 
   climbable(): boolean {
