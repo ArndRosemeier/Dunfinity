@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.058 — The street
+
+- Grandma's front door is open now. Outside is her street at night: cobbles, street lamps, rows of old houses on both sides with a few windows still lit, her own living-room window glowing, and the quarry hill rising behind her side of the street. The valley closes the town in.
+- Nobody is about yet, and the shops are not open. The way down is still through her cellar.
+
 ## v0.057 — Upstairs
 
 - The cellar stairs now lead up into grandma's house. Her ground floor is as she left it: the hall with her coat on the stand and the front door shut, the kitchen with the table set for one, her bedroom, and the living room with her photographs on the sideboard and on the wall. It is night at the windows.

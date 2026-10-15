@@ -1,0 +1,121 @@
+/**
+ * What stands in grandma's street at night (src/gen/town.ts): the street lamps, the houses' windows
+ * (a few still lit), their front doors, her own lit window and doorstep. Pure data like the other
+ * props: it places only what lies in the tile it is asked for.
+ */
+import { hash3f } from '@futuremagic/core';
+import { HOUSES, TOWN, houseColors, townGround, type House } from './town';
+import type { Furnish } from './cellarProps';
+import type { Rgb } from './propMesh';
+
+const IRON: Rgb = [0.08, 0.08, 0.09], DOOR: Rgb = [0.18, 0.11, 0.07], FRAME: Rgb = [0.3, 0.26, 0.2], STONE: Rgb = [0.36, 0.34, 0.31];
+const LIT: Rgb = [0.95, 0.68, 0.36], DARK_PANE: Rgb = [0.04, 0.05, 0.09], LANTERN: Rgb = [1, 0.85, 0.55];
+
+/** How far the houses' walls and roofs stand out of the field's (rounder) surface, metres: they hide it. */
+const SHELL = 0.15;
+
+/** The street's own seed, for which windows are lit and where the doors are. */
+const TOWN_PROPS = 1932;
+
+/** The street lamps: down the far side of the street, this far apart. */
+const LAMPS = { x: TOWN.street.x[0] + 0.6, every: 13, height: 3.8 } as const;
+
+export function furnishTown(f: Furnish): void {
+  const s = f.solid, G = TOWN.ground;
+
+  for (let z = -52; z <= 52; z += LAMPS.every) {
+    if (!f.inTile(LAMPS.x, z)) continue;
+    s.cylinder(LAMPS.x, G + 0.15, z, 0.12, 0.15, IRON, 8);
+    s.cylinder(LAMPS.x, G + LAMPS.height / 2, z, 0.05, LAMPS.height / 2, IRON, 8);
+    s.upright(LAMPS.x, G + LAMPS.height + 0.3, z, 0, 0.16, 0.03, 0.16, IRON);
+    f.glow.upright(LAMPS.x, G + LAMPS.height + 0.12, z, 0, 0.11, 0.15, 0.11, LANTERN);
+    f.light(LAMPS.x, G + LAMPS.height - 0.1, z);
+    f.block(LAMPS.x, z, 0, 0.13, 0.13, G, G + LAMPS.height);
+  }
+
+  // Every house's walls and roof, crisp over the field's rounded ones.
+  for (const H of HOUSES) if (f.inTile((H.x0 + H.x1) / 2, (H.z0 + H.z1) / 2)) shell(f, H, H === HOUSES[0]);
+
+  // The houses' fronts: a door, and windows up both floors, a few of them still lit.
+  for (let i = 1; i < HOUSES.length; i++) {
+    const H = HOUSES[i], fx = H.faces > 0 ? H.x1 + SHELL + 0.02 : H.x0 - SHELL - 0.02, mid = (H.z0 + H.z1) / 2;
+    if (!f.inTile(fx, mid)) continue;
+    const pane = (z: number, y: number, k: number) => {
+      const lit = hash3f(TOWN_PROPS, i, k, 1) < 0.3;
+      (lit ? f.glow : s).upright(fx, y, z, Math.PI / 2, 0.42, 0.55, 0.01, lit ? LIT : DARK_PANE);
+      s.upright(fx + H.faces * 0.01, y, z, Math.PI / 2, 0.03, 0.55, 0.02, FRAME);
+      s.upright(fx + H.faces * 0.03, y - 0.6, z, Math.PI / 2, 0.5, 0.04, 0.06, STONE); // the sill
+    };
+    const doorZ = mid + (hash3f(TOWN_PROPS, i, 0, 2) - 0.5) * (H.z1 - H.z0 - 3);
+    s.upright(fx, G + 1.05, doorZ, Math.PI / 2, 0.5, 1.05, 0.03, DOOR);
+    s.upright(fx + H.faces * 0.25, G + 0.08, doorZ, Math.PI / 2, 0.7, 0.08, 0.25, STONE); // the step
+    f.block(fx + H.faces * 0.25, doorZ, Math.PI / 2, 0.7, 0.26, G, G + 0.16);
+    let k = 0;
+    for (let z = H.z0 + 1.2; z < H.z1 - 1; z += 2.1) {
+      if (Math.abs(z - doorZ) > 1) pane(z, G + 1.6, k++);
+      if (H.eaves > G + 5) pane(z, G + 4.3, k++);
+    }
+  }
+
+  // Grandma's own front: the doorstep, and her living-room window lit (her standard lamp).
+  const g = TOWN.grandma, D = TOWN.door;
+  if (f.inTile(g.x[0], 0)) {
+    const fx = g.x[0] - SHELL;
+    s.upright(fx - 0.35, G + 0.06, 0, Math.PI / 2, 0.75, 0.06, 0.35, STONE);
+    f.glow.upright(fx - 0.02, G + 1.5, -2.8, Math.PI / 2, 0.5, 0.6, 0.01, LIT);
+    s.upright(fx - 0.03, G + 1.5, -2.8, Math.PI / 2, 0.03, 0.6, 0.02, FRAME);
+    s.upright(fx - 0.03, G + 2.13, -2.8, Math.PI / 2, 0.58, 0.04, 0.05, FRAME);
+    s.upright(fx - 0.02, G + D.top + 0.06, 0, Math.PI / 2, 0.6, 0.06, 0.04, FRAME); // the lintel
+  }
+}
+
+/**
+ * A house's walls and roof as flat slabs standing SHELL out of the field's surface (which rounds
+ * its corners at the mesh's metre cells), the gables filled. Grandma's keeps her front door open.
+ */
+function shell(f: Furnish, H: House, door: boolean): void {
+  const s = f.solid, G = TOWN.ground, { wall, roof } = houseColors(H);
+  const cz = (H.z0 + H.z1) / 2, half = (H.z1 - H.z0) / 2, hx = (H.x1 - H.x0) / 2, cx = (H.x0 + H.x1) / 2;
+  const y0 = G - 0.4, cy = (y0 + H.eaves) / 2, hy = (H.eaves - y0) / 2;
+  // The long walls (along x) and the ends (along z), the end to the street with her doorway cut out.
+  for (const z of [H.z0, H.z1]) s.upright(cx, cy, z, 0, hx + SHELL, hy, SHELL, wall);
+  for (const x of [H.x0, H.x1]) {
+    if (door && x === H.x0) {
+      const D = TOWN.door, top = G + D.top;
+      s.upright(x, cy, (H.z0 - SHELL + D.z[0]) / 2, 0, SHELL, hy, (D.z[0] - H.z0 + SHELL) / 2, wall);
+      s.upright(x, cy, (H.z1 + SHELL + D.z[1]) / 2, 0, SHELL, hy, (H.z1 + SHELL - D.z[1]) / 2, wall);
+      s.upright(x, (top + H.eaves) / 2, cz, 0, SHELL, (H.eaves - top) / 2, (D.z[1] - D.z[0]) / 2, wall);
+    } else s.upright(x, cy, cz, 0, SHELL, hy, half + SHELL, wall);
+  }
+  // A stone plinth round the foot, over the field's fillet where its ground meets its walls.
+  const P = { out: SHELL + 0.4, top: G + 0.55 }, py = (y0 + P.top) / 2, ph = (P.top - y0) / 2;
+  const plinth = (x: number, z: number, hx: number, hz: number) => {
+    s.upright(x, py, z, 0, hx, ph, hz, STONE);
+    f.block(x, z, 0, hx, hz, G, P.top);
+  };
+  for (const z of [H.z0, H.z1]) plinth(cx, z, hx + P.out, P.out);
+  for (const x of [H.x0, H.x1]) {
+    if (door && x === H.x0) {
+      const D = TOWN.door;
+      plinth(x, (H.z0 - P.out + D.z[0]) / 2, P.out, (D.z[0] - H.z0 + P.out) / 2);
+      plinth(x, (H.z1 + P.out + D.z[1]) / 2, P.out, (H.z1 + P.out - D.z[1]) / 2);
+    } else if (townGround(x + (x === H.x0 ? -1 : 1), cz).y < P.top) plinth(x, cz, P.out, half + P.out); // (not where the hill buries it)
+  }
+  // The gables: a triangle of wall over each end, both ways round.
+  const ridge = H.eaves + half * H.pitch;
+  for (const x of [H.x0, H.x1]) {
+    const xo = x + (x === H.x0 ? -SHELL : SHELL), a: [number, number, number][] = [[xo, H.eaves, H.z0 - SHELL], [xo, ridge, cz]], b: [number, number, number][] = [[xo, H.eaves, H.z1 + SHELL], [xo, ridge, cz]];
+    const n: [number, number, number] = [x === H.x0 ? -1 : 1, 0, 0];
+    s.ribbon(a, b, [n, n], [wall, wall]);
+    s.ribbon(b, a, [n, n], [wall, wall]);
+  }
+  // The roof: a slab down each side from the ridge, out over the walls.
+  const over = 0.35, lift = SHELL + 0.06;
+  for (const side of [-1, 1]) {
+    const ez = cz + side * (half + over), ey = H.eaves - over * H.pitch;
+    const half_v: [number, number, number] = side < 0 ? [0, (ey - ridge) / 2, (ez - cz) / 2] : [0, (ridge - ey) / 2, (cz - ez) / 2];
+    const a = hx + over, nl = Math.hypot(half_v[1], half_v[2]), nn: [number, number, number] = [0, (-a * half_v[2]) / (a * nl), (a * half_v[1]) / (a * nl)];
+    const mx = cx, my = (ridge + ey) / 2 + nn[1] * lift, mz = (cz + ez) / 2 + nn[2] * lift;
+    s.box(mx, my, mz, [a, 0, 0], half_v, [nn[0] * 0.06, nn[1] * 0.06, nn[2] * 0.06], roof);
+  }
+}

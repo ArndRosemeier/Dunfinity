@@ -598,5 +598,9 @@
   {
     "key": "same name: dunfinity/loot/practice.ts#data + dunfinity/loot/recipes.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin, Cooked and Practice each know their own fields"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#at + dunfinity/render/humans/ladderClimb.ts#at",
+    "reason": "the field's density at a point (QuarryField override) vs a climber's pose at a time; same short name, unrelated"
   }
 ]
