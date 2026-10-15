@@ -10,6 +10,8 @@
  */
 import { Rng, deriveSeed, hash3f, angleDiff } from '@futuremagic/core';
 import type { Blockers } from '../world/blockers';
+import { Steer } from './steer';
+import { Creature } from './creature';
 import type { Level } from '../gen/level';
 import { damage, type Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
@@ -67,47 +69,20 @@ export interface Nest {
   rats: Rat[] | null;
 }
 
-export class Rat implements Fighter {
-  x: number;
-  y: number;
-  z: number;
-  vx = 0;
-  vz = 0;
-  /** Facing (forward is (-sin yaw, -cos yaw)). */
-  yaw: number;
-  health: number = RAT.health;
-  mode: RatMode = 'sniff';
+export class Rat extends Creature<RatMode> {
   /** Seconds left in the current mode (sniff, scurry, flee) or of the bite. */
   t = 0;
   /** Gait phase (radians), advanced by distance travelled. */
   gait = 0;
-  /** Seconds since the last bite started (the snap is at RAT.windup), and since it was last hurt. */
+  /** Seconds since the last bite started (the snap is at RAT.windup). */
   biteT = 9;
-  hurtT = 9;
-  /** Seconds since death. */
-  deadT = 0;
   /** Where it is going (scurrying about). */
   tx: number;
   tz: number;
-  /** Which way it last went round something in its way (+1 / -1): it keeps to it, not dithering. */
-  side = 1;
-  readonly radius: number;
-  readonly height: number;
 
   constructor(readonly id: number, readonly nest: Nest, x: number, y: number, z: number, yaw: number, readonly size: number, readonly slot: number) {
-    this.x = x; this.y = y; this.z = z; this.yaw = yaw;
+    super(x, y, z, yaw, RAT.radius * size, RAT.height * size, RAT.health, 'sniff');
     this.tx = x; this.tz = z;
-    this.radius = RAT.radius * size;
-    this.height = RAT.height * size;
-  }
-
-  get dead(): boolean { return this.health <= 0; }
-
-  hurt(amount: number, _cause: string): void {
-    this.health = Math.max(0, this.health - amount);
-    this.hurtT = 0;
-    this.nest.alarmed = true;
-    if (this.dead) { this.mode = 'dead'; this.deadT = 0; }
   }
 }
 
@@ -121,21 +96,23 @@ export class Rats {
   private readonly dead = new Set<number>();
   private readonly seed: number;
   private readonly rng: Rng;
-  /** The props in the way (src/world/blockers.ts): rats run round them. */
-  blockers: Blockers | null = null;
-  /** Who the rats are after this step (for keeping out of their legs). */
-  private prey: Fighter | null = null;
+  /** How they walk the floor. */
+  private readonly steer: Steer;
   private readonly chance: number;
 
   constructor(private readonly level: Level) {
     this.seed = deriveSeed(level.seed, 'rats', level.depth);
     this.rng = new Rng(deriveSeed(level.seed, 'rats', 'behaviour', level.depth));
     this.chance = Math.min(0.8, RAT.chance + 0.08 * (level.depth - 1));
+    this.steer = new Steer(level, { arrive: RAT.arrive, still: RAT.still, step: RAT.step, drop: RAT.drop, accel: 10, turn: 12, face: 15 });
   }
+
+  /** The props in the way (src/world/blockers.ts): rats run round them. */
+  set blockers(b: Blockers | null) { this.steer.blockers = b; }
 
   /** Advance by dt seconds. `prey`: the player; bites go through combat.damage. Returns the bites landed this step. */
   advance(dt: number, prey: Fighter): number {
-    this.prey = prey;
+    this.steer.keepOff = prey;
     this.wakeNests(prey.x, prey.z);
     // In steps of at most 1/60 s: a rat looks one step ahead for floor, and a long step overreaches.
     const n = Math.ceil(dt * 60 - 1e-6), h = dt / Math.max(1, n);
@@ -213,9 +190,13 @@ export class Rats {
   private think(r: Rat, prey: Fighter, dt: number): number {
     r.biteT += dt;
     r.hurtT += dt;
+    const provoked = r.provoked;
+    r.provoked = false;
+    if (provoked) r.nest.alarmed = true;
     if (r.dead) {
       r.deadT += dt;
       this.slide(r, dt);
+      r.vx *= Math.max(0, 1 - dt * 6); r.vz *= Math.max(0, 1 - dt * 6);
       return 0;
     }
     const dx = prey.x - r.x, dz = prey.z - r.z, d = Math.hypot(dx, dz);
@@ -225,7 +206,7 @@ export class Rats {
     if (!hunting && (r.mode === 'chase' || r.mode === 'bite')) { r.mode = 'scurry'; r.t = 0; r.nest.alarmed = r.nest.alarmed && !prey.dead && d < RAT.forget; }
     if (hunting && (r.mode === 'sniff' || r.mode === 'scurry')) { r.mode = 'alert'; r.t = RAT.alert + (r.slot % 3) * 0.12; }
     // Badly hurt: now and then it bolts for a moment.
-    if (r.hurtT === 0 && r.health < RAT.health * 0.4 && this.rng.chance(0.5)) { r.mode = 'flee'; r.t = this.rng.range(1.2, 2.2); }
+    if (provoked && r.health < RAT.health * 0.4 && this.rng.chance(0.5)) { r.mode = 'flee'; r.t = this.rng.range(1.2, 2.2); }
 
     let speed = 0, gx = r.x, gz = r.z, bit = 0;
     switch (r.mode) {
@@ -277,70 +258,13 @@ export class Rats {
     if (r.mode === 'bite') {
       r.yaw += angleDiff(r.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 15);
       this.slide(r, dt);
-    } else this.move(r, gx, gz, speed, dt, faceYou ? Math.atan2(-dx, -dz) : null);
+    } else r.gait += this.steer.move(r, gx, gz, speed, dt, faceYou ? Math.atan2(-dx, -dz) : null) / (0.09 * r.size);
     return bit;
   }
 
-  /** Steer towards (gx, gz) at `speed` over the floor, round what is in the way; face `face` if given. */
-  private move(r: Rat, gx: number, gz: number, speed: number, dt: number, face: number | null): void {
-    let ddx = gx - r.x, ddz = gz - r.z;
-    const dist = Math.hypot(ddx, ddz);
-    // Arrive: ease off near the goal and stand still on it, so it never overshoots and comes back.
-    speed = Math.min(speed, (speed * Math.max(0, dist - RAT.still)) / RAT.arrive);
-    if (speed > 0.02) {
-      ddx /= dist; ddz /= dist;
-      let want = Math.atan2(-ddx, -ddz);
-      // Round obstacles: the direct way, else ever wider to the side it went round last, and only
-      // when that side is shut, the other (a rat that tries left, right, left dithers in place).
-      const step = Math.max(0.05, speed * dt);
-      let found = false;
-      for (const off of [0, 0.6, 1.2, 1.9, -0.6, -1.2, -1.9]) {
-        const a = want + off * r.side;
-        if (!this.walkable(r, r.x - Math.sin(a) * step, r.z - Math.cos(a) * step)) continue;
-        if (off < 0) r.side = -r.side;
-        want = a;
-        found = true;
-        break;
-      }
-      if (!found) speed = 0; // boxed in
-      if (face === null) r.yaw += angleDiff(r.yaw, want) * Math.min(1, dt * 12);
-      const fx = -Math.sin(want) * speed, fz = -Math.cos(want) * speed;
-      r.vx += (fx - r.vx) * Math.min(1, dt * 10);
-      r.vz += (fz - r.vz) * Math.min(1, dt * 10);
-    } else {
-      r.vx *= Math.max(0, 1 - dt * 10);
-      r.vz *= Math.max(0, 1 - dt * 10);
-    }
-    if (face !== null) r.yaw += angleDiff(r.yaw, face) * Math.min(1, dt * 15);
-    this.slide(r, dt);
-  }
-
-  /** Move by the velocity where the floor allows (not into the prey's legs: a lunge stops there), settle on the ground, slow down. */
+  /** Move by the velocity where the floor allows; the gait follows the distance. */
   private slide(r: Rat, dt: number): void {
-    const p = this.prey;
-    if (p && !r.dead && Math.abs(p.y - r.y) < 1) {
-      const ox = r.x - p.x, oz = r.z - p.z, od = Math.hypot(ox, oz);
-      const inward = od > 1e-4 ? (r.vx * ox + r.vz * oz) / od : 0;
-      if (inward < 0 && Math.hypot(ox + r.vx * dt, oz + r.vz * dt) < p.radius + r.radius * 0.5) { r.vx -= (inward * ox) / od; r.vz -= (inward * oz) / od; }
-    }
-    const nx = r.x + r.vx * dt, nz = r.z + r.vz * dt;
-    if (this.walkable(r, nx, nz)) {
-      r.gait += Math.hypot(nx - r.x, nz - r.z) / (0.09 * r.size);
-      r.x = nx; r.z = nz;
-    } else { r.vx *= 0.3; r.vz *= 0.3; }
-    const g = this.level.groundAt(r.x, r.z);
-    if (Math.abs(g - r.y) < 1.2) r.y += (g - r.y) * Math.min(1, dt * 15);
-    if (r.dead) { r.vx *= Math.max(0, 1 - dt * 6); r.vz *= Math.max(0, 1 - dt * 6); }
-  }
-
-  /** Can a rat stand at (x, z), coming from where it is: no wall, no step it cannot take, no drop, no deep water. */
-  private walkable(r: Rat, x: number, z: number): boolean {
-    const l = this.level;
-    if (l.sdf(x, r.y + 0.18 * r.size, z) < r.radius * 0.8) return false;
-    if (this.blockers?.hits(x, z, r.radius * 0.8, r.y + 0.05, r.y + 0.3)) return false;
-    const g = l.groundAt(x, z);
-    if (g - r.y > RAT.step || r.y - g > RAT.drop) return false;
-    return l.waterAt(x, z) < g + 0.2;
+    r.gait += this.steer.slide(r, dt) / (0.09 * r.size);
   }
 
   /** Keep the living from standing in each other. */

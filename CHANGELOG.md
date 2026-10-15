@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.021 — The Salt-Touched
+
+- In the Salt Works you are no longer alone. The lost miners are still down there, changed: grey skin crusted with salt crystals, pale glowing eyes, salt-white hair, in their salt-stiff work clothes. Each one still works the rock where it stood, and you hear the pick before you see it.
+- Come close, or stab one, and it turns, trudges after you and brings the pick down over its head. It is slow and the wind-up is long and plain, so you can step back out of it; if it lands, it takes a third of your health and throws you back. Get far enough away and it goes back to its rock. The knife works on them too; the ones you lay to rest stay down.
+- Rats and the Salt-Touched now walk the floor the same way, so neither can jitter.
+- Fix: a badly hurt rat was meant to bolt now and then, and never did. Now it does.
+
 ## v0.020 — Chapels and statues
 
 - The salt miners carved. Against the salt walls and pillars stand statues of miners on their plinths: one leans on his pick, one prays, one holds a lamp up into the dark. Here and there a little chapel: steps up to an altar, a cross cut into the rock above, candles still burning.

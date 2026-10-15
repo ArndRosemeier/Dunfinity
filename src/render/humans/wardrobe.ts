@@ -67,6 +67,27 @@ function kitchenKnife(): Object3D {
   return g;
 }
 
+/**
+ * A miner's pick, in grip space: held like a hammer, near the end of the ash handle (up +y from the
+ * fist), the iron head across the top with a point at each end.
+ */
+function minersPick(): Object3D {
+  const iron = new PropBuilder(), wood = new PropBuilder();
+  wood.upright(0, 0.28, 0, 0, 0.017, 0.38, 0.022, [0.3, 0.22, 0.14]);
+  iron.upright(0, 0.64, 0, 0, 0.05, 0.03, 0.028, [0.2, 0.19, 0.18]); // the eye round the handle
+  for (const s of [-1, 1]) {
+    iron.beam(0, 0.64, 0, s * 0.2, 0.62, 0, 0.022, 0.024, [0.22, 0.21, 0.2]);
+    iron.beam(s * 0.2, 0.62, 0, s * 0.31, 0.585, 0, 0.012, 0.012, [0.3, 0.29, 0.28]);
+  }
+  const g = new Group();
+  for (const [b, kind] of [[wood, VERTEX_COLOR_SOLID], [iron, METAL]] as const) {
+    const m: Mesh = meshFromData(b.build()!, kind);
+    m.matrixAutoUpdate = true;
+    g.add(m);
+  }
+  return g;
+}
+
 /** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
 const KNIFE_TILT = 2.7;
 
@@ -75,6 +96,7 @@ export const WARDROBE: Wardrobe = {
   itemDef: (defId) => (defId === 'knife' ? { visual: { shape: 'knife' }, category: 'weapon' } : { visual: { shape: defId } }),
   buildItem: (defId) => {
     if (defId === 'knife') return kitchenKnife();
+    if (defId === 'pick') return minersPick();
     throw new Error(`no held item "${defId}"`);
   },
   disposeItem: (o) => o.traverse((m) => (m as Mesh).geometry?.dispose()),
@@ -83,12 +105,31 @@ export const WARDROBE: Wardrobe = {
 const visual = (seed: number, primary: Rgb, secondary: Rgb, wear: number): ItemVisual =>
   ({ shape: 'cloth', seed, primary, secondary, accent: secondary, material: 'cloth', glow: 0, wear });
 
-/** What a grandchild goes down in, and Grandma's knife. */
-export function rags(seed: number): EquipmentVisuals {
-  return {
-    chest: { defId: 'tunic', visual: visual(seed, [0.36, 0.3, 0.22], [0.24, 0.22, 0.2], 0.6) },
-    legs: { defId: 'trousers', visual: visual(seed + 1, [0.2, 0.19, 0.17], [0.15, 0.14, 0.12], 0.55) },
-    feet: { defId: 'footwraps', visual: visual(seed + 2, [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.4) },
-    mainhand: { defId: 'knife', visual: { ...visual(seed + 3, [0.6, 0.6, 0.62], [0.12, 0.07, 0.04], 0.3), shape: 'knife', material: 'metal' } },
-  };
+/** An outfit: chest, legs and feet as (garment, primary, secondary, wear), and what is in the hand. */
+interface Outfit {
+  clothes: readonly (readonly ['chest' | 'legs' | 'feet', string, Rgb, Rgb, number])[];
+  hand: readonly [string, Rgb, Rgb, number];
 }
+
+/** What a grandchild goes down in, and Grandma's knife. */
+const RAGS: Outfit = {
+  clothes: [['chest', 'tunic', [0.36, 0.3, 0.22], [0.24, 0.22, 0.2], 0.6], ['legs', 'trousers', [0.2, 0.19, 0.17], [0.15, 0.14, 0.12], 0.55], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.4]],
+  hand: ['knife', [0.6, 0.6, 0.62], [0.12, 0.07, 0.04], 0.3],
+};
+
+/** What a Salt-Touched still wears from the day it went down (salt-crusted work clothes), and its pick. */
+const MINER: Outfit = {
+  clothes: [['chest', 'tunic', [0.2, 0.21, 0.22], [0.42, 0.44, 0.46], 0.9], ['legs', 'trousers', [0.14, 0.13, 0.13], [0.4, 0.41, 0.43], 0.85], ['feet', 'footwraps', [0.12, 0.1, 0.08], [0.35, 0.35, 0.36], 0.8]],
+  hand: ['pick', [0.22, 0.21, 0.2], [0.3, 0.22, 0.14], 0.6],
+};
+
+function dressIn(o: Outfit, seed: number): EquipmentVisuals {
+  const eq: EquipmentVisuals = {};
+  o.clothes.forEach(([slot, defId, a, b, wear], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear) }; });
+  const [defId, a, b, wear] = o.hand;
+  eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: defId, material: 'metal' } };
+  return eq;
+}
+
+export const rags = (seed: number): EquipmentVisuals => dressIn(RAGS, seed);
+export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
