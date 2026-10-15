@@ -1,9 +1,14 @@
 # Changelog
 
-## v0.083 — Real dogs
+## v0.084 — Real dogs
 
 - The feral dogs are new. They were built from a few ellipsoids in code; now each one is a gaunt street dog sculpted, rigged and animated in Blender (AssetGenerator). It has a deep narrow chest, ribs and spine showing, bristling hackles and tail, a rough coat with a dark saddle and a black muzzle, a mouth that opens on its teeth, and eyes that throw your headlamp back.
 - Everything they do has its own animation: lying up at the den, standing and looking about, a trot, a gallop round you, a low stalk with the head down and lips drawn back while they circle, down on the haunches before a lunge (the tell), the lunge with the jaw wide, the snap, a flinch when you stab one, and a fall onto its side when it dies. The paws stay planted at every speed, and one action fades into the next, so nothing pops or flickers.
+
+## v0.083 — Fungal grottoes
+
+- A second living kind of place: warm, wet caves overgrown with giant mushrooms, from knee-high ones to giants 14 m tall. Pale fibrous stalks hold up broad caps in the level's own hue (violet, teal, amber or rose) with paler spots, and their gills glow faintly underneath. The big caps are wide and flat enough to climb onto and walk across, a second storey over the dark loam. Try `?style=fungal`.
+- A share of the Threshold (levels 9–10). On the map (M) they show violet.
 
 ## v0.082 — Root hollows
 
