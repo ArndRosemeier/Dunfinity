@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.040 — Grandma's recipe tin
+
+- Resting by your fire, press T to open grandma's tin. Her cards are sorted by chapter, and the dividers for deeper chapters stay shut until one of the family has been that deep. W and S choose a card, E cooks it with infused salt, and T closes the tin.
+- The first three cards: **Hold It Properly** (the knife hits harder, and from rank 2 stabs faster), **Chicken Soup** (resting by a fire heals two, then three times as fast) and **Kneading** (climbing tires you much less). Cook a card again to rank it up, and grandma adds a line.
+- You kneel and stir while it cooks, and the salt drifts from the fire into you. What a grandchild has cooked dies with them; the salt left in the tin stays.
+
 ## v0.039 — Infused salt
 
 - Grandma's tin now holds infused salt. It starts with three pinches. More forms wherever something happens for the first time: the first of each kind of creature you kill (the Foreman and the Tall One are worth a great deal), a level deeper than any of the family has been, one of grandma's camps.
