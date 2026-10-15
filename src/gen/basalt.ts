@@ -19,6 +19,7 @@
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 
 export const BASALT = {
@@ -59,6 +60,8 @@ interface Prism {
 
 export class Basalt implements Style {
   readonly id: StyleId = 'basalt';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ basalt: 0.7, slate: 0.2, granite: 0.1 });
   /** Slate on the map (M). */
   readonly mapFloor = [0.4, 0.42, 0.45] as const;
   private readonly noise: Noise;

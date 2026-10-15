@@ -17,6 +17,7 @@ import type { Band } from './bands';
 import { joined } from './gridTree';
 import { CaveThings, THING_REACH, taperDist, taperPlan, type Taper } from './caveThings';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
 import { scatter, type Dress } from './styleProps';
@@ -62,6 +63,8 @@ interface Cavity {
 
 export class Geode implements Style {
   readonly id: StyleId = 'geode';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ limestone: 0.5, marble: 0.3, shale: 0.2 });
   /** Amethyst on the map (M). */
   readonly mapFloor = [0.62, 0.5, 0.72] as const;
   private readonly noise: Noise;

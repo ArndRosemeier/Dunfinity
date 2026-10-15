@@ -17,6 +17,7 @@ import type { Band } from './bands';
 import { Grain, grainOf } from './grainLines';
 import { joined } from './gridTree';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { boxDist2 } from './shapes';
 
@@ -75,6 +76,8 @@ interface DungeonColumn {
 
 export class Dungeon implements Style {
   readonly id: StyleId = 'dungeon';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ granite: 0.4, limestone: 0.35, slate: 0.25 });
   /** Grey on the map (M). */
   readonly mapFloor = [0.56, 0.56, 0.6] as const;
   private readonly cells: number;

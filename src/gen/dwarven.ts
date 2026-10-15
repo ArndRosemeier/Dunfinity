@@ -24,6 +24,7 @@ import { joined } from './gridTree';
 import { unworked, type Column, type Working } from './quarry';
 import { propModel } from './models';
 import { boxDist2, boxDist3 } from './shapes';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import type { Dress } from './styleProps';
 
@@ -106,6 +107,8 @@ interface DwarvenColumn {
 
 export class Dwarven implements Style {
   readonly id: StyleId = 'dwarven';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ granite: 0.6, marble: 0.2, slate: 0.2 });
   /** Dark granite on the map (M). */
   readonly mapFloor = [0.36, 0.33, 0.31] as const;
   private readonly noise: Noise;
