@@ -16,7 +16,7 @@
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { unworked, type Column, type Working } from './quarry';
-import { GrainLines } from './grainLines';
+import { GrainLines, grainOf } from './grainLines';
 import type { Style, StyleId } from './style';
 import { boxDist3 } from './shapes';
 
@@ -81,7 +81,7 @@ export class Rift implements Style {
     this.rough = new Noise(deriveSeed(seed, 'rift', 'rough'));
     this.cells = deriveSeed(seed, 'rift', 'cells');
     const R = RIFT;
-    this.lines = new GrainLines(this.noise, this.cells, hashToFloat(deriveSeed(seed, 'rift', 'grain')) * Math.PI, R.spacing, R.jitter, R.meander);
+    this.lines = new GrainLines(this.noise, this.cells, grainOf(seed, 'rift'), R.spacing, R.jitter, R.meander);
   }
 
   /** The envelope's floor at (x, z). */
