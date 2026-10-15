@@ -3,7 +3,7 @@
  * is used by a key, with its number, its key, and how soon it can be used again; the cards that
  * work by themselves listed under it. A click on a slot uses it (with the mouse free: Escape).
  */
-import type { Ability } from '../game/abilities';
+import { SLOT_LABELS, type Ability } from '../game/abilities';
 import { card, type CardId } from '../loot/recipes';
 import { child, panel } from './panel';
 
@@ -48,8 +48,8 @@ export class AbilityBar {
       const row = child(this.el, 'div', 'slots');
       this.slots = bar.map((a, i) => {
         const root = child(row, 'div', 'slot'), wait = child(root, 'div', 'wait');
-        root.title = `${card(a.card).title}: ${a.hold ? 'hold' : 'press'} ${a.label} or ${i + 1}${a.hold ? ' (a click holds it until the next)' : ''}`;
-        child(root, 'div', 'n', String(i + 1));
+        root.title = `${card(a.card).title}: ${a.hold ? 'hold' : 'press'} ${a.label} or ${SLOT_LABELS[i]}${a.hold ? ' (a click holds it until the next)' : ''}`;
+        child(root, 'div', 'n', SLOT_LABELS[i]);
         child(root, 'div', 'k', a.label);
         const c = child(root, 'div', 'c');
         child(root, 'div', 't', a.short);

@@ -14,7 +14,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'salt-line';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'salt-line';
 
 export interface Card {
   readonly id: CardId;
@@ -114,6 +114,30 @@ export const CARDS: readonly Card[] = [
     ranks: ['Lean into it. Don\'t flinch, it\'s only a lid.'],
     cost: [8, 14],
     does: ['hold X: raise the lid; blows from in front do 30% and knock you less; each one costs 1.5 stamina', 'blows from in front do 10%; each costs 1 stamina'],
+  },
+  {
+    id: 'stove-flame', title: 'Stove Flame', chapter: 'Fire & Frost',
+    need: 'a match, a pinch of the good salt between finger and thumb. Not near the curtains.',
+    method: 'Strike the match, sprinkle the salt over it, and blow. Like lighting the old gas stove, only it goes the other way. Eyebrows grow back.',
+    ranks: ['A bigger pinch. Lean back.'],
+    cost: [4, 8],
+    does: ['R: a gout of flame 4 m ahead, 6–10 damage to everything in it; costs 3 stamina; every 2.5 s', 'flame 5.5 m ahead, 9–14 damage; every 1.8 s'],
+  },
+  {
+    id: 'cold-larder', title: 'Cold Larder', chapter: 'Fire & Frost',
+    need: 'the larder door, open. A pinch of salt on the cold shelf. A cardigan.',
+    method: 'Open the door and let the cold out round your feet. Whatever is near you goes slow and stupid, like your uncle after Sunday lunch.',
+    ranks: ['Leave the door open longer. Mind the milk.'],
+    cost: [4, 8],
+    does: ['K: things within 4 m of you move at 40% for 4 s; costs 3 stamina; every 8 s', 'within 5.5 m, at 30% for 6 s'],
+  },
+  {
+    id: 'rolling-pin', title: 'Rolling Pin', chapter: 'Force',
+    need: 'the rolling pin (don\'t touch it, just think of it), salt on your palms.',
+    method: 'Roll it out flat, away from you, firmly. The dough does not need to be in arm\'s reach. Neither does the other fellow.',
+    ranks: ['Firmer. From the shoulders.'],
+    cost: [4, 8],
+    does: ['P: shove everything 3.5 m in front of you back, hard (2–4 damage); costs 2.5 stamina; every 3 s', 'reaches 4.5 m and shoves twice as hard'],
   },
   {
     id: 'salt-line', title: 'Salt Line', chapter: 'Lost Cards', lost: true,
@@ -251,6 +275,21 @@ export class Cooked {
   /** Grandma's Salt Line (L), if cooked: the circle's radius, metres, and how long it keeps, seconds. */
   get saltLine(): { readonly r: number; readonly keeps: number } | null {
     return SALT_RINGS[this.rank('salt-line') - 1] ?? null;
+  }
+
+  /** Grandma's Stove Flame (R), if cooked: how far the flame reaches, metres, its damage, and the seconds between. */
+  get flame(): { reach: number; damage: readonly [number, number]; every: number } | null {
+    return ([null, { reach: 4, damage: [6, 10], every: 2.5 }, { reach: 5.5, damage: [9, 14], every: 1.8 }] as const)[this.rank('stove-flame')] ?? null;
+  }
+
+  /** Grandma's Cold Larder (K), if cooked: how far round you the cold goes, metres, what it slows things to, for how long, seconds. */
+  get larder(): { r: number; slow: number; lasts: number } | null {
+    return [null, { r: 4, slow: 0.4, lasts: 4 }, { r: 5.5, slow: 0.3, lasts: 6 }][this.rank('cold-larder')] ?? null;
+  }
+
+  /** Grandma's Rolling Pin (P), if cooked: how far in front it reaches, metres, and how hard it shoves, m/s. */
+  get pin(): { reach: number; knock: number } | null {
+    return [null, { reach: 3.5, knock: 9 }, { reach: 4.5, knock: 18 }][this.rank('rolling-pin')] ?? null;
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */
