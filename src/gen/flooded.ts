@@ -19,6 +19,7 @@ import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic
 import type { Band } from './bands';
 import { joined } from './gridTree';
 import { unworked, type Column, type Working } from './quarry';
+import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 
 export const FLOODED = {
@@ -67,6 +68,8 @@ interface Bell {
 
 export class Flooded implements Style {
   readonly id: StyleId = 'flooded';
+  /** The rock it is cut through (src/gen/rockTypes.ts). */
+  readonly rocks = rockMix({ limestone: 0.55, marble: 0.25, shale: 0.2 });
   /** Deep water on the map (M). */
   readonly mapFloor = [0.3, 0.42, 0.48] as const;
   private readonly noise: Noise;
