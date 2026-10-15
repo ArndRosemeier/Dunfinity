@@ -2088,6 +2088,10 @@
     "reason": "Figure.pose: the interface every drawn creature implements; rigged.ts holds the one for Blender-made creatures"
   },
   {
+    "key": "same name: dunfinity/render/humans/ladderClimb.ts#pose + dunfinity/render/humans/nobody.ts#pose",
+    "reason": "both hand the nobody's humanoid one frame (Humanoid.update): Nobody.pose from the Body, the ladder climb from its script; the posing itself is the package's animator"
+  },
+  {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
     "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
   },
