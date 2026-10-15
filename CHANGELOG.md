@@ -1,8 +1,13 @@
 # Changelog
 
-## v0.089 — Rock you can see
+## v0.090 — Rock you can see
 
 - The rock no longer burns out to flat white near a light. The burning lamps were far too bright close up and the screen simply clipped everything over full white, so the walls round every lamp, and the floor at your feet in your headlamp, read as blank white. Now the picture is tone-mapped like a film camera (bright light rolls off into warm highlights instead of clipping), the lamps and the headlamp fall off more gently, and the headlamp is a touch whiter. The stone's colour, cracks and tool marks show right up to the light.
+
+## v0.089 — Lava tubes
+
+- A tenth kind of place: tunnels where molten rock once ran and drained away. They are long and round, 8–18 m across, and meander side by side for hundreds of metres. Their floors are the last flow's flat glassy crust with ropes of pahoehoe bowed downstream. Benches along the walls show where the flow once stood. Smaller tubes branch across to the next, and here and there a skylight rises from the roof into a dome where the crust fell in. The basalt is black with rust-red crusts, and on hot levels the floor still glows through its cracks. Try `?style=lava`.
+- They belong to the deep magma strata, which aren't built yet, so for now they only appear when asked for by name.
 
 ## v0.088 — Rats that stop fidgeting
 
