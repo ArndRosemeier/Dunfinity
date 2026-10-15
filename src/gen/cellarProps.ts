@@ -3,7 +3,7 @@
  * under the vault, the stairs' wooden treads up into the house; in the strange room her armchair
  * with the tin on it, the side table with her lamp and the knife block, the circle of infused salt
  * glowing on the floor; the bricks of the broken arch lying where they fell; a lamp by the old shaft.
- * Upstairs, her ground floor as she left it (`furnishHouse`): its thin walls, the front door shut,
+ * Upstairs, her ground floor as she left it (`furnishHouse`): its thin walls, the front door open,
  * night at the windows, the kitchen, her bedroom, the living room and its photographs.
  *
  * Pure data like the rest of the props: it places only what lies in the tile it is asked for.
@@ -11,6 +11,7 @@
 import { hash3f } from '@futuremagic/core';
 import { CELLAR } from './cellar';
 import { local, type PropBuilder, type Rgb } from './propMesh';
+import { furnishTown } from './townProps';
 
 /** What the tile builder lends the cellar to furnish with. */
 export interface Furnish {
@@ -68,6 +69,7 @@ export function furnishCellar(f: Furnish): void {
   }
 
   furnishHouse(f);
+  furnishTown(f);
 
   if (at(4, 0)) {
     // The doorway into her room: posts and a lintel.
@@ -134,7 +136,7 @@ const PHOTOS: readonly Rgb[] = [[0.42, 0.38, 0.3], [0.3, 0.28, 0.25], [0.5, 0.44
 
 /**
  * Grandma's ground floor (CELLAR.house): the hall the stairs come up into, the front door at its
- * west end (shut: the street is not yet), the kitchen and her bedroom to the north, the living room
+ * west end (open onto the street, src/gen/town.ts), the kitchen and her bedroom to the north, the living room
  * to the south. Its inner walls are thin boards of wallpaper (furniture, so they show), with doorways.
  */
 function furnishHouse(f: Furnish): void {
@@ -182,10 +184,10 @@ function furnishHouse(f: Furnish): void {
   window(-13.7, H.z[0] + 0.02, 0);
   window(H.x[0] + 0.02, -2.8, Math.PI / 2);
 
-  // The hall: the front door at its west end, shut, a coat stand, a bulb.
+  // The hall: the front door at its west end, standing open onto the street, a coat stand, a bulb.
   if (at(H.x[0], 0)) {
-    s.upright(H.x[0] + 0.04, F + 1.0, 0, Math.PI / 2, 0.45, 1.0, 0.04, DARK);
-    s.upright(H.x[0] + 0.09, F + 0.98, -0.32, 0, 0.02, 0.02, 0.03, GOLD); // the handle
+    s.upright(H.x[0] + 0.5, F + 1.0, -0.56, 0, 0.45, 1.0, 0.03, DARK);
+    s.upright(H.x[0] + 0.88, F + 0.98, -0.51, 0, 0.03, 0.02, 0.02, GOLD); // the handle
     s.upright(H.x[0] + 0.5, F + 0.006, 0, 0, 0.3, 0.006, 0.45, CLOTH); // the mat
     s.upright(H.x[0] + 0.6, F + 0.9, 0.85, 0, 0.025, 0.9, 0.025, WOOD); // the coat stand
     s.ellipsoid(H.x[0] + 0.6, F + 1.45, 0.82, 0.16, 0.3, 0.12, [0.22, 0.2, 0.18], 8); // her coat

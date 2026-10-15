@@ -14,6 +14,7 @@ import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import { CELLAR_BAND } from './bands';
 import { QuarryField, type Column, type Working } from './quarry';
 import type { Shaft } from './descents';
+import { TOWN, houseColors, nearestHouse, townAir, townGround } from './town';
 
 /** The places of the cellar, metres (floor at y = 0, the house to the west, the way down to the east). */
 export const CELLAR = {
@@ -83,7 +84,9 @@ export class CellarField extends QuarryField {
 
   /** The floor: the cellar's, the stairs rising to the house's, the house's. */
   private floorOf(x: number, z: number): number {
-    const S = CELLAR.stairs, H = CELLAR.house;
+    const S = CELLAR.stairs, H = CELLAR.house, G = TOWN.grandma;
+    // Out in the town (not over the cellar's spaces): the street, the ground.
+    if (x < G.x[0] || Math.abs(z) > 3.2) return townGround(x, z).y;
     if (x <= S.x[0] || (x < H.x[1] && Math.abs(z) > S.z[1] + 0.2)) return x < -4.5 ? H.floor : 0;
     return x < S.x[1] ? Math.min(S.top, ((S.x[1] - x) / (S.x[1] - S.x[0])) * S.top) : 0;
   }
@@ -121,10 +124,16 @@ export class CellarField extends QuarryField {
   }
 
   at(col: Column, x: number, y: number, z: number): number {
-    const C = CELLAR, rm = C.room, ch = C.chamber, H = C.house, f = col.floor;
+    return Math.max(this.inside(col, x, y, z), townAir(x, y, z));
+  }
+
+  /** The air of the cellar and the house (as `at`, without the town outside). */
+  private inside(col: Column, x: number, y: number, z: number): number {
+    const C = CELLAR, rm = C.room, ch = C.chamber, H = C.house, D = TOWN.door, f = col.floor;
     const air = Math.max(
       Math.min(plan(x, z, C.cellar.x, C.cellar.z), y, vault(z, 2.6, C.cellar.spring, C.cellar.crown) - y),
       Math.min(plan(x, z, H.x, H.z), y - H.floor, H.floor + H.height - y),
+      Math.min(plan(x, z, D.x, D.z), y - H.floor, H.floor + D.top - y),
       Math.min(plan(x, z, [C.stairs.x[0] - C.stairs.join, C.stairs.x[1] + C.stairs.join], C.stairs.z), y - f, f + C.stairs.head - y),
       Math.min(plan(x, z, C.door.x, C.door.z), y, C.door.top - y),
       Math.min(rm.r - Math.hypot(x - rm.x, z - rm.z), y, vault(Math.hypot(x - rm.x, z - rm.z), rm.r, rm.spring, rm.crown) - y),
@@ -140,7 +149,9 @@ export class CellarField extends QuarryField {
   /** Bricks in her part (walls and vaults), flagstones on its floor, the mine's rock beyond the arch. */
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     let r: number, g: number, b: number;
-    if (x > 9.3) {
+    if (townAir(x, y, z) > this.inside(col, x, y, z)) {
+      [r, g, b] = this.townColor(x, y, z);
+    } else if (x > 9.3) {
       const band = 0.5 + 0.5 * Math.sin(y * 1.3 + x * 0.2);
       r = 0.42 + 0.05 * band; g = 0.38 + 0.045 * band; b = 0.32 + 0.035 * band;
       if (y < 0.3) { r += 0.06; g += 0.055; b += 0.05; }
@@ -160,6 +171,25 @@ export class CellarField extends QuarryField {
       r = (0.4 + k) * soot; g = (0.2 + k * 0.6) * soot; b = (0.14 + k * 0.4) * soot;
     }
     out[o] = r; out[o + 1] = g; out[o + 2] = b;
+  }
+
+  /** The town's surfaces: cobbles, grass and the hill's rock; the houses' plaster, stone plinths and roofs. */
+  private townColor(x: number, y: number, z: number): [number, number, number] {
+    const k = this.grain.n2(x * 2.1, z * 2.1) * 0.04, g = townGround(x, z), { house, d } = nearestHouse(x, y, z);
+    if (d < 0.25 && y > g.y + 0.05) {
+      // (Mostly under the houses' own walls and roofs, src/gen/townProps.ts: what shows is in the same colours.)
+      const roof = y > house.eaves - 0.05 && Math.max(house.x0 - x, x - house.x1, house.z0 - z, z - house.z1) > -0.3;
+      const c = houseColors(house)[roof ? 'roof' : 'wall'];
+      return [c[0] + k, c[1] + k, c[2] + k];
+    }
+    if (x > TOWN.street.x[0] && x < TOWN.street.x[1] + 0.4) {
+      // Cobbles: grey setts in rows, darker between.
+      const sett = Math.abs(Math.sin(x * 6.5)) * Math.abs(Math.sin(z * 4.7 + Math.floor(x * 2.07) * 1.3));
+      const c = 0.2 + 0.1 * Math.min(1, sett * 3) + k;
+      return [c, c * 0.98, c * 0.95];
+    }
+    if (g.steep > 1.2) return [0.3 + k, 0.29 + k, 0.26 + k];
+    return [0.12 + k, 0.16 + k, 0.08 + k];
   }
 
   water(): number {
