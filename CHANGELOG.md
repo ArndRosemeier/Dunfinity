@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.074 — Caves among the workings
+
+- Levels are no longer one kind of place. From the first level down, parts of a level are natural karst caves: big smooth domed chambers joined by round tubes, pale flowstone walls, no pillars and no miners' things. The rest is the old excavation. The Quarry is mostly workings with a few caves; the Cisterns are about a third cave; the Threshold is more cave than mine.
+- Where a mine meets a cave, the floor ramps, the rock and its colour blend, and a tunnel always leads from the workings into the nearest chamber, so every cave can be walked into.
+- You always arrive in the workings by a ladder, and ways down, the Foreman's hall and grandma's camp stay in ground the miners worked.
+
 ## v0.073 — Ready for more kinds of place
 
 - Behind the scenes: the first step towards levels that really differ. The way a level's rock is made is now one "style" of several to come, with a plan for how two styles meet so their edges look natural ([level-styles.md](docs/design/level-styles.md)). Nothing changes in play yet: every level is exactly as it was.

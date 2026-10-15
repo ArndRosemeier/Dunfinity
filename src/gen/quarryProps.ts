@@ -8,6 +8,7 @@
  * places what sits inside it, and every decision is a hash of the working and grid position, so
  * tiles agree with each other and a seed always gives the same quarry.
  */
+import { owns } from './style';
 import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
@@ -341,7 +342,7 @@ class TileBuilder {
   /** Can a track lie at (x, z) of working w: open, level floor with headroom, clear of pillars and borders. */
   private trackable(w: Working, x: number, z: number): boolean {
     const col = this.level.columnAt(x, z);
-    if (col.working.id !== w.id || col.border < 5 || col.collapse > 0 || col.rubble > 0.02 || col.pillarD < 1.3) return false;
+    if (col.working.id !== w.id || col.border < 5 || col.collapse > 0 || col.rubble > 0.02 || col.pillarD < 1.3 || !this.mine(x, z)) return false;
     if (this.level.descents.at(x, z, 2)) return false;
     return col.floor > this.level.waterAt(x, z) + 0.25 && this.level.sdf(x, col.floor + 1.8, z) > 1.2;
   }
@@ -610,11 +611,13 @@ class TileBuilder {
         const ox = o[0] / h, oz = o[2] / h;
         const rx = x - ox * (d - 0.05), rz = z - oz * (d - 0.05);
         if (cavern) { this.ruin(rx, rz, ox, oz, g, r); continue; }
+        if (!this.mine(x, z)) continue;
         if (r(5) < b.machines) this.waterworks(rx, rz, ox, oz, g, r);
         else if (r(5) >= b.machines + b.carvings) this.leftBehind(rx, rz, ox, oz, g, r);
         else if (r(6) < 0.2) this.chapel(rx, rz, ox, oz, g, r);
         else this.statue(rx, rz, ox, oz, r);
-      } else if (r(0) < LEFT.derricks && d > 5) this.derrick(x, z, r(3) * Math.PI * 2, r);
+      } else if (!this.mine(x, z)) continue;
+      else if (r(0) < LEFT.derricks && d > 5) this.derrick(x, z, r(3) * Math.PI * 2, r);
       else if (r(0) > 1 - this.level.band.hanging && d > 2.5) this.hangingLamp(x, z, g, r);
     }
   }
@@ -811,6 +814,11 @@ class TileBuilder {
     this.lamps.push(lx, g + 1.8, lz);
     this.counts.lit++;
     this.counts.chapels++;
+  }
+
+  /** Whether the miners' things may stand at (x, z): it is the excavation's, not another style's or an edge between (E5). */
+  private mine(x: number, z: number): boolean {
+    return owns(this.level.field.excavation, x, z);
   }
 
   /** Whether (x, z) is in grandma's camp or by one of her salt circles (nothing else lies there). */

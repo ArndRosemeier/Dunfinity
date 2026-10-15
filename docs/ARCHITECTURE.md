@@ -57,7 +57,11 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Is this point rock or air, how far to rock? | `level.sdf(x, y, z)`: the single density function (positive in air) | `src/gen/level.ts` |
-| A kind of place (a level style: the excavation halls, grandma's cellar; karst, rift, collapse to come), and the level's field put together from its styles | `Style` (`column`, `at`, `color`, `climbable`; its column's floor and ceiling are its envelope); `StyledField` (`level.field`; `field.styles`, and `field.excavation` for the workings' own business: `workingAt`, `toGrid`, `fromGrid`, `pillarAt`) | `src/gen/style.ts`, `src/gen/styledField.ts`, plan: `docs/design/level-styles.md` |
+| A kind of place (a level style: the excavation halls, grandma's cellar, karst; rift, collapse to come), and the level's field put together from its styles | `Style` (`column`, `at`, `color`, `climbable`, `portal`; its column's floor and ceiling are its envelope); `StyledField` (`level.field`; `field.styles`, `field.regions`, and `field.excavation` for the workings' own business: `workingAt`, `toGrid`, `fromGrid`, `pillarAt`); the edge contract E1–E6 lives in `StyledField` only | `src/gen/style.ts`, `src/gen/styledField.ts`, `src/gen/karst.ts`, plan: `docs/design/level-styles.md` |
+| Which style owns a point, and how much of each style is there (the region map; a level's `Mix` of styles and weights is on its band) | `Regions` (`styleAt`, `regionAt`, `sharesAt`); a style's own share is `style.share(x, z)` | `src/gen/regions.ts` |
+| Whether a style's own things (pillars, props, dens, ways down) may stand at a point (E5) | `owns(style, x, z)` (share ≥ `SHARE_OWN`; there the field is exactly the style's) | `src/gen/style.ts` |
+| Jittered Voronoi cells with a smooth blend at their borders (the workings, the style regions) | `voronoiNear(seed, x, z, size, jitter, blend, out)`, `blendShare` | `src/gen/voronoi.ts` |
+| A column with no pillar (stump, stub, older drum) | `noPillar(col)` | `src/gen/quarry.ts` |
 | Where is the floor under a point? | `level.floorAt(x, z)` (the working's floor; ignores pillars) | `src/gen/level.ts` |
 | Which quarry working is this, what does it look like? | `level.workingAt(x, z)` | `src/gen/level.ts` |
 | Put a point onto an upright rock face (chalk on a pillar, water running up it) | `level.ontoRock(x, y, z, n, fixed)` | `src/gen/level.ts` |

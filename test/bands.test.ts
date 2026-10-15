@@ -72,8 +72,12 @@ test('in the Threshold, natural caverns break through: no pillars, a walkable fl
     assert.ok(cave / all > 0.2 && cave / all < 0.8, `seed ${seed}: ${((cave / all) * 100).toFixed(0)}% cavern`);
     assert.ok(steep / open < 0.02, `seed ${seed}: ${steep} of ${open} too steep`);
   }
+  // Above the Threshold the excavation itself breaks into no caverns (the karst style is another matter).
   for (const d of [1, 3, 6]) {
     const l = new Level(1, d);
-    for (let k = 0; k < 200; k++) assert.equal(l.columnAt(k * 31, k * 17).cavern, 0);
+    for (let k = 0; k < 200; k++) {
+      const col = l.columnAt(k * 31, k * 17);
+      if (!col.mix && l.field.styles[col.style].id === 'excavation') assert.equal(col.cavern, 0);
+    }
   }
 });

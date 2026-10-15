@@ -9,6 +9,7 @@ import { deriveSeed } from '@futuremagic/core';
 import { bandOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
+import { Karst } from './karst';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
@@ -63,7 +64,8 @@ export class Level {
     this.band = bandOf(depth);
     // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
     const s = deriveSeed(seed, 'level', depth);
-    this.field = new StyledField(depth === 0 ? new CellarField() : new QuarryField(s, this.band));
+    const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
+    this.field = new StyledField(excavation, this.band.styles.map(([id]) => id === 'karst' ? new Karst(s, this.band) : excavation), this.band.styles, s);
     this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined);
   }
 
