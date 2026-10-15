@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.097 — Change notes instead of version fights
+
+- Behind the scenes: each change now brings its own short note, and the version number is given when it lands. Several helpers working at once no longer trip over each other's version numbers, so fixes reach the game sooner.
+
 ## v0.096 — Rock you can see
 
 - The rock no longer burns out to flat white near a light. The burning lamps were far too bright close up and the screen simply clipped everything over full white, so the walls round every lamp, and the floor at your feet in your headlamp, read as blank white. Now the picture is tone-mapped like a film camera (bright light rolls off into warm highlights instead of clipping), the lamps and the headlamp fall off more gently, and the headlamp is a touch whiter. The stone's colour, cracks and tool marks show right up to the light.
