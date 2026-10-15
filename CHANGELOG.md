@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.093 — Up from the fire
+
+- Resting by a fire you sit only while your wounds close or you get your breath back; once you are whole you stand up again. Walking on always gets you up, and the hint by the fire says so.
+
 ## v0.092 — Every level its own mix
 
 - Every level from 1 to 10 is now a mix of kinds of place, not one quarry with different stone. The Quarry is mostly old workings with some fallen ground and caves; the Salt Works adds more collapse and a rift or two; the Cisterns mix workings, caves, dungeon rooms and root hollows; the Threshold is everything at once, from catacombs to fungal grottoes.

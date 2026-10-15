@@ -156,6 +156,10 @@
     "reason": "both fetch and decode audio, but each into its own cache: clips per sound id vs the music's loop buffers (which tell a failed fetch from an Ogg that does not decode, to switch loops off). One fetch line each; fold if a third audio loader appears."
   },
   {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#step + dunfinity/world/fire.ts#step",
+    "reason": "a per-tick step method: same verb, unrelated jobs (advancing the music's loops vs resting and healing by a fire)."
+  },
+  {
     "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/audio/music/TrackPlayer.ts#update",
     "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
   },

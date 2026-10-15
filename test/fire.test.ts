@@ -47,3 +47,14 @@ test('no fire in the water', () => {
   }
   assert.fail('no water found');
 });
+
+test('by the fire one sits while mending and gets up once whole', () => {
+  const c = new Campfire(level, 100, 12), r = me(), yaw = facing(c, r);
+  c.light(r, yaw, 0);
+  c.step(r, false, FIRE.kindle + 0.1, 0.1);
+  assert.ok(c.resting && c.mending, 'sitting while hurt');
+  for (let t = FIRE.kindle + 0.2; t < FIRE.kindle + 30; t += 0.1) c.step(r, false, t, 0.1);
+  assert.ok(r.health === 100 && c.resting && !c.mending, 'up again once whole');
+  c.step({ ...r, vx: 1, health: 50 }, false, FIRE.kindle + 31, 0.1);
+  assert.ok(!c.mending, 'walking on gets one up');
+});
