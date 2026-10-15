@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.080 — Real dogs
+
+- The feral dogs are new. They were built from a few ellipsoids in code; now each one is a gaunt street dog sculpted, rigged and animated in Blender (AssetGenerator). It has a deep narrow chest, ribs and spine showing, bristling hackles and tail, a rough coat with a dark saddle and a black muzzle, a mouth that opens on its teeth, and eyes that throw your headlamp back.
+- Everything they do has its own animation: lying up at the den, standing and looking about, a trot, a gallop round you, a low stalk with the head down and lips drawn back while they circle, down on the haunches before a lunge (the tell), the lunge with the jaw wide, the snap, a flinch when you stab one, and a fall onto its side when it dies. The paws stay planted at every speed, and one action fades into the next, so nothing pops or flickers.
+
 ## v0.079 — Catacombs
 
 - A fifth kind of place, the first from the crypts: a warren of narrow vaulted galleries cut into soft pale stone, their walls lined floor to vault with rows of burial niches full of old bones, here and there opening into a round domed chapel. Not every stretch was dug, so it branches, loops and dead-ends. Soot blackens the vaults where lamps once burned. Try `?style=catacombs`.

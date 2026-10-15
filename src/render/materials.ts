@@ -7,8 +7,8 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, Vector3, type Material, type Node } from 'three/webgpu';
-import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, mix, mod, mx_fractal_noise_float, mx_noise_float, mx_worley_noise_vec2, normalize, normalView, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, type Material, type Node } from 'three/webgpu';
+import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, mix, mod, mx_fractal_noise_float, mx_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -152,6 +152,39 @@ export const METAL = defineKind('metal', ['position', 'normal', 'color'], () => 
   const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.28, metalness: 0.65 });
   return m;
 });
+
+/** A creature's coat, baked in Blender (AssetGenerator): its colour map and normal map. */
+export interface CoatMaps {
+  readonly colour: Texture;
+  readonly normal: Texture;
+}
+
+/** A coat kind: lit, from its own two maps (filled in when the creature's glb loads: src/render/creatures/rigged.ts). */
+export interface CoatKind extends MaterialKind {
+  readonly maps: CoatMaps;
+}
+
+/**
+ * One kind per Blender-made creature, so one shader each: the maps are fixed textures whose images
+ * arrive with the glb (a new image is not a new shader). The skinned meshes compile their own
+ * variant when the creature's pool is added with the Stage.
+ */
+function defineCoat(name: string): CoatKind {
+  const maps: CoatMaps = { colour: new Texture(), normal: new Texture() };
+  maps.colour.colorSpace = SRGBColorSpace;
+  maps.normal.colorSpace = NoColorSpace;
+  for (const t of [maps.colour, maps.normal]) t.flipY = false; // glTF's uvs
+  const kind = defineKind(name, ['position', 'normal', 'uv'], () => {
+    const m = new MeshStandardNodeMaterial({ roughness: 0.85, metalness: 0 });
+    m.colorNode = texture(maps.colour);
+    m.normalNode = normalMap(texture(maps.normal));
+    return m;
+  });
+  return Object.assign(kind, { maps });
+}
+
+/** The feral dogs' coat (AssetGenerator spec creature_feral_dog). */
+export const DOG_COAT = defineCoat('dogCoat');
 
 /** Where the headlamp is and which way it shines (world), for the dust in its beam: set every frame by `Dust`. */
 export const DUST_LAMP = { at: uniform(new Vector3()), dir: uniform(new Vector3(0, 0, -1)) };

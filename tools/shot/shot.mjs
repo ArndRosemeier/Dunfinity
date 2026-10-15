@@ -2,6 +2,8 @@
  * Headless screenshots of the game or the Lab (`?lab`): `npm run shot -- "<url query>" out.png [more pairs...]`.
  * Serves the production build (run `npm run build` first) and renders in Chromium with SwiftShader
  * (no GPU needed), so it works in the cloud container. Prints the page's console errors.
+ * SwiftShader is slow: a deep level can take minutes to report ready, and a frame long enough that a
+ * screenshot needs minutes too. `SHOT_WAIT=<ms>` waits that long after ready (creatures wake, packs close in).
  */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
@@ -23,8 +25,9 @@ for (let i = 0; i < args.length; i += 2) {
   page.on('console', (m) => { if (m.type() === 'error') { console.error(`[page] ${m.text()}`); } });
   page.on('pageerror', (e) => { failed = true; console.error(`[page error] ${e.message}`); });
   await page.goto(base + (args[i].startsWith('?') ? args[i] : '?' + args[i]));
-  await page.waitForFunction(() => (window).__ready === true, null, { timeout: 120000 }).catch(() => { failed = true; console.error('page did not report ready'); });
-  await page.screenshot({ path: args[i + 1] });
+  await page.waitForFunction(() => (window).__ready === true, null, { timeout: 300000 }).catch(() => { failed = true; console.error('page did not report ready'); });
+  await page.waitForTimeout(Number(process.env.SHOT_WAIT ?? 0));
+  await page.screenshot({ path: args[i + 1], timeout: 240000 });
   const hud = await page.textContent('#hud');
   console.log(`${args[i + 1]}: ${hud?.split('\n')[0]}`);
   const shaders = await page.evaluate(() => ({ report: (window).shaders?.report() }));
