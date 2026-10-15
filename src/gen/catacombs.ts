@@ -17,6 +17,7 @@ import { unworked, type Column, type Working } from './quarry';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
 import { scatter, type Dress } from './styleProps';
+import { boxDist3 } from './shapes';
 
 export const CATACOMBS = {
   /** Galleries run along grid lines this far apart, metres; this share of the grid's stretches was dug. */
@@ -148,7 +149,7 @@ export class Catacombs implements Style {
     for (let k = 0; k < 2; k++) {
       const a = o.along[k] - N.pitch * Math.round(o.along[k] / N.pitch);
       const qx = Math.abs(a) - N.width / 2, qy = Math.abs(h - row) - N.height / 2, qz = Math.abs(o.across[k] - K.half - N.depth / 2 + 0.05) - N.depth / 2;
-      const box = Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0);
+      const box = boxDist3(qx, qy, qz);
       d = Math.max(d, Math.min(-box, o.dist[1 - k] - K.half - N.depth - 1.2, o.ends[k] - 0.6, -o.chapel - 0.5, deep));
     }
     // Soft tuff: a little uneven, the floor worn smooth.

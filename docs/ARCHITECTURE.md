@@ -64,6 +64,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Which style owns a point, and how much of each style is there (the region map; a level's `Mix` of styles and weights is on its band) | `Regions` (`styleAt`, `regionAt`, `sharesAt`); a style's own share is `style.share(x, z)`; a level's mix is `mixOf(seed, depth)` (`src/gen/bands.ts`), a style's share of a whole mix `shareOf(mix, id)` | `src/gen/regions.ts` |
 | Below level 10: which stratum a depth is in, and the styles a world draws for it | `stratumOf(depth)`, `genome(seed, stratum)`, `STRATA` (read through `mixOf` and `bandOf`) | `src/gen/genome.ts` |
 | Whether a style's own things (pillars, props, dens, ways down) may stand at a point (E5) | `owns(style, x, z)` (share ≥ `SHARE_OWN`; there the field is exactly the style's) | `src/gen/style.ts` |
+| Distance to a box from a point's offsets beyond its half-sizes (a style's rooms, blocks, niches, pillars) | `boxDist2(qx, qz)`, `boxDist3(qx, qy, qz)` | `src/gen/shapes.ts` |
 | Jittered Voronoi cells with a smooth blend at their borders (the workings, the style regions) | `voronoiNear(seed, x, z, size, jitter, blend, out)`, `blendShare` | `src/gen/voronoi.ts` |
 | A column with no pillar (stump, stub, older drum) | `noPillar(col)` | `src/gen/quarry.ts` |
 | A column no crew worked (another style's: no pillar, rubble or collapse; the working that stands for it) | `unworked(col, working, border, cavern)` | `src/gen/quarry.ts` |

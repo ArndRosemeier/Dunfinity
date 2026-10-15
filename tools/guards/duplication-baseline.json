@@ -532,6 +532,14 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population, Steer and pick.ts"
   },
   {
+    "key": "same name: dunfinity/gen/catacombs.ts#at + dunfinity/gen/collapse.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "clone: dunfinity/gen/shapes.ts#boxDist2 + dunfinity/gen/shapes.ts#boxDist3",
+    "reason": "the box distance in two and in three dimensions, side by side in the one shapes seam (they were seven inline copies); a shared body would cost a vararg call in the hottest field code"
+  },
+  {
     "key": "same name: dunfinity/gen/catacombs.ts#at + dunfinity/gen/lava.ts#at",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -868,7 +876,7 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/collapse.ts#column + dunfinity/gen/lava.ts#column",
+    "key": "same name: dunfinity/gen/quarry.ts#column + dunfinity/gen/rift.ts#column",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
