@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.063 — The right knee
+
+- Fix: running (and walking over uneven ground), the right knee turned inward or sideways, sometimes all the way round. The legs' footing worked out which way is forward from the wrong thing for the right leg (the left hip's turn). Both knees now bend forward.
+
 ## v0.062 — Doors
 
 - Grandma's house has real doors now: the front door, the kitchen, her bedroom and the living room. Press E at a door to open or shut it. A shut door stops you, and a door won't swing through you if you stand in its way.
