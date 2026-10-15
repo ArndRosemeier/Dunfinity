@@ -12,10 +12,10 @@
  */
 import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import { CELLAR_BAND } from './bands';
-import { putSurface, type StyleId, type Surface } from './style';
+import { BARE, putSurface, type Cover, type StyleId, type Surface } from './style';
 import { QuarryField, unworked, type Column, type Working } from './quarry';
 import type { Shaft } from './descents';
-import { TOWN, houseColors, nearestHouse, townAir, townGround } from './town';
+import { TOWN, houseColors, nearestHouse, townAir, townGround, type House } from './town';
 
 /** The places of the cellar, metres (floor at y = 0, the house to the west, the way down to the east). */
 export const CELLAR = {
@@ -75,6 +75,13 @@ const BRICK: Surface = [0, 1, 0, 0.075];
 const MINE: Surface = [1, 0, 0, 0];
 const COBBLES: Surface = [0, 1, 0, 0.2];
 const HOUSE_SURFACE: Surface = [0, 0, 0.4, 0];
+/** What covers the town's houses (src/gen/style.ts `Cover`). */
+const PLASTERED: Cover = [0, 0, 1, 0], TILED: Cover = [0, 0, 0, 1];
+
+/** Whether (x, y, z), at a house's surface, is its roof. */
+function houseRoof(house: House, x: number, y: number, z: number): boolean {
+  return y > house.eaves - 0.05 && Math.max(house.x0 - x, x - house.x1, house.z0 - z, z - house.z1) > -0.3;
+}
 
 export class CellarField extends QuarryField {
   override readonly id: StyleId = 'cellar';
@@ -167,6 +174,16 @@ export class CellarField extends QuarryField {
     else putSurface(BRICK, out, o);
   }
 
+  /** The town's houses: plastered walls, tiled roofs (mostly under their crisper shells, src/gen/townProps.ts); bare elsewhere. */
+  cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    let c = BARE;
+    if (townAir(x, y, z) > this.inside(col, x, y, z)) {
+      const { house, d } = nearestHouse(x, y, z);
+      if (d < 0.25 && y > townGround(x, z).y + 0.05) c = houseRoof(house, x, y, z) ? TILED : PLASTERED;
+    }
+    putSurface(c, out, o);
+  }
+
   /** Bricks in her part (walls and vaults), flagstones on its floor, the mine's rock beyond the arch. */
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     let r: number, g: number, b: number;
@@ -199,8 +216,7 @@ export class CellarField extends QuarryField {
     const k = this.grain.n2(x * 2.1, z * 2.1) * 0.04, g = townGround(x, z), { house, d } = nearestHouse(x, y, z);
     if (d < 0.25 && y > g.y + 0.05) {
       // (Mostly under the houses' own walls and roofs, src/gen/townProps.ts: what shows is in the same colours.)
-      const roof = y > house.eaves - 0.05 && Math.max(house.x0 - x, x - house.x1, house.z0 - z, z - house.z1) > -0.3;
-      const c = houseColors(house)[roof ? 'roof' : 'wall'];
+      const c = houseColors(house)[houseRoof(house, x, y, z) ? 'roof' : 'wall'];
       return [c[0] + k, c[1] + k, c[2] + k];
     }
     if (x > TOWN.street.x[0] && x < TOWN.street.x[1] + 0.4) {

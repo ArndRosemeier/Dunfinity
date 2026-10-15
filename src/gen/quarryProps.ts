@@ -158,7 +158,7 @@ class TileBuilder {
   private cellar(): PropTile {
     for (const sh of this.level.descents.within(this.x0, this.z0, this.x0 + PROP_TILE, this.z0 + PROP_TILE)) this.shaft(sh);
     furnishCellar({
-      solid: this.solid, glow: this.glow,
+      solid: this.solid, glow: this.glow, rock: this.stones,
       inTile: (x, z) => this.inTile(x, z),
       light: (x, y, z) => { this.lamps.push(x, y, z); this.counts.lit++; },
       block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),

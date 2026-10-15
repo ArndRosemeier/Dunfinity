@@ -92,6 +92,13 @@ export class Roots implements Style {
     out[o + 2] = ((0.12 + B.rock[2] * 0.15) * (1 - moss) + 0.1 * moss) * k;
   }
 
+  /** Bark on the roots, mossy where they run low; moss carpets the floor, lusher in patches (src/gen/style.ts `Cover`). */
+  cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    const h = y - col.floor, lush = 0.6 + 0.4 * this.noise.n2(x / 9 + 2.2, z / 9 - 5.1);
+    const bark = this.root(col, x, y, z) < 0.35;
+    out[o] = bark ? 0.7 * smoothstep(5, 1, h) : lush; out[o + 1] = bark ? 1 : 0; out[o + 2] = 0; out[o + 3] = 0;
+  }
+
   /** A passage from another style ends in the nearest chamber (E3). */
   portal(x: number, z: number): [number, number] {
     return this.cave.portal(x, z);

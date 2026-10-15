@@ -32,6 +32,11 @@ export interface Style {
    * the shader shows the types in patches and beds. The band's rock (`band.rocks`) if left out.
    */
   readonly rocks?: RockMix;
+  /**
+   * What grows on or covers the rock at a surface point (`Cover`, four numbers into out at o): moss,
+   * bark (a root), plaster, roof tiles. Bare rock if left out.
+   */
+  cover?: (col: Column, x: number, y: number, z: number, out: Float32Array, o: number) => void;
   /** Whether the rock nearest (x, y, z), a point in the air, can be climbed. */
   climbable(x: number, y: number, z: number): boolean;
   /**
@@ -67,10 +72,25 @@ export interface Style {
 export type Surface = readonly [tooled: number, masonry: number, flowstone: number, course: number];
 
 /**
- * Numbers per mesh vertex of the rock's surface (`Level.surfaces`, the rock shader's `surface`, `rocks`
- * and `rocks2` attributes): its `Surface` (four), then its `RockMix` (eight, src/gen/rockTypes.ts).
+ * What covers the rock, per surface point, as the rock shader draws it over the stone (each 0–1):
+ * - `moss`: how lush moss grows here; the shader puts it on floors, ledges and the tops of things,
+ *   thick in patches, thin and broken at its edges, a few tufts up the walls;
+ * - `bark`: this is a root (or a trunk): furrowed bark instead of stone;
+ * - `plaster`: a house wall, rendered (in the colour's paint), cracked and weathered;
+ * - `tiles`: a roof of overlapping tiles (clay or slate: the colour says).
+ * All 0 is bare rock. Blended across style edges like the colour.
  */
-export const SURFACE_STRIDE = 12;
+export type Cover = readonly [moss: number, bark: number, plaster: number, tiles: number];
+
+/** Bare rock: nothing grows on it. */
+export const BARE: Cover = [0, 0, 0, 0];
+
+/**
+ * Numbers per mesh vertex of the rock's surface (`Level.surfaces`, the rock shader's `surface`, `rocks`,
+ * `rocks2` and `cover` attributes): its `Surface` (four), its `RockMix` (eight, src/gen/rockTypes.ts),
+ * then its `Cover` (four).
+ */
+export const SURFACE_STRIDE = 16;
 
 /** Natural rock: no tool marks, no masonry, no flowstone. */
 export const NATURAL: Surface = [0, 0, 0, 0];

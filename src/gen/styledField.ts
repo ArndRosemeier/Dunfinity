@@ -17,7 +17,7 @@
  */
 import { newColumn, type Column, type ColumnMix, type QuarryField } from './quarry';
 import { REGIONS, Regions, newShares, type Mix, type Shares } from './regions';
-import { NATURAL, SHARE_OWN, putSurface, type Style } from './style';
+import { BARE, NATURAL, SHARE_OWN, putSurface, type Style } from './style';
 import { putRocks, rockMix, type RockMix } from './rockTypes';
 
 /**
@@ -207,6 +207,11 @@ export class StyledField {
   /** Which rock it is at a surface point (`RockMix`, eight numbers), blended across edges like the colour. */
   rocks(col: Column, out: Float32Array, o: number): void {
     this.blend(col, out, o, 8, (st) => putRocks(st.rocks ?? this.bandRocks, out, o));
+  }
+
+  /** What covers the rock at a surface point (`Cover`: moss, bark, plaster, tiles), blended across edges like the colour. */
+  cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    this.blend(col, out, o, 4, (st, c) => { if (st.cover) st.cover(c, x, y, z, out, o); else putSurface(BARE, out, o); });
   }
 
   /** `size` numbers at out[o] written by `one` for the column's style, or weighted over its mix of styles. */

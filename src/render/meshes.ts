@@ -16,13 +16,14 @@ export interface IndexedData {
   surfaces?: Float32Array;
 }
 
-/** The rock's surface record, split into the shader's attributes: `surface` (vec4), `rocks` and `rocks2` (the eight rock-type weights). */
+/** The rock's surface record, split into the shader's attributes: `surface` (vec4), `rocks` and `rocks2` (the eight rock-type weights), `cover`. */
 export function surfaceAttributes(g: BufferGeometry, data: Float32Array): void {
-  const n = data.length / SURFACE_STRIDE, parts = [new Float32Array(n * 4), new Float32Array(n * 4), new Float32Array(n * 4)];
+  const n = data.length / SURFACE_STRIDE, parts = [0, 1, 2, 3].map(() => new Float32Array(n * 4));
   for (let i = 0; i < n; i++) for (let k = 0; k < SURFACE_STRIDE; k++) parts[k >> 2][i * 4 + (k & 3)] = data[i * SURFACE_STRIDE + k];
   g.setAttribute('surface', new Float32BufferAttribute(parts[0], 4));
   g.setAttribute('rocks', new Float32BufferAttribute(parts[1], 4));
   g.setAttribute('rocks2', new Float32BufferAttribute(parts[2], 4));
+  g.setAttribute('cover', new Float32BufferAttribute(parts[3], 4));
 }
 
 /** A static mesh (no per-frame matrix update) of `kind` from position, normal, colour and index arrays. */

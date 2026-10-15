@@ -192,7 +192,43 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7))).sub(ring.mul(0.04).mul(saltShare).mul(worked)).add(lumps.mul(0.18).mul(saltShare));
   const hMasonry = edge.oneMinus().mul(0.12).sub(joint.mul(0.2)).add(mottle.mul(0.1)).add(lumps.mul(0.06)).add(grain.mul(0.03));
   const hFlow = mottle.mul(0.25).add(drip.mul(0.18).mul(steep)).add(rim.mul(0.1)).add(sin(p.y.mul(38).add(drip.mul(9))).mul(0.006).mul(smoothstep(0.5, 0.2, p.y.mul(38).fwidth())));
-  const height = mix(mix(hNatural, hMasonry, masonry), hFlow, flow).sub(boardLine.mul(0.05).add(tie.mul(0.15)).mul(shutter));
+  // What covers the rock (per vertex, `cover`: src/gen/style.ts `Cover`): moss, bark, plaster, tiles.
+  const cov = attribute<'vec4'>('cover', 'vec4');
+  // Moss: on floors, ledges and the tops of things, as lush as the style says, thick in patches and
+  // broken at its edges, a few tufts up the walls; cushions a hand across, a fine fuzz of fronds.
+  const mossEdge = mx_fractal_noise_float(p.mul(0.8).add(5.5), 2, 2.0, 0.5);
+  const tuft = smoothstep(0.35, 0.6, mx_noise_float(p.mul(1.7).add(-2.3)));
+  const mossBed = cov.x.mul(smoothstep(0.1, 0.7, normalWorld.y).add(tuft.mul(steep).mul(0.45)));
+  const moss = smoothstep(0.3, 0.55, mossBed.add(mossEdge.mul(0.3)));
+  const fuzzAt = p.mul(36);
+  const fuzz = mx_fractal_noise_float(fuzzAt, 2, 2.0, 0.5).mul(smoothstep(1.0, 0.3, fuzzAt.x.fwidth()));
+  const cushion = mx_worley_noise_float(p.mul(2.4).add(1.7));
+  const mossHue = mix(vec3(0.05, 0.11, 0.025), vec3(0.17, 0.3, 0.06), fuzz.mul(0.5).add(0.5)).mul(float(1.2).sub(cushion.mul(0.6)))
+    .add(vec3(0.14, 0.12, 0.0).mul(smoothstep(0.45, 0.8, mx_noise_float(p.mul(0.5).add(9.9))))); // yellower, drier stretches
+  // Bark (a root): fibrous ridges and deep furrows running along the root, the long way being the
+  // axis its surface faces least; grey-green lichen in places.
+  const an = abs(normalWorld), least = min(min(an.x, an.y), an.z);
+  const along = vec3(smoothstep(0.0, 0.4, an.x.sub(least)), smoothstep(0.0, 0.4, an.y.sub(least)), smoothstep(0.0, 0.4, an.z.sub(least))).mul(0.8).add(0.2);
+  const barkAt = p.mul(along).mul(4.5);
+  const ridge = float(1).sub(abs(mx_noise_float(barkAt.add(vec3(mottle.mul(0.6)))))).pow(2).sub(0.5).mul(smoothstep(0.6, 0.2, barkAt.fwidth().length())).add(0.5);
+  const barkFine = mx_noise_float(barkAt.mul(3)).mul(smoothstep(0.6, 0.2, barkAt.mul(3).fwidth().length()));
+  const lichen = smoothstep(0.35, 0.6, mx_noise_float(p.mul(1.3).add(4.4)));
+  const bark = smoothstep(0.3, 0.7, cov.y);
+  const barkHue = mix(vec3(0.13, 0.09, 0.06), vec3(0.32, 0.24, 0.16), ridge).mul(barkFine.mul(0.15).add(1)).mul(mix(vec3(1, 1, 1), vec3(1.25, 1.35, 1.1), lichen.mul(0.6)));
+  // Plaster (a house wall, in its own colour): render, grimy low down, streaked by rain, cracked.
+  const plaster = smoothstep(0.3, 0.7, cov.z);
+  const plasterHue = vertexColor().mul(fleck.mul(0.08).add(blotch.mul(0.1)).add(1)).mul(float(1).sub(streak.mul(0.25)).sub(crack.mul(0.5)))
+    .mul(mix(vec3(1, 1, 1), vec3(0.72, 0.68, 0.6), smoothstep(0.3, 0.7, mx_noise_float(p.mul(vec3(0.6, 0.15, 0.6)).add(3.3))))); // grimy patches
+  // Roof tiles (clay or slate, in the roof's colour): rows of overlapping tiles, each its own shade, a shadow under each row's edge.
+  const tiles = smoothstep(0.3, 0.7, cov.w);
+  const tileRow = p.y.div(0.13).add(mx_noise_float(p.mul(2)).mul(0.04)), tileU = u.div(0.22).add(tileRow.floor().mul(0.5));
+  const tileEdge = smoothstep(0.75, 1.0, tileRow.fract()), tileGap = thinLine(min(tileU.fract(), float(1).sub(tileU.fract())).mul(0.22), float(0.006));
+  const tileFade = smoothstep(0.35, 0.12, tileRow.fwidth());
+  const tileHue = vertexColor().mul(mx_cell_noise_float(vec3(tileU.floor(), tileRow.floor(), 5.5)).mul(0.4).add(0.9))
+    .mul(float(1).sub(tileEdge.mul(0.45).add(tileGap.mul(0.5)).mul(tileFade)));
+  const height = mix(mix(mix(mix(hNatural, hMasonry, masonry), hFlow, flow).sub(boardLine.mul(0.05).add(tie.mul(0.15)).mul(shutter)),
+    ridge.mul(0.1).add(barkFine.mul(0.015)), bark), float(1).sub(tileEdge.mul(tileFade)).mul(0.1), tiles)
+    .add(cushion.oneMinus().mul(0.25).add(fuzz.mul(0.03)).mul(moss));
   m.normalNode = bumped(height, 0.35);
 
   // Colour: broad warmer and cooler stretches of stone, darker in the hollows, the seams and cracks
@@ -216,10 +252,11 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const cream = mix(vec3(1, 1, 1), mix(vec3(1.08, 1.0, 0.86), vec3(1.12, 0.9, 0.7), flowBand.mul(steep)), flow);
   const blockHue = mix(vec3(1, 1, 1), mix(vec3(1.05, 1.0, 0.92), vec3(0.94, 0.98, 1.04), block), masonry);
   const salt = mix(vec3(1, 1, 1), saltHue, saltShare.mul(natural));
-  m.colorNode = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(rockKind).mul(salt).mul(hue).mul(region).mul(rust).mul(cream).mul(blockHue);
+  const stone = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(rockKind).mul(salt).mul(hue).mul(region).mul(rust).mul(cream).mul(blockHue);
+  m.colorNode = mix(mix(mix(mix(stone, barkHue, bark), plasterHue, plaster), tileHue, tiles), mossHue, moss);
   // Wet sheen: some stretches of rock run with water and shine in the lamps; flowstone is always damp.
   const wetMask = smoothstep(0.1, 0.5, mx_noise_float(p.mul(vec3(0.3, 0.05, 0.3)).add(-9.4))).mul(ROCK_FINISH.wet).add(flow.mul(0.6)).add(damp.mul(ROCK_FINISH.wet)).clamp(0, 1);
-  m.roughnessNode = float(0.9).add(grain.mul(0.06)).sub(wetMask.mul(0.55));
+  m.roughnessNode = float(0.9).add(grain.mul(0.06)).sub(wetMask.mul(0.55)).sub(tiles.mul(0.25)).add(moss.mul(0.1)).clamp(0.05, 1);
 
   // Thin lines alias into glitter far off: they fade out with distance (the fog hides the rest).
   const near = smoothstep(55, 20, length(positionView));

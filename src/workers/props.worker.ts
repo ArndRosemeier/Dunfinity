@@ -10,7 +10,7 @@ export interface PropsJob {
   tz: number;
 }
 
-const buffers = (m: PropMesh | null) => (m ? [m.positions.buffer, m.normals.buffer, m.colors.buffer, m.indices.buffer] : []);
+const buffers = (m: PropMesh | null) => (m ? [m.positions.buffer, m.normals.buffer, m.colors.buffer, m.indices.buffer, ...(m.surfaces ? [m.surfaces.buffer] : [])] : []);
 
 serve<PropsJob, PropTile>((job) => {
   const result = quarryProps(levelFor(job.level), job.tx, job.tz);
