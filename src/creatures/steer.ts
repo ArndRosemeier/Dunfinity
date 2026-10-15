@@ -23,6 +23,8 @@ export interface Walker {
   yaw: number;
   /** Which way it last went round something in its way (+1 / -1). */
   side: number;
+  /** Getting nowhere (see `Steer.move`): its goal, the nearest it has come to it, for how long not nearer (seconds), and how long it still stands. */
+  aim?: { x: number; z: number; best: number; since: number; wait: number };
   readonly radius: number;
   readonly height: number;
   readonly dead: boolean;
@@ -43,6 +45,13 @@ export interface Gait {
   /** Where it checks for rock in the way, as a share of its height over its feet (default 0.5625; wide, low walkers need it higher, or the floor itself is in the way). */
   probe?: number;
 }
+
+/**
+ * A walker getting no nearer its goal by `share` of what its pace covers in `after` seconds (or in
+ * the time it takes to get up to speed, if longer) stands for `wait` seconds; one slowed to `slow`
+ * of its pace (arriving) is not trying. A goal moved by `moved` metres is a fresh start.
+ */
+const GIVE_UP = { share: 0.17, after: 0.12, slow: 0.06, wait: 0.6, moved: 0.6 } as const;
 
 export class Steer {
   /** The props in the way (src/world/blockers.ts). */
@@ -65,7 +74,20 @@ export class Steer {
     let ddx = gx - w.x, ddz = gz - w.z;
     const dist = Math.hypot(ddx, ddz);
     // Arrive: ease off near the goal and stand still on it, so it never overshoots and comes back.
+    const pace = speed, after = Math.max(GIVE_UP.after, 1 / G.accel);
     speed = Math.min(speed, (speed * Math.max(0, dist - G.still)) / G.arrive);
+    // Getting nowhere (shoved back by its fellows, its goal behind rock or up a ledge, boxed in among
+    // fallen blocks): it stands a moment instead of trying this way and that on the spot, and then
+    // tries again. A goal that moves on is a fresh start.
+    const aim = (w.aim ??= { x: gx, z: gz, best: dist, since: 0, wait: 0 });
+    if (Math.hypot(gx - aim.x, gz - aim.z) > GIVE_UP.moved) { aim.x = gx; aim.z = gz; aim.best = dist; aim.since = 0; aim.wait = 0; }
+    if (aim.wait > 0) {
+      speed = 0;
+      if ((aim.wait -= dt) <= 0) { aim.best = dist; aim.since = 0; }
+    } else if (speed > GIVE_UP.slow * pace) {
+      if (dist < aim.best - GIVE_UP.share * pace * after) { aim.best = dist; aim.since = 0; }
+      else if ((aim.since += dt) > after) aim.wait = GIVE_UP.wait;
+    } else aim.since = 0;
     if (speed > 0.02) {
       ddx /= dist; ddz /= dist;
       let want = Math.atan2(-ddx, -ddz);
