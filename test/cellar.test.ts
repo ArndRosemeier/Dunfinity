@@ -26,8 +26,40 @@ test('one walks from the armchair through the doorway and the broken arch to the
   }
   // Rock beyond the walls, and none of the Quarry's halls round about.
   for (const [x, z] of [[0, 4], [6.6, 3.5], [11, 2.5], [-12, 0], [30, 0], [0, 30]]) assert.ok(level.sdf(x, 1.2, z) < 0, `rock at ${x}, ${z}`);
-  // The stairs rise to the house door.
+  // The stairs rise into the house.
   assert.ok(level.groundAt(-7.8, 0) > 2.2);
+});
+
+test("up the stairs is her ground floor: a body walks into the hall, the kitchen, her bedroom and the living room", () => {
+  const F = CELLAR.house.floor;
+  for (const [x, z] of [[-12, 0], [-9.9, 3], [-13, 3.5], [-11, -3]]) {
+    assert.ok(level.sdf(x, F + 1.2, z) > 0.3, `air at ${x}, ${z}`);
+    assert.ok(Math.abs(level.groundAt(x, z) - F) < 0.1, `floor at ${x}, ${z}: ${level.groundAt(x, z).toFixed(2)}`);
+  }
+  assert.ok(level.sdf(-12, F + 2.9, 0) < 0, 'a ceiling');
+  assert.ok(level.sdf(-12, 1.2, 0) < 0, 'rock under the floor');
+  const blockers = new Blockers();
+  for (let tz = -1; tz <= 0; tz++) for (let tx = -1; tx <= 0; tx++) blockers.set(`${tx},${tz}`, quarryProps(level, tx, tz).blockers);
+  // From the cellar up the stairs, along the hall and through each doorway.
+  const go = (path: readonly (readonly [number, number])[]): Body => {
+    const b = new Body(-3, 0, 0), dt = 1 / 120;
+    for (const [tx, tz] of [[-6, 0], [-8.8, 0], ...path]) {
+      for (let t = 0; t < 12 && Math.hypot(tx - b.x, tz - b.z) > 0.2; t += dt) {
+        b.step(level, { forward: 1, right: 0, yaw: Math.atan2(-(tx - b.x), -(tz - b.z)), sprint: false, jump: false }, dt, blockers);
+      }
+    }
+    return b;
+  };
+  const near = (b: Body, x: number, z: number) => Math.hypot(b.x - x, b.z - z) < 0.4 && Math.abs(b.y - F) < 0.2;
+  const kitchen = go([[-9.9, 0], [-9.9, 1.8], [-10.6, 3.4]]);
+  assert.ok(near(kitchen, -10.6, 3.4), `kitchen: ${kitchen.x.toFixed(2)}, ${kitchen.y.toFixed(2)}, ${kitchen.z.toFixed(2)}`);
+  const bedroom = go([[-13.1, 0], [-13.1, 2.0]]);
+  assert.ok(near(bedroom, -13.1, 2.0), `bedroom: ${bedroom.x.toFixed(2)}, ${bedroom.z.toFixed(2)}`);
+  const living = go([[-11.7, 0], [-11.7, -2.6]]);
+  assert.ok(near(living, -11.7, -2.6), `living room: ${living.x.toFixed(2)}, ${living.z.toFixed(2)}`);
+  // The thin walls hold: straight from the hall at the kitchen's wall does not get through it.
+  const walled = go([[-8.8, 0.95], [-8.8, 3]]);
+  assert.ok(walled.z < 1.1, `through the wall: ${walled.z.toFixed(2)}`);
 });
 
 test("a body fits through every way out of grandma's room: the doorway, the arch, on to the shaft and up the stairs", () => {

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.057 — Upstairs
+
+- The cellar stairs now lead up into grandma's house. Her ground floor is as she left it: the hall with her coat on the stand and the front door shut, the kitchen with the table set for one, her bedroom, and the living room with her photographs on the sideboard and on the wall. It is night at the windows.
+- The town outside comes later; the front door does not open yet.
+
 ## v0.056 — The map
 
 - Press M for a map of what this grandchild has seen: the floor they have walked by, lighter where it is higher and darker where it is lower, water in blue, the ways down they have found (the way up in yellow), their fire, and themselves as a red arrow. Nothing they have not seen is shown.
