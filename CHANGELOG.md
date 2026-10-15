@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.088 — Rats that stop fidgeting
+
+- Rats (and every other walking creature) no longer jiggle on the spot when they cannot get where they want to be. Shoved back by a nest-mate, stuck behind a block of fallen rock, or under a ledge they cannot climb, a rat used to try this way and that, a few centimetres back and forth, again and again. Now one that gets no nearer for a moment stands still for about half a second, then tries again. Over 48 nests in four kinds of rock, back-and-forth twitches dropped from 429 to 49.
+
 ## v0.087 — Real rats
 
 - The quarry rats are new: sculpted, rigged and animated in Blender like the dogs. Each one is a fat, grizzled sewer rat with a darker back, naked pink ears and feet, a long ringed tail, orange front teeth and eyes that catch your light.
