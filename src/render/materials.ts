@@ -8,7 +8,7 @@
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, type Material, type Node } from 'three/webgpu';
-import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -316,9 +316,25 @@ export interface CoatMaps {
   readonly normal: Texture;
 }
 
-/** A coat kind: lit, from its own two maps (filled in when the creature's glb loads: src/render/creatures/rigged.ts). */
+/**
+ * A coat as a deeper stratum's kin wear it (src/creatures/kin.ts): its hue turned (radians), its
+ * saturation and lightness scaled, and a pattern of stripes or spots darkened into it (`pattern` 0:
+ * none), `grain` to the metre on the creature's rest shape, so it holds still on the moving body.
+ * Uniforms: one stratum's kin is set when its level is shown, and never a new shader.
+ */
+export interface CoatLook {
+  readonly hue: { value: number };
+  readonly sat: { value: number };
+  readonly val: { value: number };
+  readonly pattern: { value: number };
+  readonly stripes: { value: number };
+  readonly grain: { value: number };
+}
+
+/** A coat kind: lit, from its own two maps (filled in when the creature's glb loads: src/render/creatures/rigged.ts), worn as its `look` says. */
 export interface CoatKind extends MaterialKind {
   readonly maps: CoatMaps;
+  readonly look: CoatLook;
 }
 
 /**
@@ -331,13 +347,21 @@ function defineCoat(name: string, roughness = 0.85): CoatKind {
   maps.colour.colorSpace = SRGBColorSpace;
   maps.normal.colorSpace = NoColorSpace;
   for (const t of [maps.colour, maps.normal]) t.flipY = false; // glTF's uvs
+  const look = { hue: uniform(0), sat: uniform(1), val: uniform(1), pattern: uniform(0), stripes: uniform(0), grain: uniform(5) };
   const kind = defineKind(name, ['position', 'normal', 'uv'], () => {
     const m = new MeshStandardNodeMaterial({ roughness, metalness: 0 });
-    m.colorNode = texture(maps.colour);
+    const p = positionGeometry.mul(look.grain);
+    const wobble = mx_noise_float(p.mul(0.7));
+    // Stripes across the body (its length is the rest shape's z) or spots: 1 where the coat darkens.
+    const stripe = smoothstep(0.2, 0.7, sin(p.z.mul(2.2).add(wobble.mul(2.5))));
+    const spot = smoothstep(0.15, 0.4, mx_noise_float(p.mul(1.3)));
+    const mark = mix(spot, stripe, look.stripes).mul(look.pattern);
+    const coat = saturation(hue(texture(maps.colour).rgb, look.hue), look.sat).mul(look.val);
+    m.colorNode = coat.mul(float(1).sub(mark.mul(0.75)));
     m.normalNode = normalMap(texture(maps.normal));
     return m;
   });
-  return Object.assign(kind, { maps });
+  return Object.assign(kind, { maps, look });
 }
 
 /** The feral dogs' coat (AssetGenerator spec creature_feral_dog). */
