@@ -1,9 +1,15 @@
 # Changelog
 
-## v0.084 — Real dogs
+## v0.085 — Real dogs
 
 - The feral dogs are new. They were built from a few ellipsoids in code; now each one is a gaunt street dog sculpted, rigged and animated in Blender (AssetGenerator). It has a deep narrow chest, ribs and spine showing, bristling hackles and tail, a rough coat with a dark saddle and a black muzzle, a mouth that opens on its teeth, and eyes that throw your headlamp back.
 - Everything they do has its own animation: lying up at the den, standing and looking about, a trot, a gallop round you, a low stalk with the head down and lips drawn back while they circle, down on the haunches before a lunge (the tell), the lunge with the jaw wide, the snap, a flinch when you stab one, and a fall onto its side when it dies. The paws stay planted at every speed, and one action fades into the next, so nothing pops or flickers.
+
+## v0.084 — Carts and shacks
+
+- The ore carts on the rails are modelled now: a riveted iron tub on four flanged wheels, some still heaped with ore.
+- The miners' shacks too: plank walls on a timber frame, a door, a window and a tarred roof with eaves.
+- Ten kinds of mushroom are made and waiting for the damp places: fly agarics, penny buns, inkcaps, honey clusters, chanterelles, puffballs, morels, pale cave caps, brackets on the rock and a giant three metres tall.
 
 ## v0.083 — Fungal grottoes
 

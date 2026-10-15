@@ -1,4 +1,24 @@
 {
   "why": "The AssetGenerator specs (vendor/assetgenerator/assets/specs) packed into src/gen/models.pack.ts by `npm run props`.",
-  "specs": ["prop_crate", "prop_barrel", "prop_bucket", "prop_pick", "prop_shovel", "prop_cut_block"]
+  "specs": [
+    "prop_crate",
+    "prop_barrel",
+    "prop_bucket",
+    "prop_pick",
+    "prop_shovel",
+    "prop_cut_block",
+    "prop_cart",
+    "prop_cart_loaded",
+    "prop_shack",
+    "mush_fly_agaric",
+    "mush_porcini",
+    "mush_inkcaps",
+    "mush_honey_cluster",
+    "mush_chanterelles",
+    "mush_puffballs",
+    "mush_morels",
+    "mush_cave_pale",
+    "mush_giant",
+    "mush_brackets"
+  ]
 }
