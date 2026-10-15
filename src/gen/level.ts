@@ -9,7 +9,8 @@ import { deriveSeed } from '@futuremagic/core';
 import { bandOf, type Band } from './bands';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
-import { Karst } from './karst';
+import { onlyMix, stylesOf } from './styles';
+import type { StyleId } from './style';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
@@ -47,6 +48,13 @@ export interface Haven {
   readonly r: number;
 }
 
+/** What a level is made from: the same key makes the same level, in any worker. `style`: all of one style, for trying it out (`?style=`). */
+export interface LevelKey {
+  readonly seed: number;
+  readonly depth: number;
+  readonly style?: StyleId;
+}
+
 export class Level {
   /** The level's field, from its styles (src/gen/styledField.ts). */
   readonly field: StyledField;
@@ -60,13 +68,20 @@ export class Level {
   private camp_: GrandmasCamp | null | undefined;
   private lair_: Lair | null | undefined;
 
-  constructor(readonly seed: number, readonly depth: number) {
+  /** `style`: the whole level of that style (but where one arrives), instead of its band's mix; not in the cellar. */
+  constructor(readonly seed: number, readonly depth: number, readonly style?: StyleId) {
     this.band = bandOf(depth);
     // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
     const s = deriveSeed(seed, 'level', depth);
     const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
-    this.field = new StyledField(excavation, this.band.styles.map(([id]) => id === 'karst' ? new Karst(s, this.band) : excavation), this.band.styles, s);
+    const mix = style && depth > 0 ? onlyMix(style, excavation.id) : this.band.styles;
+    this.field = new StyledField(excavation, stylesOf(mix, excavation, s, this.band), mix, s);
     this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined);
+  }
+
+  /** What this level is made from (for workers to make the same one). */
+  get key(): LevelKey {
+    return { seed: this.seed, depth: this.depth, style: this.style };
   }
 
   /** Grandma's first camp, if it is on this level (level 9). */

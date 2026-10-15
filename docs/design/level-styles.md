@@ -51,6 +51,7 @@ What the code does, where it differs from the plan above:
 - **E4**: the clamp keeps the blend 1-Lipschitz. Measured: edges are no steeper than the styles' own insides (p99 and p99.9 of the slope).
 - **E5**: `owns(style, x, z)` is the one test. Pillars, the miners' props and lamps, ways down and the way up all use it. Karst things will too.
 - Tests: `test/styles.test.ts` holds every mixed band to all of this.
+- **Adding a style** (v0.075): a file implementing `Style`, its id in `StyleId`, one entry in `src/gen/styles.ts`, a share in a band's mix, a level with it in `MIXED` in `test/styles.test.ts`. `?style=<id>` makes every level that style but for the arrival's region, to look at it in the game or the Lab.
 
 ## 3. The style contract (TypeScript sketch)
 

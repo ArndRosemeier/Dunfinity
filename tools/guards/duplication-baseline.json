@@ -708,10 +708,6 @@
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
   },
   {
-    "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/gen/quarryProps.ts + dunfinity/world/fire.ts",
-    "reason": "reading Level and a dry-floor flag; different checks, surfaced when new files shifted the idiom finder's corpus"
-  },
-  {
     "key": "same name: dunfinity/gen/cellMemo.ts#at + dunfinity/gen/karst.ts#at",
     "reason": "cellMemo.at is a cache lookup; karst.at is the Style contract's distance. Same short name, unrelated"
   },

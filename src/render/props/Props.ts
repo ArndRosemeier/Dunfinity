@@ -3,6 +3,7 @@
  * tiles, built in the worker pool and compiled on the Stage before they show. Feeds the burning
  * lamps to the lamp lights.
  */
+import type { LevelKey } from '../../gen/level';
 import { Group, type Object3D } from 'three/webgpu';
 import { PROP_TILE, type PropTile } from '../../gen/quarryProps';
 import { createPropsPool, type WorkerPool } from '../../workers/pool';
@@ -39,7 +40,7 @@ export class Props {
   /** Lights that belong to no tile (a Sunday candle on the floor): x, y, z each, set by the game every frame. */
   loose: Float32Array = new Float32Array(0);
 
-  constructor(private readonly stage: Stage, private readonly group: Object3D, readonly seed: number, readonly depth: number, private readonly lights: LampLights) {
+  constructor(private readonly stage: Stage, private readonly group: Object3D, readonly level: LevelKey, private readonly lights: LampLights) {
     this.pool = createPropsPool();
   }
 
@@ -84,7 +85,7 @@ export class Props {
   private request(id: string, tx: number, tz: number): void {
     const tile: Tile = { tx, tz, group: null, lamps: new Float32Array(0), watchers: new Float32Array(0), triangles: 0, done: false };
     this.tiles.set(id, tile);
-    void this.pool.run({ seed: this.seed, depth: this.depth, tx, tz }).then(async (data) => {
+    void this.pool.run({ level: this.level, tx, tz }).then(async (data) => {
       if (this.tiles.get(id) !== tile) return;
       const group = new Group();
       for (const [mesh, kind] of [[data.solid, VERTEX_COLOR_SOLID], [data.glow, GLOW], [data.water, WATER], [data.flow, FLOW], [data.stones, ROCK]] as const) {

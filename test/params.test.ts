@@ -11,6 +11,9 @@ test('Lab params: numeric and text seeds, depth floor, position', () => {
   assert.deepEqual(parseViewParams('?pos=1,2,3').pos, [1, 2, 3]);
   assert.equal(parseViewParams('?pos=1,2').pos, null);
   assert.equal(parseViewParams('?gl').forceWebGL, true);
+  assert.equal(parseViewParams('?style=karst').style, 'karst');
+  assert.equal(parseViewParams('?style=nonsense').style, undefined);
+  assert.equal(parseViewParams('').style, undefined);
 });
 
 test('Lab params: look direction and colour mode', () => {

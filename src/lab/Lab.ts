@@ -11,7 +11,7 @@ import { parseViewParams } from '../app/params';
 
 export async function startLab(host: HTMLElement): Promise<void> {
   const params = parseViewParams(location.search);
-  const level = new Level(params.seed, params.depth);
+  const level = new Level(params.seed, params.depth, params.style);
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   const { camera, stage } = view;
   view.dark = params.dark;
