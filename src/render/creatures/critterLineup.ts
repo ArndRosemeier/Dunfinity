@@ -38,12 +38,19 @@ export class CritterLineup {
   readonly figures: CritterFigure[] = [];
   private readonly places: Place[] = [];
 
-  /** `depth`: that level's bestiary; null: the sampler (`count` per role, strangeness rising along the row). */
-  constructor(seed: number, depth: number | null, private readonly ground: GroundAt, count = 2) {
-    const species: Species[] = depth !== null ? bestiaryOf(seed, depth)
-      : SAMPLER.flatMap((role) => Array.from({ length: count }, (_, k) => grow(new Rng(deriveSeed(seed, 'critters', role, k)), role, 0.4 + k * 1.2, `${role}.${k}`)));
+  /** `pick`: a depth (that level's bestiary), a role (`count` of it, strangeness rising along the row), or null (the sampler: `count` of every role). */
+  constructor(seed: number, pick: number | CritterRole | null, private readonly ground: GroundAt, count = 2) {
+    const roles = typeof pick === 'string' ? [pick] : SAMPLER;
+    const species: Species[] = typeof pick === 'number' ? bestiaryOf(seed, pick)
+      : roles.flatMap((role) => Array.from({ length: count }, (_, k) => grow(new Rng(deriveSeed(seed, 'critters', role, k)), role, 0.4 + k * (2.4 / Math.max(1, count - 1)), `${role}.${k}`)));
     for (const sp of species) this.figures.push(new CritterModel(sp).figure(ground));
   }
+
+  /** How tall the tallest of them stands, metres. */
+  get tallest(): number { return Math.max(...this.figures.map((f) => f.model.anatomy.max[1] - Math.min(0, f.model.anatomy.min[1]) + f.model.species.altitude)); }
+
+  /** The sampler's roles. */
+  static readonly ROLES = SAMPLER;
 
   get roots(): Object3D[] { return this.figures.map((f) => f.root); }
 

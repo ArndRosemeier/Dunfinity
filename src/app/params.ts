@@ -1,6 +1,6 @@
 /**
- * URL options for the game and the Level Lab (`?lab`): `?seed=<text or number>&depth=<level>&pos=x,y,z&look=yaw,pitch&color=<mode>&dark&light&gl&style=<id>&races[=<race>]&critters[=<depth>]`
- * (look in degrees; color: rock, working or lod; dark: the Lab starts in headlamp darkness; light: the game starts lit; gl: force the WebGL 2 backend; style: every level of that one style but where one arrives, for trying a style out, src/gen/styles.ts; races: the Lab stands every race in a row before the view, or with a race id a man and a woman of it close up at eye height, src/render/humans/lineup.ts; critters: the Lab stands procedural creatures in a row, a sampler of every role or with a depth that level's bestiary, src/render/creatures/critterLineup.ts).
+ * URL options for the game and the Level Lab (`?lab`): `?seed=<text or number>&depth=<level>&pos=x,y,z&look=yaw,pitch&color=<mode>&dark&light&gl&style=<id>&races[=<race>]&critters[=<depth or role>]&studio`
+ * (look in degrees; color: rock, working or lod; dark: the Lab starts in headlamp darkness; light: the game starts lit; gl: force the WebGL 2 backend; style: every level of that one style but where one arrives, for trying a style out, src/gen/styles.ts; races: the Lab stands every race in a row before the view, or with a race id a man and a woman of it close up at eye height, src/render/humans/lineup.ts; critters: the Lab stands procedural creatures in a row, a sampler of every role, with a depth that level's bestiary, with a role three of it, src/render/creatures/critterLineup.ts; studio: with critters, the rock hidden and a plain floor under them).
  */
 import { hashString } from '@futuremagic/core';
 import { COLOR_MODES, type ColorMode } from '../gen/level';
@@ -25,6 +25,8 @@ export interface ViewParams {
   races: string | null;
   /** Lab: procedural creatures in a row ('' the sampler, else the bestiary of that depth), or null. */
   critters: string | null;
+  /** Lab: the creatures on a plain floor, the rock hidden. */
+  studio: boolean;
 }
 
 export function parseViewParams(search: string): ViewParams {
@@ -40,7 +42,7 @@ export function parseViewParams(search: string): ViewParams {
   const color = c && COLOR_MODES.includes(c) ? c : 'rock';
   const st = q.get('style') as StyleId | null;
   const style = st && NAMED_STYLES.includes(st) ? st : undefined;
-  return { seed, depth, pos, look, color, dark: q.has('dark'), light: q.has('light'), forceWebGL: q.has('gl'), style, races: q.get('races'), critters: q.get('critters') };
+  return { seed, depth, pos, look, color, dark: q.has('dark'), light: q.has('light'), forceWebGL: q.has('gl'), style, races: q.get('races'), critters: q.get('critters'), studio: q.has('studio') };
 }
 
 /**
