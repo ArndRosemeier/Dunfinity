@@ -15,6 +15,7 @@ import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
 import { Watchers } from './props/watchers';
+import { DripView } from './props/dripView';
 import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
 import { QUALITY } from './quality';
 import type { Quality } from '../persist/settings';
@@ -43,6 +44,8 @@ export class LevelView {
   private readonly things = new Group();
   private readonly dust: Dust;
   private readonly watchers = new Watchers();
+  /** The living stalagmites near the viewer (src/gen/drips.ts). */
+  readonly drips = new DripView();
   private lastTime = 0;
   private terrain_: Terrain | null = null;
   private props_: Props | null = null;
@@ -95,6 +98,7 @@ export class LevelView {
     this.scene.add(this.rock, this.things);
     await this.stage.add(this.dust.mesh);
     await this.stage.add(this.watchers.root);
+    await this.stage.add(this.drips.root);
     this.stream();
   }
 
@@ -194,6 +198,7 @@ export class LevelView {
     this.dust.follow(this.headlamp);
     this.terrain.update(x, y, z);
     this.props.update(x, y, z, time);
+    this.drips.draw(this.level_, x, z, time);
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;
     if (draw) this.renderer.render(this.scene, this.camera);
