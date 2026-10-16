@@ -21,13 +21,18 @@ export interface Fallen {
   readonly what: string;
 }
 
+/** Where and of what, as his list says it ("level 3, a rat bites"). */
+export function fallenAt(f: Fallen): string {
+  return `${f.depth ? `level ${f.depth}` : 'in the cellar'}, ${f.what}`;
+}
+
 /**
  * His list of the heirs (the death counter, town-and-first-strata.md §2): one line each, the
  * fallen crossed out with where it happened, the last line the grandchild down there now.
  */
 export function notaryList(fallen: readonly Fallen[], heir: number, seed: number, shown = 6): string[] {
   const strike = (t: string) => [...t].map((ch) => `${ch}\u0336`).join('');
-  const lines = fallen.slice(-shown).map((f) => `${strike(heirName(f.heir, seed))}  (${f.depth ? `level ${f.depth}` : 'in the cellar'}, ${f.what})`);
+  const lines = fallen.slice(-shown).map((f) => `${strike(heirName(f.heir, seed))}  (${fallenAt(f)})`);
   if (fallen.length > shown) lines.unshift(`… and ${fallen.length - shown} more, crossed out`);
   lines.push(heirName(heir, seed));
   return lines;
