@@ -299,5 +299,19 @@
   ],
   "loop": false,
   "gain": 0.5
+ },
+ "wisp_pop": {
+  "files": [
+   "wisp_pop_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.45
+ },
+ "wisp_rise": {
+  "files": [
+   "wisp_rise_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.35
  }
 }
