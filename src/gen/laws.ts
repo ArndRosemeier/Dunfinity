@@ -2,14 +2,15 @@
  * The laws of a stratum (docs/design/generative-depth.md §2.3, §3): deviations from our world a
  * player can name in one sentence ("the light is green down here"), each holding all over the
  * stratum. How many hold is the stratum's strangeness (`Strangeness.laws`), but never more than half
- * of the laws it has reached; which ones is drawn from the catalogue below. Levels 1–10 have none (their oddities
- * are placed by hand). The catalogue grows with the game: a law is an id here and the code that reads it.
+ * of the laws it has reached; which ones is drawn from the catalogue below. Levels 1–10 have one each, their own
+ * (Arnd 2026-10-16: strange from the start), never one their band already shows (the Cisterns' water climbs anyway).
+ * The catalogue grows with the game: a law is an id here and the code that reads it.
  *
  * Pure: a function of (seed, depth).
  */
 import { Rng, deriveSeed } from '@futuremagic/core';
-import { strangeness, stratumOf } from './genome';
-import type { Band } from './bands';
+import { strangeFrom, strangeness } from './genome';
+import { bandOf, type Band } from './bands';
 
 /**
  * - `tinted`: the light is another colour (the air, the fog, the headlamp; src/gen/air.ts).
@@ -42,13 +43,18 @@ export function lawfulBand(band: Band, laws: readonly LawId[]): Band {
   };
 }
 
+/** Whether `band` already shows `law` as strongly as the law would (then the law would go unnoticed there). */
+function shows(band: Band, law: LawId): boolean {
+  return law === 'uphill' ? band.uphill >= UPHILL : law === 'older' ? band.older >= OLDER : law === 'glow' && band.veins >= 1;
+}
+
 /** The laws that hold on level `depth` of world `seed` (the same on all levels of a stratum). */
 export function lawsOf(seed: number, depth: number): readonly LawId[] {
-  const stratum = stratumOf(depth);
-  if (!stratum) return [];
-  const k = strangeness(seed, stratum.from);
-  const rng = new Rng(deriveSeed(seed, 'laws', stratum.from));
-  const left = LAWS.filter((l) => l.from <= k.s), out: LawId[] = [];
+  if (depth <= 0) return [];
+  const at = strangeFrom(depth), k = strangeness(seed, at), band = bandOf(at);
+  const rng = new Rng(deriveSeed(seed, 'laws', at));
+  // Below strangeness 1 (the first levels) the mildest laws are within reach: a level's one oddity.
+  const left = LAWS.filter((l) => l.from <= Math.max(1, k.s) && !shows(band, l.id)), out: LawId[] = [];
   // Never every law there is: strata must differ from each other, so at most half the laws reached hold.
   for (let n = Math.min(k.laws, Math.ceil(left.length / 2)); n > 0; n--) {
     let u = rng.float() * left.reduce((a, l) => a + l.weight, 0), i = 0;

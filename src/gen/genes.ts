@@ -3,13 +3,13 @@
  * that may deviate names each of its knobs as a `Gene`: the value our world has, a safe range (variety,
  * still ours) and a strange range (a copy gone wrong). `express` draws a gene's value for a level:
  * near the standard at the top, across the safe range as strangeness reaches 1, and for the genes a
- * stratum (level 11 on) pushes, out into the strange range as far as its amplitude allows. A stratum pushes the same
- * genes the same way on all its levels, so a world deviates coherently, never per object.
+ * stratum (or one of levels 1–10, each its own) pushes, out into the strange range as far as its amplitude allows.
+ * A stratum pushes the same genes the same way on all its levels, so a world deviates coherently, never per object.
  *
  * Pure: a function of (seed, depth, the gene's name).
  */
 import { Rng, deriveSeed, lerp } from '@futuremagic/core';
-import { STRANGE_CAP, strangeness, stratumOf } from './genome';
+import { STRANGE_CAP, strangeFrom, strangeness } from './genome';
 
 export interface Gene {
   /** The gene's name, unique in the game ('karst.domeHeight'): its own random stream. */
@@ -48,13 +48,13 @@ export function traitsOf(seed: number, depth: number): Traits {
 /** The value of `g` on level `depth` of world `seed`. */
 export function express(g: Gene, seed: number, depth: number): number {
   // A stratum reads its first level's strangeness and one stream per gene, so its levels agree; levels
-  // 1-10 go level by level and push nothing (their oddities are placed by hand).
-  const stratum = stratumOf(depth), at = stratum?.from ?? depth;
+  // 1-10 go level by level.
+  const at = strangeFrom(depth);
   const k = strangeness(seed, at);
   if (k.s <= 0) return g.standard;
   const rng = new Rng(deriveSeed(seed, 'gene', g.name, at));
   const safe = lerp(g.standard, rng.range(g.safe[0], g.safe[1]), Math.min(1, k.s));
-  if (!stratum || !rng.chance(pushChance(k.s))) return safe;
+  if (!rng.chance(pushChance(k.s))) return safe;
   // Pushed: towards one end of the strange range, as far as the amplitude allows.
   const end = rng.chance(0.5) ? g.strange[0] : g.strange[1];
   return lerp(safe, end, rng.range(0.4, 1) * (k.amplitude / STRANGE_CAP));
