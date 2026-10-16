@@ -7,6 +7,9 @@ import assert from 'node:assert/strict';
 import { hash3f } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
 import { NAMED_STYLES } from '../src/gen/styles';
+import { GLYPH, GLYPH_LINES, glyphLine } from '../src/gen/glyph';
+import { segDist } from '../src/gen/shapes';
+import { KERF } from '../src/lore/scripts';
 
 test('the lava tubes are none of them: long round tunnels, a dozen metres across, all of a height', () => {
   // (No band has lava tubes yet, the magma strata are deeper: a level of them, against the Threshold's mix.)
@@ -219,6 +222,92 @@ test('the bone hollows are none of them: arched chambers ribbed every few metres
   assert.ok(st.bones.n > 300, `${st.bones.n} open bone hollow columns`);
   assert.ok(ribbed('bones') > 0.15, `ribbed over ${(ribbed('bones') * 100).toFixed(1)}% of the bone hollows`);
   for (const id of Object.keys(st)) if (id !== 'bones' && st[id].n > 50) assert.ok(ribbed(id) < ribbed('bones') / 4, `${id}: ribbed over ${(ribbed(id) * 100).toFixed(1)}%`);
+});
+
+test('the organic gullets are none of them: flesh-coloured tubes ringed every few metres', () => {
+  // (The Deep draws them, 61 on: a level all of them, against a deep mix, Before People's and the Threshold's.)
+  const st: Record<string, { n: number; flesh: number }> = {};
+  const rgb = new Float32Array(3);
+  const roof = (l: Level, x: number, y: number, z: number) => { while (y < 60 && l.sdf(x, y, z) > 0.05) y += Math.max(0.05, l.sdf(x, y, z) * 0.8); return y; };
+  for (const l of [new Level(1, 75, 'organic'), new Level(1, 75), new Level(1, 45), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 3000; k++) {
+      const x = ax + (hash3f(73, k, 75, 0) - 0.5) * 3000, z = az + (hash3f(73, k, 75, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const r0 = roof(l, x, c.floor + 1.5, z);
+      if (r0 - c.floor > 14) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, flesh: 0 });
+      s.n++;
+      // Flesh: a strong colour overhead (not ivory, not stone), and along some line through here the roof dips twice, 4–9 m apart: two rings.
+      l.field.color(c, x, r0, z, rgb, 0);
+      if (Math.max(...rgb) - Math.min(...rgb) < 0.25) continue;
+      let ringed = false;
+      for (let a = 0; a < 8 && !ringed; a++) {
+        const dx = Math.cos((a * Math.PI) / 8), dz = Math.sin((a * Math.PI) / 8), r: number[] = [], dips: number[] = [];
+        for (let t = -7; t <= 7; t += 0.5) r.push(roof(l, x + dx * t, c.floor + 1.5, z + dz * t) - c.floor);
+        for (let i = 4; i < r.length - 4; i++) {
+          const lo = r[i], before = Math.max(...r.slice(i - 4, i)), after = Math.max(...r.slice(i + 1, i + 5));
+          if (lo >= 3 && lo <= Math.min(...r.slice(i - 2, i + 3)) && before - lo > 0.35 && after - lo > 0.35) dips.push(i * 0.5);
+        }
+        for (let i = 1; i < dips.length; i++) if (dips[i] - dips[i - 1] >= 4 && dips[i] - dips[i - 1] <= 9) ringed = true;
+      }
+      if (ringed) s.flesh++;
+    }
+  }
+  const flesh = (id: string) => st[id].flesh / st[id].n;
+  console.log(Object.entries(st).map(([id, s]) => `${id} ${s.n} ${(flesh(id) * 100).toFixed(1)}%`).join(', '));
+  assert.ok(st.organic.n > 300, `${st.organic.n} open organic columns`);
+  assert.ok(flesh('organic') > 0.15, `ringed flesh over ${(flesh('organic') * 100).toFixed(1)}% of the gullets`);
+  for (const id of Object.keys(st)) if (id !== 'organic' && st[id].n > 50) assert.ok(flesh(id) < flesh('organic') / 4, `${id}: ringed flesh over ${(flesh(id) * 100).toFixed(1)}%`);
+});
+
+test('the glyph-cut halls are none of them: straight-walled slots a few metres wide, a house tall, under a flat roof', () => {
+  // (The Deep draws them, 61 on: a level all of them, against a deep mix, Before People's and the Threshold's.)
+  const st: Record<string, { n: number; slot: number }> = {};
+  const roof = (l: Level, x: number, y: number, z: number) => { while (y < 60 && l.sdf(x, y, z) > 0.05) y += Math.max(0.05, l.sdf(x, y, z) * 0.8); return y; };
+  for (const l of [new Level(1, 75, 'glyph'), new Level(1, 75), new Level(1, 45), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    // How wide the air is across (x, z) along (dx, dz) at y, metres (up to 20).
+    const across = (x: number, y: number, z: number, dx: number, dz: number) => {
+      let w = 0;
+      for (const s of [1, -1]) for (let t = 0.25; t < 10; t += 0.25, w += 0.25) if (l.sdf(x + dx * t * s, y, z + dz * t * s) <= 0) break;
+      return w;
+    };
+    for (let k = 0; k < 3000; k++) {
+      const x = ax + (hash3f(79, k, 75, 0) - 0.5) * 3000, z = az + (hash3f(79, k, 75, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, slot: 0 });
+      s.n++;
+      // A slot: narrowest across 3–7 m, the same at knee and at 9 m up, and the roof over it flat across.
+      const r0 = roof(l, x, c.floor + 1.5, z) - c.floor;
+      if (r0 < 10) continue;
+      let best = Infinity, a = 0;
+      for (let i = 0; i < 8; i++) { const w = across(x, c.floor + 1.5, z, Math.cos((i * Math.PI) / 8), Math.sin((i * Math.PI) / 8)); if (w < best) { best = w; a = (i * Math.PI) / 8; } }
+      const dx = Math.cos(a), dz = Math.sin(a);
+      if (best < 3 || best > 7 || Math.abs(across(x, c.floor + 9, z, dx, dz) - best) > 0.6) continue;
+      const roofs = [-1, 1].map((t) => roof(l, x + dx * t, c.floor + 1.5, z + dz * t) - c.floor);
+      if (Math.max(...roofs.map((q) => Math.abs(q - r0))) < 0.3) s.slot++;
+    }
+  }
+  const slot = (id: string) => st[id].slot / st[id].n;
+  console.log(Object.entries(st).map(([id, s]) => `${id} ${s.n} ${(slot(id) * 100).toFixed(1)}%`).join(', '));
+  assert.ok(st.glyph.n > 300, `${st.glyph.n} open glyph-cut columns`);
+  assert.ok(slot('glyph') > 0.4, `straight slots under ${(slot('glyph') * 100).toFixed(1)}% of the glyph-cut halls`);
+  for (const id of Object.keys(st)) if (id !== 'glyph' && st[id].n > 50) assert.ok(slot(id) < slot('glyph') / 4, `${id}: straight slots under ${(slot(id) * 100).toFixed(1)}%`);
+});
+
+test('every Kerf rune cut in the glyph-cut halls reaches a ruled line, so every stroke can be walked to', () => {
+  for (const [r, segs] of Object.entries(KERF)) {
+    // Join strokes that touch or cross; the rune is reachable when every stroke is joined to one on y = 0 or y = 2.
+    const on = (s: readonly number[], y: number) => s[1] === y || s[3] === y;
+    const touch = (p: readonly number[], q: readonly number[]) => Array.from({ length: 101 }, (_, i) => i / 100).some((t) => segDist(q[0] + (q[2] - q[0]) * t, q[1] + (q[3] - q[1]) * t, p[0], p[1], p[2], p[3]) < 1e-3);
+    const reached = new Set<number>();
+    segs.forEach((s, i) => { if (on(s, 0) || on(s, 2)) reached.add(i); });
+    for (let grew = true; grew;) { grew = false; segs.forEach((s, i) => { if (!reached.has(i) && [...reached].some((j) => touch(segs[j], s))) { reached.add(i); grew = true; } }); }
+    assert.equal(reached.size, segs.length, `rune ${r}: ${segs.length - reached.size} strokes cut off`);
+  }
+  const line = glyphLine(GLYPH_LINES[0], GLYPH.gap, GLYPH.space);
+  assert.equal(line.words.length, 7);
 });
 
 test('no style is cut through one rock alone: each names several, none more than 80% (Arnd: walls are mixed rock)', () => {

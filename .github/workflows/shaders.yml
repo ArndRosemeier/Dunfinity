@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [lab, game]
+        part: [lab, game, title]
     steps:
       - uses: actions/checkout@v4
         with:

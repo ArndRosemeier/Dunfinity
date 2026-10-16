@@ -39,6 +39,7 @@ export const ABILITIES: readonly Ability[] = [
   ability('horseradish', 'Horseradish'),
   ability('flour-bag', 'Flour bag'),
   ability('matchstick', 'Match'),
+  ability('salt-pet', 'Salt pet'),
   ability('salt-line', 'Salt line'),
   ability('way-home', 'Way home'),
 ];

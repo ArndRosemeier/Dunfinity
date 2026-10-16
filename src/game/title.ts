@@ -44,6 +44,11 @@ export interface TitleCast {
   readonly canContinue: boolean;
   /** Hold on the shot of this depth, mid-move (`?title&shot=<depth>`, for screenshots), or null for the descent. */
   readonly pinned: number | null;
+  /**
+   * Resolves once everything play needs is compiled (the figures, their shadows: src/render/stage.ts
+   * warmLater). Until then the menu is greyed out and only the street, which needs none of it, is shown.
+   */
+  readonly ready: Promise<void>;
   /** The first shot is on screen (the loading screen can go). */
   shown(): void;
   /** Stream level `l` and point every view at it. */
@@ -81,12 +86,14 @@ export function playTitle(host: HTMLElement, cast: TitleCast): Promise<TitleChoi
     since = now;
   };
   screen.chosen.then((c) => { choice = c; chosenAt = timer.getElapsed(); });
+  let warm = false;
+  cast.ready.then(() => { warm = true; screen.ready(); });
   begin(0);
   return new Promise((resolve) => {
     view.renderer.setAnimationLoop(() => {
       timer.update();
       const dt = Math.min(0.1, timer.getDelta()), now = timer.getElapsed(), t = now - since;
-      if (phase === 'load' && (view.settled || t > TIMING.load)) { phase = 'in'; since = now; screen.reveal(); screen.line = ''; cast.shown(); }
+      if (phase === 'load' && (warm || shot.level.depth === 0) && (view.settled || t > TIMING.load)) { phase = 'in'; since = now; screen.reveal(); screen.line = ''; cast.shown(); }
       else if (phase === 'in' && t > TIMING.in) { phase = 'hold'; since = now; }
       else if (phase === 'hold' && t > TIMING.hold && cast.pinned === null) { phase = 'out'; since = now; }
       else if (phase === 'out' && t > TIMING.out) begin(now);

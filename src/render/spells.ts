@@ -4,7 +4,7 @@
  * Rolling Pin's shove going out ahead, and the puff of salt under a sprung jump (Spring in Your
  * Step), and the green of grandma's Snapdragons: the floor bursting where one comes up, sap where
  * it bites; grandma's flour hanging in a cloud (and dusting what it blinded), and the cloud going
- * up when a match finds it; the earth a horseradish throws up tunnelling and bursting out. Every cast is seen, not only its numbers (Arnd's rule).
+ * up when a match finds it; salt swirling up into a salt pet and slumping back; the earth a horseradish throws up tunnelling and bursting out. Every cast is seen, not only its numbers (Arnd's rule).
  *
  * Fixed pools of glowing sparks per colour, built once and added with the Stage before play.
  */
@@ -138,6 +138,22 @@ export class SpellView {
     for (let i = 0; i < 12; i++) {
       const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(1, 2.4);
       this.pools.sap.emit(x, y, z, Math.cos(a) * v, this.rng.range(-0.3, 1.5), Math.sin(a) * v, now, SPELLS.sap.life * 0.6);
+    }
+  }
+
+  /** Salt Pet: salt poured into a heap at (x, y, z) and swirling up into the animal over `dur` seconds, at `now`. */
+  saltRises(x: number, y: number, z: number, dur: number, now: number): void {
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 6, r = this.rng.range(0.15, 0.5), t = (i / 40) * dur;
+      this.pools.frost.emit(x + Math.cos(a) * r, y + 0.05, z + Math.sin(a) * r, -Math.cos(a) * 0.3, this.rng.range(0.6, 1.4), -Math.sin(a) * 0.3, now + t, SPELLS.frost.life * 1.2);
+    }
+  }
+
+  /** Salt Pet: a dead one slumping back into salt at (x, y, z), at `now`. */
+  saltFalls(x: number, y: number, z: number, now: number): void {
+    for (let i = 0; i < 32; i++) {
+      const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(0.3, 1.2);
+      this.pools.frost.emit(x, y + this.rng.range(0.1, 0.5), z, Math.cos(a) * v, this.rng.range(-0.2, 0.5), Math.sin(a) * v, now + i * 0.01, SPELLS.frost.life * 1.4);
     }
   }
 

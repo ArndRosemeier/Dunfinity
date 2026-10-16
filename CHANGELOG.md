@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.186 — Glyph-cut halls
+
+- A second alien style for the deep (61 on): lines of giant Kerf runes cut into the rock, each rune 20 m wide and 40 m long, every stroke a straight-walled trench a house tall under a flat roof.
+- It is real writing: each line is an English sentence spelt in Kerf, so a player who knows the runes can read the level off the map.
+- Ruled trenches run along the foot and head of every line, and a cut between words leads on to the next line, so every stroke can be walked to.
+- Light is inlaid down the middle of the strokes (cyan, violet or gold by the level's genes), with a lamp now and then.
+- Genes: rune size, trench height, trench width and the inlay's hue.
+- The distance to a segment now lives once in `src/gen/shapes.ts` (`segDist`), used by the passages between regions and the glyph trenches.
+
+## v0.185 — Organic gullets
+
+- New level style for the deep (61 and below), the first of the alien styles: the inside of something alive. Long gullets run side by side down the level, ringed every six metres like a windpipe, and swollen bladders open between them, round chambers that join one gullet to the next.
+- Wet flesh in reds and purples, paler on the rings and threaded with dark veins. Clusters of pustules glow a sickly yellow, and the bright ones light the flesh round them.
+- Its genes stray with each deep stratum: how wide the gullets are, how close and how deep the rings, how many bladders, and the flesh's hue (violet, or a bruised green, in some worlds). `?style=organic` shows a level of them.
+- The lava tubes' round-roof bound is now one shared helper (`roundRoof`), which the gullets use too.
+
+## v0.184 — The title warms the game while it plays
+
+- The title screen shows up sooner: only what the street needs is compiled behind the loading screen; the figures and their shadows compile while the title plays, one shader at a time within the shader policy.
+- Continue and New Game stay greyed out under a "Lighting the lamps…" line until that is done, so play never stutters; the deeper shots wait for it too.
+- Shadows of things streamed in later (a deeper level's props, the creatures) have their shaders built ahead too, one at a time within the shader policy, instead of in the middle of play.
+- The game's HUD (health, help, Menu and Settings) no longer shows through the title.
+
+## v0.183 — Creature look pass
+
+- Insects and spiders among the procedural creatures now have a body in parts: a swollen abdomen behind, a narrow waist, and a smaller thorax in front that carries the legs. Before, they were one capsule.
+- Thin legs swell along each segment and narrow into the joints, instead of being plain tubes.
+- A creature's outline catches a faint blue from the cave's salt veins, so one standing off in the dark still reads as a shape.
+
+## v0.182 — Grandma's Salt Pet
+
+- New chapter in grandma's tin: Company, with the Salt Pet card. Its bar slot makes you kneel and pour pinches of the tin's salt, which stand up as an animal made of salt: a salt rat at rank 1 (2 pinches, 45 health, bites 6–9) or a salt dog at rank 2 (3 pinches, 90 health, bites 11–16). One at a time, every 20 s.
+- It keeps at your heel and stands still there. It goes for whatever comes at you, or your Tab target, and comes back once that is dead or far off.
+- What it bites turns on it, so it can die. It mends like you do, once it hasn't been hurt for a while.
+- When it dies it falls over and slumps back into salt. If you leave it far behind (up a ladder, onto a ledge it can't reach), it falls to salt and stands up again at your side. It comes along from level to level, but not into a saved game.
+- It wears the rat's and the dog's own models and clips in a coat of crusted salt, with the rock's blue veins glowing slowly through it and salt glinting off it.
+- Every creature now fights back against whatever bit it, not only against you.
+
 ## v0.181 — Salt blooms
 
 - Here and there on the floor, mostly where the rock is salt, a bloom of salt crystals spreads out from a point while you watch, crackling softly. Each little cube glows the veins' blue as it forms, then turns to plain glittering salt.

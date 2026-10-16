@@ -11,7 +11,7 @@ import type { SaltCircle } from '../gen/lair';
 import type { Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
 import { Steer, brake, type Gait } from './steer';
-import type { Creature } from './creature';
+import { GRUDGE_HELD, type Creature } from './creature';
 
 /** Where some of a kind live. */
 export interface Den {
@@ -95,7 +95,11 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
       for (const c of this.list) {
         c.hurtT += h;
         if (c.dead) c.deadT += h;
-        hits += this.act(c, prey, ctx, h);
+        // One with a grudge (bitten by a salt pet) goes for that one instead, while it lives and is near.
+        const g = c.grudge, foe = g && !g.dead && Math.hypot(g.x - c.x, g.z - c.z) < GRUDGE_HELD ? g : prey;
+        if (g && foe === prey) c.grudge = null;
+        const n = this.act(c, foe, ctx, h);
+        if (foe === prey) hits += n;
       }
       this.settle();
     }

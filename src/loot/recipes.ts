@@ -17,7 +17,10 @@ import type { Sowing } from '../combat/snapdragon';
 import type { Dusting } from '../combat/flour';
 import type { Rooting } from '../combat/horseradish';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'horseradish' | 'flour-bag' | 'matchstick' | 'salt-line';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'horseradish' | 'flour-bag' | 'matchstick' | 'salt-pet' | 'salt-line';
+
+/** What a salt pet is made as (src/creatures/pets.ts): a salt rat (rank 1) or a salt dog (rank 2). */
+export type PetKind = 'rat' | 'dog';
 
 export interface Card {
   readonly id: CardId;
@@ -183,6 +186,14 @@ export const CARDS: readonly Card[] = [
     does: ['flick a match at the nearest flour cloud up to 16 m ahead; it goes up all at once, 18–28 damage to everything in it, you too, and a shove out of it; a match that finds no cloud does 2–4; every 3 s', 'the cloud goes up for 24–36 damage and shoves twice as hard'],
   },
   {
+    id: 'salt-pet', title: 'Salt Pet', chapter: 'Company',
+    need: 'two good handfuls of the salt from the tin, poured in a heap. Something you were fond of, once, to think of while you pour.',
+    method: 'Pour it slowly and think of the animal, not of the salt. When it stands up, it is yours until it falls apart again: it keeps at your heel and goes for whatever comes for you. Feed it nothing. It will not thank you, and it will not leave you either.',
+    ranks: ['Think of a dog this time. A big one. Your grandfather\'s Bello, if you can remember him.'],
+    cost: [6, 11],
+    does: ['pour 2 pinches of the tin\'s salt into a salt rat (45 health, bites 6–9) that keeps at your heel and goes for what comes for you, or your Tab target, until it dies; what it bites turns on it; it mends like you do; one at a time, every 20 s', 'a salt dog instead (90 health, bites 11–16), for 3 pinches'],
+  },
+  {
     id: 'salt-line', title: 'Salt Line', chapter: 'Lost Cards', lost: true,
     need: 'the good salt, a steady hand, and nerve.',
     method: 'Pour it round you in one go, no gaps. They won\'t cross it. Mostly. (Smudged:) Except the tall one. Must find out about the tall one.',
@@ -196,7 +207,7 @@ export const CARDS: readonly Card[] = [
 export const CHAPTERS: readonly string[] = [
   'Kitchen Work', 'Throwing', 'Footwork', 'Climbing & Water', 'Light', 'Grandma\'s Remedies',
   'Heavy Things', 'Quiet', 'Way Home', 'Guard', 'Fire & Frost', 'Force', 'The Garden', 'Baking',
-  'Lost Cards',
+  'Company', 'Lost Cards',
 ];
 
 /** Grandma's Salt Line at each rank: the circle's radius, metres, and how long it keeps once closed, seconds. */
@@ -348,6 +359,11 @@ export class Cooked {
   /** Grandma's Horseradish, if cooked: what a root does (src/combat/horseradish.ts), and the seconds between roots. */
   get horseradish(): (Rooting & { every: number }) | null {
     return this.at('horseradish', [{ bites: 1, damage: [16, 24] as const, every: 10 }, { bites: 2, damage: [16, 24] as const, every: 10 }, { bites: 3, damage: [18, 26] as const, every: 9 }]);
+  }
+
+  /** Grandma's Salt Pet, if cooked: what stands up out of the salt (src/creatures/pets.ts), the pinches of the tin's salt it takes, and the seconds between. */
+  get pet(): { kind: PetKind; pinches: number; every: number } | null {
+    return this.at('salt-pet', [{ kind: 'rat' as const, pinches: 2, every: 20 }, { kind: 'dog' as const, pinches: 3, every: 20 }]);
   }
 
   /** Grandma's Snapdragons, if cooked: what a plant does (src/combat/snapdragon.ts), and the seconds between seeds. */
