@@ -123,6 +123,16 @@
   "loop": false,
   "gain": 0.5
  },
+ "drip": {
+  "files": [
+   "drip_1.ogg",
+   "drip_2.ogg",
+   "drip_3.ogg",
+   "drip_4.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
  "eel_strike": {
   "files": [
    "eel_strike_1.ogg",
@@ -265,6 +275,20 @@
   "loop": false,
   "gain": 0.5
  },
+ "snap_bite": {
+  "files": [
+   "snap_bite_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
+ "snap_sprout": {
+  "files": [
+   "snap_sprout_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
  "step_stone": {
   "files": [
    "step_stone_1.ogg",
@@ -299,5 +323,19 @@
   ],
   "loop": false,
   "gain": 0.5
+ },
+ "wisp_pop": {
+  "files": [
+   "wisp_pop_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.45
+ },
+ "wisp_rise": {
+  "files": [
+   "wisp_rise_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.35
  }
 }

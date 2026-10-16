@@ -5,14 +5,14 @@ import { STRATA } from '../src/gen/genome';
 
 const dome = gene('test.dome', 14, [8, 24], [4, 60]);
 
-test('a gene is its standard in the town, inside its safe range through level 10, and never outside its strange range', () => {
+test('a gene is its standard in the town, inside its safe range while strangeness is below 1 (levels 1–3), and never outside its strange range', () => {
   assert.equal(express(dome, 1, 0), 14);
   for (let seed = 1; seed <= 50; seed++) {
-    for (let d = 1; d <= 10; d++) {
+    for (let d = 1; d <= 3; d++) {
       const v = express(dome, seed, d);
       assert.ok(v >= 8 && v <= 24, `seed ${seed} level ${d}: ${v}`);
     }
-    for (const d of [11, 30, 61, 200, 900]) {
+    for (const d of [5, 10, 11, 30, 61, 200, 900]) {
       const v = express(dome, seed, d);
       assert.ok(v >= 4 && v <= 60, `seed ${seed} level ${d}: ${v}`);
     }

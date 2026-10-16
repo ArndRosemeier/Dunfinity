@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.155 — Grandma's Snapdragons
+
+- A new chapter in grandma's tin, The Garden, with its first card: Snapdragons (U, or its slot on the bar).
+- Toss a seed: where it lands the floor bursts green and a snapping plant shoots up in under two seconds.
+- For 12 seconds it turns to the nearest living thing within 2.2 m and bites it, coiling back, lunging and snapping its jaws shut. That includes you, so step back.
+- Cooked again, it bites harder, further (3 m) and for longer (15 s).
+
+## v0.154 — Sounds for the light wisps, the dripping stalagmite and the Snapdragons
+
+- The light wisps that rise out of glowing salt rock now have a soft wind-chime shimmer as they rise and a short glassy ting when they pop.
+- Water drops landing on the living stalagmite now make a plink with a short cave echo, in four variations.
+- Grandma's Snapdragons have their own sounds: a whooshing burst as the plant shoots up out of the floor and a sharp snap when it bites.
+
+## v0.153 — Strange from the start
+
+- Levels 1–10 are a little strange too (Arnd, after playtesting): strangeness starts at 0.7 on level 1 and reaches 1 on level 4, instead of creeping up from nothing.
+- Each of levels 1–10 has one law of its own (tinted light, thick air, older drums, and from level 7 water running uphill), never one its band already shows.
+- Genes may stray into their strange range from level 4 on, level by level; deeper, a stratum still strays as one.
+- `strangeFrom(depth)` names the run of levels that strays together.
+
+## v0.152 — The camera stays out of grandma's rooms' walls
+
+- In grandma's house the camera no longer swings through the thin walls between the hall, the kitchen, her bedroom and the living room: it pulls in at them as it does at rock.
+- The same holds for every prop in the way: shut doors, the sheds' boards, carts, stacked crates.
+
+## v0.151 — Your pack
+
+- I opens your pack: every find you carry with what Ilse might pay for it, the knife and Kemal's gear you own.
+- The pack holds 8 finds. When it is full, open it, pick a find with W and S and press E to leave it on the floor, then pick up the better one.
+- The HUD shows how full the pack is ("5 of 8 finds").
+
 ## v0.150 — Glowing veins creep twice as fast
 
 - The blue salt veins now creep about 5 cm a second, twice as fast as before (Arnd asked for double the movement).
