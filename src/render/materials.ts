@@ -8,8 +8,9 @@
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
+import { PULSE } from '../gen/veinPulse';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
-import { Fn, If, abs, attribute, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, modelPosition, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -275,12 +276,17 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const stretch = smoothstep(0.15, 0.5, mx_noise_float(p.mul(0.045).add(vec3(7.3, 1.1, -4.2))));
   const vein = smoothstep(0.975, 0.996, line).add(smoothstep(0.985, 0.998, fine).mul(smoothstep(0.85, 0.97, line)).mul(0.7)).mul(stretch);
   const pulse = sin(time.mul(1.1).add(p.x.mul(0.13)).add(p.z.mul(0.09))).mul(0.15).add(0.85);
+  // Now and then a ring of brighter light runs out through them (`VEIN_PULSE`).
+  const toRing = length(p.xz.sub(VEIN_PULSE.xy)).sub(VEIN_PULSE.z).div(PULSE.width);
+  // Where it passes, the veins widen and the faint ones round them light too, even where the rock has few.
+  const wave = toRing.mul(toRing).negate().exp().mul(VEIN_PULSE.w);
+  const woken = smoothstep(0.93, 0.995, line).add(smoothstep(0.95, 0.998, fine).mul(0.6)).mul(stretch.mul(0.6).add(0.4)).mul(wave).mul(1.6);
   // Salt crystals glinting in the headlamp (it is carried at the eye): tiny facets that catch the
   // light as the viewer moves, only close by.
   const facet = mx_worley_noise_float(p.mul(9));
   const twinkle = smoothstep(0.5, 0.85, mx_noise_float(p.mul(13).add(cameraPosition.mul(1.7))));
   const glint = smoothstep(0.16, 0.04, facet).mul(twinkle).mul(smoothstep(14, 2, length(positionView))).mul(natural.add(worked).clamp(0, 1)).mul(saltShare);
-  m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
+  m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).add(woken).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
   return m;
 });
 
@@ -310,6 +316,9 @@ const VEIN_CREEP = 0.008;
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);
+
+/** The pulse running through the veins now (src/gen/veinPulse.ts): its middle (x, z), its ring's radius (m), its strength (0: none). Set by `LevelView`. */
+export const VEIN_PULSE = uniform(new Vector4(0, 0, 0, 0));
 
 /**
  * The band's finish of its rock (`band.finish`), set by `LevelView`: worked walls cast in concrete
@@ -603,6 +612,28 @@ export const DUST = defineKind('dust', ['position', 'normal', 'color'], () => {
   return m;
 }, { cast: false, receive: false });
 
+/** The wisps' colour (linear rgb), the level's glow (src/creatures/wisps.ts `glowOf`): set by `WispView`. */
+export const WISP_TINT = uniform(new Vector3(0.25, 0.6, 1.0));
+
+/**
+ * A wisp's light seen in the air (src/render/creatures/wispView.ts): a quad turned to the camera, a
+ * white-hot core in a soft halo of the level's glow, additive. `position` carries the quad's corner
+ * (x, y in -1..1); the mesh's scale carries its size (x, m) and brightness (y), so one material
+ * serves every wisp. Pulled a little towards the camera, so a halo by the rock is not cut by it.
+ * Same attributes as the solid kind.
+ */
+export const WISP = defineKind('wisp', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
+  const size = modelScale.x, view = cameraViewMatrix.mul(vec4(modelPosition, 1));
+  const toward = min(size.mul(0.6), view.z.negate().mul(0.5));
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(positionLocal.xy.mul(size)), view.z.add(toward), view.w));
+  const r = length(varying(positionLocal.xy, 'vWispCorner'));
+  const core = smoothstep(0.2, 0.0, r), halo = float(1).sub(r).clamp(0, 1).pow(2.2);
+  const far = smoothstep(60, 25, length(view.xyz));
+  m.colorNode = mix(WISP_TINT, vec3(1, 1, 1), core.mul(0.8)).mul(halo.mul(0.7).add(core.mul(1.6))).mul(modelScale.y).mul(far);
+  return m;
+}, { cast: false, receive: false });
+
 /** Slots for living stalagmites drawn at once (src/render/props/dripView.ts), and their state: three vec4 per slot, set every frame by `DripView`. */
 export const DRIP_SLOTS = 6;
 /**
@@ -662,6 +693,39 @@ export const DRIP = defineKind('drip', ['position', 'normal', 'color'], () => {
   m.roughnessNode = isDropF.select(float(0.04), mix(float(0.88), float(0.38), wet));
   const tipGlow = part.lessThan(0.5).select(smoothstep(0.75, 1.0, h).mul(drip.mul(0.1).add(landing.mul(0.6))), float(0));
   m.emissiveNode = VEIN_BLUE.mul(isDropF.select(drip.mul(0.55), tipGlow));
+  return m;
+});
+
+export const BLOOM_SLOTS = 6;
+/** Per slot: (grown 0–1, crumbled 0–1, its radius m, unused). Set by `BloomView`. */
+export const BLOOM_STATE = uniformArray(Array.from({ length: BLOOM_SLOTS }, () => new Vector4()), 'vec4');
+/** The salt's colour (linear rgb): the level's salt, set by `BloomView`. */
+export const BLOOM_SALT = uniform(new Vector3(0.8, 0.78, 0.74));
+
+/**
+ * A salt bloom (src/gen/blooms.ts): little hopper cubes of salt laid out over a unit disc, each
+ * scaled about its own foot by the shader as the bloom reaches it, so nothing is rebuilt as it
+ * spreads. A crystal glows the veins' blue as it forms and fades to plain salt; crumbling, they shrink
+ * and settle into the floor, the outer ones first. `position` is a corner of a crystal laid out on
+ * the unit disc (y up, its foot on y = 0), `normal` its face's normal, `color` (its foot x, its foot
+ * z, slot + 0.9 × the share of the bloom grown when it starts to form). Same attributes as the solid kind.
+ */
+export const BLOOM = defineKind('bloom', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ roughness: 0.35, metalness: 0 });
+  const tag = attribute<'vec3'>('color', 'vec3'), slot = tag.z.floor(), when = tag.z.fract().div(0.9);
+  const S = BLOOM_STATE.element(slot.toInt()) as unknown as Node<'vec4'>, grown = S.x, crumbled = S.y, radius = S.z;
+  const foot = vec3(tag.x, 0, tag.y), p = positionGeometry;
+  // Formed as the bloom reaches it, quickly; crumbling from the edge in.
+  const formed = smoothstep(when, when.add(0.08), grown);
+  const gone = smoothstep(float(1).sub(when).mul(0.6), float(1).sub(when).mul(0.6).add(0.4), crumbled);
+  const size = formed.mul(float(1).sub(gone));
+  m.positionNode = foot.add(p.sub(foot).mul(size)).mul(radius).sub(vec3(0, gone.mul(0.04), 0));
+  const fresh = varying(formed.mul(smoothstep(when.add(0.45), when.add(0.1), grown).mul(0.75).add(0.25)).mul(float(1).sub(crumbled)), 'vBloomFresh');
+  const at = varying(p.mul(radius), 'vBloomAt');
+  const grain = mx_noise_float(at.mul(40));
+  m.colorNode = BLOOM_SALT.mul(grain.mul(0.08).add(0.92)).mul(mix(float(1), float(0.75), varying(crumbled, 'vBloomDull')));
+  m.roughnessNode = float(0.3).add(grain.mul(0.1)).add(varying(crumbled, 'vBloomRough').mul(0.5));
+  m.emissiveNode = VEIN_BLUE.mul(fresh.mul(2.4));
   return m;
 });
 

@@ -73,8 +73,9 @@ so every skeleton is padded to 96 bones.
 ## 6. Peaceful creatures
 
 Arnd's picks (2026-10-16):
-- Peaceful procedural species live from level 1 (rare and mild there); the hand-made foes stay on
-  levels 1 to 10; procedural foes start at level 11.
+- Procedural species live from level 1: peaceful ones (rare and mild on levels 1 to 10) and hunters
+  too, as long as a hunter's power fits its level (Arnd's correction: not all of them are peaceful).
+  The hand-made foes stay.
 - Sizes vary widely; now and then a colossus, a slow peaceful grazer some ten metres long.
 - Fighting power scales with size, so attacking a colossus is suicide.
 - Every creature retaliates when attacked, or flees if the fight is hopeless.
@@ -85,6 +86,14 @@ Arnd's picks (2026-10-16):
 Most of what moves should not attack. Peaceful species graze, scuttle, drift and watch: they flee
 from the player, follow each other in herds, or look at the lamp and keep their distance. They are for
 wonder and for a living cave. (The light wisps from glowing rock are a separate thread.)
+
+The hunting ones (hunter, lurker, swarmer, brute) take a share of the dens (about a third on levels 1
+to 10, more deeper). They are grown to a fair fight for their level (`fitSize` in
+src/creatures/critters.ts): a pack member's health is 12 + 2.5 per level, times its role's share (a
+swarmer 0.35, a lurker 1.4, a brute 3), and its size follows from that, so power is still size. They
+stalk you, at most two of a pack strike at once, each blow has a wind-up before the lunge (or the
+brute's slam), and after it they spring back. A lurker lies still until you are nearly on it. Badly
+hurt, they run.
 
 ## 7. Rollout, one PR each
 

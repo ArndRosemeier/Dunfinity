@@ -46,6 +46,7 @@ import { CricketView } from '../render/creatures/cricketView';
 import { SlimeView } from '../render/creatures/slimeView';
 import { ShroomView } from '../render/creatures/shroomView';
 import { DogView } from '../render/creatures/dogView';
+import { HerdView } from '../render/creatures/herdView';
 import { Rigged } from '../render/creatures/rigged';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
@@ -62,7 +63,7 @@ import { Doors } from '../world/doors';
 import { DoorView } from '../render/props/doorView';
 import { PROPS_RADIUS } from '../render/props/Props';
 import { PROP_TILE } from '../gen/propGrid';
-import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
+import { MOVES, STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, PACK, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
@@ -88,6 +89,8 @@ import { HorseradishView } from '../render/horseradish';
 import { PET, Pets } from '../creatures/pets';
 import { PetView } from '../render/creatures/petView';
 import { SaltDrift } from '../render/loot/saltDrift';
+import { WispView } from '../render/creatures/wispView';
+import { Wisps } from '../creatures/wisps';
 import { THROW, Thrown } from '../combat/thrown';
 import { FLOUR, Flour } from '../combat/flour';
 import { GameSounds } from '../audio/gameSounds';
@@ -106,6 +109,7 @@ import { PrologueView } from '../app/prologueView';
 import { StepsView } from '../app/stepsView';
 import type { LoadingScreen } from '../app/loadingScreen';
 import { heard, tipOf, type DripLook } from '../gen/drips';
+import { BLOOM, crackles } from '../gen/blooms';
 import { ThinPlaces } from '../world/thinPlaces';
 import { ThinView } from '../render/thinView';
 
@@ -175,6 +179,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
   let fauna: Fauna;
+  /** The lights rising out of the glowing rock (src/creatures/wisps.ts). */
+  let wisps: Wisps;
   /** Grandma's Salt Pet: the one at the nobody's heel (and one crumbling), when the last was poured, and the dead ones already seen fall to salt. */
   const pets = new Pets(level);
   let petAt = -Infinity;
@@ -210,6 +216,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
   let arriving = false, arrivedAt = 0;
+  /** The level's own animals on screen (made before the warm-up, below). */
+  let herdView: HerdView | null = null;
   const show = (l: Level) => {
     // Back up from below into her cellar: grandma may have a word.
     if (l.depth === 0 && level.depth > 0) grandma.arrive(heir);
@@ -219,8 +227,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     arriving = true;
     arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
+    wisps = new Wisps(l);
     pets.moveTo(l);
     thin = new ThinPlaces(l);
+    herdView?.stock(l, fauna.critters.species);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
@@ -281,6 +291,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(level);
   };
   fauna = new Fauna(level);
+  wisps = new Wisps(level);
   thin = new ThinPlaces(level);
   /** The nobody's own fire to rest by (one at a time). */
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
@@ -355,11 +366,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const slimeView = await SlimeView.create();
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
+  // The level's own animals: one stand-in through the warm-up builds the shaders every species draws with.
+  const herd = new HerdView(view.stage);
+  herdView = herd;
   const petView = await PetView.load();
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, ...petView.roots]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp, ...petView.roots]);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
@@ -379,6 +393,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   await view.stage.add(eelView.root);
   await view.stage.add(shroomView.root);
   await view.stage.add(shroomView.spores.root);
+  herd.stock(level, fauna.critters.species);
   for (const r of petView.roots) await view.stage.add(r);
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
@@ -398,6 +413,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const thinView = new ThinView();
   await view.stage.add(thinView.mesh);
   await view.stage.add(drift.root);
+  const wispView = new WispView(view.lamps);
+  await view.stage.add(wispView.root);
   const spells = new SpellView(params.seed);
   await view.stage.add(spells.root);
   /** Grandma's salt-magic: when each was last cast, and the last cast (its pose, and which way it went). */
@@ -597,7 +614,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     stabAt = now;
     stabDone = false;
     striking = how;
-    sounds.play(how === 'pound' ? 'throw' : 'knife_swing', null, 0.8, how === 'pound' ? 0.8 : 1);
+    const mv = MOVES[kit.move];
+    sounds.play(how === 'pound' ? 'throw' : mv.sound, null, 0.8, how === 'pound' ? 0.8 : mv.pitch);
     // Turn to the Tab target if it is in reach; else to the nearest foe roughly where the camera looks, else where it looks.
     stabYaw = cam.yaw;
     if (target && Math.hypot(target.x - body.x, target.z - body.z) < STAB.aim && Math.abs(target.y - body.y) < 1.5) { stabYaw = yawTo(target, body.x, body.z); return; }
@@ -693,7 +711,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -837,7 +855,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
 
   /** Draw everything living on the level shown (the nearest of each kind to `at`). */
-  const drawLife = (f: Fauna, at: { readonly x: number; readonly z: number }, dt: number, now: number): void => {
+  const drawLife = (f: Fauna, at: { readonly x: number; readonly y: number; readonly z: number }, dt: number, now: number): void => {
     ratView.draw(f.rats.list, now, at);
     touchedView.draw(f.touched.list, at.x, at.z, dt, now);
     foremanView.draw(f.foreman.list[0] ?? null, f.foreman.hall, dt, now);
@@ -853,6 +871,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     goblinView.draw(f.goblins.list, at.x, at.z, dt, now);
     ghostView.draw(f.ghosts.list, at.x, at.z, dt, now);
     tallView.draw(f.tall.list, at.x, at.z, dt, now);
+    herd.drawHerds(f.critters.list, { x: at.x, y: at.y + 1.6, z: at.z }, dt, now);
   };
 
   // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): it
@@ -863,6 +882,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family
     look(level);
     fauna = new Fauna(level);
+    wisps = new Wisps(level);
     thin = new ThinPlaces(level);
     cam.yaw = body.facing; cam.pitch = -0.25; cam.distance = 4;
     cam.follow(body.x, body.y + 1.6, body.z, 1);
@@ -944,8 +964,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (debug.tireless) body.stamina = MOVE.stamina;
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
-    const knife = cooked.knife, pound = cooked.tenderising;
-    const stabDur = striking === 'pound' ? POUND.dur : STAB.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : STAB.hit * knife.time;
+    // The weapon in hand (grandma's knife, or what was put on in the pack) and how it swings; her knife cards work with any of them.
+    const knife = cooked.knife, pound = cooked.tenderising, move = MOVES[kit.move];
+    const stabDur = striking === 'pound' ? POUND.dur : move.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : move.hit * knife.time;
     const canStrike = !busy && !handsBusy && !body.rolling && now - stabAt > stabDur;
     if (controls.tap('Mouse0') && canStrike) stab(now);
     // Grandma's Tenderising (its slot on the bar) brings the knife's handle down overhead.
@@ -1327,10 +1348,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
           if (struck.length) practised('knife');
         } else {
-          const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
-          if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
-          if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : 1.3); }
-          if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
+          const r = nearestReached(blowFrom(body, stabYaw, move), foes());
+          if (r) { damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, move.knock, 'knife'); practised('knife'); }
+          if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid || kit.move === 'mine' ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : kit.move === 'stab' ? 1.3 : 0.9); }
+          if (r && 'took' in r && r.took < 1) say(kit.move === 'stab' ? 'The knife skids off the salt on his chest.' : 'Your blow skids off the salt on his chest.', 2);
         }
       }
       const health = body.health;
@@ -1388,7 +1409,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const lighting = campfire.kindling(now);
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'stoop' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'stoop' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : move.anim, t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
@@ -1436,6 +1457,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
+    wisps.advance(dt, body.x, body.y + 1.5, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
+    for (const w of wisps.risen.splice(0)) sounds.play('wisp_rise', w, 0.5);
+    for (const w of wisps.popped.splice(0)) sounds.play('wisp_pop', w, 0.7);
+    wispView.draw(wisps);
     thin.advance(dt, body.x, body.y + 1.6, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
     thinView.draw(thin.current);
     for (const t of thin.opened) sounds.play('thin_place', t);
@@ -1522,6 +1547,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if ((s.x - body.x) ** 2 + (s.z - body.z) ** 2 > DRIP_HEARD ** 2) continue;
       const drops = heard(s, dripThen, dripNow, dripSeen);
       for (let k = 0; k < drops; k++) sounds.play('drip', { x: s.x, y: s.y + Math.max(0, tipOf(dripSeen)), z: s.z }, dripSeen.drip);
+    }
+    // Salt blooms crackling as they spread, and the lower crackle as one crumbles (src/gen/blooms.ts).
+    if (dripNow > dripThen) for (const s of view.blooms.shown) {
+      if ((s.x - body.x) ** 2 + (s.z - body.z) ** 2 > BLOOM.heard ** 2) continue;
+      const n = crackles(s, dripThen, dripNow);
+      if (n < 0) sounds.play('bloom_crackle', s, 1, 0.6);
+      for (let k = 0; k < n; k++) sounds.play('bloom_crackle', s, 0.7, 0.9 + 0.2 * ((s.id + Math.floor(dripNow * 7)) % 5) / 4);
     }
     dripThen = dripNow;
     view.camera.getWorldDirection(lampDir);

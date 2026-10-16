@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.181 — Salt blooms
+
+- Here and there on the floor, mostly where the rock is salt, a bloom of salt crystals spreads out from a point while you watch, crackling softly. Each little cube glows the veins' blue as it forms, then turns to plain glittering salt.
+- After a while the bloom crumbles away to nothing with a lower crackle, and later it blooms again.
+- The debug menu can take you to the nearest one.
+
+## v0.180 — Weapons with their own swing
+
+- Kemal now sells a hatchet, a crowbar and a miner's pick (keys 4, 5 and 6 at his counter). Each swings its own way: the hatchet chops overhead, slower and harder than the knife; the crowbar swats wide and knocks things well back; the pick comes down two-handed, slowest and hardest, with the longest reach.
+- They are held in the hand as the new modelled tools, and the Salt-Touched's picks and the scavengers' crowbars use the same models now.
+- Grandma's knife is never lost: with a weapon in hand it waits in the belt, and putting the weapon away in the pack (I) takes the knife back out. Her knife cards work with whatever is in the hand, and the whetstone still hones the knife.
+
+## v0.179 — Procedural hunters
+
+- The level's own procedural species now include hunters, lurkers, swarmers and brutes, from level 1. Each is grown to a fair fight for its level, so a level-1 hunter is a small thing and a deep brute a big one.
+- They stalk you and take turns: at most two of a pack strike at once. Every blow has a wind-up before the lunge or the slam, and after it they spring back. A lurker lies still until you are nearly on it.
+- Badly hurt, a hunter runs. Its pack comes for you if you hurt one of them.
+- Big and low-bodied animals no longer get stuck where they are born.
+
+## v0.178 — A pulse in the veins
+
+- Now and then the glowing blue veins in the rock draw a breath: a ring of brighter light starts a little behind you, runs through the veins past you and on, always towards the nearest way down, and fades.
+- It happens only where the rock has glowing veins, about once every minute and a half.
+
+## v0.177 — Peaceful animals in the levels
+
+- Every level now has a few herds of its own animals, grown by the creature generator: grazers, scuttlers, watchers, drifters and giants. They are rare on levels 1 to 10 and more common deeper.
+- They graze, wander, watch you from a distance and keep out of your way. None of them comes after you.
+- Attack one and it fights back, or runs if the fight is hopeless. Its strength is its size, so leave the giants alone.
+
+## v0.176 — Light wisps out of the glowing rock
+
+- Now and then a small light pulls itself out of the glowing salt veins, drifts slowly along the rock and lights it up around it, swells, and pops in a bright flash. They are harmless: there for wonder, not to fight.
+- They come where the rock glows (the Salt Works most, the Threshold and glowing strata now and then, rarely where the seams only glow faintly, never in the cellar), never more than three at a time.
+
 ## v0.175 — Grandma's tin, reworked, with drag and drop onto the bar
 
 - The tin now stands above the main bar instead of over it, and the bar stays shown while the tin is open.

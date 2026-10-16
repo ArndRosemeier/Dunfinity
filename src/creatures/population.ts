@@ -159,12 +159,13 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
 
   /**
    * A seeded spot `near`–`far` metres round a den on the floor at `y`, on the den's own floor and
-   * clear of the rock (a spot over a ledge or under a step is drawn again; none: the den itself).
+   * clear of the rock by `room` at `lift` up (a spot over a ledge or under a step is drawn again; none:
+   * the den itself).
    */
-  protected around(den: D & { readonly y: number }, rng: Rng, near: number, far: number): [number, number, number] {
+  protected around(den: D & { readonly y: number }, rng: Rng, near: number, far: number, room = 0.15, lift = 0.3): [number, number, number] {
     for (let k = 0; k < 6; k++) {
       const a = rng.range(0, Math.PI * 2), d = rng.range(near, far), x = den.x + Math.cos(a) * d, z = den.z + Math.sin(a) * d, y = this.level.groundAt(x, z);
-      if (Math.abs(y - den.y) < 1 && this.level.sdf(x, y + 0.3, z) > 0.15) return [x, y, z];
+      if (Math.abs(y - den.y) < 1 && this.level.sdf(x, y + lift, z) > room) return [x, y, z];
     }
     return [den.x, den.y, den.z];
   }
@@ -172,12 +173,12 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   /**
    * The `den.count` of a den, born round it: a seeded rng per den (`name`), ids `den.key * stride + k`,
    * each `near`–`far` metres out on the den's floor; `make` builds one there (its own seeded looks
-   * from `rng`). The ones killed on this visit are left out.
+   * from `rng`). The ones killed on this visit are left out. `room`, `lift`: as `around` (big ones need more).
    */
-  protected brood(den: D & { readonly y: number; readonly count: number }, name: string, stride: number, near: number, far: number, killed: (id: number) => boolean, make: (id: number, x: number, y: number, z: number, rng: Rng, k: number) => C): C[] {
+  protected brood(den: D & { readonly y: number; readonly count: number }, name: string, stride: number, near: number, far: number, killed: (id: number) => boolean, make: (id: number, x: number, y: number, z: number, rng: Rng, k: number) => C, room?: number, lift?: number): C[] {
     const rng = new Rng(deriveSeed(this.seed, name, den.key)), born: C[] = [];
     for (let k = 0; k < den.count; k++) {
-      const id = den.key * stride + k, [x, y, z] = this.around(den, rng, near, far), c = make(id, x, y, z, rng, k);
+      const id = den.key * stride + k, [x, y, z] = this.around(den, rng, near, far, room, lift), c = make(id, x, y, z, rng, k);
       if (!killed(id)) born.push(c);
     }
     return born;

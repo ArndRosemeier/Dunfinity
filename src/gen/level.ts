@@ -23,6 +23,7 @@ import { CELLAR, CELLAR_SHAFT, CellarField } from './cellar';
 import { inscriptionsAt, type Inscription } from './inscriptions';
 import { Sheds } from './sheds';
 import { Drips } from './drips';
+import { Blooms } from './blooms';
 import { Skies } from './glowworms';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
@@ -75,6 +76,8 @@ export class Level {
   readonly sheds: Sheds;
   /** The living stalagmites (src/gen/drips.ts): where water drips and one grows. */
   readonly drips: Drips;
+  /** The salt blooms (src/gen/blooms.ts): where salt crystals spread over the floor and crumble again. */
+  readonly blooms: Blooms;
   /** The glow-worm skies on cavern roofs (src/gen/glowworms.ts). */
   readonly skies: Skies;
   /** The stone of each rock slot (src/gen/rockTypes.ts): what the weights of a `RockMix` mean on this level. */
@@ -98,6 +101,7 @@ export class Level {
     this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined, shareOf(mix, excavation.id));
     this.sheds = new Sheds(this);
     this.drips = new Drips(this);
+    this.blooms = new Blooms(this);
     this.skies = new Skies(this);
   }
 

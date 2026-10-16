@@ -11,6 +11,34 @@
  */
 export const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
 
+/** How a weapon is swung (docs/design/items.md F4): the knife stabs, a hatchet chops, a pick comes down two-handed, a crowbar swats. */
+export type Move = 'stab' | 'chop' | 'mine' | 'swat';
+
+/**
+ * Each move as STAB is: seconds, when it lands, reach, sweep, heights, damage and knockback; with
+ * the humanoid action that shows it (`anim`) and the swing's sound (`sound`, played at `pitch`).
+ */
+export interface MoveDef extends Swing {
+  readonly dur: number;
+  readonly hit: number;
+  readonly damage: readonly [number, number];
+  readonly knock: number;
+  readonly anim: string;
+  readonly sound: string;
+  readonly pitch: number;
+}
+
+export const MOVES: Readonly<Record<Move, MoveDef>> = {
+  // Quick, short, light.
+  stab: { ...STAB, anim: 'swing_1h', sound: 'knife_swing', pitch: 1 },
+  // A hatchet: raised over the shoulder and brought down hard; slower, a narrower sweep.
+  chop: { dur: 0.72, hit: 0.38, range: 1.05, arc: 0.6, low: -0.3, high: 1.5, damage: [11, 16], knock: 4.5, anim: 'swing_1h', sound: 'knife_swing', pitch: 0.7 },
+  // A pick, two hands, high over the head: slowest and hardest, a narrow line and a long reach.
+  mine: { dur: 1.05, hit: 0.56, range: 1.25, arc: 0.4, low: -0.4, high: 1.6, damage: [16, 24], knock: 5, anim: 'mine', sound: 'throw', pitch: 0.7 },
+  // A crowbar swung side to side: wide, middling, and it knocks them well back.
+  swat: { dur: 0.6, hit: 0.3, range: 1.15, arc: 1.05, low: -0.3, high: 1.4, damage: [7, 11], knock: 9, anim: 'swing_1h', sound: 'knife_swing', pitch: 0.8 },
+};
+
 /** Someone a blow can land on. */
 export interface Fighter {
   x: number;
