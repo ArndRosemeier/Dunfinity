@@ -62,7 +62,7 @@ import { PROPS_RADIUS } from '../render/props/Props';
 import { PROP_TILE } from '../gen/propGrid';
 import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
-import { Finds, Pack, FINDS, type Find } from '../loot/finds';
+import { Finds, Pack, FINDS, PACK, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
 import { Tin, type Gain } from '../loot/tin';
 import { CARDS, Cooked, SALT_RINGS, card, type CardId } from '../loot/recipes';
@@ -77,6 +77,7 @@ import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
 import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
+import { PackView } from '../app/packView';
 import { SpellView } from '../render/spells';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { Thrown } from '../combat/thrown';
@@ -316,6 +317,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
   await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
@@ -364,6 +366,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const saltLineView = new SaltLineView(SALT_RINGS.map((k) => k.r));
   await view.stage.add(saltLineView.root);
   const tinView = new TinView(document.body);
+  /** The pack open (I), and the find chosen in it. */
+  const packView = new PackView(document.body);
+  let packSel = 0;
   const readView = new ReadView(document.body);
   const diaryView = new DiaryView(document.body);
   const mapView = new MapView(document.body);
@@ -731,7 +736,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     });
     before = cam.distance;
     cam.distance = Math.max(cam.distance, 3.5);
-    tinView.hide(); readView.hide(); diaryView.hide();
+    tinView.hide(); packView.hide(); readView.hide(); diaryView.hide();
     target = null;
     document.exitPointerLock?.();
   };
@@ -789,7 +794,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   view.renderer.setAnimationLoop(() => {
     timer.update();
     // (Only when nothing else is open that Escape would close: then it is theirs.)
-    const others = tinView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || settingsView.open || body.dead || !!prologue || !!document.querySelector('#whatsnew.open');
+    const others = tinView.open || packView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || settingsView.open || body.dead || !!prologue || !!document.querySelector('#whatsnew.open');
     if (!others && !document.pointerLockElement && performance.now() - freedAt > 300 && controls.tap('Escape')) {
       if (pause.open) goOn();
       else pause.showMenu();
@@ -841,19 +846,21 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const bar = barOf(cooked);
     controls.alias(atCounter ? [] : bar.map((a, i) => [SLOT_KEYS[i], a.key] as const));
     if (body.dead) for (const a of ABILITIES) controls.latch(a.key, false);
+    /** Rummaging in the tin or the pack: no blows, no casting, no walking off. */
+    const handsBusy = tinView.open || packView.open;
     // Tab targeting: Tab picks (and then goes round) the foes near where the camera looks; Escape lets go.
     if (controls.tap('Tab') && !body.dead) {
       target = nextTarget(foes(), target, body.x, body.y, body.z, cam.yaw);
       targetFull = target ? Math.max(1, target.health) : 1;
     }
-    if (target && (!keeps(target, body.x, body.z) || body.dead || (!tinView.open && controls.held('Escape')))) target = null;
+    if (target && (!keeps(target, body.x, body.z) || body.dead || (!handsBusy && controls.held('Escape')))) target = null;
     body.invulnerable = debug.invulnerable;
     if (debug.tireless) body.stamina = MOVE.stamina;
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, pound = cooked.tenderising;
     const stabDur = striking === 'pound' ? POUND.dur : STAB.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : STAB.hit * knife.time;
-    const canStrike = !busy && !tinView.open && !body.rolling && now - stabAt > stabDur;
+    const canStrike = !busy && !handsBusy && !body.rolling && now - stabAt > stabDur;
     if (controls.tap('Mouse0') && canStrike) stab(now);
     // Grandma's Tenderising: V brings the knife's handle down overhead.
     if (controls.tap('KeyV') && pound && canStrike) {
@@ -862,26 +869,26 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     }
     // Grandma's Second Helpings: the right mouse button throws a knife.
     const every = cooked.helpings;
-    const canThrow = !busy && !tinView.open && !body.rolling && released && now - throwAt > THROWING.dur;
+    const canThrow = !busy && !handsBusy && !body.rolling && released && now - throwAt > THROWING.dur;
     if (controls.tap('Mouse2') && every !== null && canThrow && now - throwAt > every) { throwAt = now; released = false; tossing = 'knife'; }
     // Grandma's Sunday Candle: G tosses a lit candle (as many burning at once as the card's rank).
     if (controls.tap('KeyG') && canThrow && thrown.candles.length < cooked.candles) { throwAt = now; released = false; tossing = 'candle'; }
     // Grandma's Duck card: Q rolls the way you are going (back, standing still).
     const duck = cooked.duck;
-    if (controls.tap('KeyQ') && duck && !busy && !tinView.open && !body.rolling) {
+    if (controls.tap('KeyQ') && duck && !busy && !handsBusy && !body.rolling) {
       const f = input.forward || input.right ? input.forward : -1, rt = input.right;
       const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
       if (body.roll(dx, dz, duck.stamina * practice.less('footwork'), duck.safe)) { rollAt = now; practised('footwork'); }
     }
     // Grandma's Way Home: H, eyes shut, nothing after you; home to her armchair, or (rank 2, from her salt circle) back down.
-    if (controls.tap('KeyH') && cooked.wayHome && homeTo === null && !busy && !tinView.open) {
+    if (controls.tap('KeyH') && cooked.wayHome && homeTo === null && !busy && !handsBusy) {
       const back = level.depth === 0 && cooked.wayHome >= 2 && campfire.inHaven(body);
       const why = fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : level.depth === 0 && !back ? (cooked.wayHome >= 2 && reached > 0 ? 'Stand in her salt circle to think of where you were.' : 'You are home.') : back && reached === 0 ? 'You have not been down yet.' : '';
       if (why) say(why, 2.5);
       else { homeAt = now; homeMote = now; homeTo = back ? reached : 0; say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', WAY_HOME.dur); }
     }
     // Grandma's salt-magic (Fire & Frost, Force): R a gout of flame, K the larder's cold round you, P a shove; at the Tab target, if any.
-    const canCast = !busy && !tinView.open && !body.rolling && homeTo === null;
+    const canCast = !busy && !handsBusy && !body.rolling && homeTo === null;
     const cast = (kind: typeof casting, stamina: number, out: string): boolean => {
       if (body.stamina < stamina) { say(out, 2); return false; }
       body.stamina -= stamina;
@@ -918,7 +925,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     }
     // Grandma's Salt Line: L, kneeling, pours a circle of salt round you.
     const line = cooked.saltLine;
-    if (controls.tap('KeyL') && line && !busy && !tinView.open && !body.rolling && homeTo === null && !saltLine.pouring(now)) {
+    if (controls.tap('KeyL') && line && !busy && !handsBusy && !body.rolling && homeTo === null && !saltLine.pouring(now)) {
       const why = saltLine.whyNot(level, body.x, body.z, line.r, body.grounded);
       if (why) say(why, 2.5);
       else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); }
@@ -971,10 +978,35 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!cooked.has(tinSel)) tinSel = TinView.order(cooked)[0];
       tinView.show(cooked, tin, tinSel, null, practice);
     }
+    // The pack (I), open anywhere: W/S choose a find, E leaves it on the floor before you to make room.
+    const packKeys = { up: keyName('KeyW'), down: keyName('KeyS'), leave: keyName('KeyE'), close: keyName('KeyI') };
+    if (packView.open) {
+      if (controls.tap('KeyI') || controls.tap('Escape') || tinView.open || body.dead || climb.active) packView.hide();
+      else {
+        const n = pack.items.length;
+        let said: string | null = null;
+        if (n && controls.tap('KeyW')) { packSel = (packSel + n - 1) % n; said = ''; }
+        if (n && controls.tap('KeyS')) { packSel = (packSel + 1) % n; said = ''; }
+        if (controls.tap('KeyE')) {
+          const f = pack.takeOut(packSel);
+          if (f) {
+            finds.drop(f, body.x - Math.sin(body.facing) * 0.5, body.z - Math.cos(body.facing) * 0.5);
+            readAt = now; // (stooping to lay it down)
+            packSel = Math.max(0, Math.min(packSel, pack.items.length - 1));
+            said = `You leave ${FINDS[f.kind].name} on the floor.`;
+          }
+        }
+        if (said !== null) packView.show(pack, gear, packSel, packKeys, said);
+      }
+    } else if (controls.tap('KeyI') && !tinView.open && !body.dead) {
+      packSel = 0;
+      packView.show(pack, gear, packSel, packKeys);
+    }
     if (letterView.open && (!nearNote || controls.tap('Escape'))) letterView.hide();
-    if (controls.tap('KeyE')) {
+    if (controls.tap('KeyE') && !packView.open) {
       if (letterView.open) letterView.hide();
       else if (nearLadder) climbFrom(nearLadder);
+      else if (nearFind && pack.full) say(`Your pack is full (${PACK.room} finds). ${keyName('KeyI')}: open it and leave something here.`, 3.5);
       else if (nearFind) pickUp(nearFind, now);
       else if (nearWeber) say(weber.talk({ deepest: tin.deepest, fallen: fallen.length }, now), 7);
       else if (nearStranger) say(stranger.talk(now), 6);
@@ -1017,12 +1049,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (why) say(why, 2.5); else { campfire.light(body, body.facing, now); sounds.play('fire_light'); }
     }
     const stirring = now - cookAt < COOK.dur || saltLine.pouring(now);
-    if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || tinView.open || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
+    if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || handsBusy || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
     // Grandma's Pot Lid: hold X to keep it up between you and whatever it is.
     const lid = cooked.lid;
     body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard') };
     nobody.lid = !!cooked.lid;
-    body.guarding = !!cooked.lid && controls.held('KeyX') && !busy && !tinView.open && !body.rolling && homeTo === null && now - stabAt > stabDur;
+    body.guarding = !!cooked.lid && controls.held('KeyX') && !busy && !handsBusy && !body.rolling && homeTo === null && now - stabAt > stabDur;
     if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
     if (climb.active) {
       climb.advance(dt, timer.getElapsed());
@@ -1189,7 +1221,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const lines: string[] = [];
     const E = keyName('KeyE');
     if (nearLadder) lines.push(nearLadder.up ? `${E}: climb up the ladder` : `${E}: climb down the ladder`);
-    else if (nearFind) lines.push(`${E}: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${FINDS[nearFind.kind].name}` : `${E}: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
     else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
@@ -1236,7 +1268,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       hurt: body.time - body.hurtAt < 2 && !body.dead ? `${hurtLine(body.lastCause)}: -${body.lastHurt.toFixed(0)}` : '',
       boss: fauna.boss(body), notice: timer.getElapsed() < noticeUntil ? notice : '', gain: now < gainUntil ? gainLine : '',
       prompt: lines.filter(Boolean).join(' · '), tally: fauna.tally(), flags,
-      salt: tin.salt, euros, pack: pack.items.length ? { count: pack.items.length, worth: pack.worth } : null,
+      salt: tin.salt, euros, pack: pack.items.length ? { count: pack.items.length, room: PACK.room, worth: pack.worth } : null,
       dead: body.dead, dev: `${backend} · ${view.stage.hudLine()}`, help: !beenDown && steps.over,
     }, timer.getElapsed());
     // The headlamp: above the head and a little towards where one looks (the camera, not the

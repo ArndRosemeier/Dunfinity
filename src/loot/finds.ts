@@ -189,7 +189,10 @@ function pick(r: number, where: Where): FindKind {
   return 'coin';
 }
 
-/** What the nobody carries up: finds, and what they might fetch. Lost with the nobody. */
+/** How many finds a pack holds: past that, something has to be left behind to pick up the next. */
+export const PACK = { room: 8 } as const;
+
+/** What the nobody carries up: finds (at most `PACK.room`), and what they might fetch. Lost with the nobody. */
 export class Pack {
   readonly items: Find[] = [];
 
@@ -199,7 +202,19 @@ export class Pack {
     return w;
   }
 
-  add(f: Find): void {
+  get full(): boolean {
+    return this.items.length >= PACK.room;
+  }
+
+  /** Put `f` in, if there is room: whether it went in. */
+  add(f: Find): boolean {
+    if (this.full) return false;
     this.items.push(f);
+    return true;
+  }
+
+  /** Take out the `i`th find (to leave it on the floor), or null. */
+  takeOut(i: number): Find | null {
+    return i >= 0 && i < this.items.length ? this.items.splice(i, 1)[0] : null;
   }
 }
