@@ -1,5 +1,66 @@
 # Changelog
 
+## v0.163 — Held tool models
+
+- Blender-made hatchet, miner's pick and crowbar models (`held_hatchet`, `held_pick`, `held_crowbar`) are now in the model pack, ready for the inventory's weapons.
+
+## v0.162 — Snapdragon leaves above the floor
+
+- The rosette of leaves at a snapdragon's foot sits on the floor and curls up, instead of sinking into it.
+
+## v0.161 — Glow-worm skies
+
+- Here and there the roof of a high cavern is covered with tiny blue-green lights, like a night sky, with brighter stars drawn into constellations that are not ours. They twinkle slowly and fade where your headlamp falls on them, as glow-worms do.
+- The stranger a level, the stranger its sky: deeper down the lights change colour, and their glow turns slowly round the roof in arms, like a galaxy.
+- The debug menu can take you to the nearest one.
+
+## v0.160 — Grandma, briefly, below
+
+- The first time the Tall One looks at anyone of the family, grandma's ghost stands between it and you for a moment, then is gone.
+- On level 18, far off, she is seen where she laid her first ring of salt.
+- On level 40, by the two names cut in the rock, she comes and stands beside you, looking at her father's name: "I came, Papa." Back home she has one more thing to say.
+- Each of these happens once for the whole family, never again.
+
+## v0.159 — Miner's hard hat model
+
+- A Blender-made miner's hard hat (`wear_hard_hat`) is now in the model pack, ready for the inventory's head slot: dented dark green enamel, a crown ridge, a brim and a lamp on the front.
+
+## v0.158 — Living stalagmites
+
+- Here and there, under a little stalactite, water starts to drip, and a stalagmite grows under it while you watch: about a metre in a minute, its fresh tip glinting blue each time a drop lands.
+- When the dripping stops it stands a while, wet and dark, then sinks slowly back into the floor; after a rest the dripping starts again. The whole round takes about three minutes.
+- A few on every level below the cellar, more by water and in the salt. The debug menu can take you to the nearest one.
+- You hear each drop land when you are near.
+
+## v0.157 — Grandma's ghost
+
+- Grandma Grete is still keeping her circle. When a grandchild comes into the round room, the first time or back up from below, she sometimes rises beside her armchair, a ghost in the salt's blue, says one thing, and fades.
+- A new grandchild hears a word from her about the cousin who fell before them. Coming back up, she may have one of a few lines, only ever about what the family has already seen. Most visits she says nothing.
+
+## v0.156 — Snapdragons sound like themselves
+
+- A snapdragon coming up and its bite now have their own sounds.
+
+## v0.155 — Grandma's Snapdragons
+
+- A new chapter in grandma's tin, The Garden, with its first card: Snapdragons (U, or its slot on the bar).
+- Toss a seed: where it lands the floor bursts green and a snapping plant shoots up in under two seconds.
+- For 12 seconds it turns to the nearest living thing within 2.2 m and bites it, coiling back, lunging and snapping its jaws shut. That includes you, so step back.
+- Cooked again, it bites harder, further (3 m) and for longer (15 s).
+
+## v0.154 — Sounds for the light wisps, the dripping stalagmite and the Snapdragons
+
+- The light wisps that rise out of glowing salt rock now have a soft wind-chime shimmer as they rise and a short glassy ting when they pop.
+- Water drops landing on the living stalagmite now make a plink with a short cave echo, in four variations.
+- Grandma's Snapdragons have their own sounds: a whooshing burst as the plant shoots up out of the floor and a sharp snap when it bites.
+
+## v0.153 — Strange from the start
+
+- Levels 1–10 are a little strange too (Arnd, after playtesting): strangeness starts at 0.7 on level 1 and reaches 1 on level 4, instead of creeping up from nothing.
+- Each of levels 1–10 has one law of its own (tinted light, thick air, older drums, and from level 7 water running uphill), never one its band already shows.
+- Genes may stray into their strange range from level 4 on, level by level; deeper, a stratum still strays as one.
+- `strangeFrom(depth)` names the run of levels that strays together.
+
 ## v0.152 — The camera stays out of grandma's rooms' walls
 
 - In grandma's house the camera no longer swings through the thin walls between the hall, the kitchen, her bedroom and the living room: it pulls in at them as it does at rock.

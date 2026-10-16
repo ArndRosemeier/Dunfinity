@@ -56,7 +56,7 @@
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
   },
   {
-    "key": "idiom: [.damage .range] in dunfinity/combat/thrown.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
+    "key": "idiom: [.damage .range] in dunfinity/combat/snapdragon.ts + dunfinity/combat/thrown.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
     "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
   },
   {
@@ -104,7 +104,7 @@
     "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
@@ -2096,10 +2096,6 @@
     "reason": "async factories of the human views (humans load their assets first)"
   },
   {
-    "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
-    "reason": "async factories of the human views (humans load their assets first)"
-  },
-  {
     "key": "same name: dunfinity/render/loot/findView.ts#draw + dunfinity/render/props/watchers.ts#draw",
     "reason": "each view draws its own list from a pool built before the warm-up; the per-frame draw vocabulary of RatView, FindView and TouchedView"
   },
@@ -3444,7 +3440,7 @@
     "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
   },
   {
-    "key": "idiom: [.at .descents] in dunfinity/creatures/touched.ts + dunfinity/gen/sheds.ts + dunfinity/loot/finds.ts",
+    "key": "idiom: [.at .descents] in dunfinity/creatures/touched.ts + dunfinity/gen/drips.ts + dunfinity/gen/sheds.ts + dunfinity/loot/finds.ts",
     "reason": "each asks the one seam whether a spot is by a way down (level.descents.at) before putting something there: a camp, a shed, a find"
   },
   {
@@ -3462,14 +3458,6 @@
   {
     "key": "same name: dunfinity/input/bindings.ts#data + dunfinity/loot/practice.ts#data",
     "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
-  },
-  {
-    "key": "idiom: [.cos .sin .x .z Math] in dunfinity/creatures/population.ts + dunfinity/creatures/tallOne.ts + dunfinity/gen/inscriptions.ts + dunfinity/gen/roots.ts",
-    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
-  },
-  {
-    "key": "idiom: [.cos .sin .x .z Math] in dunfinity/creatures/population.ts + dunfinity/gen/fungal.ts + dunfinity/gen/geode.ts + dunfinity/loot/finds.ts",
-    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
   },
   {
     "key": "idiom: [.dots] in dunfinity/gen/inscriptions.ts + dunfinity/lore/scripts.ts + dunfinity/lore/svg.ts",
@@ -3504,15 +3492,67 @@
     "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
   },
   {
-    "key": "same name: dunfinity/render/humans/lineup.ts#create + dunfinity/render/humans/neighbourView.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
-  },
-  {
     "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
   },
   {
     "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.dead .hypot .x .z Math] in dunfinity/combat/snapdragon.ts + dunfinity/creatures/fauna.ts + dunfinity/game/Game.ts",
+    "reason": "each asks its own question of someone alive near a point (a snapdragon's bite, a threat after you, the larder's cold); the reach of a blow itself is combat's reach()"
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#step + dunfinity/combat/snapdragon.ts#step",
+    "reason": "a per-tick step method: same verb, unrelated jobs (advancing the music's loops vs the snapdragons biting)."
+  },
+  {
+    "key": "same name: dunfinity/combat/snapdragon.ts#step + dunfinity/world/traverse/body.ts#step",
+    "reason": "a per-tick step method: same verb, unrelated jobs (the snapdragons biting vs moving the nobody)."
+  },
+  {
+    "key": "same name: dunfinity/render/humans/ladderClimb.ts#pose + dunfinity/render/snapdragons.ts#pose",
+    "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/stepsView.ts + dunfinity/gen/notary.ts",
+    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/tinView.ts + dunfinity/game/Game.ts",
+    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/loot/findView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "clone: dunfinity/gen/drips.ts#constructor + dunfinity/gen/glowworms.ts#constructor + dunfinity/loot/finds.ts#constructor",
+    "reason": "two lines each: the level's own seed and a CellMemo of its cells; the memo is the seam (src/gen/cellMemo.ts)"
+  },
+  {
+    "key": "idiom: [.cells .depth .seed] in dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts + dunfinity/loot/finds.ts",
+    "reason": "each store keeps its own seed and CellMemo; the queries go through cellMemo.ts (sitesNear, siteNearest)"
+  },
+  {
+    "key": "same name: dunfinity/gen/drips.ts#near + dunfinity/gen/glowworms.ts#near",
+    "reason": "one line each over the one seam (cellMemo.ts sitesNear): stalagmite sites vs glow-worm skies"
   }
 ]

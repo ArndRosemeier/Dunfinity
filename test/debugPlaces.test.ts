@@ -25,7 +25,7 @@ function check(depth: number, want: string[]): void {
 }
 
 test('grandma\'s house, the cellar and the street', () => check(0, ['armchair', 'pawn shop', 'hardware', 'Frau Weber', 'old shaft', 'street']));
-test('a Quarry level: the ways up and down, dens', () => check(1, ['way up', 'way down', 'rat nest']));
+test('a Quarry level: the ways up and down, dens, a living stalagmite', () => check(1, ['way up', 'way down', 'rat nest', 'living stalagmite', 'glow-worm sky']));
 test('level 5: the Foreman', () => check(5, ['Foreman']));
 test('level 9: grandma\'s camp', () => check(9, ['camp']));
 test('level 10: the Tall One and a salt circle', () => check(10, ['Tall One', 'salt circle']));

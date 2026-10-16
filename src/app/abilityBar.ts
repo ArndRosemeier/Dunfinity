@@ -62,8 +62,8 @@ export class AbilityBar {
       this.slots = bar.map((a, i) => {
         const root = child(row, 'div', 'slot'), wait = child(root, 'div', 'wait');
         const label = this.keyName(a.key);
-        root.title = `${card(a.card).title}: ${a.hold ? 'hold' : 'press'} ${label} or ${SLOT_LABELS[i]}${a.hold ? ' (a click holds it until the next)' : ''}`;
-        child(root, 'div', 'n', SLOT_LABELS[i]);
+        root.title = `${card(a.card).title}: ${a.hold ? 'hold' : 'press'} ${label}${SLOT_LABELS[i] ? ` or ${SLOT_LABELS[i]}` : ''}${a.hold ? ' (a click holds it until the next)' : ''}`;
+        child(root, 'div', 'n', SLOT_LABELS[i] ?? '');
         child(root, 'div', 'k', label);
         const c = child(root, 'div', 'c');
         child(root, 'div', 't', a.short);

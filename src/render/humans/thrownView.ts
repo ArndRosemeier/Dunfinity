@@ -1,7 +1,7 @@
 /**
  * Things thrown, on screen (src/combat/thrown.ts): grandma's kitchen knife turning end over end in
  * flight, then lying still where it landed until it is gone; a Sunday candle tumbling, then standing
- * where it came down, its flame flickering.
+ * where it came down, its flame flickering; a seed of grandma's Snapdragons tumbling, glinting green.
  *
  * Fixed pools, built once and added with the Stage before play.
  */
@@ -11,9 +11,10 @@ import { meshOf } from '../meshes';
 import { GLOW, VERTEX_COLOR_SOLID } from '../materials';
 import type { Missile } from '../../combat/thrown';
 
-/** Knives and candles drawn at once; turns per second in flight; knives drawn this much larger than life, to be seen in flight. */
+/** Knives, candles and seeds drawn at once; turns per second in flight; knives drawn this much larger than life, to be seen in flight. */
 const KNIVES = 6;
 const CANDLES = 4;
+const SEEDS = 3;
 const SPIN = 3;
 const SCALE = 1.5;
 
@@ -33,10 +34,19 @@ function candle(): { root: Group; flame: Object3D } {
   return { root, flame };
 }
 
+/** A seed, drawn large enough to be seen in flight: a dark husk with a green glint of the salt in it. */
+function seed(): Group {
+  const root = new Group();
+  root.add(meshOf((b) => { b.ellipsoid(0, 0, 0, 0.035, 0.025, 0.05, [0.22, 0.14, 0.07], 8); }, VERTEX_COLOR_SOLID));
+  root.add(meshOf((b) => { b.ellipsoid(0, 0.012, -0.012, 0.016, 0.016, 0.022, [0.4, 1.5, 0.5], 6); }, GLOW));
+  return root;
+}
+
 export class ThrownView {
   readonly root = new Group();
   private readonly knives: Group[] = [];
   private readonly candles: { root: Group; flame: Object3D }[] = [];
+  private readonly seeds: Group[] = [];
 
   constructor() {
     for (let k = 0; k < KNIVES; k++) {
@@ -54,11 +64,22 @@ export class ThrownView {
       this.candles.push(c);
       this.root.add(c.root);
     }
+    for (let k = 0; k < SEEDS; k++) {
+      const s = seed();
+      s.visible = false;
+      this.seeds.push(s);
+      this.root.add(s);
+    }
   }
 
   /** Place what is thrown (the newest first, as many as the pools hold) at `time`. */
   arrange(missiles: readonly Missile[], time: number): void {
-    const knives = missiles.filter((m) => m.kind === 'knife'), candles = missiles.filter((m) => m.kind === 'candle');
+    const knives = missiles.filter((m) => m.kind === 'knife'), candles = missiles.filter((m) => m.kind === 'candle'), seeds = missiles.filter((m) => m.kind === 'seed');
+    this.seeds.forEach((p, k) => {
+      const n = seeds[seeds.length - 1 - k];
+      p.visible = !!n;
+      if (n) this.pose(p, n);
+    });
     this.knives.forEach((p, k) => {
       const n = knives[knives.length - 1 - k];
       p.visible = !!n;

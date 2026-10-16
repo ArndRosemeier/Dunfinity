@@ -2,7 +2,8 @@
  * Grandma's salt-magic seen (src/loot/recipes.ts, Fire & Frost and Force): Stove Flame's gout of
  * fire, Cold Larder's cold spreading over the floor (and frost glinting on what it caught), and
  * Rolling Pin's shove going out ahead, and the puff of salt under a sprung jump (Spring in Your
- * Step). Every cast is seen, not only its numbers (Arnd's rule).
+ * Step), and the green of grandma's Snapdragons: the floor bursting where one comes up, sap where
+ * it bites. Every cast is seen, not only its numbers (Arnd's rule).
  *
  * Fixed pools of glowing sparks per colour, built once and added with the Stage before play.
  */
@@ -17,9 +18,10 @@ export const SPELLS = {
   fire: { colors: [[2.4, 0.9, 0.2], [2.2, 1.5, 0.35], [1.8, 0.4, 0.1]], life: 0.45, size: 0.14 },
   frost: { colors: [[0.75, 1.3, 2.2], [1.6, 1.9, 2.3], [0.5, 0.9, 1.8]], life: 0.7, size: 0.08 },
   force: { colors: [[1.6, 1.5, 1.3], [1.3, 1.3, 1.4], [1.9, 1.7, 1.3]], life: 0.3, size: 0.09 },
+  sap: { colors: [[0.45, 1.6, 0.35], [0.3, 1.3, 0.9], [1.1, 1.7, 0.3]], life: 0.6, size: 0.07 },
 } as const;
 
-type Kind = 'fire' | 'frost' | 'force';
+type Kind = 'fire' | 'frost' | 'force' | 'sap';
 
 interface Spark {
   readonly mesh: Mesh;
@@ -72,7 +74,7 @@ export class SpellView {
 
   constructor(seed: number) {
     this.rng = new Rng(deriveSeed(seed, 'spells'));
-    this.pools = { fire: new Pool(this.root, 'fire'), frost: new Pool(this.root, 'frost'), force: new Pool(this.root, 'force') };
+    this.pools = { fire: new Pool(this.root, 'fire'), frost: new Pool(this.root, 'frost'), force: new Pool(this.root, 'force'), sap: new Pool(this.root, 'sap') };
   }
 
   /** Stove Flame from the hand at (x, y, z) along `yaw`, `reach` metres, at `now`. */
@@ -113,6 +115,22 @@ export class SpellView {
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2, v = this.rng.range(2, 3.2);
       this.pools.force.emit(x, y + 0.1, z, Math.cos(a) * v, this.rng.range(0, 0.8), Math.sin(a) * v, now, SPELLS.force.life * 1.4);
+    }
+  }
+
+  /** Snapdragons: the floor bursting at (x, y, z) where a seed comes up, at `now`, the green going up with the stalk. */
+  sprout(x: number, y: number, z: number, now: number): void {
+    for (let i = 0; i < 28; i++) {
+      const a = (i / 28) * Math.PI * 2 + this.rng.range(-0.15, 0.15), v = this.rng.range(0.6, 1.6), up = i % 3 === 0;
+      this.pools.sap.emit(x, y + 0.05, z, Math.cos(a) * v * (up ? 0.3 : 1), up ? this.rng.range(2, 3.5) : this.rng.range(0.4, 1.2), Math.sin(a) * v * (up ? 0.3 : 1), now + (up ? 0.3 : 0) + i * 0.01, SPELLS.sap.life * this.rng.range(0.8, 1.4));
+    }
+  }
+
+  /** A snapdragon's bite landing at (x, y, z): sap spattering, at `now`. */
+  snap(x: number, y: number, z: number, now: number): void {
+    for (let i = 0; i < 12; i++) {
+      const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(1, 2.4);
+      this.pools.sap.emit(x, y, z, Math.cos(a) * v, this.rng.range(-0.3, 1.5), Math.sin(a) * v, now, SPELLS.sap.life * 0.6);
     }
   }
 
