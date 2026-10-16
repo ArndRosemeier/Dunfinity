@@ -7,9 +7,9 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
+import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
-import { Fn, If, abs, attribute, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, modelWorldMatrix, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -569,3 +569,36 @@ export const DRIP = defineKind('drip', ['position', 'normal', 'color'], () => {
   m.emissiveNode = VEIN_BLUE.mul(isDropF.select(drip.mul(0.55), tipGlow));
   return m;
 });
+
+/** The level's glow-worm skies (src/gen/glowworms.ts `skyOf`), set by `LevelView`: their colour (linear rgb), and (arms, spin rad/s). */
+export const SKY_LOOK = { tint: uniform(new Vector3(0.2, 0.75, 0.6)), arms: uniform(new Vector2(0, 0)) };
+
+/**
+ * A glow-worm sky's lights on a cavern roof (src/gen/glowworms.ts `skyLights`): tiny soft points
+ * turned to the camera, additive, twinkling slowly; the brightest white-cored stars. Never smaller
+ * on screen than a pixel or so (a far light grows and dims instead of flickering away). Where the
+ * headlamp's beam falls on them they fade (`DUST_LAMP`), as glow-worms do; on a strange level the
+ * light turns round the patch in arms (`SKY_LOOK.arms`). `position` is the light's place, `normal`
+ * its corner (x, y) and size (z, m), `color` its brightness, angle round the patch and distance out
+ * (in radii). Same attributes as the solid kind.
+ */
+export const GLOWWORM = defineKind('glowworm', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
+  const corner = attribute<'vec3'>('normal', 'vec3'), info = attribute<'vec3'>('color', 'vec3');
+  const p = modelWorldMatrix.mul(vec4(positionLocal, 1)).xyz, view = cameraViewMatrix.mul(vec4(p, 1));
+  const dist = view.z.negate().max(0.1), size = max(corner.z, dist.mul(0.0016));
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(corner.xy.mul(size)), view.z, view.w));
+  const phase = mx_cell_noise_float(p.mul(7.3));
+  const twinkle = sin(time.mul(phase.mul(0.6).add(0.3)).add(phase.mul(6.283))).mul(0.25).add(0.75);
+  const armWave = cos(info.y.mul(SKY_LOOK.arms.x).add(info.z.mul(3.5)).sub(time.mul(SKY_LOOK.arms.y))).mul(0.5).add(0.5);
+  const arms = SKY_LOOK.arms.x.greaterThan(0.5).select(armWave.mul(armWave).mul(0.8).add(0.2), float(1));
+  const toLight = p.sub(DUST_LAMP.at), inBeam = smoothstep(0.86, 0.97, dot(normalize(toLight), DUST_LAMP.dir));
+  const energy = corner.z.div(size).pow(2);
+  const far = smoothstep(90, 45, dist);
+  const bright = varying(info.x.mul(twinkle).mul(arms).mul(float(1).sub(inBeam.mul(0.7))).mul(energy).mul(far), 'vSkyBright');
+  const r = length(varying(corner.xy, 'vSkyCorner'));
+  const core = smoothstep(0.35, 0.0, r).mul(smoothstep(0.65, 0.9, varying(info.x, 'vSkyStar')));
+  const halo = float(1).sub(r).clamp(0, 1).pow(2);
+  m.colorNode = mix(SKY_LOOK.tint, vec3(1, 1, 1), core).mul(halo.add(core)).mul(bright).mul(1.6);
+  return m;
+}, { cast: false, receive: false });
