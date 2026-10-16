@@ -1,7 +1,7 @@
 /**
  * Look into the pack headless: `node tools/shot/pack-probe.mjs "<query>" <out-prefix>` (build first;
  * set CHROMIUM_PATH in the cloud and use ?gl). Fills the pack with the nearest finds, opens it (I),
- * saves a screenshot, leaves the first find on the floor (S nine times, E) and saves another.
+ * saves a screenshot, leaves the first find on the floor (S eight times, E) and saves another.
  */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
@@ -24,7 +24,7 @@ const tap = async (k) => { await page.keyboard.down(k); await page.waitForTimeou
 await tap('KeyI');
 await page.waitForTimeout(20000);
 await page.screenshot({ path: `${prefix}-open.png`, timeout: 600000 });
-for (let i = 0; i < 9; i++) await tap('KeyS'); // round to the first find
+for (let i = 0; i < 8; i++) await tap('KeyS'); // round to the first find
 await tap('KeyE');
 await page.waitForTimeout(20000);
 await page.screenshot({ path: `${prefix}-used.png`, timeout: 600000 });
