@@ -4,6 +4,7 @@
  * each rank, and in grey what it does). Keys: W/S choose, E cook, T or Escape close.
  */
 import { SKILLS, type Practice, type Skill } from '../loot/practice';
+import { BAR, SLOT_KEYS, abilityOf, type MainBar } from '../game/abilities';
 import { CARDS, CHAPTERS, type CardId, type Cooked } from '../loot/recipes';
 import type { Tin } from '../loot/tin';
 import { Modal, esc, keycap } from './panel';
@@ -39,7 +40,7 @@ export class TinView extends Modal {
   }
 
   /** Open (or redraw) the tin with card `sel` chosen; `why`: why it could not be cooked, if that was tried. */
-  show(cooked: Cooked, tin: Tin, sel: CardId, why: string | null, practice: Practice): void {
+  show(cooked: Cooked, tin: Tin, sel: CardId, why: string | null, practice: Practice, bar: MainBar, keyName: (key: string) => string): void {
     let html = `<h2 class="ui-title">Grandma's tin <span class="salt">· ${tin.salt} ${tin.salt === 1 ? 'pinch' : 'pinches'} of infused salt</span></h2><div class="cols"><div>`;
     for (const ch of CHAPTERS) {
       const cards = CARDS.filter((c) => c.chapter === ch && cooked.has(c.id));
@@ -57,6 +58,10 @@ export class TinView extends Modal {
       + c.ranks.slice(0, Math.max(0, r - 1)).map((line, k) => `<div class="rank">Rank ${k + 2}: ${esc(line)}</div>`).join('')
       + `<div class="does">${c.does.map((d, k) => `${k < r ? '✓' : '·'} rank ${k + 1}: ${esc(d)}`).join('<br>')}</div>`
       + (why ? `<div class="why">${esc(why)}</div>` : '') + '</div>';
+    // Where the chosen card stands on the main bar (src/game/abilities.ts).
+    const slot = bar.slotOf(sel), slots = `${keyName(SLOT_KEYS[0])}–${keyName(SLOT_KEYS[BAR - 1])}`;
+    if (r > 0 && abilityOf(sel)) html += `<div class="ui-keys">${slot >= 0 ? `On your bar: ${keycap(keyName(SLOT_KEYS[slot]))}. ` : 'Not on your bar. '}${slots}: put it in that slot</div>`;
+    else if (r > 0) html += `<div class="ui-keys">Works by itself: no slot needed</div>`;
     // What this grandchild has practised (recipe-box.md §3).
     html += `<div class="practice"><div class="ui-label">Practice</div>${(Object.keys(SKILLS) as Skill[]).map((k) => `${esc(SKILLS[k].name)} ${practice.tier(k)} <span class="cost">(${Math.floor(practice.count(k))} ${esc(SKILLS[k].counts)})</span>`).join('<br>')}</div>`;
     html += `<div class="ui-keys">${keycap('W')} ${keycap('S')} choose · ${keycap('E')} cook · ${keycap('T')} close</div></div></div>`;

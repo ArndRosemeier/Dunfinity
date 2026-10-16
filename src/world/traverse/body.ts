@@ -122,6 +122,8 @@ export class Body {
   sneaking = false;
   /** Grandma's pot lid (the Pot Lid card), if cooked: the share of a blow that gets through it, and the stamina a blocked blow costs. */
   lid: { readonly through: number; readonly cost: number } | null = null;
+  /** Whether a blow from (x, z) is struck blind (grandma's flour: src/combat/flour.ts `blinds`): it finds no one. Set by the game. */
+  unseenFrom: ((x: number, z: number) => boolean) | null = null;
   /** Holding the lid up (set by the game each step; only counts while walking on the floor). */
   guarding = false;
   /** Facing, radians (same convention as the camera yaw). */
@@ -157,6 +159,7 @@ export class Body {
 
   /** A blow from (fromX, fromZ): what gets through the raised lid, if it comes from in front (`Fighter.shield`). */
   shield(fromX: number, fromZ: number): number {
+    if (this.unseenFrom?.(fromX, fromZ)) return 0;
     if (!this.lid || !this.guarding || this.mode !== 'walk' || this.stamina < this.lid.cost) return 1;
     const a = Math.atan2(-(fromX - this.x), -(fromZ - this.z)), d = Math.abs(Math.atan2(Math.sin(a - this.facing), Math.cos(a - this.facing)));
     if (d > GUARD_ARC) return 1;

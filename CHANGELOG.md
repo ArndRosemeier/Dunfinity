@@ -1,5 +1,76 @@
 # Changelog
 
+## v0.172 — Thin places
+
+- Now and then, a little way ahead of you in open air, the air ripples and opens like a window, and for a few seconds you look into a hall of another of the stacked worlds below: its stone, its light, its haze, faint and silent. Then it closes again.
+- The stranger a level, the more often it happens. Never at home, never a way through.
+- As it opens you hear a faint, far-off choir.
+
+## v0.171 — An eight-slot main bar
+
+- Grandma's cards no longer have keys of their own. They go on a main bar of eight slots, used with 1–8 (each slot can be moved to another key in the settings) or a click.
+- A card you cook goes into the first free slot. With more than eight, swap them at the fire: open the tin, choose a card, press the slot's number.
+- Cards that work by themselves take no slot, and neither do Spring in Your Step (Space just jumps higher) and Tiptoe (Z sneaks).
+- The right and middle mouse buttons are free now: the thrown knife and the match sit on the bar like everything else.
+
+## v0.170 — Grandma's flour and matches
+
+- A new chapter in grandma's tin, Baking, with two cards that work together.
+- Flour Bag (Y): throw a bag of flour at a creature up to 16 m off. It bursts into a cloud 3 m round that hangs for 6 seconds. Anything in it loses you, stumbles about and cannot land a blow on you, until a moment after it gets out. Flour shakes off what it blinded.
+- Matchstick (middle mouse): flick a lit match at the nearest flour cloud ahead. The cloud goes up all at once, 18–28 damage to everything in it, and shoves them out. Clouds touching it go up too. So does whoever stands in it, you included.
+- Cooked again: a bigger cloud that hangs longer and blinds for longer; a fiercer blast that shoves twice as hard.
+
+## v0.169 — Checks that take minutes, not a quarter of an hour
+
+- The shader check no longer runs on every change: it is started on demand (Actions → Shaders → Run workflow), every so often and after render changes.
+- The tests run on three machines side by side, and the slowest test file is split in three, so a change is checked in about two minutes.
+
+## v0.168 — The map grows over with salt
+
+- The map (M) is redrawn: the floor you have seen has soft edges, is shaded by height and has faint contour lines, and the edge of what you have not seen fades into the dark instead of stopping in hard squares.
+- The rock walls you have seen glow like grandma's salt veins, with little veinlets and buds running off into the stone and some moss by the walls. Light runs slowly along them now and then (still when less motion is asked for).
+- Your lamp shows as a warm pool and a beam the way you look; the ways down are dark wells ringed in salt, the way up a golden ladder, your fire a flickering glow.
+- A compass, a 10 m scale bar, and zoom: + and − (or the mouse wheel while the map is open). Escape closes it too. The map's frame grows salt like the other panels.
+
+## v0.167 — Faster checks on every change
+
+- CI runs the tests and the two halves of the shader check (the Lab, the game) as three jobs side by side instead of one after another.
+- A pull request that changes nothing the browser loads (only docs, change notes, tests or tools) skips the shader check; main always runs it.
+- The slow cap test inside it runs only when the shader scheduling code changes (and always on main).
+- A new push to a pull request cancels that pull request's older run.
+- Two stale lines left in the duplication baseline are gone, so main's checks are green again.
+
+## v0.166 — Your kit on the body
+
+- Kemal's miner's helmet, a dented green enamel hard hat with its lamp, sits on the grandchild's head with the hair tucked under it, and his work gloves are on their hands.
+- A worn piece looks more worn than a fine one.
+
+## v0.165 — What you wear and hold
+
+- The pack (I) now shows what you wear and hold, slot by slot: head, body, hands, legs, feet, main hand, off hand and a trinket.
+- Choose a line with W and S, then press E to take a piece off into your pack, put on a spare one, or leave a find on the floor.
+- Kemal's gloves and helmet are things you wear now, and his whetstone hones grandma's knife to fine.
+- The pack's 8 places hold finds and spare things together.
+
+## v0.164 — Sounds for the deep wonders, the flour bag and the match
+
+- Singing crystals hum in five notes that sound well together, a distant choir swells when a thin place opens, and salt blooms crackle faintly as they grow.
+- The flour bag bursts with a soft thump, the flour cloud goes up with a deep fiery whoomph, and the matchstick scratches and flares.
+
+## v0.163 — Held tool models
+
+- Blender-made hatchet, miner's pick and crowbar models (`held_hatchet`, `held_pick`, `held_crowbar`) are now in the model pack, ready for the inventory's weapons.
+
+## v0.162 — Snapdragon leaves above the floor
+
+- The rosette of leaves at a snapdragon's foot sits on the floor and curls up, instead of sinking into it.
+
+## v0.161 — Glow-worm skies
+
+- Here and there the roof of a high cavern is covered with tiny blue-green lights, like a night sky, with brighter stars drawn into constellations that are not ours. They twinkle slowly and fade where your headlamp falls on them, as glow-worms do.
+- The stranger a level, the stranger its sky: deeper down the lights change colour, and their glow turns slowly round the roof in arms, like a galaxy.
+- The debug menu can take you to the nearest one.
+
 ## v0.160 — Grandma, briefly, below
 
 - The first time the Tall One looks at anyone of the family, grandma's ghost stands between it and you for a moment, then is gone.
