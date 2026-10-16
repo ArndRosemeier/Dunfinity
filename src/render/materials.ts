@@ -592,13 +592,14 @@ export const GLOWWORM = defineKind('glowworm', ['position', 'normal', 'color'], 
   const twinkle = sin(time.mul(phase.mul(0.6).add(0.3)).add(phase.mul(6.283))).mul(0.25).add(0.75);
   const armWave = cos(info.y.mul(SKY_LOOK.arms.x).add(info.z.mul(3.5)).sub(time.mul(SKY_LOOK.arms.y))).mul(0.5).add(0.5);
   const arms = SKY_LOOK.arms.x.greaterThan(0.5).select(armWave.mul(armWave).mul(0.8).add(0.2), float(1));
-  const toLight = p.sub(DUST_LAMP.at), inBeam = smoothstep(0.86, 0.97, dot(normalize(toLight), DUST_LAMP.dir));
-  const energy = corner.z.div(size).pow(2);
+  // Faded where the beam falls strongly (close enough for the lamp to light them); a far light grown to a pixel keeps most of its glow.
+  const toLight = p.sub(DUST_LAMP.at), inBeam = smoothstep(0.86, 0.97, dot(normalize(toLight), DUST_LAMP.dir)).mul(smoothstep(22, 8, length(toLight)));
+  const energy = mix(float(1), corner.z.div(size), 0.35);
   const far = smoothstep(90, 45, dist);
   const bright = varying(info.x.mul(twinkle).mul(arms).mul(float(1).sub(inBeam.mul(0.7))).mul(energy).mul(far), 'vSkyBright');
   const r = length(varying(corner.xy, 'vSkyCorner'));
   const core = smoothstep(0.35, 0.0, r).mul(smoothstep(0.65, 0.9, varying(info.x, 'vSkyStar')));
   const halo = float(1).sub(r).clamp(0, 1).pow(2);
-  m.colorNode = mix(SKY_LOOK.tint, vec3(1, 1, 1), core).mul(halo.add(core)).mul(bright).mul(1.6);
+  m.colorNode = mix(SKY_LOOK.tint, vec3(1, 1, 1), core).mul(halo.add(core)).mul(bright).mul(2.6);
   return m;
 }, { cast: false, receive: false });
