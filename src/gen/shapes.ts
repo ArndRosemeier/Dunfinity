@@ -11,3 +11,13 @@ export function boxDist2(qx: number, qz: number): number {
 export function boxDist3(qx: number, qy: number, qz: number): number {
   return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0);
 }
+
+/**
+ * A roof over a round tunnel or chamber of radius r whose middle stands `mid` over the floor, `a`
+ * metres across from its middle in plan: over the round roof everywhere (an envelope bound, E1),
+ * falling away beyond it no steeper than 0.75.
+ */
+export function roundRoof(mid: number, r: number, a: number): number {
+  const t = Math.min(a, r);
+  return mid + r - (0.375 * t * t) / r - 0.75 * Math.max(0, a - r);
+}

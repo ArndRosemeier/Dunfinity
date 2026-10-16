@@ -221,6 +221,43 @@ test('the bone hollows are none of them: arched chambers ribbed every few metres
   for (const id of Object.keys(st)) if (id !== 'bones' && st[id].n > 50) assert.ok(ribbed(id) < ribbed('bones') / 4, `${id}: ribbed over ${(ribbed(id) * 100).toFixed(1)}%`);
 });
 
+test('the organic gullets are none of them: flesh-coloured tubes ringed every few metres', () => {
+  // (The Deep draws them, 61 on: a level all of them, against a deep mix, Before People's and the Threshold's.)
+  const st: Record<string, { n: number; flesh: number }> = {};
+  const rgb = new Float32Array(3);
+  const roof = (l: Level, x: number, y: number, z: number) => { while (y < 60 && l.sdf(x, y, z) > 0.05) y += Math.max(0.05, l.sdf(x, y, z) * 0.8); return y; };
+  for (const l of [new Level(1, 75, 'organic'), new Level(1, 75), new Level(1, 45), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 3000; k++) {
+      const x = ax + (hash3f(73, k, 75, 0) - 0.5) * 3000, z = az + (hash3f(73, k, 75, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const r0 = roof(l, x, c.floor + 1.5, z);
+      if (r0 - c.floor > 14) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, flesh: 0 });
+      s.n++;
+      // Flesh: a strong colour overhead (not ivory, not stone), and along some line through here the roof dips twice, 4–9 m apart: two rings.
+      l.field.color(c, x, r0, z, rgb, 0);
+      if (Math.max(...rgb) - Math.min(...rgb) < 0.25) continue;
+      let ringed = false;
+      for (let a = 0; a < 8 && !ringed; a++) {
+        const dx = Math.cos((a * Math.PI) / 8), dz = Math.sin((a * Math.PI) / 8), r: number[] = [], dips: number[] = [];
+        for (let t = -7; t <= 7; t += 0.5) r.push(roof(l, x + dx * t, c.floor + 1.5, z + dz * t) - c.floor);
+        for (let i = 4; i < r.length - 4; i++) {
+          const lo = r[i], before = Math.max(...r.slice(i - 4, i)), after = Math.max(...r.slice(i + 1, i + 5));
+          if (lo >= 3 && lo <= Math.min(...r.slice(i - 2, i + 3)) && before - lo > 0.35 && after - lo > 0.35) dips.push(i * 0.5);
+        }
+        for (let i = 1; i < dips.length; i++) if (dips[i] - dips[i - 1] >= 4 && dips[i] - dips[i - 1] <= 9) ringed = true;
+      }
+      if (ringed) s.flesh++;
+    }
+  }
+  const flesh = (id: string) => st[id].flesh / st[id].n;
+  console.log(Object.entries(st).map(([id, s]) => `${id} ${s.n} ${(flesh(id) * 100).toFixed(1)}%`).join(', '));
+  assert.ok(st.organic.n > 300, `${st.organic.n} open organic columns`);
+  assert.ok(flesh('organic') > 0.15, `ringed flesh over ${(flesh('organic') * 100).toFixed(1)}% of the gullets`);
+  for (const id of Object.keys(st)) if (id !== 'organic' && st[id].n > 50) assert.ok(flesh(id) < flesh('organic') / 4, `${id}: ringed flesh over ${(flesh(id) * 100).toFixed(1)}%`);
+});
+
 test('no style is cut through one rock alone: each names several, none more than 80% (Arnd: walls are mixed rock)', () => {
   for (const id of NAMED_STYLES) {
     const l = new Level(1, 25, id), st = l.field.styles.find((s) => s.id === id)!;

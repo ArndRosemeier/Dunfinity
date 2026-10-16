@@ -12,6 +12,7 @@ import type { Mix } from './regions';
 import { Karst } from './karst';
 import { Rift } from './rift';
 import { Collapse } from './collapse';
+import { Organic } from './organic';
 import { Catacombs } from './catacombs';
 import { Dungeon } from './dungeon';
 import { Roots } from './roots';
@@ -39,6 +40,7 @@ const MAKE: Partial<Record<StyleId, Make>> = {
   roots: (seed, band, _w, traits) => new Roots(seed, band, traits),
   fungal: (seed, band, _w, traits) => new Fungal(seed, band, traits),
   lava: (seed, band, _w, traits) => new Lava(seed, band, traits),
+  organic: (seed, band, _w, traits) => new Organic(seed, band, traits),
   geode: (seed, band) => new Geode(seed, band),
   basalt: (seed, band) => new Basalt(seed, band),
   flooded: (seed, band, water) => new Flooded(seed, band, water),
