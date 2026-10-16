@@ -9,10 +9,29 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Three jobs side by side: the unit tests and guards, and the two halves of the shader check
-# (the Lab, the game), which each spend minutes in SwiftShader.
+# The typecheck and build, and the unit tests and guards split over three runners side by side
+# (node's --test-shard, by file).
+# The shader check is not here: it runs on demand (shaders.yml).
 jobs:
   test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `npm test` with a shard (npm passes no flags through to node before its file globs).
+      - run: node --import tsx --test --test-shard=${{ matrix.shard }}/3 "test/**/*.test.ts" "tools/**/*.test.mjs"
+
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,46 +42,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
-
-  shaders:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        part: [lab, game]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      # A PR that touches nothing the browser loads (only docs, change notes, tests or tools) skips
-      # the check, and one that touches neither the Stage nor the shader hooks skips its cap test
-      # (the build scheduler lives only there); on main everything runs.
-      - name: Does this change reach the browser?
-        id: scope
-        run: |
-          if [ "${{ github.event_name }}" != pull_request ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
-          files=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD)
-          echo "$files"
-          if echo "$files" | grep -qE '^(src/|public/|vendor/|index\.html$|vite\.config\.ts$|tsconfig\.json$|package(-lock)?\.json$|tools/shot/|\.github/workflows/ci\.yml$)'; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"; echo "Nothing the browser loads changed: shader check skipped."
-          fi
-          if ! echo "$files" | grep -qE '^(src/render/shaders/|src/render/stage\.ts$|src/render/renderer\.ts$|vendor/|package(-lock)?\.json$|tools/shot/shader-check\.mjs$|\.github/workflows/ci\.yml$)'; then
-            echo "flags=--no-cap" >> "$GITHUB_OUTPUT"; echo "Stage and shader hooks unchanged: cap test skipped."
-          fi
-      - if: steps.scope.outputs.run == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - if: steps.scope.outputs.run == 'true'
-        run: npm ci
-      - if: steps.scope.outputs.run == 'true'
-        run: npm run build
-      - if: steps.scope.outputs.run == 'true'
-        run: npx playwright install --with-deps chromium
-      - if: steps.scope.outputs.run == 'true'
-        run: npm run check:shaders -- ${{ matrix.part }} ${{ steps.scope.outputs.flags }}
+      - run: npm run build

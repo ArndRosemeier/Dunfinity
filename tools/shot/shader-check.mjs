@@ -8,8 +8,8 @@
  *  3. The game: after its warm-up, the first seconds of play (figure, rats, finds, shadows) build
  *     no new shader.
  *
- * `-- lab` runs only 1 and 2, `-- game` only 3: CI runs the two halves as parallel jobs.
- * `--no-cap` leaves out 2: CI does that on PRs that touch neither the Stage nor the shader hooks.
+ * `-- lab` runs only 1 and 2, `-- game` only 3: the Shaders workflow runs the two halves as parallel jobs.
+ * `--no-cap` leaves out 2, the slowest part, when the Stage and the shader hooks are untouched.
  */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
