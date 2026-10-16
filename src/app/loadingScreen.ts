@@ -48,9 +48,13 @@ export class LoadingScreen {
   /** Say what is being done now, and how far the whole start has come (0–1; the bar never goes back). */
   step(text: string, done: number): void {
     if (this.hidden) return;
-    this.label.textContent = text;
-    this.shown = Math.max(this.shown, Math.min(1, done));
-    this.bar.style.width = `${(this.shown * 100).toFixed(1)}%`;
+    // Touch the page only when something shows a change: called every frame, a restyle each time
+    // costs real frame time (and the bar's eased width would never rest).
+    const shown = Math.max(this.shown, Math.round(Math.min(1, done) * 100) / 100);
+    if (text !== this.label.textContent) this.label.textContent = text;
+    if (shown === this.shown) return;
+    this.shown = shown;
+    this.bar.style.width = `${shown * 100}%`;
   }
 
   /** Fade it away and remove it. */

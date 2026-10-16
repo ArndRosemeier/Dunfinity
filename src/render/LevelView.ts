@@ -163,8 +163,12 @@ export class LevelView {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Once per frame: stream around (x, y, z), then render. `time` in seconds. */
-  frame(x: number, y: number, z: number, time: number): void {
+  /**
+   * Once per frame: stream around (x, y, z), then render. `time` in seconds. `draw` false while
+   * something covers the view (the loading screen, the black of an arrival): streaming goes on,
+   * and the frame's drawing time goes to it.
+   */
+  frame(x: number, y: number, z: number, time: number, draw = true): void {
     this.stage.frame();
     this.aimHeadlamp();
     this.dust.follow(this.headlamp);
@@ -172,7 +176,7 @@ export class LevelView {
     this.props.update(x, y, z, time);
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;
-    this.renderer.render(this.scene, this.camera);
+    if (draw) this.renderer.render(this.scene, this.camera);
   }
 }
 

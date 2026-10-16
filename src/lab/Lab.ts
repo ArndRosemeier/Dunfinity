@@ -53,7 +53,7 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
       + `props: ${props.stats.tiles} tiles, ${(props.stats.triangles / 1e3).toFixed(0)} k triangles, ${props.stats.lamps} burning lamps${props.stats.pending ? `, ${props.stats.pending} to build` : ''}\n`
       + `${stage.hudLine()}\n`
       + 'click: mouse look · WASD move · Space/C up/down · Shift fast · wheel speed · V colours · F dark';
-    view.frame(p.x, p.y, p.z, timer.getElapsed());
+    view.frame(p.x, p.y, p.z, timer.getElapsed(), !loading.open);
     if (loading.open) { if (view.settled || timer.getElapsed() > 30) loading.hide(); else loading.step('Carving the rock', 0.4 + 0.6 * view.streamed); }
     (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone;
   });

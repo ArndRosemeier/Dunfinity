@@ -971,7 +971,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
-    view.frame(body.x, body.y, body.z, timer.getElapsed());
+    view.frame(body.x, body.y, body.z, timer.getElapsed(), !loading.open && !(arriving && !climb.active));
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
     sounds.update({
