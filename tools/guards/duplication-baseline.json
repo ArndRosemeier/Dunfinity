@@ -3586,5 +3586,13 @@
   {
     "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/dripView.ts#draw",
     "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/mapView.ts#toggle",
+    "reason": "each panel opens and closes its own way; the map fills its header and canvas as it opens"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#toggle + dunfinity/app/settingsView.ts#toggle",
+    "reason": "each panel opens and closes its own way; the map fills its header and canvas as it opens"
   }
 ]

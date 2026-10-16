@@ -17,9 +17,6 @@ import { THEME } from './theme';
 /** Pixels per metre (the zoom steps, and where it starts), how often it redraws while open (s), how far the nobody moves before the shapes are made again (m). */
 const MAP = { zooms: [4, 6, 8, 12, 16], zoom: 2, every: 0.1, remake: 2 } as const;
 
-/** Two looks to choose from: grandma's salt in the dark, or a surveyor's sheet in ink. */
-type Look = 'salt' | 'chart';
-
 const STYLE = `
   #map { z-index: 8; }
   #map > .ui-scroll { padding: 12px 16px 10px; overflow: visible; }
@@ -27,14 +24,12 @@ const STYLE = `
   #map header .ui-title { margin: 0; }
   #map header .ui-label { white-space: nowrap; }
   #map .sheet { position: relative; border-radius: 3px; overflow: hidden; line-height: 0; box-shadow: inset 0 0 0 1px #0008, 0 0 0 1px var(--ui-line); }
-  #map.ui-paper .sheet { box-shadow: 0 0 0 1px var(--ui-paper-line); }
   #map .ui-keys { margin-top: 8px; display: flex; justify-content: space-between; gap: 12px; }`;
 
 const still = () => document.documentElement.classList.contains('ui-still') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rgba = (hex: string, a: number) => `${hex.slice(0, 7)}${Math.round(a * 255).toString(16).padStart(2, '0')}`;
 
 export class MapView extends Modal {
-  private look: Look = 'salt';
   private readonly canvas = document.createElement('canvas');
   /** What changes only when the shapes are made again (the ground, the floor, the walls, the ways down), a margin round the view. */
   private readonly layer = document.createElement('canvas');
@@ -60,10 +55,6 @@ export class MapView extends Modal {
   /** Open or close it (`name`: the level's name for its header). */
   toggle(name = ''): void {
     if (this.open) { this.hide(); return; }
-    const look: Look = new URLSearchParams(location.search).get('maplook') === 'chart' ? 'chart' : 'salt';
-    if (look !== this.look) { this.look = look; this.grain = null; this.made = null; }
-    this.el.parentElement!.classList.toggle('ui-paper', this.look === 'chart');
-    this.el.parentElement!.classList.toggle('ui-panel', this.look !== 'chart');
     this.showHtml(`<header><h2 class="ui-title">${esc(name)}</h2><span class="ui-label">What you have seen</span></header><div class="sheet"></div>`
       + `<div class="ui-keys"><span>${keycap('M')} or ${keycap('Esc')} close</span><span>${keycap('+')} ${keycap('−')} or the wheel: nearer, farther</span></div>`);
     this.el.querySelector('.sheet')!.appendChild(this.canvas);
@@ -89,7 +80,7 @@ export class MapView extends Modal {
     }
     const g = cv.getContext('2d');
     if (!g) return;
-    const S = MAP.zooms[this.zoom], margin = Math.ceil(MAP.remake * S) + 4, L = this.look === 'chart' ? CHART : SALT;
+    const S = MAP.zooms[this.zoom], margin = Math.ceil(MAP.remake * S) + 4, L = SALT;
     if (this.cells?.level !== level) { this.cells = new MapCells(level); this.made = null; }
     let k = this.made;
     if (!k || Math.hypot(x - k.x, z - k.z) > MAP.remake || seen.cells(level.depth) !== k.seen || this.zoom !== k.zoom || w !== k.w || h !== k.h) {
@@ -135,7 +126,7 @@ export class MapView extends Modal {
     return { x, z, seen: seen.cells(level.depth), zoom: this.zoom, w, h, walls };
   }
 
-  /** The rock (or the paper) under everything, grained, the grain fixed to the world. */
+  /** The rock under everything, grained, the grain fixed to the world. */
   private ground(p: Paint, L: LookPaint): void {
     if (!this.grain) this.grain = grainPattern(p.g, L);
     const { g, w, h, S, x, z } = p;
@@ -442,54 +433,4 @@ const SALT: LookPaint = {
   },
   rim: rgba(THEME.darkSolid, 0.9),
   ink: THEME.inkDim,
-};
-
-/** A surveyor's sheet: paper, the walls inked and hatched into the rock, grandma's salt marked in blue. */
-const CHART: LookPaint = {
-  ground: THEME.paperDeep,
-  grain: (v) => [221 + v * 10, 207 + v * 10, 174 + v * 9, 255],
-  contour: '#6d5a3d33',
-  cell: (m, t) => (m.water ? [176, 196, 200, 255] : [246 + 6 * t, 238 + 6 * t, 218 + 6 * t, 255]),
-  onFloor: () => {},
-  lamp: () => {},
-  shimmer: () => {},
-  walls: (p, path) => {
-    const { g } = p;
-    g.save();
-    g.lineCap = g.lineJoin = 'round';
-    // Hatching into the rock from every wall edge.
-    g.strokeStyle = '#2b2116a0'; g.lineWidth = 0.8;
-    for (const t of p.sheet!.ticks) for (let k = 0; k < 2; k++) polyline(g, sprig(p, t, 20 + k, 1, 0.5 + hash3f(p.seed, t.i * 4 + t.side, t.j, 50 + k) * 0.8, 0));
-    g.strokeStyle = THEME.paperInk; g.lineWidth = 1.9; g.stroke(path);
-    // Grandma's salt in the walls, in blue ink.
-    g.strokeStyle = rgba(THEME.paperBlue, 0.85); g.lineWidth = 1;
-    for (const t of p.sheet!.ticks) {
-      const r = hash3f(p.seed, t.i * 4 + t.side, t.j, 7);
-      if (r < 0.1) polyline(g, sprig(p, t, 11, 3 + Math.floor(r * 30), 0.55, 1.3));
-    }
-    g.restore();
-  },
-  shaft: (p, cx, cy, r, up) => {
-    const { g } = p, ink = up ? THEME.paperRed : THEME.paperInk;
-    g.save();
-    g.strokeStyle = ink; g.lineWidth = 1.5;
-    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
-    if (!up) {
-      g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.clip(); g.lineWidth = 0.8;
-      for (let k = -r; k < r; k += 3) { g.beginPath(); g.moveTo(cx + k, cy - r); g.lineTo(cx + k + r, cy + r); g.stroke(); }
-      g.restore();
-    }
-    g.font = `italic 14px ${THEME.fontDisplay}`; g.fillStyle = ink; g.textAlign = 'left';
-    g.fillText(up ? 'up' : 'down', cx + r + 4, cy - r * 0.4);
-    g.restore();
-  },
-  blaze: (p, cx, cy) => {
-    const { g } = p;
-    g.save(); g.strokeStyle = THEME.paperRed; g.lineWidth = 1.5;
-    for (let k = 0; k < 4; k++) { const a = (k * Math.PI) / 4; g.beginPath(); g.moveTo(cx - Math.cos(a) * 6, cy - Math.sin(a) * 6); g.lineTo(cx + Math.cos(a) * 6, cy + Math.sin(a) * 6); g.stroke(); }
-    g.restore();
-  },
-  nobody: (p, cx, cy, fx, fz) => arrow(p.g, cx, cy, fx, fz, THEME.paperRed, THEME.paper),
-  rim: rgba(THEME.paperLine, 0.4),
-  ink: THEME.paperInk,
 };
