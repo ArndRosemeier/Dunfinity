@@ -269,8 +269,10 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams`; whether the game opens on the title screen `titleWanted` | `src/app/params.ts` |
-| The title screen: a live descent on the game's own view (shots on deeper and deeper levels, the nobody by something alive), its name and menu, the choice (Continue / New Game) | `playTitle(host, cast)` (a `TitleCast`: the game's view, camera, nobody, `look`, `drawLife`); the shots `shotAt(seed, depth)` over `TITLE_DEPTHS`; the overlay `TitleScreen` | `src/game/title.ts`, `src/game/titleShots.ts`, `src/app/titleScreen.ts` |
-| A level's name as shown on arrival ("Level 5 · The Salt Works") | `levelName(level)` | `src/game/titleShots.ts` |
+| The title screen: a 1960s television playing the 1966 report on the town, the name and menu beside it, the choice (Continue / New Game); the game's level streams and its shaders warm behind it | `playTitle(host, cast)` (a `TitleCast`: `ready`, `builds`, `frame`); the set `TvSet` (`frameAt(now, builds)`: each shader build slips its vertical hold); the overlay `TitleScreen` (`back` holds the set) | `src/game/title.ts`, `src/app/tvSet.ts`, `src/app/titleScreen.ts` |
+| The television report: its shots, words and name straps, and what is on the air when (it loops) | `REPORT`, `PROGRAMME`, `onAir(time)`, `shotStart(i)`, `linesOf(caption)`; stills in `public/report/<id>.webp` (and the set, `set.webp`), painted with `tools/lore/reportStills.ts` | `src/lore/report.ts` |
+| Paint a picture with Muse (OpenRouter) for a tool, and scale it to a webp | `paint(prompt, raw)`, `scaled(raw, out, width)`, `inBatches(jobs, run)` | `tools/lore/muse.ts` |
+| A level's name as shown on arrival and over the map ("Level 5 · The Salt Works") | `level.name` | `src/gen/level.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
 | Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys); the player's own keys (`bind`), nothing while a menu is open (`paused`) | `Controls` | `src/input/controls.ts` |
 | Fingers on a touch surface: how far one moved, two pinching | `Fingers` (`land`, `slide`, `pinch`, `lift`, `pinching`) | `src/input/fingers.ts` |
