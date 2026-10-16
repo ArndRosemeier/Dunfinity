@@ -93,6 +93,11 @@ export class GameSounds {
     this.engine.play(id, at, gain, pitch);
   }
 
+  /** One of a sound's files in tune (its `variant`-th: a note of a scale), heard from `refDist` m. */
+  note(id: string, at: { readonly x: number; readonly y: number; readonly z: number }, variant: number, gain = 1, refDist = 3): void {
+    this.engine.play(id, at, gain, 1, refDist, variant);
+  }
+
   /** Where one is, for the ambience and the music. */
   static place(level: Level, b: { readonly x: number; readonly y: number; readonly z: number }): Place {
     if (level.band.id !== 'cellar') return level.band.id;

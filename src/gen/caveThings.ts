@@ -45,8 +45,8 @@ export class CaveThings<T, C extends { x: number; z: number; r: number } = Chamb
 
   constructor(private readonly cave: Chambers<C>, private readonly seed: number, private readonly kind: ThingKind<T, C>) {}
 
-  /** The things of the chamber of cell (i, j). */
-  private of(i: number, j: number, c: C): T[] {
+  /** The things of the chamber of cell (i, j) (its chamber `c`). */
+  of(i: number, j: number, c: C): T[] {
     const key = hash2i(this.seed, i, j);
     let things = this.made.get(key);
     if (!things) {

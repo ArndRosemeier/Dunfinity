@@ -732,6 +732,32 @@ export const BLOOM = defineKind('bloom', ['position', 'normal', 'color'], () => 
   return m;
 });
 
+export const HUM_SLOTS = 6;
+/** Per slot: (seconds since it began to ring, the crystal's radius at its root and tip m, loudness 0–1), (its glow, linear rgb, unused). Set by `HumView`. */
+export const HUM_STATE = uniformArray(Array.from({ length: HUM_SLOTS * 2 }, () => new Vector4()), 'vec4');
+
+/**
+ * A singing crystal's glow (src/world/singing.ts): a sheath a little wider than the crystal, light
+ * added, that flares as it is struck and dies away while it rings, a shimmer running up it to the
+ * tip. `position` is on a unit tube (y 0 at the root to 1 at the tip; the mesh is stretched to the
+ * crystal's length and turned along it), `normal` its normal, `color` (unused, unused, slot). Same
+ * attributes as the solid kind.
+ */
+export const HUM = defineKind('hum', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
+  const slot = attribute<'vec3'>('color', 'vec3').z.add(0.5).floor().mul(2).toInt();
+  const A = HUM_STATE.element(slot) as unknown as Node<'vec4'>, B = HUM_STATE.element(slot.add(1)) as unknown as Node<'vec4'>;
+  const age = A.x, p = positionGeometry, wide = mix(A.y, A.z, p.y).mul(1.35).add(0.05);
+  m.positionNode = vec3(p.x.mul(wide), p.y, p.z.mul(wide));
+  const y = varying(p.y, 'vHumY');
+  const ring = smoothstep(0, 0.06, age).mul(age.mul(-1.1).exp()).mul(A.w);
+  const shimmer = sin(y.mul(14).sub(age.mul(9))).mul(0.3).add(0.7);
+  // Brighter at the edges of the sheath (seen side on), so it reads as a glow round the crystal.
+  const edge = float(1).sub(abs(dot(normalize(varying(transformNormalToView(normalGeometry), 'vHumN')), vec3(0, 0, 1)))).pow(1.5);
+  m.colorNode = B.xyz.mul(ring.mul(shimmer).mul(edge.mul(0.8).add(0.25)).mul(smoothstep(1.0, 0.75, y).mul(0.6).add(0.4)).mul(1.8));
+  return m;
+}, { cast: false, receive: false });
+
 /** The level's glow-worm skies (src/gen/glowworms.ts `skyOf`), set by `LevelView`: their colour (linear rgb), and (arms, spin rad/s). */
 export const SKY_LOOK = { tint: uniform(new Vector3(0.2, 0.75, 0.6)), arms: uniform(new Vector2(0, 0)) };
 

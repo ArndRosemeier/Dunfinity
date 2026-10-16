@@ -114,6 +114,7 @@ import { heard, tipOf, type DripLook } from '../gen/drips';
 import { BLOOM, crackles } from '../gen/blooms';
 import { ThinPlaces } from '../world/thinPlaces';
 import { ThinView } from '../render/thinView';
+import { Singing, type Sung } from '../world/singing';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -405,6 +406,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const drift = new SaltDrift(params.seed);
   const thinView = new ThinView();
   await view.stage.add(thinView.mesh);
+  const singing = new Singing(), sung: Sung[] = [];
   await view.stage.add(drift.root);
   const wispView = new WispView(view.lamps);
   await view.stage.add(wispView.root);
@@ -1458,6 +1460,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     wispView.draw(wisps);
     thin.advance(dt, body.x, body.y + 1.6, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
     thinView.draw(thin.current);
+    // Crystals singing in a geode: a note each, heard from afar, and their glow while they ring.
+    for (const n of singing.advance(level, dt, body.x, body.y + 1.6, body.z, sung)) {
+      const c = n.crystal;
+      sounds.note('crystal_hum', { x: (c.ax + c.bx) / 2, y: (c.ay + c.by) / 2, z: (c.az + c.bz) / 2 }, n.note, 1, 8);
+      view.hums.ring(n, now);
+    }
     for (const t of thin.opened) sounds.play('thin_place', t);
     thin.opened.length = 0;
     if (body.sprangAt !== sprangSeen) { sprangSeen = body.sprangAt; if (Number.isFinite(sprangSeen)) spells.puff(body.x, body.y, body.z, now); }

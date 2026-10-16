@@ -19,6 +19,7 @@ import { LampLights } from './props/lamps';
 import { Watchers } from './props/watchers';
 import { DripView } from './props/dripView';
 import { BloomView } from './props/bloomView';
+import { HumView } from './humView';
 import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
 import { QUALITY } from './quality';
 import type { Quality } from '../persist/settings';
@@ -52,6 +53,8 @@ export class LevelView {
   readonly drips = new DripView();
   /** The salt blooms near the viewer (src/gen/blooms.ts). */
   readonly blooms = new BloomView();
+  /** Singing crystals ringing (src/world/singing.ts): rung by the game, drawn each frame. */
+  readonly hums = new HumView();
   private lastTime = 0;
   /** The pulse in the veins running now: when it started and where from. */
   private pulse: { start: number; at: [number, number] } | null = null;
@@ -120,6 +123,7 @@ export class LevelView {
     await this.stage.add(this.watchers.root);
     await this.stage.add(this.drips.root);
     await this.stage.add(this.blooms.root);
+    await this.stage.add(this.hums.root);
     this.stream();
   }
 
@@ -224,6 +228,7 @@ export class LevelView {
     this.props.update(x, y, z, time);
     this.drips.draw(this.level_, x, z, time);
     this.blooms.draw(this.level_, x, z, time);
+    this.hums.draw(time);
     this.pulseVeins(x, z, time);
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;

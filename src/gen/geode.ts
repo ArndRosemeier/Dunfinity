@@ -45,7 +45,7 @@ export const GEODE = {
 const FAR = 10;
 
 /** Crystal hues, strong enough to read by torchlight (a citrine read as sandstone): amethyst, celestine, rose, emerald. */
-const HUES = [[0.5, 0.15, 0.95], [0.12, 0.48, 1], [1, 0.25, 0.55], [0.1, 0.85, 0.4]] as const;
+export const HUES = [[0.5, 0.15, 0.95], [0.12, 0.48, 1], [1, 0.25, 0.55], [0.1, 0.85, 0.4]] as const;
 
 /** What a geode column is to the code that asks about workings: natural rock, no pillar grid. */
 const HOLLOW: Working = { id: 0x67656f64, angle: 0, spacing: 1e9, pillar: 0, floor: 0, height: 20, collapse: 0, cavern: true, cx: 0, cz: 0 };
@@ -174,6 +174,20 @@ export class Geode implements Style {
       const stone = rind * (1 - agate) + band * agate;
       out[o + c] = stone * (1 - druse) + (hue[c] * (0.7 + 0.3 * glint) + 0.12 * glint) * druse;
     }
+  }
+
+  /** The crystals whose middle lies within `r` of (x, y, z), with their geode's hue (an index into `HUES`), into `out`. */
+  crystalsNear(x: number, y: number, z: number, r: number, out: { crystal: Taper; hue: number }[] = []): { crystal: Taper; hue: number }[] {
+    out.length = 0;
+    const i0 = Math.floor(x / GEODE.cell), j0 = Math.floor(z / GEODE.cell);
+    for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
+      const g = this.cavity(i, j);
+      if (Math.hypot(x - g.x, z - g.z) > g.r * 1.05 + r + 3) continue;
+      for (const t of this.crystals.of(i, j, g)) {
+        if (Math.hypot((t.ax + t.bx) / 2 - x, (t.ay + t.by) / 2 - y, (t.az + t.bz) / 2 - z) < r) out.push({ crystal: t, hue: g.hue });
+      }
+    }
+    return out;
   }
 
   /** A passage from another style ends in the middle of the nearest geode, on its sand (E3). */

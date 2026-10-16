@@ -4420,6 +4420,54 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
+    "key": "idiom: [.depth .rng .seed] in dunfinity/creatures/wisps.ts + dunfinity/world/singing.ts + dunfinity/world/thinPlaces.ts",
+    "reason": "seeding a per-level Rng from the level's seed and depth: deriveSeed is the seam"
+  },
+  {
+    "key": "idiom: [.gap .range .rng] in dunfinity/creatures/wisps.ts + dunfinity/world/singing.ts + dunfinity/world/thinPlaces.ts",
+    "reason": "a seeded wait between two events: the Rng is the seam"
+  },
+  {
+    "key": "idiom: [.pool .root] in dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
+    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
+  },
+  {
+    "key": "idiom: [.pool .slots] in dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
+    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
+  },
+  {
+    "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/world/singing.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (singing crystals vs a creature population)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/spores.ts#advance + dunfinity/world/singing.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (singing crystals vs spores or a ladder climb)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/humView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/humView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/scavengerView.ts#draw + dunfinity/render/humView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/humView.ts#draw + dunfinity/render/props/saltLine.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/humView.ts#ring + dunfinity/render/props/saltLine.ts#ring",
+    "reason": "a crystal ringing vs a salt circle's ring: same word, different things"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/ladderClimb.ts#advance + dunfinity/world/singing.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (singing crystals vs spores or a ladder climb)"
+  },
+  {
     "key": "idiom: [.addEventListener .remove] in dunfinity/app/abilityBar.ts + dunfinity/app/tinView.ts + dunfinity/app/touchPad.ts",
     "reason": "DOM listeners that drop a highlight class when a drag or a finger leaves an element; one line each on its own element, nothing to fold"
   }
