@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.121 — The deep's own light and air
+
+- Below level 10, each stratum of a world now has its own light: the colour of the air and the fog, the tint of your headlamp, how far you can see.
+- The first laws of the deep: in some strata the light is another colour, the air hangs thick and close, or the rock glows in its seams. A stratum keeps its laws on every one of its levels.
+- Levels 1–10 and the town look exactly as before.
+
 ## v0.120 — Goblin warrens
 
 - New level style, goblin warrens: low, round, crooked burrows dug from knot to knot, most knots swelling into a small den, and a second storey of burrows over the first, joined by steep ramps and climbing shafts.
