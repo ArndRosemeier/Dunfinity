@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.172 — Thin places
+
+- Now and then, a little way ahead of you in open air, the air ripples and opens like a window, and for a few seconds you look into a hall of another of the stacked worlds below: its stone, its light, its haze, faint and silent. Then it closes again.
+- The stranger a level, the more often it happens. Never at home, never a way through.
+- As it opens you hear a faint, far-off choir.
+
 ## v0.171 — An eight-slot main bar
 
 - Grandma's cards no longer have keys of their own. They go on a main bar of eight slots, used with 1–8 (each slot can be moved to another key in the settings) or a click.

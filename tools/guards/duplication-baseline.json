@@ -104,7 +104,7 @@
     "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
@@ -3606,5 +3606,21 @@
   {
     "key": "same name: dunfinity/app/mapView.ts#toggle + dunfinity/app/settingsView.ts#toggle",
     "reason": "each panel opens and closes its own way; the map fills its header and canvas as it opens"
+  },
+  {
+    "key": "idiom: [.range .rng] in dunfinity/creatures/crickets.ts + dunfinity/render/spells.ts + dunfinity/world/thinPlaces.ts",
+    "reason": "drawing a number from a seeded Rng in a range: the Rng is the seam"
+  },
+  {
+    "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/world/thinPlaces.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (creatures' populations vs thin places opening)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/watchers.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
   }
 ]
