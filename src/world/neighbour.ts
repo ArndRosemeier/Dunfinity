@@ -4,8 +4,8 @@
  * the more of them the deeper the family has been. She knew grandma sixty years; she never asks what
  * you are doing in that cellar, and she always knows. Pure.
  */
-import { TOWN, homeDoor } from '../gen/town';
-import { BLOCKER_STRIDE } from './blockers';
+import { homeDoor } from '../gen/town';
+import { Townsperson } from './townsperson';
 
 /** Her blocker's key. */
 export const WEBER_KEY = 'weber';
@@ -42,53 +42,15 @@ export interface Known {
   readonly fallen: number;
 }
 
-export class Neighbour {
-  readonly x: number;
-  readonly y = TOWN.ground;
-  readonly z: number;
-  readonly vx = 0;
-  readonly vz = 0;
-  readonly health = 1;
-  readonly dead = false;
-  /** Which way she faces; when she began talking. */
-  yaw: number;
-  talkAt = -Infinity;
+export class Neighbour extends Townsperson {
   /** How many times she has been called on (this grandchild), and how many of the fallen she has spoken of. */
   private calls = 0;
   private mourned = 0;
-  private readonly street: number;
 
   constructor() {
     const d = homeDoor('weber');
     // On her doorstep, in her lit doorway, looking out at the street.
-    this.x = d.x - d.house.faces * 0.4;
-    this.z = d.z;
-    this.street = Math.atan2(-d.house.faces, 0);
-    this.yaw = this.street;
-  }
-
-  /** Her blocker box (src/world/blockers.ts), so one does not walk through her: put under `WEBER_KEY` at depth 0. */
-  get blocker(): Float32Array {
-    const b = new Float32Array(BLOCKER_STRIDE);
-    b.set([this.x, this.z, 0.25, 0.25, 1, 0, this.y, this.y + 1.6]);
-    return b;
-  }
-
-  /** Whether one standing at (x, z) is near enough to talk to her. */
-  canHear(x: number, y: number, z: number): boolean {
-    return Math.abs(y - this.y) < 1.2 && Math.hypot(x - this.x, z - this.z) < WEBER.reach;
-  }
-
-  /** Whether she is talking at `now` (her hands go). */
-  talking(now: number): boolean {
-    return now - this.talkAt < WEBER.talk;
-  }
-
-  /** Turn by `dt` towards someone at (x, z) if they are near, else back to the street. */
-  turn(x: number, z: number, dt: number): void {
-    const want = Math.hypot(x - this.x, z - this.z) < WEBER.notice ? Math.atan2(-(x - this.x), -(z - this.z)) : this.street;
-    const d = Math.atan2(Math.sin(want - this.yaw), Math.cos(want - this.yaw));
-    this.yaw += Math.max(-WEBER.turn * dt, Math.min(WEBER.turn * dt, d));
+    super(d.x - d.house.faces * 0.4, d.z, Math.atan2(-d.house.faces, 0), WEBER);
   }
 
   /** Call on her at `now`: what she says. */
