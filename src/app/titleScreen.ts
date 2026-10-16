@@ -21,19 +21,23 @@ const CSS = `
   #title.shown .menu { opacity: 1; }
   #title .menu > .ui-btn { position: relative; min-width: 220px; text-align: left; font: 400 20px/1 var(--ui-font-display); letter-spacing: .04em; padding: 11px 18px; }
   #title .ui-btn[disabled] { color: var(--ui-ink-faint); border-color: var(--ui-line); box-shadow: none; cursor: default; }
+  #title .lamps { margin-top: 4px; font: italic 14px/1.3 var(--ui-font); color: var(--ui-ink-faint); text-shadow: var(--ui-text-shadow); transition: opacity 1.2s; }
+  #title .lamps.done { opacity: 0; }
   #title .ask { max-width: 26em; padding: 12px 16px; font: 15px/1.45 var(--ui-font); color: var(--ui-ink-dim); }
   #title .ask .ui-btn { margin: 10px 8px 0 0; }
   #title .caption { position: absolute; right: clamp(16px, 4vw, 48px); bottom: clamp(16px, 4vh, 40px); font-style: italic; font-size: 15px; letter-spacing: 0.05em; color: var(--ui-ink-dim); text-shadow: var(--ui-text-shadow); opacity: 0; transition: opacity 1.2s; }
   #title .caption.on { opacity: 0.85; }
   #title.gone { transition: opacity 0.6s; opacity: 0; }
-  /* The game's own HUD waits under the title (the ability bar's frame would show through). */
-  body:has(#title) #bar { visibility: hidden; }
+  /* The game's own HUD waits under the title (vitals, help, the ability bar, its Menu and Settings buttons). */
+  body:has(#title) :is(#game-hud, #hud, #bar, #menu-button, #settings-open) { visibility: hidden; }
 `;
 
 export class TitleScreen {
   private readonly root: HTMLDivElement;
   private readonly black: HTMLDivElement;
   private readonly caption: HTMLDivElement;
+  private readonly menu: HTMLDivElement;
+  private readonly lamps: HTMLDivElement;
   /** The player's choice, once made. */
   readonly chosen: Promise<TitleChoice>;
 
@@ -48,7 +52,7 @@ export class TitleScreen {
     const card = child(this.root, 'div', 'card');
     child(card, 'h1', '', 'DUNFINITY');
     child(card, 'div', 'line', 'Grandma left you her kitchen knife, and a way down that never ends.');
-    const menu = child(card, 'div', 'menu');
+    const menu = this.menu = child(card, 'div', 'menu');
     this.caption = child(this.root, 'div', 'caption');
     this.chosen = new Promise((resolve) => {
       if (canContinue) choice(menu, 'Continue', 'primary', () => resolve('continue'));
@@ -61,8 +65,19 @@ export class TitleScreen {
         button(row, 'Yes, start again', () => resolve('new'), 'ui-btn primary small');
         button(row, 'No', () => { ask.remove(); fresh.disabled = false; }, 'ui-btn small');
       });
-      (menu.querySelector('button') as HTMLButtonElement | null)?.focus({ preventScroll: true });
+      // Greyed out until the game's shaders are ready (src/render/stage.ts warmLater), so play never stutters.
+      for (const b of menu.querySelectorAll('button')) b.disabled = true;
     });
+    this.lamps = child(menu, 'div', 'lamps', 'Lighting the lamps\u2026');
+  }
+
+  /** The game is ready to play: the menu wakes up. */
+  ready(): void {
+    if (this.lamps.classList.contains('done')) return;
+    this.lamps.classList.add('done');
+    setTimeout(() => this.lamps.remove(), 1300);
+    for (const b of this.menu.querySelectorAll<HTMLButtonElement>(':scope > button')) b.disabled = false;
+    this.menu.querySelector<HTMLButtonElement>(':scope > button')?.focus({ preventScroll: true });
   }
 
   /** Show the name and the menu (once the first shot is on screen); the salt grows in over the buttons. */
