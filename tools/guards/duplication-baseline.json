@@ -2488,7 +2488,11 @@
     "reason": "creatures and the prop pass each ask the level for its column at a spot (level.columnAt) for their own placement; one seam called from four places, surfaced when the finder's corpus shifted"
   },
   {
-    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
+    "key": "idiom: [.PI .far .near Math] in dunfinity/gen/diaryPages.ts + dunfinity/gen/grandmasCamp.ts + dunfinity/gen/lair.ts",
+    "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
+  },
+  {
+    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/diaryView.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
     "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
   },
   {

@@ -18,6 +18,8 @@ export const SALT = {
   depth: [2, 0.5] as const,
   /** One of grandma's camps, its note read. */
   camp: 6,
+  /** A page of her diary found (docs/design/grandmas-diary.md). */
+  page: 4,
   /** Later kills of a kind that still give a pinch. */
   pinch: [5, 10, 20] as const,
 };
@@ -70,6 +72,17 @@ export class Tin {
   camp(depth: number): Gain | null {
     if (this.nth(`camp:${depth}`) > 1) return null;
     return this.add(SALT.camp, 'Grandma was here.');
+  }
+
+  /** The page of her diary that lay on level `depth`, read: back in the book, salt once. */
+  page(depth: number): Gain | null {
+    if (this.nth(`page:${depth}`) > 1) return null;
+    return this.add(SALT.page, 'A page of her diary, back in the book. Grandma was here.');
+  }
+
+  /** Whether the page that lay on level `depth` is back in the book. */
+  hasPage(depth: number): boolean {
+    return this.times.has(`page:${depth}`);
   }
 
   /** What the tin holds, to keep; `Tin.from` puts it back. */

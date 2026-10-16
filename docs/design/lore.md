@@ -125,6 +125,7 @@ Rendering note: the rock is meshed at 1 m, so glyphs cannot be carved into the S
 ---
 
 ## Changelog
+- 2026-10-16: grandma's diary (her pages torn out and left where she wrote them, one per stratum beat) in [grandmas-diary.md](grandmas-diary.md). Names her: Margarete "Grete" Hollmann; her father Josef.
 - 2026-10-15 build: steps 3–5 in PR #117 (Threshold lintels, grandma's rubbing, dwarven gate names and panel friezes, elven rib lines along the vaults). Hall friezes run 30–50 cm a rune (a panel is ~5 m wide); bridge parapets wait for parapet geometry. Texts in `src/lore/fragments.ts`.
 - 2026-10-15 draft 2.1: the Deep's scripts are drifted copies of Kerf and Thread, decodable (generative-depth.md G3), not unreadable.
 - 2026-10-15 draft 2: Arnd took all four picks (LO1–LO4).

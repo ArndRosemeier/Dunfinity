@@ -15,6 +15,7 @@ import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
 import type { GrandmasCamp } from './grandmasCamp';
+import type { PageSpot } from './diaryPages';
 import type { SaltCircle } from './lair';
 import { furnishCellar } from './cellarProps';
 import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
@@ -154,6 +155,8 @@ class TileBuilder {
     }
     const camp = this.level.camp;
     if (camp && this.inTile(camp.x, camp.z)) this.grandmasCamp(camp);
+    const page = this.level.page;
+    if (page && this.inTile(page.x, page.z)) this.pageUnderStone(page);
     for (const c of this.level.lair?.circles ?? []) if (this.inTile(c.x, c.z)) this.saltCircle(c);
     this.nooks();
     if (this.level.band.uphill > 0) this.uphill();
@@ -839,10 +842,11 @@ class TileBuilder {
     return owns(this.level.field.excavation, x, z);
   }
 
-  /** Whether (x, z) is in grandma's camp or by one of her salt circles (nothing else lies there). */
+  /** Whether (x, z) is in grandma's camp, by a page of her diary or by one of her salt circles (nothing else lies there). */
   private byCamp(x: number, z: number): boolean {
     const c = this.level.camp, within = (px: number, pz: number, r: number) => Math.hypot(x - px, z - pz) < r;
-    return (!!c && within(c.x, c.z, 6)) || (this.level.lair?.circles ?? []).some((s) => within(s.x, s.z, s.r + 2));
+    const p = this.level.page;
+    return (!!c && within(c.x, c.z, 6)) || (!!p && within(p.x, p.z, 1.5)) || (this.level.lair?.circles ?? []).some((s) => within(s.x, s.z, s.r + 2));
   }
 
   /**
@@ -899,6 +903,14 @@ class TileBuilder {
     this.solid.cylinder(hx, g + 0.59, hz, 0.05, 0.035, IRON, 10);
     const [nx, , nz] = c.note;
     this.solid.box(nx, c.note[1], nz, side(0.1), [0, 0.003, 0], fwd(0.075), PAPER);
+  }
+
+  /** A page torn out of grandma's diary (src/gen/diaryPages.ts): folded under a fist-sized stone, a corner of it showing. */
+  private pageUnderStone(p: PageSpot): void {
+    const at = local(p.x, p.z, p.yaw), ca = Math.cos(p.yaw), sa = Math.sin(p.yaw), g = p.y;
+    const [px, pz] = at(0.05, 0.08);
+    this.solid.box(px, g + 0.012, pz, [ca * 0.075, 0, -sa * 0.075], [0, 0.003, 0], [sa * 0.1, 0, ca * 0.1], PAPER);
+    this.stones.ellipsoid(p.x, g + 0.06, p.z, 0.12, 0.07, 0.1, this.tone(0.9), 7);
   }
 
   /**
