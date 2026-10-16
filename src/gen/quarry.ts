@@ -37,6 +37,8 @@ function fluting(along: number, half: number, count: number): number {
 
 /** Average size of a working, metres. */
 const WORKING = 220;
+/** The thinnest a wall between workings may be (where it is not open), metres: thick enough for the 1 m mesh to draw. */
+const THIN_WALL = 2;
 /** Floors, ceilings and collapse blend into the neighbouring working over this distance from the border, metres. */
 const BLEND = 14;
 /** How far the workings' feature points stray from their cell's middle (0..1). */
@@ -224,7 +226,12 @@ export class QuarryField implements Style {
     // Walls between workings: natural rock, broken through where the opening noise is high.
     const thick = 7 + 5 * n.n2(x / 90 + 31.7, z / 90);
     const opening = (n.n2(x / 70 - 12.3, z / 70 + 4.1) - 0.1) * 30;
-    col.wall = Math.max(border - thick, opening);
+    // Never thinner than THIN_WALL: where the opening leaves a sliver of the wall (the distances to
+    // its two faces add up to less), or the wall itself is thin, it is open. Roughness (`at`) eats
+    // into both faces alike, so it can hole a wall but never leave one thinner than that: a thin
+    // wall full of holes is drawn with bigger holes than it has (the mesh is 1 m), an invisible wall.
+    const a = border - thick;
+    col.wall = Math.max(a, opening, (THIN_WALL + a + opening) / 2, THIN_WALL / 2 - thick);
 
     // Rubble: cones of fallen rock, many in collapsed workings, a few elsewhere.
     let rubble = 0;

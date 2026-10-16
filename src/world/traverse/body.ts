@@ -84,6 +84,9 @@ export type BodyMode = 'walk' | 'climb' | 'swim';
 /** The lid covers blows from this far either side of where the nobody faces, radians. */
 const GUARD_ARC = 1.2;
 
+/** How long a touched wall still counts as touched, seconds (see `step`). */
+const TOUCH_MEMORY = 0.2;
+
 /** Sphere centres above the feet. */
 const SPHERES = [MOVE.radius, MOVE.height / 2, MOVE.height - MOVE.radius];
 
@@ -144,6 +147,8 @@ export class Body {
   private readonly pushOut: [number, number] = [0, 0];
   /** A climbable wall the capsule touched in the last step, and its normal. */
   private touching = false;
+  /** Body time the capsule last touched a climbable wall (`touch` holds its normal). */
+  private touchedAt = -Infinity;
   private readonly touch: [number, number, number] = [0, 0, 0];
   /**
    * The top of the climb, once reached: the body holds there until it is pulled over (`overLedge`;
@@ -227,7 +232,11 @@ export class Body {
 
     // Walking into a climbable wall for a moment starts a climb.
     if (this.mode === 'walk' && ml > 0.3 && this.stamina > 0.5) {
-      const into = this.touching && (this.touch[0] * mx + this.touch[2] * mz) / ml < -0.5;
+      // The touch is remembered a moment: at the foot of a bank about as steep as `floorY` the feet
+      // flicker between floor and wall each step, and a touch that never lasts 0.15 s would hold the
+      // body there, neither up the bank nor climbing it (an invisible wall).
+      if (this.touching) this.touchedAt = this.time;
+      const into = this.time - this.touchedAt < TOUCH_MEMORY && (this.touch[0] * mx + this.touch[2] * mz) / ml < -0.5;
       this.pushing = into ? this.pushing + dt : 0;
       if (this.pushing > 0.15) { this.mode = 'climb'; this.vx = this.vy = this.vz = 0; this.pushing = 0; this.wall[0] = this.touch[0]; this.wall[1] = this.touch[1]; this.wall[2] = this.touch[2]; }
     } else this.pushing = 0;
@@ -328,8 +337,10 @@ export class Body {
     const d = level.sdf(this.x, cy, this.z);
     const n = level.normal(this.x, cy, this.z, this.n);
     if (d > MOVE.radius + 0.6 || n[1] > MOVE.floorY || n[1] < MOVE.overhangY || this.stamina <= 0) {
-      // Off the wall: over the top (a hop, where no ledge to pull up onto was found), or let go.
-      const over = d > MOVE.radius + 0.6 && input.forward > 0;
+      // Off the wall: over the top (a hop, where no ledge to pull up onto was found), or let go. The
+      // top is passed when the wall ends below the chest, or when what the chest is nearest faces up
+      // (a sill lower than the chest, with the floor beyond lower still: no ledge to stand on).
+      const over = input.forward > 0 && (d > MOVE.radius + 0.6 || n[1] > MOVE.floorY);
       this.mode = 'walk';
       this.vx = over ? -this.wall[0] * 2.5 : this.wall[0] * 0.5;
       this.vz = over ? -this.wall[2] * 2.5 : this.wall[2] * 0.5;
