@@ -2,9 +2,11 @@
  * Third-person camera (decision D9): orbits a target with the mouse, the wheel zooms in down to first
  * person. It never goes through rock: it pulls in along its ray to the target (level.trace) at once,
  * and eases back out. A target in the rock (a head under a low vault, climbing) is first moved out of it.
+ * Inside a shed (`room`) it stays within the shed's walls and under its roof.
  */
 import type { PerspectiveCamera } from 'three/webgpu';
 import type { Level } from '../../gen/level';
+import { SHED, inFrame, type Shed } from '../../gen/sheds';
 
 /** Closer than this the camera is in first person. */
 const FIRST_PERSON = 0.6;
@@ -21,6 +23,9 @@ export class OrbitCamera {
   private current = 4;
 
   private readonly n: [number, number, number] = [0, 0, 0];
+
+  /** The shed the target is in, whose walls and roof pull the camera in too. */
+  room: Shed | null = null;
 
   /** `level`: the rock that pulls the camera in (changes on the way down). */
   constructor(readonly camera: PerspectiveCamera, public level: Level) {}
@@ -47,9 +52,22 @@ export class OrbitCamera {
     }
     const cp = Math.cos(this.pitch);
     const bx = Math.sin(this.yaw) * cp, by = -Math.sin(this.pitch), bz = Math.cos(this.yaw) * cp; // backwards
-    const reach = this.distance > 0 ? this.level.trace(x, y, z, bx, by, bz, this.distance, 0.3) : 0;
+    let reach = this.distance > 0 ? this.level.trace(x, y, z, bx, by, bz, this.distance, 0.3) : 0;
+    if (this.room && reach > 0) reach = Math.min(reach, inside(this.room, x, y, z, bx, by, bz));
     this.current = reach < this.current ? reach : this.current + (reach - this.current) * Math.min(1, dt * 4);
     this.camera.position.set(x + bx * this.current, y + by * this.current, z + bz * this.current);
     this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
   }
+}
+
+/** How far from (x, y, z), inside shed s, along (bx, by, bz) one stays a little inside its walls and under its roof. */
+function inside(s: Shed, x: number, y: number, z: number, bx: number, by: number, bz: number): number {
+  const IN = 0.18, ca = Math.cos(s.yaw), sa = Math.sin(s.yaw);
+  const [ps, pf] = inFrame(s, x, z), ds = ca * bx - sa * bz, df = sa * bx + ca * bz;
+  let t = Infinity;
+  const wall = (p: number, d: number, lim: number) => { if (Math.abs(d) > 1e-6) t = Math.min(t, (Math.sign(d) * lim - p) / d); };
+  wall(ps, ds, SHED.half[0] - IN);
+  wall(pf, df, SHED.half[1] - IN);
+  if (by > 1e-6) t = Math.min(t, (s.y + SHED.height - IN - y) / by);
+  return Math.max(0, t);
 }

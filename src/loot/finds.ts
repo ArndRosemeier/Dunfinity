@@ -1,6 +1,6 @@
 /**
- * Finds: what the miners left behind on the floor of the Quarry, and what the rats dragged into
- * their nests (rats hoard shiny things). Nobody's treasure, but the pawn shop up top buys it
+ * Finds: what the miners left behind on the floor of the Quarry and in their sheds (on the table, the
+ * shelf, the bunk: src/gen/sheds.ts), and what the rats dragged into their nests (rats hoard shiny things). Nobody's treasure, but the pawn shop up top buys it
  * (town-and-first-strata.md: euros from selling loot buy mundane gear).
  *
  * Pure and seeded: the plane is cut into cells of FIND.cell metres (the rats' cells, so a cell's
@@ -11,6 +11,10 @@
 import { deriveSeed, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { CellMemo } from '../gen/cellMemo';
+import { SHED_SPOTS, shedPoint } from '../gen/sheds';
+
+/** Where a find lies: on open floor, in a rat's hoard, in a miners' shed. */
+type Where = 'floor' | 'hoard' | 'shed';
 
 export type FindKind = 'coin' | 'token' | 'chisel' | 'pipe' | 'tin' | 'spoon' | 'lamp' | 'medal' | 'watch' | 'ring';
 
@@ -19,22 +23,23 @@ export interface FindDef {
   name: string;
   /** What the pawn shop might pay, euros. */
   value: readonly [number, number];
-  /** How often it turns up on the floor and in a hoard (relative). */
+  /** How often it turns up on the floor, in a hoard and in a miners' shed (relative). */
   floor: number;
   hoard: number;
+  shed: number;
 }
 
 export const FINDS: Record<FindKind, FindDef> = {
-  coin: { name: 'an old Pfennig', value: [1, 3], floor: 10, hoard: 8 },
-  token: { name: 'a brass tally token', value: [4, 8], floor: 6, hoard: 5 },
-  chisel: { name: 'a rusted stone chisel', value: [2, 5], floor: 6, hoard: 0 },
-  pipe: { name: 'a clay pipe', value: [3, 6], floor: 4, hoard: 1 },
-  tin: { name: 'a tobacco tin', value: [5, 12], floor: 4, hoard: 2 },
-  spoon: { name: 'a silver spoon', value: [12, 25], floor: 1, hoard: 4 },
-  lamp: { name: 'a carbide lamp', value: [15, 30], floor: 2, hoard: 0 },
-  medal: { name: 'a tarnished medal', value: [20, 45], floor: 0.6, hoard: 2 },
-  watch: { name: 'a pocket watch, stopped at ten past three', value: [30, 60], floor: 0.4, hoard: 1.5 },
-  ring: { name: 'a gold ring', value: [40, 90], floor: 0, hoard: 1.2 },
+  coin: { name: 'an old Pfennig', value: [1, 3], floor: 10, hoard: 8, shed: 3 },
+  token: { name: 'a brass tally token', value: [4, 8], floor: 6, hoard: 5, shed: 6 },
+  chisel: { name: 'a rusted stone chisel', value: [2, 5], floor: 6, hoard: 0, shed: 3 },
+  pipe: { name: 'a clay pipe', value: [3, 6], floor: 4, hoard: 1, shed: 5 },
+  tin: { name: 'a tobacco tin', value: [5, 12], floor: 4, hoard: 2, shed: 5 },
+  spoon: { name: 'a silver spoon', value: [12, 25], floor: 1, hoard: 4, shed: 1 },
+  lamp: { name: 'a carbide lamp', value: [15, 30], floor: 2, hoard: 0, shed: 4 },
+  medal: { name: 'a tarnished medal', value: [20, 45], floor: 0.6, hoard: 2, shed: 0.6 },
+  watch: { name: 'a pocket watch, stopped at ten past three', value: [30, 60], floor: 0.4, hoard: 1.5, shed: 1.5 },
+  ring: { name: 'a gold ring', value: [40, 90], floor: 0, hoard: 1.2, shed: 0.2 },
 };
 
 export const FIND = {
@@ -43,13 +48,17 @@ export const FIND = {
   /** Chance of a find on open floor per cell, and of a second one. */
   chance: 0.55,
   second: 0.25,
+  /** Finds in a shed (the slots after the hoard's: at most three a cell), and the chance of its second. */
+  shed: [5, 8] as const,
+  shedSecond: 0.5,
   /** Finds in a nest's hoard, and how far from the nest they lie. */
   hoard: [1, 3] as const,
   spread: 0.9,
   /** None this close to the arrival. */
   quiet: 12,
-  /** How close the nobody must stand to pick one up, metres. */
+  /** How close the nobody must stand to pick one up, metres, and how far over its feet it reaches (a shed's shelf). */
   reach: 1.3,
+  over: 1.7,
 };
 
 export interface Find {
@@ -98,7 +107,7 @@ export class Finds {
     let best: Find | null = null, bd = FIND.reach;
     for (const f of this.near(x, z, FIND.reach)) {
       const d = Math.hypot(f.x - x, f.z - z);
-      if (d < bd && Math.abs(f.y - y) < 1.2) { bd = d; best = f; }
+      if (d < bd && f.y - y > -1.2 && f.y - y < FIND.over) { bd = d; best = f; }
     }
     return best;
   }
@@ -126,7 +135,7 @@ export class Finds {
   private fill(i: number, j: number, key: number): Find[] {
     const s = this.seed, c = FIND.cell, out: Find[] = [];
     const [ax, , az] = this.level.arrival;
-    const add = (x: number, z: number, y: number, slot: number, where: 'floor' | 'hoard') => {
+    const add = (x: number, z: number, y: number, slot: number, where: Where) => {
       const kind = pick(hash3f(s, key, slot, 1), where), [lo, hi] = FINDS[kind].value;
       const value = Math.round(lo + (hi - lo) * hash3f(s, key, slot, 3));
       out.push({ id: key * 8 + slot, kind, x, y, z, yaw: hash3f(s, key, slot, 2) * Math.PI * 2, value });
@@ -150,6 +159,15 @@ export class Finds {
         if (y !== null) add(x, z, y, 2 + k, 'hoard');
       }
     }
+    // The miners' things in the sheds standing in the cell: on the table, the shelf, the bunk.
+    let slot = FIND.shed[0];
+    for (const sh of this.level.sheds.standingIn(i * c, j * c, (i + 1) * c, (j + 1) * c)) {
+      const n = hash3f(s, sh.id, 1, 60) < FIND.shedSecond ? 2 : 1, first = Math.floor(hash3f(s, sh.id, 2, 61) * SHED_SPOTS.length);
+      for (let k = 0; k < n && slot < FIND.shed[1]; k++) {
+        const [sd, fw, up] = SHED_SPOTS[(first + k) % SHED_SPOTS.length], [x, z] = shedPoint(sh, sd, fw);
+        add(x, z, sh.y + up, slot++, 'shed');
+      }
+    }
     return out;
   }
 
@@ -162,7 +180,7 @@ export class Finds {
 }
 
 /** The kind at random number r (0..1) for finds lying `where`. */
-function pick(r: number, where: 'floor' | 'hoard'): FindKind {
+function pick(r: number, where: Where): FindKind {
   const kinds = Object.keys(FINDS) as FindKind[];
   let total = 0;
   for (const k of kinds) total += FINDS[k][where];

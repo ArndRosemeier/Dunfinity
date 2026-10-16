@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.144 — A loading screen, and a clear message when the browser cannot draw
+
+- The game opens on a black screen with its name, a bar and what it is doing (laying out the level, dressing the figures, warming up the shaders, carving the rock), from the very first moment until the first level is on screen.
+- A browser that can draw neither with WebGPU nor with WebGL 2, or whose graphics will not start, now gets a plain message saying so and what to try, instead of a black screen. Any other failed start says what broke, too.
+- Going home, starting again as the next grandchild or jumping with the debug menu now waits in the dark (with a quiet "The rock takes shape") until the new level's rock is there, instead of showing it half built. Nothing moves while it waits.
+
+## v0.143 — Sheds you can go into
+
+- The quarry sheds' doors open and shut (E), and swing out on their hinges. The first time you open one you see what the miners left: a half-full cup, a calendar stuck on March 1947, boots still laced.
+- Inside: a black iron stove under its pipe, a bunk under the window, a table and stool, a shelf with tins. In a shed whose lamp still burns, it hangs over the table.
+- Sheds hold the miners' things: one or two finds on the table, the shelf or the bunk, for Ilse's pawn shop.
+- A shed is a shelter: shut the door behind you and nothing outside notices you, and you can rest there as by a fire (if nothing is already after you). Grandma's tin opens there too.
+- Inside, the camera stays within the walls and under the roof.
+
 ## v0.142 — Settings: volumes, your own keys, graphics quality
 
 - A Settings panel (O, or the button at the bottom right) with three tabs. The game stops listening while it is open and the mouse is free.

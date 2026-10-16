@@ -228,3 +228,9 @@ export function local(x: number, z: number, yaw: number): (side: number, fwd: nu
   const ca = Math.cos(yaw), sa = Math.sin(yaw);
   return (side, fwd) => [x + ca * side + sa * fwd, z - sa * side + ca * fwd];
 }
+
+/** The other way: world (x, z) in the frame at (ox, oz) turned by `yaw`, as [side, fwd]. */
+export function unlocal(x: number, z: number, ox: number, oz: number, yaw: number): [number, number] {
+  const ca = Math.cos(yaw), sa = Math.sin(yaw), lx = x - ox, lz = z - oz;
+  return [lx * ca - lz * sa, lx * sa + lz * ca];
+}

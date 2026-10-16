@@ -44,6 +44,8 @@ export interface TitleCast {
   readonly canContinue: boolean;
   /** Hold on the shot of this depth, mid-move (`?title&shot=<depth>`, for screenshots), or null for the descent. */
   readonly pinned: number | null;
+  /** The first shot is on screen (the loading screen can go). */
+  shown(): void;
   /** Stream level `l` and point every view at it. */
   look(l: Level): void;
   /** Draw everything living on the level shown, nearest (x, z). */
@@ -84,7 +86,7 @@ export function playTitle(host: HTMLElement, cast: TitleCast): Promise<TitleChoi
     view.renderer.setAnimationLoop(() => {
       timer.update();
       const dt = Math.min(0.1, timer.getDelta()), now = timer.getElapsed(), t = now - since;
-      if (phase === 'load' && (view.settled || t > TIMING.load)) { phase = 'in'; since = now; screen.show(); screen.line = ''; }
+      if (phase === 'load' && (view.settled || t > TIMING.load)) { phase = 'in'; since = now; screen.show(); screen.line = ''; cast.shown(); }
       else if (phase === 'in' && t > TIMING.in) { phase = 'hold'; since = now; }
       else if (phase === 'hold' && t > TIMING.hold && cast.pinned === null) { phase = 'out'; since = now; }
       else if (phase === 'out' && t > TIMING.out) begin(now);

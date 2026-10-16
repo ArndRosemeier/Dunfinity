@@ -58,6 +58,8 @@ import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
 import { Doors } from '../world/doors';
 import { DoorView } from '../render/props/doorView';
+import { PROPS_RADIUS } from '../render/props/Props';
+import { PROP_TILE } from '../gen/propGrid';
 import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -84,6 +86,7 @@ import { AbilityBar, type SlotState } from '../app/abilityBar';
 import { ABILITIES, FIXED_KEYS, KEY_ACTIONS, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
 import { TargetMark } from '../app/targetMark';
 import { keeps, nextTarget, yawTo } from './target';
+import type { LoadingScreen } from '../app/loadingScreen';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -108,15 +111,19 @@ const WAY_HOME = { dur: 4, fade: 1, motes: 0.5 };
 const BLOCK = { dur: 0.6, held: 0.25, hold: 0.4 };
 /** Cooking a card at the fire: seconds the nobody stirs. */
 const COOK = { dur: 2.4 };
+/** Arriving on a level: the screen stays black (and the world still) until its rock is on screen, at most `cap` seconds. */
+const ARRIVE = { cap: 30 };
 
-export async function startGame(host: HTMLElement): Promise<void> {
+export async function startGame(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
+  loading.step('Laying out the level', 0.03);
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
   setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
+  loading.step('Dressing the figures', 0.08);
   view.headlampPower = { survey: 14, dark: 3.5 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
   view.carrier = new Vector3(); // the headlamp is on the nobody's forehead
@@ -162,13 +169,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let exploredAt = 0;
   /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
+  /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
+  let arriving = false, arrivedAt = 0;
   const show = (l: Level) => {
     level = l;
     setGrowth(growthAt(l.depth));
+    arriving = true;
+    arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
+    doorsMet = '';
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
@@ -221,6 +233,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
   /** The doors that open and shut (grandma's house). */
   let doors = new Doors(level.doors);
+  /** The props tile the sheds' doors were last met from (the nobody's), so they are met once per tile walked into. */
+  let doorsMet = '';
+  /** Hang the doors of the sheds round the nobody, as far as the props show (new ones shut). */
+  const meetDoors = () => {
+    const tile = `${Math.floor(body.x / PROP_TILE)},${Math.floor(body.z / PROP_TILE)}`;
+    if (tile === doorsMet) return;
+    doorsMet = tile;
+    const r = PROPS_RADIUS, fresh = doors.meet(level.sheds.standingIn(body.x - r, body.z - r, body.x + r, body.z + r).map((s) => s.door));
+    if (!fresh.length) return;
+    doorView.hangMore(fresh);
+    doors.into(view.props.blockers);
+  };
+  /** The shed the nobody is in, if any. */
+  const shedOf = () => level.sheds.holding(body.x, body.z, body.y);
   finds = findsOf(level);
   // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
   const touchedView = await TouchedView.create(params.seed);
@@ -273,6 +299,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const shroomView = await ShroomView.create();
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
+  loading.step('Warming up the shaders', 0.3);
   await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
@@ -428,6 +455,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const fade = document.createElement('div');
   fade.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none';
   host.appendChild(fade);
+  // While a level streams in behind the black: a quiet line, so a long wait does not look like a hang.
+  const fadeLine = document.createElement('div');
+  fadeLine.style.cssText = 'position:absolute;left:0;right:0;bottom:18%;text-align:center;color:var(--ui-ink-faint);font:13px/1.4 var(--ui-font);letter-spacing:0.06em;opacity:0;transition:opacity 0.4s';
+  fadeLine.textContent = 'The rock takes shape';
+  fade.appendChild(fadeLine);
   // Getting hurt shows, in first person too: the edges of the view flash red.
   const pain = document.createElement('div');
   pain.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,0,0,0.85) 100%)';
@@ -447,6 +479,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     qualityNotes: QUALITY_NOTES,
     opened: (open) => { controls.paused = open; },
   });
+  loading.step('Tuning the sounds', 0.6);
   await sounds.init();
   const timer = new Timer();
   let acc = 0;
@@ -634,26 +667,29 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): it
   // plays on this view, then hands over in the black, on the game's own level.
   if (titleWanted(location.search)) {
-    const choice = await playTitle(host, { view, cam, nobody, seed: params.seed, canContinue: !!saved, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null, look, drawLife });
+    const choice = await playTitle(host, { view, cam, nobody, seed: params.seed, canContinue: !!saved, shown: () => { if (loading.open) loading.hide(); }, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null, look, drawLife });
     if (choice === 'new' && saved) freshFamily();
     look(level);
     fauna = new Fauna(level);
     cam.yaw = body.facing; cam.pitch = -0.25; cam.distance = 4;
     cam.follow(body.x, body.y + 1.6, body.z, 1);
-    fade.style.opacity = '1';
-    fadeIn = 0.8;
-    // Stream the game's level in the black before it fades in.
-    await new Promise<void>((done) => view.renderer.setAnimationLoop(() => {
-      view.frame(body.x, body.y, body.z, timer.getElapsed());
-      if (view.settled) done();
-    }));
+    fade.style.opacity = '1'; // the game's level streams in behind the black (arriving, below)
     controls.takeLook(); controls.takeWheel(); controls.endFrame();
     timer.update();
     noticeUntil = timer.getElapsed() + 5;
   }
+  // The first level streams in behind the loading screen, as any later one behind the black.
+  arriving = true;
+  arrivedAt = performance.now() / 1000;
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
+    if (arriving && (view.settled || performance.now() / 1000 - arrivedAt > ARRIVE.cap)) {
+      arriving = false;
+      if (!climb.active) fadeIn = 0.8; // a climb fades in by itself
+      if (loading.open) { loading.hide(); fadeIn = 0; fade.style.opacity = '0'; }
+    }
+    if (arriving && loading.open) loading.step('Carving the rock', 0.65 + 0.35 * view.streamed);
     // A death goes on the notary's list (once).
     if (body.dead && !mourned) mourn();
     if (!body.dead) mourned = false;
@@ -855,7 +891,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
     const kindling = campfire.kindling(now);
     if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
-      const why = campfire.whyNot(body, body.facing, fauna.after(body), now);
+      const why = shedOf() ? 'Not in a wooden shed. Shut the door and rest.' : campfire.whyNot(body, body.facing, fauna.after(body), now);
       if (why) say(why, 2.5); else { campfire.light(body, body.facing, now); sounds.play('fire_light'); }
     }
     const stirring = now - cookAt < COOK.dur || saltLine.pouring(now);
@@ -877,8 +913,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
         if (fade.style.opacity !== '0') fadeIn = 0.8;
       }
       input.jump = false;
+    } else if (arriving) {
+      fade.style.opacity = '1';
+      input.jump = false;
     } else {
+      meetDoors();
       doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
+      // Shut in a shed: nothing outside notices you, and you can rest.
+      const shed = shedOf(), shedDoor = shed && doors.of(shed.door);
+      body.hidden = !!shedDoor && Doors.shut(shedDoor);
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
       // At the top of a climb: pull up over the edge (played out, then the body stands on the ledge).
       if (body.ledge) {
@@ -956,7 +999,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body.tiptoe = cooked.tiptoe;
       body.spring = cooked.spring;
       campfire.soup = cooked.soup;
-      campfire.step(body, threat, now, dt);
+      campfire.step(body, threat, now, dt, body.hidden);
       if (homeTo !== null) {
         const t = now - homeAt;
         if (threat || body.dead || body.health < health) { homeTo = null; fade.style.opacity = '0'; say('Something is coming. You cannot think of the armchair now.', 3); }
@@ -1011,6 +1054,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     thrownView.arrange(thrown.missiles, now);
     saltLineView.draw(saltLine, level, now);
     nobody.shown = !cam.firstPerson;
+    cam.room = shedOf();
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     // The map: mark the floor round the nobody seen, now and then; draw it while open.
     if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
@@ -1026,8 +1070,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
-    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
-    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(`${keyName('KeyC')}: light a fire and rest`);
+    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : body.hidden ? 'in the miners\' shed, the door shut' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
+    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
@@ -1064,14 +1108,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
-    view.frame(body.x, body.y, body.z, timer.getElapsed());
+    view.frame(body.x, body.y, body.z, timer.getElapsed(), !loading.open && !(arriving && !climb.active));
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
     sounds.update({
       dt, body, level, fauna, doors: doors.list, fire: campfire.burning(timer.getElapsed()) ? campfire.fire : null,
       resting: campfire.resting, ladder: climb.active, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
-    (globalThis as { __ready?: boolean }).__ready = view.settled;
+    fadeLine.style.opacity = arriving && !loading.open && Number(fade.style.opacity) > 0.9 ? '1' : '0';
+    (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone && !arriving;
     controls.endFrame();
   });
 }
