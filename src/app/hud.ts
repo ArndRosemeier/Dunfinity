@@ -50,7 +50,9 @@ const STYLE = `
   #game-hud .help .k { text-align: right; white-space: nowrap; }
   #game-hud .help .t { color: var(--ui-ink-dim); }
   #game-hud .help .foot { margin-top: 6px; font-size: 12px; color: var(--ui-ink-faint); }
-    background: radial-gradient(ellipse at center, #1a0503aa, #000e 75%); }
+  /* Played by touch: the help in two pairs of columns at the top, out of the left thumb's way. */
+  :root.ui-touch #game-hud .help { top: 84px; bottom: auto; max-width: 52vw; font-size: 12px; padding: 8px 12px; }
+  :root.ui-touch #game-hud .help .keys { grid-template-columns: auto 1fr auto 1fr; gap: 3px 8px; }
   @media (max-width: 720px) { #game-hud .help, #game-hud .tally { display: none; } #game-hud .banner .name { font-size: 32px; } }`;
 
 /** The keys the help card and the pause menu list: the actions' own keys (bound by the player: `keysOf`), and what they do. */

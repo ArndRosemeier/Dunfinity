@@ -114,6 +114,14 @@ const CSS = `
   .ui-meter { position: relative; height: 8px; background: #000a; border: 1px solid #000; border-radius: 2px; box-shadow: 0 0 0 1px #ffffff12; overflow: hidden; }
   .ui-meter::before { content: ''; position: absolute; inset: 0; width: calc(var(--v, 1) * 100%); background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--ui-accent)) 80%, #fff), var(--c, var(--ui-accent)) 55%, color-mix(in srgb, var(--c, var(--ui-accent)) 70%, #000)); transition: width .12s linear; }
 
+  /* Played by touch (:root.ui-touch, set by the game): keycap hints give way to what fingers do. */
+  .ui-touch-only { display: none; }
+  :root.ui-touch .ui-touch-only { display: revert; }
+  :root.ui-touch .ui-keys-only, :root.ui-touch .ui-keys { display: none; }
+  /* Buttons big enough for a fingertip (at least 40 px high). */
+  :root.ui-touch .ui-btn { min-height: 40px; padding: 10px 18px; font-size: 15px; }
+  :root.ui-touch .ui-btn.small { min-height: 40px; padding: 6px 10px; font-size: 13px; }
+
   /* Thin scrollbars that suit the panels. */
   .ui-scroll { scrollbar-width: thin; scrollbar-color: var(--ui-line-bright) transparent; }
 `;

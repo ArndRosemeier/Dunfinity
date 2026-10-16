@@ -30,7 +30,7 @@ import { OrbitCamera } from '../render/camera/OrbitCamera';
 import { Nobody } from '../render/humans/nobody';
 import { Controls } from '../input/controls';
 import { Bindings, keyLabel } from '../input/bindings';
-import { readGraphicsSettings, readKeySettings, writeGraphicsSettings, writeKeySettings } from '../persist/settings';
+import { TABLET_GRAPHICS, readGraphicsSettings, readKeySettings, writeGraphicsSettings, writeKeySettings } from '../persist/settings';
 import { QUALITY_NOTES } from '../render/quality';
 import { SettingsView } from '../app/settingsView';
 import { parseViewParams, titleWanted } from '../app/params';
@@ -167,12 +167,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   view.headlampPower = { survey: 14, dark: 3.5 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
   view.carrier = new Vector3(); // the headlamp is on the nobody's forehead
-  let graphics = readGraphicsSettings();
+  /** A tablet: a touch screen without a mouse. It starts lighter until the player picks, and played by touch. */
+  const tablet = matchMedia('(pointer: coarse)').matches;
+  let graphics = readGraphicsSettings(tablet ? TABLET_GRAPHICS : undefined);
   view.quality = graphics.quality;
   // Reduced motion: the interface's own animations keep still under this class (as under prefers-reduced-motion).
   document.documentElement.classList.toggle('ui-still', graphics.still);
   // Played by touch (a tablet) from the first touch, or from the start on a touch screen without a mouse (or with ?touch).
-  const controls = new Controls(canvas, params.touch || matchMedia('(pointer: coarse)').matches);
+  const controls = new Controls(canvas, params.touch || tablet);
   /** The player's own keys (the settings): the game asks for an action by its own key, the controls answer with the key moved onto it. */
   const bindings = new Bindings(KEY_ACTIONS.map((a) => a.key), FIXED_KEYS, readKeySettings());
   controls.bind(bindings);
@@ -452,7 +454,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!a) return;
     if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
     else controls.press(a.key);
-  }, (i, id) => tinView.ask({ kind: 'slot', i, id }), keyName);
+  }, (i, id) => tinView.ask({ kind: 'slot', i, id }), (i) => tinView.ask({ kind: 'tap', i }), keyName);
   /** At Kemal's counter (last frame): 1, 2, 3 buy there, not use the bar. */
   let atCounter = false;
   /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
@@ -462,7 +464,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   hudView.keys(keysOf(keyName, controls.byTouch));
   /** The thumb stick and buttons, played by touch (src/app/touchPad.ts). */
   const touchPad = new TouchPad(document.body, controls);
-  controls.onTouch = () => hudView.keys(keysOf(keyName, controls.byTouch));
+  /** Played by touch: the help and the panels' hints say what fingers do (`:root.ui-touch`, src/app/theme.ts). */
+  const touchMode = (): void => {
+    document.documentElement.classList.toggle('ui-touch', controls.byTouch);
+    hudView.keys(keysOf(keyName, controls.byTouch));
+  };
+  controls.onTouch = touchMode;
+  touchMode();
   const letterView = new LetterView(document.body);
   /** The pause menu: Escape once the mouse is free (not the Escape that freed it), or its button; the game's clock stands still while it is open. */
   const goOn = (): void => { pause.hide(); if (!controls.byTouch) canvas.requestPointerLock?.(); };
@@ -893,6 +901,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     timer.update();
     noticeUntil = timer.getElapsed() + 5;
   }
+  let frameMs = 16, frameShown = 16, frameShownAt = -Infinity;
   // The first level streams in behind the loading screen, as any later one behind the black.
   arriving = true;
   arrivedAt = performance.now() / 1000;
@@ -905,7 +914,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       else pause.showMenu();
     }
     if (pause.open) { view.frame(body.x, body.y, body.z, timer.getElapsed()); controls.endFrame(); return; }
-    const dt = Math.min(0.1, timer.getDelta());
+    const raw = timer.getDelta(), dt = Math.min(0.1, raw);
+    // The frame time on the dev line (a tablet's check that it keeps up), smoothed and shown in whole ms twice a second.
+    frameMs += (raw * 1000 - frameMs) * 0.05;
+    if (timer.getElapsed() - frameShownAt > 0.5) { frameShownAt = timer.getElapsed(); frameShown = Math.round(frameMs); }
     if (arriving && (view.settled || performance.now() / 1000 - arrivedAt > ARRIVE.cap)) {
       arriving = false;
       if (!climb.active) fadeIn = 0.8; // a climb fades in by itself
@@ -1127,6 +1139,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
             if (a.id === null) mainBar.clear(a.i);
             else if (cooked.rank(a.id) > 0) mainBar.set(a.i, a.id);
             redraw = true;
+          // A slot tapped (by touch): the chosen card goes in it, or comes off if it was there.
+          } else if (a.kind === 'tap') {
+            if (mainBar.slots[a.i] === tinSel) mainBar.clear(a.i);
+            else if (cooked.rank(tinSel) > 0) mainBar.set(a.i, tinSel);
+            redraw = true;
           }
         }
         if (cookNow) {
@@ -1158,7 +1175,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         let said: string | null = null;
         if (controls.tap('KeyW')) { packSel = (packSel + n - 1) % n; said = ''; }
         if (controls.tap('KeyS')) { packSel = (packSel + 1) % n; said = ''; }
-        if (controls.tap('KeyE') && rows[packSel]) {
+        // By touch: a line tapped is chosen; the chosen one tapped again is used.
+        let useNow = controls.tap('KeyE');
+        for (const i of packView.take()) {
+          if (i === packSel) useNow = true;
+          else if (rows[i]) { packSel = i; said = ''; }
+        }
+        if (useNow && rows[packSel]) {
           const r = rummage(rows[packSel], pack, kit);
           if (r.left) {
             finds.drop(r.left, body.x - Math.sin(body.facing) * 0.5, body.z - Math.cos(body.facing) * 0.5);
@@ -1171,6 +1194,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
     } else if (controls.tap('KeyI') && !tinView.open && !body.dead) {
       packSel = 0;
+      packView.take();
       packView.show(pack, kit, packSel, packKeys);
     }
     if (letterView.open && (!nearNote || controls.tap('Escape'))) letterView.hide();
@@ -1553,7 +1577,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       boss: fauna.boss(body), notice: timer.getElapsed() < noticeUntil ? notice : '', gain: now < gainUntil ? gainLine : '',
       prompt: lines.filter(Boolean).join(' · '), tally: fauna.tally(), flags,
       salt: tin.salt, euros, pack: pack.items.length ? { count: pack.items.length, room: PACK.room, worth: pack.worth } : null,
-      dead: body.dead, dev: `${backend} · ${view.stage.hudLine()}`, help: !beenDown && steps.over,
+      dead: body.dead, dev: `${backend} · ${frameShown} ms a frame · ${view.stage.hudLine()}`, help: !beenDown && steps.over,
     }, timer.getElapsed());
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).

@@ -7,6 +7,7 @@
  * the ways down and up they have seen, their fire, and themselves with their lamp's beam. Never what
  * they have not seen. Its shapes come from src/app/mapSheet.ts.
  */
+import { Fingers } from '../input/fingers';
 import { hash2f, hash3f, hashString } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import type { Explored } from '../world/explored';
@@ -45,6 +46,12 @@ export class MapView extends Modal {
     super(host, 'map', STYLE, 'dark');
     // The wheel over it (the game hands it the wheel too while the pointer is locked), and + or − as typed on any keyboard.
     this.canvas.addEventListener('wheel', (e) => { e.preventDefault(); this.zoomBy(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+    // Two fingers pinch it nearer or farther (a tablet).
+    const fingers = new Fingers();
+    this.canvas.style.touchAction = 'none';
+    this.canvas.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') fingers.land(e); });
+    this.canvas.addEventListener('pointermove', (e) => { if (fingers.slide(e)) { const d = fingers.pinch(); if (d) this.zoomBy(d); } });
+    for (const ev of ['pointerup', 'pointercancel'] as const) this.canvas.addEventListener(ev, (e) => fingers.lift(e));
     window.addEventListener('keydown', (e) => {
       if (!this.open) return;
       if (e.key === '+' || e.key === '=') this.zoomBy(1);
@@ -56,7 +63,8 @@ export class MapView extends Modal {
   toggle(name = ''): void {
     if (this.open) { this.hide(); return; }
     this.showHtml(`<header><h2 class="ui-title">${esc(name)}</h2><span class="ui-label">What you have seen</span></header><div class="sheet"></div>`
-      + `<div class="ui-keys"><span>${keycap('M')} or ${keycap('Esc')} close</span><span>${keycap('+')} ${keycap('−')} or the wheel: nearer, farther</span></div>`);
+      + `<div class="ui-keys"><span>${keycap('M')} or ${keycap('Esc')} close</span><span>${keycap('+')} ${keycap('−')} or the wheel: nearer, farther</span></div>`
+      + '<div class="ui-touch-only ui-label">Pinch: nearer, farther</div>');
     this.el.querySelector('.sheet')!.appendChild(this.canvas);
     this.drawnAt = -Infinity;
   }

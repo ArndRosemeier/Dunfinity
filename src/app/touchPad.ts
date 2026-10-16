@@ -10,13 +10,14 @@
  * (src/app/abilityBar.ts) is tapped as it is clicked. Shown only while `Controls.byTouch`.
  */
 import type { Controls } from '../input/controls';
+import { Fingers } from '../input/fingers';
 import { TOUCH_BUTTONS as BUTTONS, type PadButton } from '../input/touchButtons';
 import { button, child, panel } from './panel';
 
 /** The stick: its radius, CSS pixels; the dead middle and the rim (running) as fractions of it. */
 const STICK = { radius: 64, dead: 0.12, run: 0.92 };
-/** Look: mouse pixels per finger pixel; a pinch: how much nearer or farther the fingers move for one wheel step. */
-const LOOK = { gain: 1.5, pinch: 1.18 };
+/** Look: mouse pixels per finger pixel. */
+const LOOK = { gain: 1.5 };
 /** The stick's half of the screen: a thumb landing left of this fraction of the width (and below the top row) takes the stick. */
 const LEFT = 0.4;
 
@@ -57,9 +58,7 @@ export class TouchPad {
   /** The finger on the stick and where it landed; the fingers looking round and where each was last. */
   private stickId: number | null = null;
   private readonly from = [0, 0];
-  private readonly looking = new Map<number, [number, number]>();
-  /** The two looking fingers' distance when a pinch last stepped. */
-  private spread = 0;
+  private readonly looking = new Fingers();
 
   constructor(host: HTMLElement, private readonly controls: Controls) {
     this.el = panel(host, 'div', 'touch', STYLE);
@@ -117,8 +116,7 @@ export class TouchPad {
       this.knob.style.transform = '';
       return;
     }
-    this.looking.set(e.pointerId, [e.clientX, e.clientY]);
-    this.spread = this.pinchSpread();
+    this.looking.land(e);
   }
 
   private move(e: PointerEvent): void {
@@ -133,30 +131,15 @@ export class TouchPad {
       this.ring.classList.toggle('run', m >= STICK.run);
       return;
     }
-    const at = this.looking.get(e.pointerId);
-    if (!at) return;
-    const dx = e.clientX - at[0], dy = e.clientY - at[1];
-    at[0] = e.clientX; at[1] = e.clientY;
-    if (this.looking.size === 1) { this.controls.turn(dx * LOOK.gain, dy * LOOK.gain); return; }
-    // Two fingers: a pinch (apart: nearer, as the wheel away from the user).
-    const s = this.pinchSpread();
-    if (this.spread > 0 && s > 0) {
-      const r = s / this.spread;
-      if (r > LOOK.pinch) { this.controls.zoom(-1); this.spread = s; }
-      else if (r < 1 / LOOK.pinch) { this.controls.zoom(1); this.spread = s; }
-    }
+    const d = this.looking.slide(e);
+    if (!d) return;
+    if (!this.looking.pinching) this.controls.turn(d[0] * LOOK.gain, d[1] * LOOK.gain);
+    else this.controls.zoom(-this.looking.pinch()); // apart: nearer, as the wheel turned away
   }
 
   private up(e: PointerEvent): void {
     if (e.pointerId === this.stickId) this.stopStick();
-    this.looking.delete(e.pointerId);
-    this.spread = this.pinchSpread();
-  }
-
-  /** The distance between the first two looking fingers (0 with fewer). */
-  private pinchSpread(): number {
-    const [a, b] = [...this.looking.values()];
-    return a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : 0;
+    this.looking.lift(e);
   }
 
   private stopStick(): void {
@@ -169,7 +152,6 @@ export class TouchPad {
   private release(): void {
     if (this.stickId !== null) this.stopStick();
     this.looking.clear();
-    this.spread = 0;
   }
 
   /** Whether the stick is pushed to its rim (running). */

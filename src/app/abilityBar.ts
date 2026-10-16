@@ -55,8 +55,8 @@ export class AbilityBar {
   private editing = false;
   private cards: (CardId | null)[] = [];
 
-  /** `use(i)`: slot i was clicked; `place(i, id)`: card `id` was dropped on slot i while arranging; `keyName`: what a slot's key is called now (the player may have moved it). */
-  constructor(host: HTMLElement, private readonly use: (i: number) => void, private readonly place: (i: number, id: CardId) => void, private readonly keyName: (key: string) => string) {
+  /** `use(i)`: slot i was clicked; `place(i, id)`: card `id` was dropped on slot i while arranging; `tapped(i)`: slot i was tapped while arranging; `keyName`: what a slot's key is called now (the player may have moved it). */
+  constructor(host: HTMLElement, private readonly use: (i: number) => void, private readonly place: (i: number, id: CardId) => void, private readonly tapped: (i: number) => void, private readonly keyName: (key: string) => string) {
     this.el = panel(host, 'div', 'bar', STYLE);
     this.row = child(this.el, 'div', 'slots ui-grown');
     growOn(this.row, 'bar', { amount: 0.7, moss: false });
@@ -85,6 +85,7 @@ export class AbilityBar {
         child(root, 'div', 't', a?.short ?? '');
         if (a) root.addEventListener('pointerdown', (e) => { if (this.editing) return; e.stopPropagation(); e.preventDefault(); this.use(i); });
         this.droppable(root, i, !!a);
+        root.addEventListener('click', () => { if (this.editing) this.tapped(i); });
         return { root, wait, c };
       });
       this.passive.textContent = '';

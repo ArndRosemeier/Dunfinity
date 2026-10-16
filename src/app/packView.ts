@@ -2,7 +2,7 @@
  * The pack open (I): what the grandchild wears and holds, slot by slot (src/loot/items.ts), beside
  * what they carry: finds, with what Ilse might pay, and spare items, with the room left. A line
  * chosen can be used: a find left on the floor, a spare item put on, a worn one taken off. Keys:
- * W/S choose, E use, I or Escape close. It all goes down with the grandchild; the purse and the
+ * W/S choose, E use, I or Escape close; by touch a line tapped is chosen, tapped again used (`take()`). It all goes down with the grandchild; the purse and the
  * tin stay with the family.
  */
 import { FINDS, PACK, type Pack } from '../loot/finds';
@@ -18,7 +18,8 @@ const STYLE = `
   #pack .room { font: 500 15px var(--ui-font); color: var(--ui-ink-dim); }
   #pack .room.full { color: var(--ui-accent); }
   #pack .ui-label { margin: 10px 0 4px; }
-  #pack .row { padding: 3px 8px; display: flex; justify-content: space-between; gap: 10px; border-radius: 2px; border-left: 3px solid transparent; }
+  :root.ui-touch #pack .row { padding: 10px 8px; }
+  #pack .row { cursor: pointer; padding: 3px 8px; display: flex; justify-content: space-between; gap: 10px; border-radius: 2px; border-left: 3px solid transparent; }
   #pack .row.sel { background: var(--ui-dark-raised); border-left-color: var(--ui-accent); }
   #pack .row > span::first-letter { text-transform: uppercase; }
   #pack .row .v { color: var(--ui-ink-dim); white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
@@ -37,14 +38,27 @@ export interface PackKeys {
 }
 
 export class PackView extends Modal {
+  private tapped: number[] = [];
+
   constructor(host: HTMLElement) {
     super(host, 'pack', STYLE, 'dark');
+    this.el.addEventListener('click', (e) => {
+      const row = (e.target as HTMLElement).closest<HTMLElement>('[data-row]');
+      if (row) this.tapped.push(Number(row.dataset.row));
+    });
+  }
+
+  /** The lines tapped since the last call, in order. */
+  take(): number[] {
+    const t = this.tapped;
+    this.tapped = [];
+    return t;
   }
 
   /** Open (or redraw) the pack with line `sel` of `packRows(pack)` chosen; `said`: what was just done. */
   show(pack: Pack, kit: Kit, sel: number, keys: PackKeys, said = ''): void {
     const rows = packRows(pack), n = pack.items.length + pack.spare.length;
-    const line = (i: number, cls: string, inner: string) => `<div class="row${i === sel ? ' sel' : ''}${cls}">${inner}</div>`;
+    const line = (i: number, cls: string, inner: string) => `<div class="row${i === sel ? ' sel' : ''}${cls}" data-row="${i}">${inner}</div>`;
     let worn = '', finds = '', spare = '';
     rows.forEach((r, i) => {
       if (r.what === 'slot') {
@@ -68,6 +82,7 @@ export class PackView extends Modal {
     html += `<div class="said">${esc(said)}</div><div class="note">All of it goes down with you. A find left on the floor lies there until you leave the level.</div>`;
     const help = [`${[keys.up, keys.down].map(keycap).join(' ')} choose`, ...(use ? [`${keycap(keys.use)} ${esc(use)}`] : []), `${keycap(keys.close)} close`];
     html += `<div class="ui-keys">${help.join(' · ')}</div>`;
+    html += `<div class="ui-touch-only note">Tap a line to choose it${use ? `, tap it again: ${esc(use)}` : ''}.</div>`;
     this.showHtml(html);
   }
 }
