@@ -39,6 +39,7 @@ import { CricketView } from '../render/creatures/cricketView';
 import { SlimeView } from '../render/creatures/slimeView';
 import { ShroomView } from '../render/creatures/shroomView';
 import { DogView } from '../render/creatures/dogView';
+import { Rigged } from '../render/creatures/rigged';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
 import { GoblinView } from '../render/creatures/goblinView';
@@ -163,6 +164,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     reached = Math.max(reached, l.depth);
     thrown.missiles.length = 0;
     view.go(l);
+    Rigged.kinOn(params.seed, l.depth);
     cam.level = l;
     nobody.level = l;
   };
@@ -238,6 +240,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const slimeView = await SlimeView.create();
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
+  Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
@@ -515,6 +518,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
+    /** Dress the creatures as the kin of another depth (a look at them without going down). */
+    kinOn: (depth: number) => Rigged.kinOn(params.seed, depth),
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
     /** Bring the knife's handle down, as V would (grandma's Tenderising). */
