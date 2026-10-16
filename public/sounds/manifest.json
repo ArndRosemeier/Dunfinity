@@ -228,6 +228,48 @@
   "loop": false,
   "gain": 0.7
  },
+ "news_1": {
+  "files": [
+   "news_1_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "news_2": {
+  "files": [
+   "news_2_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "news_3": {
+  "files": [
+   "news_3_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "news_4": {
+  "files": [
+   "news_4_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "news_5": {
+  "files": [
+   "news_5_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "news_6": {
+  "files": [
+   "news_6_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
  "paper": {
   "files": [
    "paper_1.ogg"
