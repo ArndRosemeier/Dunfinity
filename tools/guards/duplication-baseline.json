@@ -3458,5 +3458,37 @@
   {
     "key": "idiom: [.dots] in dunfinity/gen/inscriptions.ts + dunfinity/lore/scripts.ts + dunfinity/lore/svg.ts",
     "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
+  },
+  {
+    "key": "same name: dunfinity/gen/geode.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
+    "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
+    "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/slimeView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/tallOneView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
+    "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/lineup.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
   }
 ]

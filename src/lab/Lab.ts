@@ -11,6 +11,8 @@ import { parseViewParams } from '../app/params';
 import { strangeLabel } from '../gen/genome';
 import { lawsOf } from '../gen/laws';
 import type { LoadingScreen } from '../app/loadingScreen';
+import { Lineup } from '../render/humans/lineup';
+import { RACE_IDS, type RaceId } from '@futuremagic/humanoid';
 
 export async function startLab(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
@@ -23,8 +25,18 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
   const fly = new FlyCamera(camera, new Controls(canvas));
   if (params.look) [fly.yaw, fly.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
+  // Every race side by side (?races), or one close up (?races=<race>): built before the warm-up, which compiles the humans.
+  const one = params.races && (RACE_IDS as readonly string[]).includes(params.races) ? (params.races as RaceId) : undefined;
+  const lineup = params.races !== null ? await Lineup.create(params.seed, one) : null;
+  if (lineup) {
+    lineup.pool.level = level;
+    lineup.stand(camera.position.x, camera.position.z, fly.yaw, one ? 1.6 : 4, (x, z) => level.groundAt(x, z));
+    // One race: close up, at eye height.
+    if (one) { camera.position.y = lineup.places[0].y + lineup.tallest * 0.9; fly.pitch = 0; }
+  }
   loading.step('Warming up the shaders', 0.15);
-  await view.start();
+  await view.start(lineup ? lineup.pool.figures : []);
+  if (lineup) await stage.add(lineup.pool.root);
   const { terrain, props } = view;
   terrain.colorMode = params.color;
 
@@ -42,7 +54,9 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
   (globalThis as { __lab?: unknown }).__lab = { camera, stage, fly, terrain, props, level };
   view.renderer.setAnimationLoop(() => {
     timer.update();
-    fly.update(Math.min(0.1, timer.getDelta()));
+    const dt = Math.min(0.1, timer.getDelta());
+    fly.update(dt);
+    lineup?.pool.draw(lineup.places, camera.position.x, camera.position.z, dt, timer.getElapsed());
     const p = camera.position;
     const w = level.workingAt(p.x, p.z);
     const t = terrain.stats;
