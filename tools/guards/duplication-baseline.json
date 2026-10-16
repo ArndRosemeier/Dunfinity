@@ -4226,5 +4226,9 @@
   {
     "key": "same name: dunfinity/gen/organic.ts#radius + dunfinity/gen/propMesh.ts#radius",
     "reason": "a local radius helper for the style's own tubes; propMesh's radius is a prop's mesh size, an unrelated thing"
+  },
+  {
+    "key": "clone: dunfinity/gen/lava.ts#radius + dunfinity/gen/organic.ts#radius",
+    "reason": "each tube style rolls its own tube radius from its own genes and noise; lava widens with heat, organic narrows at its rings"
   }
 ]
