@@ -12,6 +12,7 @@ import { strangeLabel } from '../gen/genome';
 import { lawsOf } from '../gen/laws';
 import type { LoadingScreen } from '../app/loadingScreen';
 import { Lineup } from '../render/humans/lineup';
+import { CritterLineup } from '../render/creatures/critterLineup';
 import { RACE_IDS, type RaceId } from '@futuremagic/humanoid';
 
 export async function startLab(host: HTMLElement, loading: LoadingScreen): Promise<void> {
@@ -34,9 +35,17 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
     // One race: close up, at eye height.
     if (one) { camera.position.y = lineup.places[0].y + lineup.tallest * 0.9; fly.pitch = 0; }
   }
+  // Procedural creatures in a row (?critters, or ?critters=<depth> for that level's bestiary).
+  const critters = params.critters !== null ? new CritterLineup(params.seed, params.critters ? Number(params.critters) : null, (x, z) => level.groundAt(x, z)) : null;
+  if (critters) {
+    critters.lineUp(camera.position.x, camera.position.z, fly.yaw, 2.5);
+    // Look them over from a little above, unless the link names a place.
+    if (!params.pos) { camera.position.y = level.groundAt(camera.position.x, camera.position.z) + 1.7; fly.pitch = -0.2; }
+  }
   loading.step('Warming up the shaders', 0.15);
-  await view.start(lineup ? lineup.pool.figures : []);
+  await view.start([...(lineup ? lineup.pool.figures : []), ...(critters ? critters.roots : [])]);
   if (lineup) await stage.add(lineup.pool.root);
+  if (critters) for (const r of critters.roots) await stage.add(r);
   const { terrain, props } = view;
   terrain.colorMode = params.color;
 
@@ -57,6 +66,7 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
     const dt = Math.min(0.1, timer.getDelta());
     fly.update(dt);
     lineup?.pool.draw(lineup.places, camera.position.x, camera.position.z, dt, timer.getElapsed());
+    critters?.parade(dt, timer.getElapsed(), [camera.position.x, camera.position.y, camera.position.z]);
     const p = camera.position;
     const w = level.workingAt(p.x, p.z);
     const t = terrain.stats;
