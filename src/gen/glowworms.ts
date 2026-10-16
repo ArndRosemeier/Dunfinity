@@ -9,7 +9,7 @@
  */
 import { Rng, deriveSeed, hsl2rgb, srgbToLinear } from '@futuremagic/core';
 import type { Level } from './level';
-import { CellMemo, siteNearest, sitesNear } from './cellMemo';
+import { SiteField } from './cellMemo';
 import { strangeness } from './genome';
 import type { PropMesh } from './propMesh';
 
@@ -65,30 +65,15 @@ export function skyOf(seed: number, depth: number): SkyLook {
   return { color, arms, spin: arms ? rng.range(0.02, 0.05) * rng.sign() : 0 };
 }
 
-export class Skies {
-  private readonly cells: CellMemo<SkySite | null>;
-  private readonly seed: number;
-
+export class Skies extends SiteField<SkySite> {
   constructor(private readonly level: Level) {
-    this.seed = deriveSeed(level.seed, 'skies', level.depth);
-    this.cells = new CellMemo((i, j, key) => this.cellSky(i, j, key));
-  }
-
-  /** The skies whose middle lies within `r` of (x, z), into `out`. */
-  near(x: number, z: number, r: number, out: SkySite[] = []): SkySite[] {
-    return sitesNear(this.cells, SKY.cell, x, z, r, out);
-  }
-
-  /** The sky nearest (x, z) within `far` m, or null. */
-  closest(x: number, z: number, far = 400): SkySite | null {
-    return siteNearest(this.cells, SKY.cell, x, z, far);
+    super(SKY.cell, deriveSeed(level.seed, 'skies', level.depth));
   }
 
   /** The sky of cell (i, j), if it has one: open floor under a high roof. */
-  private cellSky(i: number, j: number, key: number): SkySite | null {
+  protected cellSite(i: number, j: number, rng: Rng): SkySite | null {
     const l = this.level;
     if (l.depth === 0) return null;
-    const rng = new Rng(deriveSeed(this.seed, key));
     if (!rng.chance(SKY.chance)) return null;
     for (let k = 0; k < SKY.tries; k++) {
       const x = (i + rng.range(0.15, 0.85)) * SKY.cell, z = (j + rng.range(0.15, 0.85)) * SKY.cell;

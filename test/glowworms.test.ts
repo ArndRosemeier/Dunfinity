@@ -20,7 +20,7 @@ test('glow-worm skies hang on high cavern roofs, a few per level, the same for a
 });
 
 test('a sky\'s lights cling just under the rock of its roof, a few stars among the faint ones', () => {
-  const l = new Level(1, 3), s = l.skies.closest(l.arrival[0], l.arrival[2])!, b = new SkyBuilder();
+  const l = new Level(1, 3), s = l.skies.nearest(l.arrival[0], l.arrival[2])!, b = new SkyBuilder();
   const n = skyLights(l, s, b), mesh = b.mesh()!;
   assert.ok(n > 300 && n <= SKY.most, `${n} lights`);
   assert.equal(mesh.positions.length, n * 12);
@@ -34,7 +34,7 @@ test('a sky\'s lights cling just under the rock of its roof, a few stars among t
 });
 
 test('the sky comes with its props tile, and strange levels change its look', () => {
-  const l = new Level(1, 3), s = l.skies.closest(l.arrival[0], l.arrival[2])!;
+  const l = new Level(1, 3), s = l.skies.nearest(l.arrival[0], l.arrival[2])!;
   const tile = quarryProps(l, Math.floor(s.x / PROP_TILE), Math.floor(s.z / PROP_TILE));
   assert.ok(tile.sky && tile.counts.skies >= 1);
   const ours = skyOf(1, 1);

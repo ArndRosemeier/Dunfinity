@@ -681,6 +681,39 @@ export const DRIP = defineKind('drip', ['position', 'normal', 'color'], () => {
   return m;
 });
 
+export const BLOOM_SLOTS = 6;
+/** Per slot: (grown 0–1, crumbled 0–1, its radius m, unused). Set by `BloomView`. */
+export const BLOOM_STATE = uniformArray(Array.from({ length: BLOOM_SLOTS }, () => new Vector4()), 'vec4');
+/** The salt's colour (linear rgb): the level's salt, set by `BloomView`. */
+export const BLOOM_SALT = uniform(new Vector3(0.8, 0.78, 0.74));
+
+/**
+ * A salt bloom (src/gen/blooms.ts): little hopper cubes of salt laid out over a unit disc, each
+ * scaled about its own foot by the shader as the bloom reaches it, so nothing is rebuilt as it
+ * spreads. A crystal glows the veins' blue as it forms and fades to plain salt; crumbling, they shrink
+ * and settle into the floor, the outer ones first. `position` is a corner of a crystal laid out on
+ * the unit disc (y up, its foot on y = 0), `normal` its face's normal, `color` (its foot x, its foot
+ * z, slot + 0.9 × the share of the bloom grown when it starts to form). Same attributes as the solid kind.
+ */
+export const BLOOM = defineKind('bloom', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ roughness: 0.35, metalness: 0 });
+  const tag = attribute<'vec3'>('color', 'vec3'), slot = tag.z.floor(), when = tag.z.fract().div(0.9);
+  const S = BLOOM_STATE.element(slot.toInt()) as unknown as Node<'vec4'>, grown = S.x, crumbled = S.y, radius = S.z;
+  const foot = vec3(tag.x, 0, tag.y), p = positionGeometry;
+  // Formed as the bloom reaches it, quickly; crumbling from the edge in.
+  const formed = smoothstep(when, when.add(0.08), grown);
+  const gone = smoothstep(float(1).sub(when).mul(0.6), float(1).sub(when).mul(0.6).add(0.4), crumbled);
+  const size = formed.mul(float(1).sub(gone));
+  m.positionNode = foot.add(p.sub(foot).mul(size)).mul(radius).sub(vec3(0, gone.mul(0.04), 0));
+  const fresh = varying(formed.mul(smoothstep(when.add(0.45), when.add(0.1), grown).mul(0.75).add(0.25)).mul(float(1).sub(crumbled)), 'vBloomFresh');
+  const at = varying(p.mul(radius), 'vBloomAt');
+  const grain = mx_noise_float(at.mul(40));
+  m.colorNode = BLOOM_SALT.mul(grain.mul(0.08).add(0.92)).mul(mix(float(1), float(0.75), varying(crumbled, 'vBloomDull')));
+  m.roughnessNode = float(0.3).add(grain.mul(0.1)).add(varying(crumbled, 'vBloomRough').mul(0.5));
+  m.emissiveNode = VEIN_BLUE.mul(fresh.mul(2.4));
+  return m;
+});
+
 /** The level's glow-worm skies (src/gen/glowworms.ts `skyOf`), set by `LevelView`: their colour (linear rgb), and (arms, spin rad/s). */
 export const SKY_LOOK = { tint: uniform(new Vector3(0.2, 0.75, 0.6)), arms: uniform(new Vector2(0, 0)) };
 

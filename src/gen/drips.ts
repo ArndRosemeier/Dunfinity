@@ -10,7 +10,7 @@
  */
 import { Rng, deriveSeed, smoothstep } from '@futuremagic/core';
 import type { Level } from './level';
-import { CellMemo, siteNearest, sitesNear } from './cellMemo';
+import { SiteField } from './cellMemo';
 
 export const DRIP = {
   /** One site at most per cell this wide (m); the chance a cell has one, on dry rock and near water or salt. */
@@ -125,30 +125,15 @@ export function heard(site: DripSite, t0: number, t1: number, look: DripLook): n
   return look.drip > 0 ? landed(site, look, c0, look.t) : 0;
 }
 
-export class Drips {
-  private readonly cells: CellMemo<DripSite | null>;
-  private readonly seed: number;
-
+export class Drips extends SiteField<DripSite> {
   constructor(private readonly level: Level) {
-    this.seed = deriveSeed(level.seed, 'drips', level.depth);
-    this.cells = new CellMemo((i, j, key) => this.cellSite(i, j, key));
-  }
-
-  /** The sites within `r` of (x, z), into `out`. */
-  near(x: number, z: number, r: number, out: DripSite[] = []): DripSite[] {
-    return sitesNear(this.cells, DRIP.cell, x, z, r, out);
-  }
-
-  /** The site nearest (x, z) within `far` m, or null. */
-  nearest(x: number, z: number, far = 300): DripSite | null {
-    return siteNearest(this.cells, DRIP.cell, x, z, far);
+    super(DRIP.cell, deriveSeed(level.seed, 'drips', level.depth));
   }
 
   /** The site of cell (i, j), if it has one: a flat spot of open floor under a roof, not in the water. */
-  private cellSite(i: number, j: number, key: number): DripSite | null {
+  protected cellSite(i: number, j: number, rng: Rng): DripSite | null {
     const l = this.level;
     if (l.depth === 0) return null; // not in grandma's cellar or the town
-    const rng = new Rng(deriveSeed(this.seed, key));
     const wetBand = (l.band.rocks.salt ?? 0) > 0 || l.band.water[1] > 0 || l.band.finish.wet > 0;
     const roll = rng.float();
     if (roll > DRIP.wetChance) return null;

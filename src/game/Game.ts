@@ -107,6 +107,7 @@ import { PrologueView } from '../app/prologueView';
 import { StepsView } from '../app/stepsView';
 import type { LoadingScreen } from '../app/loadingScreen';
 import { heard, tipOf, type DripLook } from '../gen/drips';
+import { BLOOM, crackles } from '../gen/blooms';
 import { ThinPlaces } from '../world/thinPlaces';
 import { ThinView } from '../render/thinView';
 
@@ -1509,6 +1510,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if ((s.x - body.x) ** 2 + (s.z - body.z) ** 2 > DRIP_HEARD ** 2) continue;
       const drops = heard(s, dripThen, dripNow, dripSeen);
       for (let k = 0; k < drops; k++) sounds.play('drip', { x: s.x, y: s.y + Math.max(0, tipOf(dripSeen)), z: s.z }, dripSeen.drip);
+    }
+    // Salt blooms crackling as they spread, and the lower crackle as one crumbles (src/gen/blooms.ts).
+    if (dripNow > dripThen) for (const s of view.blooms.shown) {
+      if ((s.x - body.x) ** 2 + (s.z - body.z) ** 2 > BLOOM.heard ** 2) continue;
+      const n = crackles(s, dripThen, dripNow);
+      if (n < 0) sounds.play('bloom_crackle', s, 1, 0.6);
+      for (let k = 0; k < n; k++) sounds.play('bloom_crackle', s, 0.7, 0.9 + 0.2 * ((s.id + Math.floor(dripNow * 7)) % 5) / 4);
     }
     dripThen = dripNow;
     view.camera.getWorldDirection(lampDir);
