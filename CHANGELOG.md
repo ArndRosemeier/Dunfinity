@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.146 — Every race in the Lab
+
+- The Level Lab can stand every race side by side for looking them over: `?lab&races` puts a man and a woman of each of Norgo's ten races in two rows before the view.
+- `?lab&races=<race>` (human, elf, dwarf, orc, halfling, goblin, sylvan, drakeborn, umbral, giantkin) shows one race close up: its man and woman side by side, with the view at their eye height.
+
 ## v0.145 — A HUD that belongs to the game
 
 - Health and stamina are bars in a small panel top left, with what just hurt you under them. Grandma's salt, her purse and your pack sit top right, and a boss's name and bar sit at the top.
