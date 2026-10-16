@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.167 — Faster checks on every change
+
+- CI runs the tests and the two halves of the shader check (the Lab, the game) as three jobs side by side instead of one after another.
+- A pull request that changes nothing the browser loads (only docs, change notes, tests or tools) skips the shader check; main always runs it.
+- The slow cap test inside it runs only when the shader scheduling code changes (and always on main).
+- A new push to a pull request cancels that pull request's older run.
+- Two stale lines left in the duplication baseline are gone, so main's checks are green again.
+
 ## v0.166 — Your kit on the body
 
 - Kemal's miner's helmet, a dented green enamel hard hat with its lamp, sits on the grandchild's head with the hair tucked under it, and his work gloves are on their hands.
