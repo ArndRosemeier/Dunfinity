@@ -6,10 +6,11 @@ import { Tin } from '../src/loot/tin';
 import { Pack, type Find } from '../src/loot/finds';
 import { Cooked } from '../src/loot/recipes';
 import { Practice } from '../src/loot/practice';
-import { Gear } from '../src/loot/hardware';
+import { kitFromGear } from '../src/loot/hardware';
+import { Kit } from '../src/loot/items';
 import { fallenAt, notaryList } from '../src/gen/notary';
 
-const state = () => ({ tin: new Tin(), saltAtStart: 3, key: { kerf: [], thread: [] }, euros: 0, taken: 0, pack: new Pack(), cooked: new Cooked(), practice: new Practice(), gear: new Gear() });
+const state = () => ({ tin: new Tin(), saltAtStart: 3, key: { kerf: [], thread: [] }, euros: 0, taken: 0, pack: new Pack(), cooked: new Cooked(), practice: new Practice(), kit: new Kit() });
 
 test('a grandchild who had only just started loses nothing much, and the tin is kept', () => {
   const end = runEnd(state());
@@ -27,7 +28,7 @@ test('what the family keeps and what goes down with the grandchild', () => {
   practice.use('climbing', 12);
   const pack = new Pack();
   pack.add({ id: 1, kind: 'coin', x: 0, y: 0, z: 0, yaw: 0, value: 5 } as Find);
-  const end = runEnd({ ...s, key: { kerf: ['t', 'h'], thread: ['a'] }, euros: 40, taken: 7, cooked, practice, gear: new Gear(['helmet']), pack });
+  const end = runEnd({ ...s, key: { kerf: ['t', 'h'], thread: ['a'] }, euros: 40, taken: 7, cooked, practice, kit: kitFromGear(['helmet']), pack });
   const kept = end.kept.join('\n'), lost = end.lost.join('\n');
   assert.match(kept, /more than when they took it up/);
   assert.match(kept, /level 4/);

@@ -48,6 +48,13 @@
   "loop": false,
   "gain": 0.7
  },
+ "bloom_crackle": {
+  "files": [
+   "bloom_crackle_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.35
+ },
  "coins": {
   "files": [
    "coins_1.ogg"
@@ -67,6 +74,17 @@
  "cricket_leap": {
   "files": [
    "cricket_leap_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.4
+ },
+ "crystal_hum": {
+  "files": [
+   "crystal_hum_1.ogg",
+   "crystal_hum_2.ogg",
+   "crystal_hum_3.ogg",
+   "crystal_hum_4.ogg",
+   "crystal_hum_5.ogg"
   ],
   "loop": false,
   "gain": 0.4
@@ -123,6 +141,16 @@
   "loop": false,
   "gain": 0.5
  },
+ "drip": {
+  "files": [
+   "drip_1.ogg",
+   "drip_2.ogg",
+   "drip_3.ogg",
+   "drip_4.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
  "eel_strike": {
   "files": [
    "eel_strike_1.ogg",
@@ -144,6 +172,20 @@
   ],
   "loop": false,
   "gain": 0.6
+ },
+ "flour_blast": {
+  "files": [
+   "flour_blast_1.ogg"
+  ],
+  "loop": false,
+  "gain": 1.0
+ },
+ "flour_burst": {
+  "files": [
+   "flour_burst_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.8
  },
  "hurt": {
   "files": [
@@ -178,6 +220,13 @@
   ],
   "loop": false,
   "gain": 0.6
+ },
+ "match_strike": {
+  "files": [
+   "match_strike_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
  },
  "paper": {
   "files": [
@@ -265,6 +314,20 @@
   "loop": false,
   "gain": 0.5
  },
+ "snap_bite": {
+  "files": [
+   "snap_bite_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
+ "snap_sprout": {
+  "files": [
+   "snap_sprout_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
  "step_stone": {
   "files": [
    "step_stone_1.ogg",
@@ -292,6 +355,14 @@
   ],
   "loop": false,
   "gain": 0.6
+ },
+ "thin_place": {
+  "files": [
+   "thin_place_1.ogg",
+   "thin_place_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
  },
  "throw": {
   "files": [

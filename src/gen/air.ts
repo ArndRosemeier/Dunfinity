@@ -1,8 +1,8 @@
 /**
  * A level's light and air (docs/design/generative-depth.md §6.3): the colour of the fog and of the
  * ambient light from above and below, the headlamp's tint, how thick the air is and how strongly the
- * rock's seams glow. Ours down to level 10 (the band's veins, every level alike); deeper, each stratum draws its own from
- * genes, and its laws (`tinted`, `haze`, `glow`, src/gen/laws.ts) push them all the way. All of it
+ * rock's seams glow. Ours in the town and the cellar; below, each level of 1–10 and each stratum deeper draws its own
+ * from genes, and its laws (`tinted`, `haze`, `glow`, src/gen/laws.ts) push them all the way. All of it
  * reaches the renderer as uniforms and light colours (src/render/LevelView.ts): never a new shader.
  *
  * Pure: a function of (seed, depth).
@@ -11,7 +11,7 @@ import { hexToRgb, hsl2rgb, mixRgb } from '@futuremagic/core';
 import { bandOf } from './bands';
 import { express, gene } from './genes';
 import { lawsOf } from './laws';
-import { strangeness, stratumOf } from './genome';
+import { strangeFrom, strangeness } from './genome';
 
 type Rgb = [number, number, number];
 
@@ -45,10 +45,9 @@ const GLOW = gene('air.glow', 0, [0, 0.2], [0, 1]);
 
 export function airOf(seed: number, depth: number): Air {
   const band = bandOf(depth);
-  if (!stratumOf(depth)) return { fog: hexToRgb(OURS.fog), sky: hexToRgb(OURS.sky), ground: hexToRgb(OURS.ground), lamp: hexToRgb(OURS.lamp), flame: hexToRgb(OURS.flame), clear: 1, veins: band.veins };
   const laws = lawsOf(seed, depth);
   // A law's light is as strong as the stratum is strange: a tinge at the Ossuaries, a colour one names deeper.
-  const law = Math.min(1, 0.5 + strangeness(seed, stratumOf(depth)!.from).amplitude / 4);
+  const law = Math.min(1, 0.5 + strangeness(seed, strangeFrom(depth)).amplitude / 4);
   const hue = laws.includes('tinted') ? express(LAW_HUE, seed, depth) : express(HUE, seed, depth);
   const tint = laws.includes('tinted') ? 0.85 * law : express(TINT, seed, depth);
   const lampTint = laws.includes('tinted') ? 0.6 * law : express(LAMP_TINT, seed, depth);

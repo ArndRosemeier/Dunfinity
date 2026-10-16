@@ -11,15 +11,14 @@ function run(level: Level, seconds: number, each: (w: Wisps, t: number) => void 
   return w;
 }
 
-test('wisps rise only where the rock glows: the Salt Works, not the cellar or the Quarry', () => {
+test('wisps rise as often as the rock glows: none in the cellar, a few where seams glow faintly, most in the Salt Works', () => {
   assert.equal(glowOf(new Level(1, 0)).strength, 0);
-  assert.equal(glowOf(new Level(1, 1)).strength, 0);
   assert.equal(glowOf(new Level(1, 4)).strength, 1);
-  for (const depth of [0, 1, 2]) {
-    let born = 0;
-    run(new Level(1, depth), 60, (w) => { born += w.risen.splice(0).length; });
-    assert.equal(born, 0, `level ${depth}`);
-  }
+  const born = (depth: number) => { let n = 0; run(new Level(1, depth), 120, (w) => { n += w.risen.splice(0).length; }); return n; };
+  assert.equal(born(0), 0);
+  const faint = new Level(1, 1);
+  if (glowOf(faint).strength < WISP.faint) assert.equal(born(1), 0);
+  else assert.ok(born(1) * 3 < born(4), 'faint seams bear far fewer than the Salt Works');
 });
 
 test('in the Salt Works a few are born, never more than the most at once, and every one pops with its flash', () => {

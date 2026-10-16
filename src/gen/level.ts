@@ -22,6 +22,8 @@ import { lairOf, type Lair } from './lair';
 import { CELLAR, CELLAR_SHAFT, CellarField } from './cellar';
 import { inscriptionsAt, type Inscription } from './inscriptions';
 import { Sheds } from './sheds';
+import { Drips } from './drips';
+import { Skies } from './glowworms';
 
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
@@ -71,6 +73,10 @@ export class Level {
   readonly descents: Descents;
   /** The quarrymen's site sheds (src/gen/sheds.ts): where they stand, their doors. */
   readonly sheds: Sheds;
+  /** The living stalagmites (src/gen/drips.ts): where water drips and one grows. */
+  readonly drips: Drips;
+  /** The glow-worm skies on cavern roofs (src/gen/glowworms.ts). */
+  readonly skies: Skies;
   /** The stone of each rock slot (src/gen/rockTypes.ts): what the weights of a `RockMix` mean on this level. */
   readonly rockRecipes: readonly RockRecipe[];
   private readonly col = newColumn();
@@ -91,6 +97,8 @@ export class Level {
     this.field = new StyledField(excavation, stylesOf(mix, excavation, s, this.band, traitsOf(seed, depth)), mix, s);
     this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined, shareOf(mix, excavation.id));
     this.sheds = new Sheds(this);
+    this.drips = new Drips(this);
+    this.skies = new Skies(this);
   }
 
   /** What this level is made from (for workers to make the same one). */

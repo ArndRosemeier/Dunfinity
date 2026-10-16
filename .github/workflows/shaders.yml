@@ -1,0 +1,26 @@
+name: Shaders
+# The shader policy check (docs/SHADERS.md) in headless Chromium. Slow in SwiftShader, so it is not
+# part of CI: start it on demand (Actions → Shaders → Run workflow, on any branch) every so often,
+# and fix what it finds.
+on:
+  workflow_dispatch:
+
+jobs:
+  shaders:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [lab, game]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check:shaders -- ${{ matrix.part }}

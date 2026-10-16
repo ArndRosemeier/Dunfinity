@@ -31,6 +31,9 @@ export interface Walker {
   aim?: { x: number; z: number; best: number; since: number; wait: number; stuck: number };
   /** Chilled (grandma's Cold Larder): seconds left, and the share of its pace it keeps meanwhile. */
   chill?: { left: number; by: number };
+  /** Blind (grandma's Flour Bag, src/combat/flour.ts): seconds left. Meanwhile it goes nowhere it means to: it stumbles about, slowly turning (`stumble`: the way it is going). */
+  blind?: number;
+  stumble?: number;
   readonly radius: number;
   readonly height: number;
   readonly dead: boolean;
@@ -57,6 +60,9 @@ export interface Gait {
  * the time it takes to get up to speed, if longer) stands for `wait` seconds; one slowed to `slow`
  * of its pace (arriving) is not trying. A goal moved by `moved` metres is a fresh start.
  */
+/** Stumbling blind: how far ahead it gropes for, metres, the share of its pace it keeps, how fast it turns (radians per second) and how often it sways from one way to the other. */
+const STUMBLE = { ahead: 2, pace: 0.4, turn: 1.6, sway: 1.3 } as const;
+
 const GIVE_UP = { share: 0.17, after: 0.12, slow: 0.06, wait: 0.6, moved: 0.6, thwarted: 2.5 } as const;
 
 /**
@@ -80,6 +86,13 @@ export class Steer {
   /** Steer w towards (gx, gz) at `speed` over the floor, round what is in the way; face `face` if given. Returns the distance moved. */
   move(w: Walker, gx: number, gz: number, speed: number, dt: number, face: number | null): number {
     const G = this.gait;
+    // Blind: wherever it meant to go, it gropes on ahead, slowly, turning a little this way and that (smoothly: no jitter).
+    if (w.blind !== undefined && w.blind > 0) {
+      const a = (w.stumble ??= w.yaw) + dt * STUMBLE.turn * Math.sin(w.blind * STUMBLE.sway);
+      w.stumble = a;
+      gx = w.x - Math.sin(a) * STUMBLE.ahead; gz = w.z - Math.cos(a) * STUMBLE.ahead;
+      speed *= STUMBLE.pace; face = null;
+    } else w.stumble = undefined;
     // A goal over a salt line it is outside of: as near as it may come, on its side of the line (it stands there, not pressing at it).
     for (const c of this.salt) {
       const min = c.r + w.radius + 0.05, ox = w.x - c.x, oz = w.z - c.z, od = Math.hypot(ox, oz);
