@@ -9,7 +9,7 @@
  * Pure, like every style.
  */
 import { hash2i, hashToFloat } from '@futuremagic/core';
-import { KARST, type Karst } from './karst';
+import type { Karst } from './karst';
 import type { Column } from './quarry';
 
 /** A chamber of the karst's cave. */
@@ -22,7 +22,7 @@ export interface Chambers<C extends { x: number; z: number; r: number }> {
 }
 
 /** The karst cave's chambers, as a style built on a `Karst` asks for them. */
-export const karstChambers = (cave: Karst): Chambers<Chamber> => ({ cell: KARST.cell, chamber: (i, j) => cave.chamber(i, j) });
+export const karstChambers = (cave: Karst): Chambers<Chamber> => ({ cell: cave.K.cell, chamber: (i, j) => cave.chamber(i, j) });
 
 /** How far in plan a column looks for things, metres; the field is capped at this. */
 export const THING_REACH = 3;

@@ -15,6 +15,7 @@ import { Noise, deriveSeed, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { CaveThings, THING_REACH, karstChambers, type Chamber } from './caveThings';
 import { Karst } from './karst';
+import { STANDARD, type Traits } from './genes';
 import type { Column } from './quarry';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
@@ -62,8 +63,8 @@ export class Fungal implements Style {
   /** The level's mushroom hue, 0..1 round the wheel of CAP_HUES. */
   private readonly hue: number;
 
-  constructor(readonly seed: number, readonly band: Band) {
-    this.cave = new Karst(deriveSeed(seed, 'fungal', 'cave'), band);
+  constructor(readonly seed: number, readonly band: Band, traits: Traits = STANDARD) {
+    this.cave = new Karst(deriveSeed(seed, 'fungal', 'cave'), band, traits);
     this.noise = new Noise(deriveSeed(seed, 'fungal', 'shape'));
     this.hue = hashToFloat(deriveSeed(seed, 'fungal', 'hue'));
     this.shrooms = new CaveThings(karstChambers(this.cave), deriveSeed(seed, 'fungal', 'shrooms'), { make: shroomsOf, plan, dist: shroom, radii: FUNGAL.spread, pad: FUNGAL.cap[0] + FUNGAL.cap[1] + FUNGAL.capPer * (FUNGAL.height[0] + FUNGAL.height[1]) });
