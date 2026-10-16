@@ -4,7 +4,7 @@
  * Rolling Pin's shove going out ahead, and the puff of salt under a sprung jump (Spring in Your
  * Step), and the green of grandma's Snapdragons: the floor bursting where one comes up, sap where
  * it bites; grandma's flour hanging in a cloud (and dusting what it blinded), and the cloud going
- * up when a match finds it. Every cast is seen, not only its numbers (Arnd's rule).
+ * up when a match finds it; the earth a horseradish throws up tunnelling and bursting out. Every cast is seen, not only its numbers (Arnd's rule).
  *
  * Fixed pools of glowing sparks per colour, built once and added with the Stage before play.
  */
@@ -24,9 +24,11 @@ export const SPELLS = {
   flour: { colors: [[0.55, 0.53, 0.48], [0.62, 0.6, 0.55], [0.48, 0.46, 0.42]], life: 1.6, size: 0.32, pool: 220 },
   /** A flour cloud going up: a big hot ball. */
   blast: { colors: [[3, 1.5, 0.35], [2.6, 0.8, 0.15], [3.2, 2.2, 0.8]], life: 0.7, size: 0.3, pool: 120 },
+  /** Earth thrown up by a horseradish tunnelling: dark crumbs, dim, with a fleck of salt now and then. */
+  soil: { colors: [[0.22, 0.15, 0.09], [0.3, 0.21, 0.12], [0.16, 0.11, 0.07], [0.5, 0.85, 1.1]], life: 0.6, size: 0.06, pool: 160 },
 } as const;
 
-type Kind = 'fire' | 'frost' | 'force' | 'sap' | 'flour' | 'blast';
+type Kind = 'fire' | 'frost' | 'force' | 'sap' | 'flour' | 'blast' | 'soil';
 
 interface Spark {
   readonly mesh: Mesh;
@@ -79,7 +81,7 @@ export class SpellView {
 
   constructor(seed: number) {
     this.rng = new Rng(deriveSeed(seed, 'spells'));
-    this.pools = { fire: new Pool(this.root, 'fire'), frost: new Pool(this.root, 'frost'), force: new Pool(this.root, 'force'), sap: new Pool(this.root, 'sap'), flour: new Pool(this.root, 'flour'), blast: new Pool(this.root, 'blast') };
+    this.pools = { fire: new Pool(this.root, 'fire'), frost: new Pool(this.root, 'frost'), force: new Pool(this.root, 'force'), sap: new Pool(this.root, 'sap'), flour: new Pool(this.root, 'flour'), blast: new Pool(this.root, 'blast'), soil: new Pool(this.root, 'soil') };
   }
 
   /** Stove Flame from the hand at (x, y, z) along `yaw`, `reach` metres, at `now`. */
@@ -136,6 +138,22 @@ export class SpellView {
     for (let i = 0; i < 12; i++) {
       const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(1, 2.4);
       this.pools.sap.emit(x, y, z, Math.cos(a) * v, this.rng.range(-0.3, 1.5), Math.sin(a) * v, now, SPELLS.sap.life * 0.6);
+    }
+  }
+
+  /** Horseradish: earth thrown up behind a root tunnelling at (x, y, z) along `yaw`, at `now` (a few crumbs; called now and then). */
+  furrow(x: number, y: number, z: number, yaw: number, now: number): void {
+    for (let i = 0; i < 6; i++) {
+      const a = yaw + Math.PI + this.rng.range(-1.1, 1.1), v = this.rng.range(0.5, 1.4);
+      this.pools.soil.emit(x, y + 0.05, z, -Math.sin(a) * v, this.rng.range(1.2, 2.6), -Math.cos(a) * v, now + i * 0.01, SPELLS.soil.life * this.rng.range(0.7, 1.2));
+    }
+  }
+
+  /** Horseradish: the floor bursting at (x, y, z) where a root comes up (or dives), at `now`. */
+  breaks(x: number, y: number, z: number, now: number): void {
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2 + this.rng.range(-0.12, 0.12), v = this.rng.range(0.8, 2);
+      this.pools.soil.emit(x, y + 0.05, z, Math.cos(a) * v, this.rng.range(1.5, 3.4), Math.sin(a) * v, now + i * 0.004, SPELLS.soil.life * this.rng.range(0.9, 1.4));
     }
   }
 

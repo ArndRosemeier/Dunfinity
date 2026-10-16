@@ -3520,8 +3520,20 @@
     "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
   },
   {
-    "key": "clone: dunfinity/loot/recipes.ts#match + dunfinity/loot/recipes.ts#snapdragon",
-    "reason": "two of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
+    "key": "same name: dunfinity/render/horseradish.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
+    "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
+  },
+  {
+    "key": "same name: dunfinity/render/horseradish.ts#pose + dunfinity/render/snapdragons.ts#pose",
+    "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
+  },
+  {
+    "key": "clone: dunfinity/render/horseradish.ts#constructor + dunfinity/render/snapdragons.ts#constructor",
+    "reason": "each is the FigurePool subclass idiom: a name, a pool size and a builder handing each figure its own parts; the pool itself is FigurePool"
+  },
+  {
+    "key": "clone: dunfinity/loot/recipes.ts#flame + dunfinity/loot/recipes.ts#horseradish + dunfinity/loot/recipes.ts#match + dunfinity/loot/recipes.ts#snapdragon",
+    "reason": "four of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
   },
   {
     "key": "clone: dunfinity/render/creatures/figures.ts#constructor + dunfinity/render/humans/thrownView.ts#pool",

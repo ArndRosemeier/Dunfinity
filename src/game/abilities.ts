@@ -36,6 +36,7 @@ export const ABILITIES: readonly Ability[] = [
   ability('rolling-pin', 'Rolling pin'),
   ability('candle', 'Candle'),
   ability('snapdragon', 'Snapdragon'),
+  ability('horseradish', 'Horseradish'),
   ability('flour-bag', 'Flour bag'),
   ability('matchstick', 'Match'),
   ability('salt-line', 'Salt line'),
