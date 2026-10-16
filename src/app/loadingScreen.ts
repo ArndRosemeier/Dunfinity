@@ -5,7 +5,8 @@
  *
  * It only shows progress: the shader warm-up keeps its own pacing (docs/SHADERS.md).
  */
-import { addStyle, esc } from './panel';
+import { addStyle, esc, panel } from './panel';
+import { useTheme } from './theme';
 
 /** Seconds the screen takes to fade away. */
 const FADE = 0.6;
@@ -21,18 +22,19 @@ export class LoadingScreen {
 
   /** Takes over index.html's `#loading` (made here when a page has none). */
   constructor(host: HTMLElement) {
+    useTheme();
     addStyle(`
-      #loading .msg { max-width: 34em; margin-top: 18px; line-height: 1.55; color: #cfd6dc; text-align: left; }
-      #loading .msg h2 { font-size: 16px; color: #e8d9b8; margin: 0 0 8px; letter-spacing: 0.04em; }
+      #loading .name { font-family: var(--ui-font-display); color: var(--ui-ink); }
+      #loading .bar i { background: var(--ui-accent); }
+      #loading .step { font-family: var(--ui-font); color: var(--ui-ink-faint); }
+      #loading .msg { max-width: 34em; margin-top: 22px; padding: 16px 20px; text-align: left; }
       #loading .msg p { margin: 6px 0; }
-      #loading .msg code { font-size: 12px; color: #a9c3d6; word-break: break-word; }
+      #loading .msg code { font-size: 12px; color: var(--ui-salt); word-break: break-word; }
       #loading.failed .bar, #loading.failed .step { display: none; }`);
     let root = document.getElementById('loading');
     if (!root) {
-      root = document.createElement('div');
-      root.id = 'loading';
+      root = panel(host, 'div', 'loading', '');
       root.innerHTML = '<div class="name">Dunfinity</div><div class="bar"><i></i></div><div class="step"></div>';
-      host.appendChild(root);
     }
     this.root = root;
     this.label = root.querySelector('.step') as HTMLElement;
@@ -77,8 +79,8 @@ export class LoadingScreen {
     this.root.style.opacity = '1';
     this.root.style.pointerEvents = 'auto';
     const msg = document.createElement('div');
-    msg.className = 'msg';
-    msg.innerHTML = `<h2>${esc(title)}</h2>${paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}${detail ? `<p><code>${esc(detail)}</code></p>` : ''}`;
+    msg.className = 'msg ui-panel';
+    msg.innerHTML = `<h2 class="ui-title">${esc(title)}</h2><hr class="ui-rule">${paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}${detail ? `<p><code>${esc(detail)}</code></p>` : ''}`;
     this.root.querySelector('.msg')?.remove();
     this.root.appendChild(msg);
   }

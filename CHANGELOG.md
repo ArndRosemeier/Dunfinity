@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.141 — A shack with its doorway open
+
+- The miners' shack now also comes with an open doorway, ready for a door that swings.
+
+## v0.140 — The interface grows salt
+
+- One look for the whole interface: old printed type for titles, a book face for grandma's tin, diary and the inscriptions, and a clean face for the game's own text, with keys shown as keycaps.
+- Grandma's tin, her diary, the inscriptions you read, What's new and the ability bar are restyled to match: paper for what you read, lamp-lit dark for the rest, lamp gold for what is chosen or ready.
+- Slow blue salt veins and a little moss grow along the frames of the panels and the ability bar. They creep very slowly and catch the light now and then, and they grow thicker the deeper you go. They stand still if your system asks for less motion.
+- Panels fade and rise in when they open.
+
+## v0.139 — A bug sweep and balance pass of levels 1 to 10
+
+- Rats that cannot get up to you (you stand on a ledge) no longer freeze mid-chase below you: they mill about, give up and go home for a while.
+- Something that cannot reach you, and cave crickets still up on their wall, no longer count as after you, so you can rest at your fire and take the Way Home.
+- Rats and slimes no longer wake up inside the rock beside a ledge.
+- Feral dogs hang on a moment after a bite, so you can stab back, wait longer between lunges, bite a little softer and fall to fewer stabs. A pack is still the hardest fight of the Cisterns, but no longer kills you most times.
+- Fewer cave crickets in the Quarry, and their landing knocks you a little less.
+- Scavengers' crowbars hit a little softer.
+
+## v0.138 — A proper death, and the next grandchild
+
+- Dying now plays out: the view darkens round the body, then Herr Brüggemann's sheet comes up with how it ended, and he crosses the name off his list stroke by stroke and writes the next heir's under it.
+- The sheet says what the family keeps (grandma's tin and its salt, how deep the family has been, diary pages, letters of the old scripts, her purse, finds taken) and what went down with the grandchild (cards cooked, practice, gear, the pack).
+- The next grandchild can only be sent once the pen is down (R, or the button), so keys pressed in the fight do not skip it. Then the screen goes black, a line says who the next letter is for, and they wake in the cellar.
+- Scavengers, goblins and the Tall One now have their own death lines.
+
+## v0.137 — Glowing veins creep
+
+- The blue veins of infused salt now creep slowly through the rock, a few centimetres a second: a line wanders, splits and fades over a minute or two, slow enough to notice only when you stop and look.
+
+## v0.136 — Kin: the deep's copies of our animals
+
+- From level 11 down, every stratum has its own drafts of our rats, crickets, slimes, eels and dogs, all of one stratum's alike: a coat of another colour, darker or paler, striped or spotted, a longer or squatter body, a bigger head, a longer tail, huge ears or feelers.
+- Close to the surface they are only a little off; the deeper the stratum, and the stranger it is, the further they stray.
+- They move and fight as before, and a longer body takes longer strides, so their feet stay planted.
+
 ## v0.135 — Fungal and lava genes
 
 - The fungal forest reads its genes: how thick the giant mushrooms stand, how tall they grow (still under the dome) and how broad their caps spread. Its cave strays by the karst's genes.

@@ -18,7 +18,9 @@ import { CELLAR } from '../gen/cellar';
 import { shopDoor } from '../gen/town';
 import { PAWN, sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, Gear } from '../loot/hardware';
-import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
+import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
+import { DeathView, DEATH, NEXT } from '../app/deathView';
+import { deathLine, hurtLine, runEnd } from './runEnd';
 import { Level } from '../gen/level';
 import { CAMP, NOTE, RUBBING } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
@@ -39,6 +41,7 @@ import { CricketView } from '../render/creatures/cricketView';
 import { SlimeView } from '../render/creatures/slimeView';
 import { ShroomView } from '../render/creatures/shroomView';
 import { DogView } from '../render/creatures/dogView';
+import { Rigged } from '../render/creatures/rigged';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
 import { GoblinView } from '../render/creatures/goblinView';
@@ -51,7 +54,7 @@ import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
 import { Doors } from '../world/doors';
 import { DoorView } from '../render/props/doorView';
-import { blowFrom, damage, nearestReached, reach } from '../combat/combat';
+import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
@@ -64,6 +67,7 @@ import { positionReport, readPosition } from './report';
 import { VERSION } from '../app/whatsNew';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
+import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
 import { SpellView } from '../render/spells';
 import { SaltDrift } from '../render/loot/saltDrift';
@@ -82,11 +86,6 @@ const STEP = 1 / 120;
 const LADDER_REACH = 1.6;
 /** How much of the ladder is climbed on each level when going from one to the other, metres. */
 const CLIMB_SHOWN = 4.5;
-/**
- * A stab with the kitchen knife: seconds it takes, when it lands, its reach (beyond the nobody's
- * centre), sweep and heights, damage and knockback; and how far it turns the nobody to a rat.
- */
-const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
 /** Grandma's Tenderising (V): an overhead blow with the knife's handle, slower, wider, knocking far back; its stamina (damage: the card's). */
 /** Grandma's salt-magic: Stove Flame's sweep and stamina, Cold Larder's, Rolling Pin's (how far, how much and how often: the card's); how long the nobody's cast pose lasts. */
 const FLAME = { arc: 0.45, low: -0.3, high: 2, knock: 2, stamina: 3 };
@@ -114,6 +113,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
+  setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   loading.step('Dressing the figures', 0.08);
   view.headlampPower = { survey: 14, dark: 3.5 };
@@ -156,6 +156,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let arriving = false, arrivedAt = 0;
   const show = (l: Level) => {
     level = l;
+    setGrowth(growthAt(l.depth));
     arriving = true;
     arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
@@ -172,6 +173,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     reached = Math.max(reached, l.depth);
     thrown.missiles.length = 0;
     view.go(l);
+    Rigged.kinOn(params.seed, l.depth);
     cam.level = l;
     nobody.level = l;
   };
@@ -183,6 +185,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Grandma's purse: euros from Ilse, kept for the family. */
   let euros = saved?.euros ?? 0, sales = 0;
   let mourned = false;
+  /** The salt in the tin when this grandchild took it up (the death screen says what they added). */
+  let saltAtStart = saved?.child?.saltAtStart ?? tin.salt;
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth, params.style)); // the next grandchild starts at the top
     heir++;
@@ -230,7 +234,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data,
+      cooked: cooked.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data, saltAtStart,
     };
     writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data });
   };
@@ -247,6 +251,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const slimeView = await SlimeView.create();
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
+  Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
   await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
@@ -406,7 +411,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   host.appendChild(fade);
   // While a level streams in behind the black: a quiet line, so a long wait does not look like a hang.
   const fadeLine = document.createElement('div');
-  fadeLine.style.cssText = 'position:absolute;left:0;right:0;bottom:18%;text-align:center;color:#7d8790;font-size:12px;letter-spacing:0.04em;opacity:0;transition:opacity 0.4s';
+  fadeLine.style.cssText = 'position:absolute;left:0;right:0;bottom:18%;text-align:center;color:var(--ui-ink-faint);font:13px/1.4 var(--ui-font);letter-spacing:0.06em;opacity:0;transition:opacity 0.4s';
   fadeLine.textContent = 'The rock takes shape';
   fade.appendChild(fadeLine);
   // Getting hurt shows, in first person too: the edges of the view flash red.
@@ -531,6 +536,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
+    /** Dress the creatures as the kin of another depth (a look at them without going down). */
+    kinOn: (depth: number) => Rigged.kinOn(params.seed, depth),
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
     /** Bring the knife's handle down, as V would (grandma's Tenderising). */
@@ -545,6 +552,39 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       return true;
     },
   };
+  const deathView = new DeathView(document.body);
+  /** When this grandchild died, and when the next was asked for (null: not yet); the camera's distance before death pulled it back. */
+  let diedAt = 0, nextAt: number | null = null, before = cam.distance;
+  /** The grandchild has died: on the notary's list (once), the camera pulled back to see them fall, the sheet laid out. */
+  const mourn = (): void => {
+    mourned = true;
+    diedAt = timer.getElapsed();
+    const f: Fallen = { heir, depth: level.depth, what: hurtLine(body.lastCause) };
+    const earlier = notaryList(fallen, heir, params.seed).slice(0, -1);
+    fallen.push(f);
+    deathView.layOut({
+      how: deathLine(body.lastCause), before: earlier, name: heirName(heir, params.seed), where: fallenAt(f), next: heirName(heir + 1, params.seed),
+      end: runEnd({ tin, saltAtStart, key: key.data, euros, taken: [...taken.values()].reduce((n, ids) => n + ids.size, 0), pack, cooked, practice, gear }),
+    });
+    before = cam.distance;
+    cam.distance = Math.max(cam.distance, 3.5);
+    tinView.hide(); readView.hide(); diaryView.hide();
+    target = null;
+    document.exitPointerLock?.();
+  };
+  /** The next grandchild, in the cellar, with nothing but what the family keeps. */
+  const sendNextDown = (): void => {
+    body = nextGrandchild();
+    fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
+    pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
+    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0;
+    tinSel = TinView.order(cooked)[0];
+    saltAtStart = tin.salt;
+    cam.distance = before;
+    cam.follow(body.x, body.y + 1.6, body.z, 1);
+    notice = levelName(level); noticeUntil = timer.getElapsed() + NEXT.letter + 5;
+    keepGame();
+  };
   // The first level streams in behind the loading screen, as any later one behind the black.
   arriving = true;
   arrivedAt = performance.now() / 1000;
@@ -558,8 +598,20 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     }
     if (arriving && loading.open) loading.step('Carving the rock', 0.65 + 0.35 * view.streamed);
     // A death goes on the notary's list (once).
-    if (body.dead && !mourned) { mourned = true; fallen.push({ heir, depth: level.depth, what: HURT[body.lastCause]?.[0] ?? 'a fall' }); }
+    if (body.dead && !mourned) mourn();
     if (!body.dead) mourned = false;
+    // The death screen plays out; then (R, or its button) to black, who the letter is for, and the next grandchild in the cellar.
+    if (nextAt !== null) {
+      const t = timer.getElapsed() - nextAt;
+      if (body.dead) {
+        fade.style.opacity = String(Math.max(DEATH.dark, Math.min(1, t / NEXT.black)));
+        if (t >= NEXT.black) { sendNextDown(); deathView.letterFor(`Some weeks later, a letter comes for ${heirName(heir, params.seed)}.`); }
+      } else if (t >= NEXT.black + NEXT.letter) { deathView.letterFor(null); nextAt = null; fadeIn = 0.8; }
+      else fade.style.opacity = '1';
+    } else if (body.dead) {
+      fade.style.opacity = String(deathView.playOut(timer.getElapsed() - diedAt));
+      if (deathView.ready && (controls.tap('KeyR') || deathView.takeAsked())) { nextAt = timer.getElapsed(); deathView.putAway(); }
+    }
     // Keep the game every few seconds (not mid-climb or mid-way home), and at once when the grandchild dies.
     if (!climb.active && homeTo === null && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
     const [mx, my] = controls.takeLook();
@@ -590,7 +642,6 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (target && (!keeps(target, body.x, body.z) || body.dead || (!tinView.open && controls.held('Escape')))) target = null;
     body.invulnerable = debug.invulnerable;
     if (debug.tireless) body.stamina = MOVE.stamina;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; saltLine.circle = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, pound = cooked.tenderising;
@@ -967,7 +1018,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
     abilityBar.paint(bar, bar.map(slot), passivesOf(cooked), body.dead || tinView.open);
-    if (hud) hud.textContent = hudText(body, backend, body.dead ? notaryList(fallen, heir + 1, params.seed) : []) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
+    if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
@@ -993,29 +1044,13 @@ function bar(value: number, max: number): string {
   return '█'.repeat(n) + '░'.repeat(20 - n);
 }
 
-/** What hurt you, per cause: the HUD line, and the death line. */
-const HURT: Record<string, [string, string]> = {
-  rat: ['a rat bites', 'The rats got you.'],
-  cricket: ['a cave cricket', 'The cave crickets got you.'],
-  dog: ['a feral dog bites', 'The dogs pulled you down.'],
-  eel: ['a brine eel strikes', 'Something in the water took you.'],
-  lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
-  toadstool: ['a toadstool slams', 'A toadstool crushed you. It was only a mushroom.'],
-  spores: ['spores burn', 'The spores filled your lungs.'],
-  murk: ['a Murk slime burns', 'The Murk swallowed you.'],
-  'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],
-  foreman: ['the Foreman strikes', 'The Foreman brought his pick down on you.'],
-  fall: ['a hard landing', 'You fell to your death.'],
-};
-
-/** The HUD; `list`: the notary's list, shown on the death screen (its last line the next heir). */
-function hudText(b: Body, backend: string, list: readonly string[]): string {
+/** The HUD. */
+function hudText(b: Body, backend: string): string {
   const lines = [
     `health   ${bar(b.health, MOVE.maxHealth)}  ${b.health.toFixed(0)}`,
     `stamina  ${bar(b.stamina, MOVE.stamina)}${b.mode === 'climb' ? '  climbing' : b.mode === 'swim' ? '  swimming' : ''}`,
   ];
-  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
-  if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
+  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${hurtLine(b.lastCause)}: -${b.lastHurt.toFixed(0)}`);
   lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · 1–0 or the bar: grandma's cards (Esc frees the mouse to click) · Tab target · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
   return lines.join('\n');
 }
