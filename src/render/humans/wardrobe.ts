@@ -50,7 +50,7 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
 
 /** What each worn item looks like on the body: its slot, colours and how worn it is when sound. Items not here are not seen (held ones are). */
 const WORN: Partial<Record<ItemKind, readonly ['head' | 'hands', Rgb, Rgb, number]>> = {
-  'miners-helmet': ['head', [0.52, 0.44, 0.22], [0.18, 0.16, 0.12], 0.55],
+  'miners-helmet': ['head', [0.24, 0.28, 0.22], [0.1, 0.1, 0.09], 0.55],
   'work-gloves': ['hands', [0.42, 0.3, 0.17], [0.28, 0.2, 0.11], 0.4],
 };
 
