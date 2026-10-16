@@ -2464,10 +2464,6 @@
     "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
   },
   {
-    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/diaryView.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
-    "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
-  },
-  {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   },
@@ -3302,5 +3298,9 @@
   {
     "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
     "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
+  },
+  {
+    "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/targetMark.ts#constructor",
+    "reason": "two HUD pieces each make their panel and a couple of children with `panel` and `child`; the shared part is already those two seams."
   }
 ]

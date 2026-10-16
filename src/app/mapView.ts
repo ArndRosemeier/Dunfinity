@@ -13,9 +13,7 @@ import { panel } from './panel';
 const MAP = { scale: 8, every: 0.25 } as const;
 
 const STYLE = `
-  #map { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8; display: none;
-    border: 1px solid #8a7656; border-radius: 4px; box-shadow: 0 6px 30px #000a; background: #1b1712; }
-  #map.open { display: block; }`;
+  #map { z-index: 8; border: 1px solid var(--ui-line-bright); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow), 0 0 0 4px var(--ui-dark-solid), 0 0 0 5px var(--ui-line); background: var(--ui-dark-solid); }`;
 
 export class MapView {
   private readonly canvas: HTMLCanvasElement;
@@ -23,6 +21,7 @@ export class MapView {
 
   constructor(host: HTMLElement) {
     this.canvas = panel(host, 'canvas', 'map', STYLE);
+    this.canvas.className = 'ui-modal';
   }
 
   get open(): boolean {
