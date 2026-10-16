@@ -32,7 +32,7 @@ import { Bindings, keyLabel } from '../input/bindings';
 import { readGraphicsSettings, readKeySettings, writeGraphicsSettings, writeKeySettings } from '../persist/settings';
 import { QUALITY_NOTES } from '../render/quality';
 import { SettingsView } from '../app/settingsView';
-import { parseViewParams } from '../app/params';
+import { parseViewParams, titleWanted } from '../app/params';
 import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
 import { DRAFT_RANGE, draftLine } from './draft';
@@ -71,6 +71,8 @@ import { DEBUG_STYLES, depthWithStyle, placesOn, styleSpot, type Place } from '.
 import type { StyleId } from '../gen/style';
 import { positionReport, readPosition } from './report';
 import { VERSION } from '../app/whatsNew';
+import { playTitle } from './title';
+import { levelName } from './titleShots';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
 import { growthAt, setGrowth } from '../app/growth';
@@ -164,7 +166,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let gear = new Gear(saved?.child?.gear ?? []);
   for (const f of saved?.child?.pack ?? []) pack.add(f);
   /** Grandma's tin: the infused salt outlives every grandchild. */
-  const tin = saved ? Tin.from(saved.tin) : new Tin();
+  let tin = saved ? Tin.from(saved.tin) : new Tin();
   tin.deepest = Math.max(tin.deepest, level.depth);
   /** The cards this grandchild has cooked (the next one starts with none). */
   let cooked = saved?.child ? Cooked.from(saved.child.cooked) : new Cooked();
@@ -191,18 +193,22 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
     if (strangerHere()) view.props.blockers.set(STRANGER_KEY, stranger.blocker); else view.props.blockers.clear(STRANGER_KEY);
-    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
     thrown.missiles.length = 0;
+    look(l);
+  };
+  /** Stream level l and point every view at it (the title looks at levels this way too). */
+  const look = (l: Level): void => {
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = tallView.level = l;
     view.go(l);
     Rigged.kinOn(params.seed, l.depth);
     cam.level = l;
     nobody.level = l;
   };
   /** Which grandchild this is (1: the first); the notary writes to each. The deepest level this one has reached. */
-  const key = new Key(saved?.key);
+  let key = new Key(saved?.key);
   let heir = saved?.heir ?? 0, reached = saved?.child?.reached ?? 0;
   /** The grandchildren who did not come back (the notary's list), and whether this one's death is on it yet. */
   const fallen: Fallen[] = [...(saved?.fallen ?? [])];
@@ -226,6 +232,16 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // In grandma's cellar: by her armchair, facing the broken arch.
     if (level.depth === 0 && !params.pos) b.facing = cam.yaw = CELLAR.start.yaw;
     return b;
+  };
+  /** A new family (New Game over a kept one): everything kept is forgotten, the first grandchild goes down. */
+  const freshFamily = (): void => {
+    taken.clear();
+    tin = new Tin(); key = new Key();
+    pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
+    heir = 0; reached = 0; euros = 0; sales = 0; saltAtStart = 0;
+    fallen.length = 0;
+    body = nextGrandchild();
+    finds = findsOf(level);
   };
   fauna = new Fauna(level);
   /** The nobody's own fire to rest by (one at a time). */
@@ -697,7 +713,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     (globalThis as { __ready?: boolean }).__ready = view.settled;
     controls.endFrame();
   };
-  if (introduce) beginIntro();
+  const titled = titleWanted(location.search);
+  if (introduce && !titled) beginIntro(); // under the title, New Game begins it
   const deathView = new DeathView(document.body);
   /** When this grandchild died, and when the next was asked for (null: not yet); the camera's distance before death pulled it back. */
   let diedAt = 0, nextAt: number | null = null, before = cam.distance;
@@ -731,6 +748,41 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     announce(level, NEXT.letter + 5);
     keepGame();
   };
+
+  /** Draw everything living on the level shown (the nearest of each kind to `at`). */
+  const drawLife = (f: Fauna, at: { readonly x: number; readonly z: number }, dt: number, now: number): void => {
+    ratView.draw(f.rats.list, now, at);
+    touchedView.draw(f.touched.list, at.x, at.z, dt, now);
+    foremanView.draw(f.foreman.list[0] ?? null, f.foreman.hall, dt, now);
+    cricketView.draw(f.crickets.list, now, at);
+    slimeView.lumen.draw(f.lumen.list, now, at);
+    slimeView.murk.draw(f.murk.list, now, at);
+    dogView.draw(f.dogs.list, now, at);
+    eelView.draw(f.eels.list, now, at);
+    shroomView.toadstools.draw(f.toadstools.list, now, at);
+    shroomView.puffcaps.draw(f.puffcaps.list, now, at);
+    shroomView.spores.draw(f.puffcaps.spores, now);
+    scavengerView.draw(f.scavengers.list, at.x, at.z, dt, now);
+    goblinView.draw(f.goblins.list, at.x, at.z, dt, now);
+    ghostView.draw(f.ghosts.list, at.x, at.z, dt, now);
+    tallView.draw(f.tall.list, at.x, at.z, dt, now);
+  };
+
+  // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): it
+  // plays on this view, then hands over in the black, on the game's own level.
+  if (titled) {
+    const choice = await playTitle(host, { view, cam, nobody, seed: params.seed, canContinue: !!saved, shown: () => { if (loading.open) loading.hide(); }, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null, look, drawLife });
+    if (choice === 'new' && saved) freshFamily();
+    if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family
+    look(level);
+    fauna = new Fauna(level);
+    cam.yaw = body.facing; cam.pitch = -0.25; cam.distance = 4;
+    cam.follow(body.x, body.y + 1.6, body.z, 1);
+    fade.style.opacity = '1'; // the game's level streams in behind the black (arriving, below)
+    controls.takeLook(); controls.takeWheel(); controls.endFrame();
+    timer.update();
+    noticeUntil = timer.getElapsed() + 5;
+  }
   // The first level streams in behind the loading screen, as any later one behind the black.
   arriving = true;
   arrivedAt = performance.now() / 1000;
@@ -1104,28 +1156,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
 
-    ratView.draw(fauna.rats.list, now, body);
-    touchedView.draw(fauna.touched.list, body.x, body.z, dt, now);
-    foremanView.draw(fauna.foreman.list[0] ?? null, fauna.foreman.hall, dt, now);
+    drawLife(fauna, body, dt, now);
     const rung = fauna.foreman.list[0]?.rung ?? 0;
     if (rung > bells) say('A bell rings out through the halls. Something answers it.', 4);
     bells = rung;
-    cricketView.draw(fauna.crickets.list, now, body);
-    slimeView.lumen.draw(fauna.lumen.list, now, body);
-    slimeView.murk.draw(fauna.murk.list, now, body);
-    dogView.draw(fauna.dogs.list, now, body);
-    eelView.draw(fauna.eels.list, now, body);
-    shroomView.toadstools.draw(fauna.toadstools.list, now, body);
-    shroomView.puffcaps.draw(fauna.puffcaps.list, now, body);
-    shroomView.spores.draw(fauna.puffcaps.spores, now);
-    scavengerView.draw(fauna.scavengers.list, body.x, body.z, dt, now);
     if (fauna.scavengers.calls > calls) say(fauna.scavengers.said, 3.5);
     calls = fauna.scavengers.calls;
-    goblinView.draw(fauna.goblins.list, body.x, body.z, dt, now);
-    ghostView.draw(fauna.ghosts.list, body.x, body.z, dt, now);
     if (fauna.ghosts.calls > spoken) say(`The ${fauna.ghosts.saidBy}'s ghost says: "${fauna.ghosts.said}"`, 5);
     spoken = fauna.ghosts.calls;
-    tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
     if (level.depth === 0) weber.turn(body.x, body.z, dt);
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
@@ -1215,9 +1253,5 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone && !arriving;
     controls.endFrame();
   });
-}
-
-function levelName(level: Level): string {
-  return level.depth ? `Level ${level.depth} · ${level.band.name}` : level.band.name;
 }
 

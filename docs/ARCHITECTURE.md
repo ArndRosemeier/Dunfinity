@@ -244,7 +244,9 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 
 | Question | The one way | Where |
 |---|---|---|
-| Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
+| Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams`; whether the game opens on the title screen `titleWanted` | `src/app/params.ts` |
+| The title screen: a live descent on the game's own view (shots on deeper and deeper levels, the nobody by something alive), its name and menu, the choice (Continue / New Game) | `playTitle(host, cast)` (a `TitleCast`: the game's view, camera, nobody, `look`, `drawLife`); the shots `shotAt(seed, depth)` over `TITLE_DEPTHS`; the overlay `TitleScreen` | `src/game/title.ts`, `src/game/titleShots.ts`, `src/app/titleScreen.ts` |
+| A level's name as shown on arrival ("Level 5 · The Salt Works") | `levelName(level)` | `src/game/titleShots.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
 | Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys); the player's own keys (`bind`), nothing while a menu is open (`paused`) | `Controls` | `src/input/controls.ts` |
 | Which key an action answers to (the player may move them; an action is named by its own default key, so the game keeps asking for 'KeyW'), and what a key is called on screen | `Bindings` (`keyOf`, `actionOf`, `rebind` swaps on a taken key, `clear`, `data`), `keyLabel`; the game's actions `KEY_ACTIONS` and `FIXED_KEYS` in `src/game/abilities.ts` | `src/input/bindings.ts` |

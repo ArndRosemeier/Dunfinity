@@ -40,3 +40,13 @@ export function parseViewParams(search: string): ViewParams {
   const style = st && NAMED_STYLES.includes(st) ? st : undefined;
   return { seed, depth, pos, look, color, dark: q.has('dark'), light: q.has('light'), forceWebGL: q.has('gl'), style, races: q.get('races') };
 }
+
+/**
+ * Whether the game opens on the title screen: on a plain visit, or with `?title` (`&shot=<depth>` holds
+ * on that depth's shot, for screenshots). A link that names
+ * a seed, depth, place or style (a shared spot, a test view, the screenshot tools) goes straight in.
+ */
+export function titleWanted(search: string): boolean {
+  const q = new URLSearchParams(search);
+  return q.has('title') || !['seed', 'depth', 'pos', 'style'].some((k) => q.has(k));
+}

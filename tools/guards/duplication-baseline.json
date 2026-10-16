@@ -3498,5 +3498,13 @@
   {
     "key": "same name: dunfinity/render/humans/lineup.ts#create + dunfinity/render/humans/neighbourView.ts#create",
     "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
+    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
+    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
   }
 ]
