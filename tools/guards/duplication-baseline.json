@@ -2468,10 +2468,6 @@
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   },
   {
-    "key": "idiom: [.n2 .noise] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/roots.ts",
-    "reason": "each style samples its own seeded Noise; the shared seam is Noise itself"
-  },
-  {
     "key": "same name: dunfinity/gen/fungal.ts#cover + dunfinity/gen/roots.ts#cover",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -3276,10 +3272,6 @@
     "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
   },
   {
-    "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/collapse.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
-    "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
-  },
-  {
     "key": "idiom: [.n3 .rough] in dunfinity/gen/collapse.ts + dunfinity/gen/goblin.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
     "reason": "each style roughens its walls with its own seeded 3D Noise (this.rough.n3); Noise is the one seam, the scales and amounts are each style's own"
   },
@@ -3306,5 +3298,9 @@
   {
     "key": "clone: dunfinity/gen/bones.ts#constructor + dunfinity/gen/lava.ts#constructor",
     "reason": "each line style's constructor derives its own seeds and makes its GrainLines (deriveSeed(seed, '<style>', ...)); the shapes match, the seeds and fields differ"
+  },
+  {
+    "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
+    "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
   }
 ]
