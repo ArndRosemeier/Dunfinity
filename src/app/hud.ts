@@ -28,7 +28,8 @@ const STYLE = `
   #game-hud .purse .dim { color: var(--ui-ink-dim); }
   #game-hud .boss { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); width: min(520px, 70vw); text-align: center; display: none; }
   #game-hud .boss .name { font: 400 22px var(--ui-font-display); letter-spacing: .12em; color: #f0d9b0; margin-bottom: 4px; }
-  #game-hud .boss .ui-meter { height: 10px; --c: var(--ui-blood); }
+  #game-hud .boss .ui-meter { height: 10px; --c: var(--ui-blood); overflow: visible; }
+  #game-hud .boss .ui-meter::before { border-radius: 2px; }
   #game-hud .banner { position: absolute; left: 50%; top: 18vh; transform: translate(-50%, 6px); text-align: center; opacity: 0; transition: opacity 1.2s var(--ui-ease), transform 1.2s var(--ui-ease); }
   #game-hud .banner.on { opacity: 1; transform: translate(-50%, 0); }
   #game-hud .banner .ui-label { font-size: 12px; color: var(--ui-accent); letter-spacing: .3em; }
@@ -131,20 +132,24 @@ export class Hud {
     const purse = child(this.el, 'div', 'purse ui-panel ui-grown');
     const purseText = child(purse, 'div');
     growOn(purse, 'purse', { amount: 0.4, moss: false });
-    const boss = child(this.el, 'div', 'boss');
+    const boss = child(this.el, 'div', 'boss ui-grown');
     const bossName = child(boss, 'div', 'name'), bossBar = child(boss, 'div', 'ui-meter');
+    growOn(bossBar, 'boss', { amount: 0.8, moss: false });
     const banner = child(this.el, 'div', 'banner');
     const bannerLabel = child(banner, 'div', 'ui-label'), bannerName = child(banner, 'div', 'name');
     child(banner, 'div', 'ui-rule');
     const help = child(this.el, 'div', 'help ui-panel ui-grown');
     help.innerHTML = keysHtml(HELP) + '<div class="foot">The help goes once you are below the cellar.</div>';
     growOn(help, 'help', { amount: 0.5, moss: false });
-    this.parts = {
+    const parts = {
       health, stamina, hn, mode, purse: purseText, boss, bossName, bossBar, banner, bannerLabel, bannerName, help,
       hurt: child(left, 'div', 'hurt'), tally: child(left, 'div', 'tally'),
-      notice: child(this.el, 'div', 'notice'), gain: child(this.el, 'div', 'gain'), prompt: child(this.el, 'div', 'prompt'),
+      notice: child(this.el, 'div', 'notice ui-grown'), gain: child(this.el, 'div', 'gain'), prompt: child(this.el, 'div', 'prompt ui-grown'),
       flags: child(this.el, 'div', 'flags'), dev: child(this.el, 'div', 'dev'),
     };
+    growOn(parts.prompt, 'prompt', { amount: 0.35, moss: false });
+    growOn(parts.notice, 'notice', { amount: 0.35, moss: false });
+    this.parts = parts;
   }
 
   /** Show the name of a level as one arrives: its number (none for the town and cellar) over its name, for `secs` from `now`. */

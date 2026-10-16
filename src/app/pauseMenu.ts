@@ -8,6 +8,7 @@ import { Modal, child, keycap, onClick } from './panel';
 
 const STYLE = `
   #pause { width: min(560px, calc(100vw - 32px)); z-index: 11; }
+  #pause.open { box-shadow: var(--ui-shadow), 0 0 0 100vmax #000a; }
   #pause > .ui-scroll { padding: 22px 28px 18px; }
   #pause .ui-title { font-size: 34px; text-align: center; margin-bottom: 2px; }
   #pause .sub { text-align: center; margin-bottom: 14px; }

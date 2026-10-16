@@ -590,9 +590,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   view.renderer.setAnimationLoop(() => {
     timer.update();
-    if (controls.tap('Escape') && !document.pointerLockElement && performance.now() - freedAt > 300) {
+    // (Only when nothing else is open that Escape would close: then it is theirs.)
+    const others = tinView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || body.dead || !!document.querySelector('#whatsnew.open');
+    if (!others && !document.pointerLockElement && performance.now() - freedAt > 300 && controls.tap('Escape')) {
       if (pause.open) goOn();
-      else if (!tinView.open && !readView.open && !diaryView.open && !letterView.open && !mapView.open && !debug.open && !body.dead && !document.querySelector('#whatsnew.open')) pause.showMenu();
+      else pause.showMenu();
     }
     if (pause.open) { view.frame(body.x, body.y, body.z, timer.getElapsed()); controls.endFrame(); return; }
     const dt = Math.min(0.1, timer.getDelta());
