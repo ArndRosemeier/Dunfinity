@@ -202,7 +202,7 @@ const ROLE_PLANS: Record<CritterRole, { length: [number, number]; plans: [BodyPl
   scuttler: { length: [0.06, 0.28], plans: [['hexapod', 4], ['crab', 3], ['octopod', 1.5], ['quadruped', 2], ['myriapod', 1.2], ['slug', 1], ['radial', 0.8]] },
   grazer: { length: [0.5, 1.4], plans: [['quadruped', 5], ['hexapod', 1.5], ['slug', 1.5], ['biped', 0.8], ['crab', 0.8]] },
   floater: { length: [0.3, 1.2], plans: [['floater', 1]] },
-  giant: { length: [2.2, 4], plans: [['quadruped', 4], ['hexapod', 1.5], ['biped', 1], ['slug', 0.7], ['octopod', 0.8]] },
+  giant: { length: [1.3, 3], plans: [['quadruped', 4], ['hexapod', 1.5], ['biped', 1], ['slug', 0.7], ['octopod', 0.8]] },
   watcher: { length: [0.25, 0.7], plans: [['quadruped', 3], ['biped', 2], ['octopod', 1], ['radial', 1], ['crab', 1]] },
   hunter: { length: [0.6, 1.3], plans: [['quadruped', 5], ['biped', 2], ['octopod', 1.5], ['hexapod', 1]] },
   lurker: { length: [0.4, 1.2], plans: [['octopod', 2], ['serpent', 2], ['myriapod', 1.5], ['crab', 1.2], ['quadruped', 1]] },
@@ -265,6 +265,8 @@ export function grow(rng: Rng, role: CritterRole, strange: number, id: string): 
   }
 
   let length = Math.exp(lerp(Math.log(spec.length[0]), Math.log(spec.length[1]), rng.float()));
+  // Now and then a colossus: a slow grazer some ten metres long (Arnd, 2026-10-16).
+  if (role === 'giant' && rng.chance(0.15)) length = rng.range(3.2, 4);
   const isJointed = jointed(plan);
 
   // ---------------- skin
@@ -450,17 +452,45 @@ function colour(rng: Rng, integ: Integument, plan: BodyPlan, role: CritterRole, 
   if (integ === 'chitin') { base = mixRgb(base, [0.12, 0.1, 0.09], rng.range(0.3, 0.7)); secondary = mixRgb(secondary, base, 0.5); }
   if (integ === 'slime') base = mixRgb(base, [0.85, 0.8, 0.78], rng.range(0.2, 0.6));
   if (integ === 'stone') { base = mixRgb([0.42, 0.4, 0.38], base, 0.3); secondary = mixRgb(base, [0.2, 0.2, 0.2], 0.5); }
-  if (odd.has('oddColour') || rng.chance(Math.min(0.5, strange * 0.12))) {
-    const hue = rng.float();
-    const c = hsl2rgb(hue, rng.range(0.4, 0.75), rng.range(0.3, 0.5));
-    if (rng.chance(0.5)) secondary = c; else base = mixRgb(base, c, rng.range(0.5, 0.85));
+  // Colour (Arnd, 2026-10-16: not all one tint): many species wear a scheme, its two colours in
+  // a relation (a warning's black and yellow, complements, neighbours, a jewel's sheen, pastels).
+  let vivid = false;
+  if (odd.has('oddColour') || rng.chance(0.45 + Math.min(0.3, strange * 0.08))) {
+    vivid = true;
+    const h = rng.float();
+    switch (rng.weighted(['warning', 'complement', 'analogous', 'jewel', 'pastel', 'split'] as const, (_, i) => [1.2, 1.4, 1.2, integ === 'chitin' || integ === 'scales' ? 1.6 : 0.6, integ === 'slime' || integ === 'hide' ? 1.4 : 0.6, 0.8][i])) {
+      case 'warning': // black (or deep) and a loud yellow, orange or red
+        base = hsl2rgb(rng.pick([0.02, 0.07, 0.12, 0.15]), rng.range(0.75, 0.95), rng.range(0.45, 0.55));
+        secondary = hsl2rgb(rng.float(), 0.2, rng.range(0.04, 0.1));
+        if (rng.chance(0.4)) [base, secondary] = [secondary, base];
+        break;
+      case 'complement':
+        base = hsl2rgb(h, rng.range(0.45, 0.8), rng.range(0.3, 0.5));
+        secondary = hsl2rgb((h + 0.5) % 1, rng.range(0.5, 0.85), rng.range(0.4, 0.6));
+        break;
+      case 'analogous':
+        base = hsl2rgb(h, rng.range(0.5, 0.85), rng.range(0.3, 0.5));
+        secondary = hsl2rgb((h + rng.pick([-0.09, 0.09]) + 1) % 1, rng.range(0.6, 0.9), rng.range(0.45, 0.65));
+        break;
+      case 'jewel': // deep saturated blue, green, violet, teal
+        base = hsl2rgb(rng.pick([0.33, 0.45, 0.55, 0.62, 0.75, 0.9]), rng.range(0.7, 0.95), rng.range(0.22, 0.38));
+        secondary = hsl2rgb((rgbHue(base) + rng.range(0.05, 0.15)) % 1, 0.85, rng.range(0.45, 0.6));
+        break;
+      case 'pastel': // cave fish: pink, lilac, mint, peach
+        base = hsl2rgb(rng.pick([0.95, 0.8, 0.45, 0.07, 0.55]), rng.range(0.35, 0.6), rng.range(0.68, 0.8));
+        secondary = hsl2rgb((rgbHue(base) + rng.range(0.25, 0.4)) % 1, rng.range(0.5, 0.75), rng.range(0.5, 0.65));
+        break;
+      default: // an earth body with one loud mark
+        secondary = hsl2rgb(h, rng.range(0.75, 1), rng.range(0.45, 0.6));
+    }
   }
   const jitter = (c: Rgb, a: number): Rgb => [clamp(c[0] + rng.range(-a, a), 0.02, 1), clamp(c[1] + rng.range(-a, a), 0.02, 1), clamp(c[2] + rng.range(-a, a), 0.02, 1)];
   base = jitter(base, 0.04);
   secondary = jitter(secondary, 0.05);
   const glowHue = rng.chance(0.65) ? rng.range(0.42, 0.6) : rng.pick([0.08, 0.15, 0.8, rng.float()]);
   const glowing = odd.has('glowing') || odd.has('lure') || plan === 'floater' || odd.has('translucent');
-  const pattern: PatternKind = integ === 'stone' ? rng.pick(['none', 'bands', 'mottled'] as const) : rng.weighted(['none', 'stripes', 'spots', 'bands', 'patches', 'mottled', 'saddle', 'eyespots'] as const, (_, i) => [2.5, role === 'hunter' ? 2 : 1, 2, integ === 'chitin' || plan === 'serpent' || plan === 'myriapod' ? 3 : 0.4, 1, 1.6, 1, 0.2 + strange * 0.3][i]);
+  // A scheme needs a pattern to show its second colour.
+  const pattern: PatternKind = vivid && integ !== 'stone' && rng.chance(0.85) ? rng.pick(['stripes', 'spots', 'bands', 'patches', 'saddle', 'eyespots'] as const) : integ === 'stone' ? rng.pick(['none', 'bands', 'mottled'] as const) : rng.weighted(['none', 'stripes', 'spots', 'bands', 'patches', 'mottled', 'saddle', 'eyespots'] as const, (_, i) => [2.5, role === 'hunter' ? 2 : 1, 2, integ === 'chitin' || plan === 'serpent' || plan === 'myriapod' ? 3 : 0.4, 1, 1.6, 1, 0.2 + strange * 0.3][i]);
   return {
     base, secondary,
     belly: mixRgb(base, [0.93, 0.9, 0.84], rng.range(0.35, 0.7)),
@@ -470,7 +500,7 @@ function colour(rng: Rng, integ: Integument, plan: BodyPlan, role: CritterRole, 
     keratin: integ === 'chitin' ? mixRgb(base, [0.05, 0.04, 0.03], 0.6) : rng.pick([[0.85, 0.8, 0.68], [0.22, 0.19, 0.17], [0.55, 0.45, 0.32]] as Rgb[]),
     pattern,
     patternScale: rng.range(3, 8) * (pattern === 'stripes' ? 1.3 : 1),
-    patternContrast: rng.range(0.35, 0.9),
+    patternContrast: vivid ? rng.range(0.7, 1) : rng.range(0.35, 0.9),
     countershade: integ === 'chitin' || integ === 'stone' ? rng.range(0, 0.3) : rng.range(0.35, 0.9),
     glowAmount: glowing ? rng.range(0.5, 1) : rng.chance(0.08 + strange * 0.06) ? rng.range(0.2, 0.6) : 0,
     glowStyle: plan === 'floater' ? rng.pick([0, 2]) : rng.weighted([0, 1, 2], (_, i) => [3, 2, 0.4][i]),
@@ -478,6 +508,14 @@ function colour(rng: Rng, integ: Integument, plan: BodyPlan, role: CritterRole, 
     sheen: integ === 'chitin' && rng.chance(0.35) ? rng.range(0.3, 0.9) : 0,
     translucent: odd.has('translucent') || plan === 'floater' ? rng.range(0.5, 0.9) : 0,
   };
+}
+
+/** The hue (0..1) of a colour. */
+function rgbHue([r, g, b]: Rgb): number {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  if (d < 1e-6) return 0;
+  const h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return h / 6;
 }
 
 function isEyeDark(rng: Rng): boolean {

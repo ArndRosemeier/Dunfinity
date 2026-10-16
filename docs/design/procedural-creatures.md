@@ -72,6 +72,16 @@ so every skeleton is padded to 96 bones.
 
 ## 6. Peaceful creatures
 
+Arnd's picks (2026-10-16):
+- Peaceful procedural species live from level 1 (rare and mild there); the hand-made foes stay on
+  levels 1 to 10; procedural foes start at level 11.
+- Sizes vary widely; now and then a colossus, a slow peaceful grazer some ten metres long.
+- Fighting power scales with size, so attacking a colossus is suicide.
+- Every creature retaliates when attacked, or flees if the fight is hopeless.
+- Colourful: many species wear a colour scheme (a warning's black and yellow, complements,
+  neighbouring hues, jewel tones, cave-fish pastels, one loud mark on an earth body), not one tint.
+
+
 Most of what moves should not attack. Peaceful species graze, scuttle, drift and watch: they flee
 from the player, follow each other in herds, or look at the lamp and keep their distance. They are for
 wonder and for a living cave. (The light wisps from glowing rock are a separate thread.)
