@@ -30,6 +30,7 @@ export const HURT: Readonly<Record<string, readonly [string, string]>> = {
   flour: ['the flour goes up', 'You went up with the flour. She did say to get out of it first.'],
   critter: ['an animal strikes back', 'You picked a fight with something that lives down here, and lost.'],
   colossus: ['the giant strikes back', 'You attacked something the size of a house.'],
+  hunter: ['an animal attacks', 'Something that hunts down here found you.'],
   'tall-one': ['the Tall One reaches', 'The Tall One reached you outside the salt.'],
   fall: ['a hard landing', 'You fell to your death.'],
 };

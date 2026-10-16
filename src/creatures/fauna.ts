@@ -46,7 +46,7 @@ export class Fauna {
   readonly tall: TallOnes;
   readonly toadstools: Toadstools;
   readonly puffcaps: Puffcaps;
-  /** The level's own peaceful animals (procedural species): they fight back when hurt. */
+  /** The level's own animals (procedural species): peaceful ones fight back when hurt, hunters come for you. */
   readonly critters: Critters;
 
   constructor(level: Level) {
@@ -134,7 +134,7 @@ export class Fauna {
       || this.scavengers.list.some((s) => (s.hostile || s.mode === 'stand') && near(s))
       || this.goblins.list.some((g) => g.hostile && g.mode !== 'flee' && near(g))
       || this.tall.list.some((t) => t.hunting && !t.dead && Math.hypot(t.x - prey.x, t.z - prey.z) < TALL.notice)
-      || this.critters.list.some((c) => c.mode === 'fight' && near(c))
+      || this.critters.list.some((c) => (c.mode === 'fight' || c.mode === 'stalk' || c.mode === 'back') && near(c))
       || [...this.lumen.list, ...this.murk.list].some((s) => s.foe === prey && near(s));
   }
 
