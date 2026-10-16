@@ -37,6 +37,13 @@ export function child<K extends keyof HTMLElementTagNameMap>(parent: HTMLElement
   return el;
 }
 
+/** A button of class `cls` saying `text` in `parent`: a click does `click` (and goes no further, and leaves no focus behind). */
+export function button(parent: HTMLElement, text: string, click: () => void, cls = ''): HTMLButtonElement {
+  const b = child(parent, 'button', cls, text);
+  b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
+  return b;
+}
+
 /** `key` as a keycap (the theme's `ui-key`), for innerHTML. */
 export function keycap(key: string): string {
   return `<span class="ui-key">${esc(key)}</span>`;
@@ -53,7 +60,8 @@ export class Modal {
   private readonly growth: Growth;
   protected readonly el: HTMLDivElement;
 
-  constructor(host: HTMLElement, id: string, css: string, surface: 'paper' | 'dark' = 'paper') {
+  /** `toggled(open)`: it opened or closed. */
+  constructor(host: HTMLElement, id: string, css: string, surface: 'paper' | 'dark' = 'paper', private readonly toggled?: (open: boolean) => void) {
     this.frame = panel(host, 'div', id, css);
     this.frame.className = `${surface === 'paper' ? 'ui-paper' : 'ui-panel'} ui-modal`;
     this.el = child(this.frame, 'div', 'ui-scroll');
@@ -67,11 +75,15 @@ export class Modal {
   /** Show it with `html` in it. */
   protected showHtml(html: string): void {
     this.el.innerHTML = html;
-    if (!this.open) this.growth.fit();
+    if (this.open) { this.frame.classList.add('open'); return; }
+    this.growth.fit();
     this.frame.classList.add('open');
+    this.toggled?.(true);
   }
 
   hide(): void {
+    if (!this.open) return;
     this.frame.classList.remove('open');
+    this.toggled?.(false);
   }
 }

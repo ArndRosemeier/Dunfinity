@@ -25,6 +25,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
+| Can this browser draw the game at all (WebGPU, else WebGL 2)? What to show when it cannot | `graphicsSupport()`; `createRenderer` throws `GraphicsUnavailable`, shown with `loading.fail(NO_GRAPHICS...)` | `src/render/renderer.ts`, `src/app/loadingScreen.ts` |
+| Show progress while the game starts (and hide it when the first picture is ready) | the `LoadingScreen` from `main.ts` (`step(text, fraction)`, `hide`, `open`, `gone`; index.html draws it before any script); a level change waits black in `Game.ts` (`arriving`) until `view.settled` (`view.streamed` for a bar) | `src/app/loadingScreen.ts` |
 | I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `ROCK.make()` (the generated rock), `DUST.make()` (motes, moved by the shader), `GLOW.make()`, `METAL.make()`, `WATER.make()`, `FLOW.make()` (water running over rock, rippling upwards). Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |
@@ -45,6 +47,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
 | Dust in the air, seen in the headlamp's beam | `Dust` (one mesh of the `DUST` kind; `follow(lamp)` each frame) | `src/render/dust.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later; `power` from `band.lamplight`) | `src/render/props/lamps.ts` |
+| How much the graphics ask of the machine (pixels drawn, the headlamp's shadow map, rock detail far off), changed at once without a compile | `view.quality = 'low' \| 'medium' \| 'high'`, the presets `QUALITY` | `src/render/LevelView.ts`, `src/render/quality.ts` |
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `toScreen(camera, x, y, z)` | `src/render/screen.ts` |
@@ -104,7 +107,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Border distance, pillars, rubble at a column | `level.columnAt(x, z)` | `src/gen/level.ts` |
 | A quarry working's pillar grid: grid coordinates, which pillars stand, which stand on an older drum (`col.olderTop`, `OLDER`, `band.older`) | `field.toGrid`, `field.fromGrid`, `field.pillarAt` | `src/gen/quarry.ts` |
 | What the miners left in a tile (rails, carts, lamps, shacks, things left against the rock, derricks, loose stones; in the Salt Works statues, chapels and hanging lamps; in the Threshold's caverns ruins (`band.ruins`); in the Cisterns water running up the rock (`band.uphill`, the `flow` mesh); in the Quarry chalk numbers counting down to the nearest way down (`band.chalk`); as much as `level.band` asks for), and its standing water | `quarryProps(level, tx, tz)` | `src/gen/quarryProps.ts` |
-| A point in a prop's own frame (across, ahead) in world x, z | `local(x, z, yaw)` | `src/gen/propMesh.ts` |
+| A point in a prop's own frame (across, ahead) in world x, z; and back | `local(x, z, yaw)`; `unlocal(x, z, ox, oz, yaw)` | `src/gen/propMesh.ts` |
+| The miners' decisions on a working's pillar grid (one roll per working and crossing, which aisles have track, the workings in a square and its grid bounds) | `propSeed`, `propRoll`, `hasRail`, `workingsIn`, `gridBounds`, `PROP_TILE` | `src/gen/propGrid.ts` |
 | Where a human's feet find the floor (foot IK) | `floorUnder(() => level)` | `src/render/humans/nobody.ts` |
 | Carve a salt miner (statues, and the watchers' figures) | `carveMiner(builder, x, top, z, yaw, pose, colour)` | `src/gen/quarryProps.ts` |
 | Draw the watcher statues (turn to you while unseen) | `Watchers` (`draw(props.watcherLists, x, z, camera, dt)`, in `LevelView.frame`); the tiles list them in `PropTile.watchers` | `src/render/props/watchers.ts` |
@@ -129,7 +133,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Can A see B? Can A shoot B? | `world.sight(a, b)` (rock, darkness and objects) | `src/world/query/` |
 | How lit is this point? | `world.light(x, y, z)` | `src/world/query/` |
 | Move a body on the rock: walk, climb, swim, fall | `Body.step(level, input, dt, blockers)` and its metrics `MOVE` (the reachability check will use the same); which walls can be climbed: `level.climbable` (the field's `climbable`: all rock, not built walls); the top of a climb: `Body.ledge` (held until `overLedge()`, which the game calls once the pull-up has played) | `src/world/traverse/body.ts` |
-| Doors that open and shut (where they hang; swinging them, blocking while shut; drawing them) | `HOUSE_DOORS` / `DoorSpec`, `level.doors`; `Doors` (`near`, `toggle`, `step`, `into` the Blockers under `DOORS_KEY`); `DoorView` (`hang`, `draw`) | `src/gen/doorways.ts`, `src/world/doors.ts`, `src/render/props/doorView.ts` |
+| Doors that open and shut (where they hang; swinging them, blocking while shut; drawing them); doors met on the way (the sheds') | `HOUSE_DOORS` / `DoorSpec`, `level.doors`; `Doors` (`near`, `toggle`, `step`, `into` the Blockers under `DOORS_KEY`, `meet` new ones, `of(spec)`, `Doors.shut`); `DoorView` (`hang`, `hangMore`, `draw`) | `src/gen/doorways.ts`, `src/world/doors.ts`, `src/render/props/doorView.ts` |
+| The quarrymen's site sheds: where they stand, their inside's layout (stove, bunk, table, shelf, the spots finds lie on), their doors; which shed holds a point; a point in a shed's frame | `level.sheds` (`Sheds`: `ofTile`, `standingIn`, `holding`), `SHED`, `SHED_SPOTS`, `inFrame`, `shedPoint`; drawn by `quarryProps`; shut in one, `Body.hidden` (nothing notices) and `Campfire.step(..., sheltered)` (rest); the camera kept inside by `OrbitCamera.room` | `src/gen/sheds.ts` |
 | Is a prop in the way? Push out of the props | `Blockers` (`pushOut`, `hits`); the generator lists each tile's boxes (`PropTile.blockers`), `Props` keeps them (`view.props.blockers`) | `src/world/blockers.ts` |
 | A persisted change to the world | `persist.mark(chunk, change)` (guarded: `localStorage` only in `src/persist/`) | `src/persist/` |
 | Keep the game between visits (the family's tin, heirs and finds taken; the living grandchild) | `readSave(seed)`, `writeSave(seed, data)`; each kept thing gives its `data` and takes it back with `from` (`Tin`, `Cooked`, `Practice`, `Explored`) | `src/persist/save.ts` |
@@ -183,7 +188,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Draw a pool of humans after a list (the nearest; each keeps its human while near; flinch on a blow) | `HumanPool` (`draw(list, x, z, dt, time)`, `figures` for the warm-up) and `humans(n, look, clothes)` to build them | `src/render/creatures/humanPool.ts` |
 | The Foreman (level 5 boss): his hall in a cathedral, the bell that calls the Salt-Touched, his salt crust (front blows glance off) | `Foreman` (a `Population` with one hall: `advance(dt, prey, touched)`, `hall`), numbers `FOREMAN`; the bell's call: `SaltTouched.call(x, z, r)`; his crew: `SaltTouched.gather` | `src/creatures/foreman.ts` |
 | Draw the Foreman and his bell | `ForemanView` (one human built tall, added once with the Stage; `draw(boss, hall, dt, time)`) | `src/render/creatures/foremanView.ts` |
-| Everything living on a level, together: made, stepped, the foes a blow can hit, whether something is after you, the HUD tally | `Fauna` (`advance(dt, prey, lamp)`, `foes()`, `after(prey)`, `tally()`, `bossLine(prey)`) | `src/creatures/fauna.ts` |
+| Everything living on a level, together: made, stepped, the foes a blow can hit, whether something is after you, the HUD tally | `Fauna` (`advance(dt, prey, lamp)`, `foes()`, `after(prey)`, `tally()`, `boss(prey)`) | `src/creatures/fauna.ts` |
 | The pick blow over the head (wind-up, commit, land), and closing in to swing it | `pickSwing(w, t, S, prey, aim, steer, rng, cause, dt)` and `closeIn(w, swingT, prey, S, speed, steer, dt, face)` with a `PickSwing` | `src/creatures/pick.ts` |
 | A blow struck by someone standing somewhere | `blowFrom(at, yaw, swing)` | `src/combat/combat.ts` |
 | What every creature is (health, hurt, death, `provoked`) | `Creature`; `groundSpeed(v)` | `src/creatures/creature.ts` |
@@ -212,10 +217,14 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | The end of a run: what killed the grandchild (the HUD and death lines per cause), what the family keeps and what goes down with them; the death screen that plays it out and sends the next one down | `HURT`, `hurtLine`, `deathLine`, `runEnd(state)` (a `RunEnd`); `DeathView` (`layOut(mourning)`, `playOut(t)`, `ready`, `letterFor`), timings `DEATH`, `NEXT`; where and of what on the notary's list: `fallenAt(f)` | `src/game/runEnd.ts`, `src/app/deathView.ts`, `src/gen/notary.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
 | Remember what a grandchild has seen of each level (exploration memory) | `Explored` (`see(level, x, y, z)`, `has(depth, i, j)`, `cells`, `data`/`from`), `EXPLORE` | `src/world/explored.ts` |
-| A DOM panel of the game (its stylesheet and element), and an element in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)` | `src/app/panel.ts` |
+| A DOM panel of the game (its stylesheet and element), an element in it, a button in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)`, `button(parent, text, click, cls)` | `src/app/panel.ts` |
 | The look of anything in the DOM (HUD, panels, title screen, introduction): fonts, colours, panels, paper, buttons, keycaps, meters. Never a hex colour or font stack of one's own | `useTheme()` (called by `addStyle`), CSS variables `--ui-*`, classes `ui-panel`, `ui-paper`, `ui-modal`, `ui-scroll`, `ui-title`, `ui-label`, `ui-rule`, `ui-btn`, `ui-key` (`keycap(key)`), `ui-keys`, `ui-meter`; `THEME` for a canvas; plan: `docs/design/ui.md` | `src/app/theme.ts`, `src/app/panel.ts` |
 | A panel in the middle of the screen that opens and shuts (the tin, the diary, an inscription) | `Modal` (`showHtml`, `hide`, `open`) | `src/app/panel.ts` |
+| The game's HUD: health, stamina, what hurt, a boss's bar, a level's name on arrival, the notice, the key prompt, salt, purse and pack, the help card | `Hud` (`render(state, now)` with a `HudState` each frame, `banner(label, name, now)`); the keys listed as `HELP` (as bound: `keysOf(keyName)`, `hud.keys`), drawn by `keysHtml`; `#hud` keeps its lines as hidden text for the shot tools | `src/app/hud.ts` |
+| Read a letter or note held in the hands (the notary's letter, grandma's note, a diary page under a stone) | `LetterView` (`show(head, text, image, asides)`) | `src/app/letterView.ts` |
+| The pause menu (Escape with the mouse free, or its button): the clock stands still, the way to the settings, the keys | `PauseMenu` (`show`, `hide`, with the game's `PauseActions`) | `src/app/pauseMenu.ts` |
 | Grandma's salt growing over a UI element (slow blue veins on its frame, curls, buds, moss), and how thickly with depth | `growOn(frame, name, { amount, moss })` (shows with `open` or `ui-grown`; `fit()`), `setGrowth(growthAt(depth))`; still under `prefers-reduced-motion` or `:root.ui-still` | `src/app/growth.ts` |
+| The settings (O): volumes, keys, graphics quality | `SettingsView` (`toggle`, with the game's `SettingsHooks`); kept by `read…Settings`/`write…Settings` | `src/app/settingsView.ts`, `src/persist/settings.ts` |
 | Show the map of what was seen (M) | `MapView` (`toggle`, `draw(level, explored, x, y, z, yaw, fire, now)`); a style's floor colour there is `Style.mapFloor` (default `MAP_FLOOR`) | `src/app/mapView.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
@@ -225,7 +234,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 
 | Question | The one way | Where |
 |---|---|---|
-| Play a sound: one-shot (placed or on the nobody), a positioned loop, ambience beds; volume, mute, music switch (kept through `src/persist/settings.ts`) | `SoundEngine` (`play(id, at, gain, pitch)`, `loop`, `ambience`, `set`); clips in `public/sounds/manifest.json` | `src/audio/audio.ts` |
+| Play a sound: one-shot (placed or on the nobody), a positioned loop, ambience beds; volume and each category's (effects, ambience, music), mute, music switch (kept through `src/persist/settings.ts`) | `SoundEngine` (`play(id, at, gain, pitch)`, `loop`, `ambience`, `set`); clips in `public/sounds/manifest.json` | `src/audio/audio.ts` |
 | Which sounds the world makes (footsteps, landings, hurt, creatures' modes, doors, the fire, the bell) and which ambience and music | `GameSounds.update(scene)` once a frame; the game's own events through `sounds.play(id, at)`; a creature kind's voice in `VOICES` | `src/audio/gameSounds.ts` |
 | Where one is, for sound (town, cellar, a band) | `GameSounds.place(level, pos)` | `src/audio/gameSounds.ts` |
 | Which music plays when | `MoodDirector` (pure; moods, episodes, danger hold), pieces per mood `MOOD_TRACKS`, played by `Music` / `TrackPlayer` | `src/audio/music/` |
@@ -237,7 +246,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
-| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys) | `Controls` | `src/input/controls.ts` |
+| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys); the player's own keys (`bind`), nothing while a menu is open (`paused`) | `Controls` | `src/input/controls.ts` |
+| Which key an action answers to (the player may move them; an action is named by its own default key, so the game keeps asking for 'KeyW'), and what a key is called on screen | `Bindings` (`keyOf`, `actionOf`, `rebind` swaps on a taken key, `clear`, `data`), `keyLabel`; the game's actions `KEY_ACTIONS` and `FIXED_KEYS` in `src/game/abilities.ts` | `src/input/bindings.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 
 ## Layers

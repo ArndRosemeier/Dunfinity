@@ -52,7 +52,7 @@ export class StepsView {
   }
 
   /** Draw the card for `steps` (call each frame; it redraws only on change). `now`: seconds, for the goodbye. */
-  redraw(steps: FirstSteps, now: number): void {
+  pin(steps: FirstSteps, now: number): void {
     if (steps.over) {
       if (this.frame.classList.contains('open') && this.byeAt < 0) this.frame.classList.remove('open', 'shown');
       return;

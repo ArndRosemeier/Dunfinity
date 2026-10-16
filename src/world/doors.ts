@@ -1,5 +1,6 @@
 /**
- * Doors that open and shut (grandma's house; src/gen/doorways.ts says where): E at a door swings it,
+ * Doors that open and shut (grandma's house, src/gen/doorways.ts; the quarry sheds', src/gen/sheds.ts,
+ * met as one comes near them: `meet`): E at a door swings it,
  * it stops rather than swing through whoever stands in its way, and while shut it blocks like a
  * prop (its box goes into the Blockers under `DOORS_KEY`). The cellar door is strange: it shuts
  * itself once nobody is near it, and it has things to say. Pure.
@@ -35,8 +36,9 @@ export class Door {
   /** How open: 0 shut … 1 wide open; and which way it is going. */
   open = 0;
   want = 0;
-  /** When it last came to stand open. */
+  /** When it last came to stand open; whether it ever has been opened. */
   openedAt = 0;
+  opened = false;
   constructor(readonly spec: DoorSpec) {}
 
   /** The panel's yaw now. */
@@ -63,14 +65,32 @@ export class Door {
 
 export class Doors {
   readonly list: Door[];
-  private readonly boxes: Float32Array;
+  private boxes: Float32Array;
+  /** The doors by where they hang (`doorKey`), so one met again is the same door. */
+  private readonly byKey = new Map<string, Door>();
   private readonly probe = new Blockers();
   private readonly one = new Float32Array(BLOCKER_STRIDE);
   private said = 0;
 
   constructor(specs: readonly DoorSpec[]) {
-    this.list = specs.map((s) => new Door(s));
-    this.boxes = new Float32Array(this.list.length * BLOCKER_STRIDE);
+    this.list = [];
+    this.boxes = new Float32Array(0);
+    this.meet(specs);
+  }
+
+  /** Take in these doors (the sheds' near the nobody); the ones not met before, now hanging shut. Put them `into` the Blockers after. */
+  meet(specs: readonly DoorSpec[]): Door[] {
+    const fresh: Door[] = [];
+    for (const s of specs) {
+      const k = doorKey(s);
+      if (this.byKey.has(k)) continue;
+      const d = new Door(s);
+      this.byKey.set(k, d);
+      this.list.push(d);
+      fresh.push(d);
+    }
+    if (fresh.length) this.boxes = new Float32Array(this.list.length * BLOCKER_STRIDE);
+    return fresh;
   }
 
   /** The door within reach of someone standing at (x, y, z), nearest first. */
@@ -84,11 +104,25 @@ export class Doors {
     return best;
   }
 
-  /** Open it, or shut it; what (if anything) there is to say about it. */
+  /** Open it, or shut it; what (if anything) there is to say about it (the cellar door's lines; what one sees through a door opened the first time). */
   toggle(door: Door, now: number): string {
     door.want = door.want > 0.5 ? 0 : 1;
-    if (door.want) door.openedAt = now;
-    return door.spec.kind === 'cellar' && door.want ? CELLAR_LINES[this.said++ % CELLAR_LINES.length] : '';
+    if (!door.want) return '';
+    door.openedAt = now;
+    const first = !door.opened;
+    door.opened = true;
+    if (door.spec.kind === 'cellar') return CELLAR_LINES[this.said++ % CELLAR_LINES.length];
+    return first ? door.spec.says ?? '' : '';
+  }
+
+  /** The door hung at `spec`, if met. */
+  of(spec: DoorSpec): Door | undefined {
+    return this.byKey.get(doorKey(spec));
+  }
+
+  /** Whether `door` stands shut (not open at all, and not opening). */
+  static shut(door: Door): boolean {
+    return door.open === 0 && door.want === 0;
   }
 
   /**
@@ -120,4 +154,9 @@ export class Doors {
     this.list.forEach((d, i) => d.box(this.boxes, i * BLOCKER_STRIDE));
     blockers.set(DOORS_KEY, this.boxes);
   }
+}
+
+/** Where a door hangs, as a key: the same door met twice is one door. */
+function doorKey(s: DoorSpec): string {
+  return `${s.x.toFixed(2)},${s.y.toFixed(2)},${s.z.toFixed(2)}`;
 }

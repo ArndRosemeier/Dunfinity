@@ -168,8 +168,11 @@ export class Body {
   /** Body time of the last blow the lid stopped. */
   blockedAt = -Infinity;
 
+  /** Shut in somewhere (a quarry shed with its door shut): nothing outside notices it. */
+  hidden = false;
+
   /** How far off things notice the nobody, a share of their usual (`Fighter.hush`). */
-  get hush(): number { return this.sneaking ? this.tiptoe!.hush : 1; }
+  get hush(): number { return this.hidden ? 0 : this.sneaking ? this.tiptoe!.hush : 1; }
 
   /** Mid-roll. */
   get rolling(): boolean { return this.rollT < MOVE.roll.dur; }

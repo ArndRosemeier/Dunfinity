@@ -62,6 +62,7 @@ export class SoundEngine {
       this.master.connect(comp).connect(ctx.destination);
       for (const c of ['effects', 'ambience', 'music'] as const) {
         const g = ctx.createGain();
+        g.gain.value = this.level(c);
         g.connect(this.master);
         this.cats.set(c, g);
       }
@@ -72,11 +73,20 @@ export class SoundEngine {
 
   private get gain(): number { return this.settings.muted || this.forcedMute ? 0 : this.settings.volume; }
 
+  /** A category's volume under the master. */
+  private level(c: SoundCategory): number {
+    const s = this.settings;
+    return c === 'effects' ? s.effects : c === 'ambience' ? s.ambience : s.musicVolume;
+  }
+
   /** Change and keep the settings. */
   set(s: Partial<SoundSettings>): void {
     this.settings = { ...this.settings, ...s };
     writeSoundSettings(this.settings);
-    if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.gain, this.ctx.currentTime, 0.05);
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    this.master.gain.setTargetAtTime(this.gain, ctx.currentTime, 0.05);
+    for (const [c, g] of this.cats) g.gain.setTargetAtTime(this.level(c), ctx.currentTime, 0.05);
   }
 
   /** Is anything audible (music too)? */

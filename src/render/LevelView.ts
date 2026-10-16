@@ -15,6 +15,9 @@ import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
 import { Watchers } from './props/watchers';
+import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
+import { QUALITY } from './quality';
+import type { Quality } from '../persist/settings';
 
 /** Fog distances: a lit survey view, and roughly what a headlamp shows. */
 const FOG = { survey: [80, 900], dark: [10, 140] } as const;
@@ -46,6 +49,9 @@ export class LevelView {
   private dark_ = false;
   /** The level's light and air (src/gen/air.ts). */
   private air: Air = airOf(0, 0);
+  /** Which chunks the rock is streamed in (the quality's detail). */
+  private chunkView: ChunkView = DEFAULT_VIEW;
+  private quality_: Quality = 'high';
   /** Headlamp intensity in the survey view and in the dark (a lamp carried close to the body wants less). */
   headlampPower = { survey: 60, dark: 17 };
 
@@ -119,8 +125,19 @@ export class LevelView {
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;
     this.lamps.power = this.level_.band.lamplight;
-    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key);
+    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key, this.chunkView);
     this.props_ = new Props(this.stage, this.things, this.level_.key, this.lamps);
+  }
+
+  /** The graphics quality: pixels drawn, the headlamp's shadow map, the rock's detail far off (src/render/quality.ts). Applies at once; compiles nothing. */
+  get quality(): Quality { return this.quality_; }
+  set quality(q: Quality) {
+    const p = QUALITY[q];
+    this.quality_ = q;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, p.pixels));
+    this.headlamp.shadow.mapSize.set(p.shadowMap, p.shadowMap);
+    this.chunkView = { ...DEFAULT_VIEW, split: p.split };
+    this.terrain_?.setView(this.chunkView);
   }
 
   get terrain(): Terrain { return need(this.terrain_); }
@@ -142,6 +159,11 @@ export class LevelView {
     return !!this.terrain_?.settled && !!this.props_?.settled;
   }
 
+  /** How far the rock around the viewer has come, 0–1 (the loading screen's bar; props follow it closely). */
+  get streamed(): number {
+    return this.settled ? 1 : Math.min(0.99, this.terrain_?.progress ?? 0);
+  }
+
   /** Put the headlamp where it is carried (in the camera's frame); it shines where the camera looks. */
   private aimHeadlamp(): void {
     if (!this.carrier) this.headlamp.position.set(0, 0, 0);
@@ -158,8 +180,12 @@ export class LevelView {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Once per frame: stream around (x, y, z), then render. `time` in seconds. */
-  frame(x: number, y: number, z: number, time: number): void {
+  /**
+   * Once per frame: stream around (x, y, z), then render. `time` in seconds. `draw` false while
+   * something covers the view (the loading screen, the black of an arrival): streaming goes on,
+   * and the frame's drawing time goes to it.
+   */
+  frame(x: number, y: number, z: number, time: number, draw = true): void {
     this.stage.frame();
     this.aimHeadlamp();
     this.dust.follow(this.headlamp);
@@ -167,7 +193,7 @@ export class LevelView {
     this.props.update(x, y, z, time);
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;
-    this.renderer.render(this.scene, this.camera);
+    if (draw) this.renderer.render(this.scene, this.camera);
   }
 }
 

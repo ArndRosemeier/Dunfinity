@@ -28,6 +28,10 @@ import { LevelView } from '../render/LevelView';
 import { OrbitCamera } from '../render/camera/OrbitCamera';
 import { Nobody } from '../render/humans/nobody';
 import { Controls } from '../input/controls';
+import { Bindings, keyLabel } from '../input/bindings';
+import { readGraphicsSettings, readKeySettings, writeGraphicsSettings, writeKeySettings } from '../persist/settings';
+import { QUALITY_NOTES } from '../render/quality';
+import { SettingsView } from '../app/settingsView';
 import { parseViewParams } from '../app/params';
 import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
@@ -54,6 +58,8 @@ import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
 import { Doors } from '../world/doors';
 import { DoorView } from '../render/props/doorView';
+import { PROPS_RADIUS } from '../render/props/Props';
+import { PROP_TILE } from '../gen/propGrid';
 import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -75,13 +81,18 @@ import { Thrown } from '../combat/thrown';
 import { GameSounds } from '../audio/gameSounds';
 import { ThrownView } from '../render/humans/thrownView';
 import { AbilityBar, type SlotState } from '../app/abilityBar';
-import { ABILITIES, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
+import { ABILITIES, FIXED_KEYS, KEY_ACTIONS, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
 import { TargetMark } from '../app/targetMark';
+import { Hud, keysOf } from '../app/hud';
+import { LetterView } from '../app/letterView';
+import { PauseMenu } from '../app/pauseMenu';
+import { pageId } from '../lore/diary';
 import { keeps, nextTarget, yawTo } from './target';
 import { Prologue, Walk } from './prologue';
 import { FirstSteps, type StepId } from './firstSteps';
 import { PrologueView } from '../app/prologueView';
 import { StepsView } from '../app/stepsView';
+import type { LoadingScreen } from '../app/loadingScreen';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -106,19 +117,32 @@ const WAY_HOME = { dur: 4, fade: 1, motes: 0.5 };
 const BLOCK = { dur: 0.6, held: 0.25, hold: 0.4 };
 /** Cooking a card at the fire: seconds the nobody stirs. */
 const COOK = { dur: 2.4 };
+/** Arriving on a level: the screen stays black (and the world still) until its rock is on screen, at most `cap` seconds. */
+const ARRIVE = { cap: 30 };
 
-export async function startGame(host: HTMLElement): Promise<void> {
+export async function startGame(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
+  loading.step('Laying out the level', 0.03);
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
   setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
+  loading.step('Dressing the figures', 0.08);
   view.headlampPower = { survey: 14, dark: 3.5 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
   view.carrier = new Vector3(); // the headlamp is on the nobody's forehead
+  let graphics = readGraphicsSettings();
+  view.quality = graphics.quality;
+  // Reduced motion: the interface's own animations keep still under this class (as under prefers-reduced-motion).
+  document.documentElement.classList.toggle('ui-still', graphics.still);
   const controls = new Controls(canvas);
+  /** The player's own keys (the settings): the game asks for an action by its own key, the controls answer with the key moved onto it. */
+  const bindings = new Bindings(KEY_ACTIONS.map((a) => a.key), FIXED_KEYS, readKeySettings());
+  controls.bind(bindings);
+  /** What the key for `action` is called now. */
+  const keyName = (action: string): string => keyLabel(bindings.keyOf(action));
   const cam = new OrbitCamera(view.camera, level);
   if (params.look) [cam.yaw, cam.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
@@ -151,13 +175,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let exploredAt = 0;
   /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
+  /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
+  let arriving = false, arrivedAt = 0;
   const show = (l: Level) => {
     level = l;
     setGrowth(growthAt(l.depth));
+    arriving = true;
+    arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
+    doorsMet = '';
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
@@ -203,6 +232,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
   /** The doors that open and shut (grandma's house). */
   let doors = new Doors(level.doors);
+  /** The props tile the sheds' doors were last met from (the nobody's), so they are met once per tile walked into. */
+  let doorsMet = '';
+  /** Hang the doors of the sheds round the nobody, as far as the props show (new ones shut). */
+  const meetDoors = () => {
+    const tile = `${Math.floor(body.x / PROP_TILE)},${Math.floor(body.z / PROP_TILE)}`;
+    if (tile === doorsMet) return;
+    doorsMet = tile;
+    const r = PROPS_RADIUS, fresh = doors.meet(level.sheds.standingIn(body.x - r, body.z - r, body.x + r, body.z + r).map((s) => s.door));
+    if (!fresh.length) return;
+    doorView.hangMore(fresh);
+    doors.into(view.props.blockers);
+  };
+  /** The shed the nobody is in, if any. */
+  const shedOf = () => level.sheds.holding(body.x, body.z, body.y);
   finds = findsOf(level);
   // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
   const touchedView = await TouchedView.create(params.seed);
@@ -255,6 +298,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const shroomView = await ShroomView.create();
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
+  loading.step('Warming up the shaders', 0.3);
   await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
@@ -313,12 +357,25 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (!a) return;
     if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
     else controls.press(a.key);
-  });
+  }, keyName);
   /** At Kemal's counter (last frame): 1, 2, 3 buy there, not use the bar. */
   let atCounter = false;
   /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
   let target: Foe | null = null, targetFull = 1;
   const targetMark = new TargetMark(document.body);
+  const hudView = new Hud(document.body);
+  hudView.keys(keysOf(keyName));
+  const letterView = new LetterView(document.body);
+  /** The pause menu: Escape once the mouse is free (not the Escape that freed it), or its button; the game's clock stands still while it is open. */
+  const goOn = (): void => { pause.hide(); canvas.requestPointerLock?.(); };
+  const pause = new PauseMenu(document.body, {
+    resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), keys: () => keysOf(keyName),
+    settings: () => { pause.hide(); settingsView.toggle(); },
+  });
+  let freedAt = -Infinity;
+  document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement) pause.hide(); else freedAt = performance.now(); });
+  /** Whether this grandchild has been below the cellar (the help card shows until then). */
+  let beenDown = level.depth > 0;
   /** The debug menu (`): every ability, invulnerable, tireless, any level, anything worth checking out. */
   let debugPlaces: Place[] = [];
   /** Put the nobody down at (x, y, z) facing `yaw` on the level shown, as they were (health, stamina), fading in. */
@@ -346,7 +403,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       // Facing away from the ladder up, out over the level.
       const up = level.ascent, yaw = d === 0 ? CELLAR.start.yaw : up ? Math.atan2(up.x - x, up.z - z) : cam.yaw;
       putDown(x, d === 0 ? 0 : level.groundAt(x, z), z, yaw);
-      say(levelName(level), 5);
+      announce(level);
       debug.refresh();
     },
     places: () => (debugPlaces = placesOn(level, fauna, body.x, body.z)),
@@ -406,16 +463,34 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const shownFinds: Find[] = [];
 
   const input: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: false };
-  const hud = document.getElementById('hud');
   const fade = document.createElement('div');
   fade.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none';
   host.appendChild(fade);
+  // While a level streams in behind the black: a quiet line, so a long wait does not look like a hang.
+  const fadeLine = document.createElement('div');
+  fadeLine.style.cssText = 'position:absolute;left:0;right:0;bottom:18%;text-align:center;color:var(--ui-ink-faint);font:13px/1.4 var(--ui-font);letter-spacing:0.06em;opacity:0;transition:opacity 0.4s';
+  fadeLine.textContent = 'The rock takes shape';
+  fade.appendChild(fadeLine);
   // Getting hurt shows, in first person too: the edges of the view flash red.
   const pain = document.createElement('div');
   pain.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,0,0,0.85) 100%)';
   host.appendChild(pain);
   /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. */
   const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
+  const settingsView = new SettingsView(document.body, {
+    sound: () => sounds.engine.settings,
+    setSound: (s) => sounds.engine.set(s),
+    actions: KEY_ACTIONS,
+    bindings,
+    keysChanged: () => { writeKeySettings(bindings.data); controls.bind(bindings); hudView.keys(keysOf(keyName)); },
+    qualityNow: () => view.quality,
+    setQuality: (q) => { view.quality = q; graphics = { ...graphics, quality: q }; writeGraphicsSettings(graphics); },
+    still: () => graphics.still,
+    setStill: (on) => { graphics = { ...graphics, still: on }; writeGraphicsSettings(graphics); document.documentElement.classList.toggle('ui-still', on); },
+    qualityNotes: QUALITY_NOTES,
+    opened: (open) => { controls.paused = open; },
+  });
+  loading.step('Tuning the sounds', 0.6);
   await sounds.init();
   const timer = new Timer();
   let acc = 0;
@@ -457,9 +532,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (t) say(`${SKILLS[s].name}, practice ${t}. ${SKILLS[s].line}`, 4);
   };
   /** A line to show for a while (arriving on a level), and until when. */
-  let notice = levelName(level), noticeUntil = 5;
+  let notice = '', noticeUntil = 0;
   /** Show `text` as the notice for `secs` seconds. */
   const say = (text: string, secs: number): void => { notice = text; noticeUntil = timer.getElapsed() + secs; };
+  /** The level's name as one arrives on it. */
+  const announce = (l: Level, secs = 5): void => {
+    if (l.depth > 0) beenDown = true;
+    hudView.banner(l.depth ? `Level ${l.depth}` : '', l.band.name, timer.getElapsed(), secs);
+  };
+  announce(level);
   /** Times the Foreman's bell has rung (each ringing gets a notice). */
   let bells = 0, calls = 0, stares = 0, spoken = 0;
   /** A goblin's jab landed: it takes the best thing in the pack (src/creatures/goblins.ts); it drops where the goblin dies. */
@@ -499,7 +580,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
     steps.push({
       kind: 'call', then: () => {
         show(other);
-        notice = levelName(other);
         // Behind the climber, looking at the ladder (from above coming out of a shaft).
         if (to) [cam.yaw, cam.pitch] = [faceYaw(ladderOf(to)), s.up ? -0.55 : -0.12];
       },
@@ -519,7 +599,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body = to ? new Body(p.x, p.y + 0.05, p.z) : arrive(null);
       body.health = health;
       body.facing = climb.yaw;
-      noticeUntil = timer.getElapsed() + 5;
+      announce(level);
       if (!s.up) gained(tin.reached(level.depth), body.x, body.y, body.z, timer.getElapsed());
     };
   };
@@ -560,14 +640,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     prologue = new Prologue();
     prologueShot = -1;
     steps = new FirstSteps();
-    prologueView.show();
+    prologueView.roll();
   };
   /** The prologue played out or skipped: the nobody by grandma's armchair, the camera behind, play begins. */
   const endPrologue = (): void => {
     // Played to the end, the nobody stays where the last shot left it; skipped, by the armchair.
     const played = prologue!.t >= prologue!.span(prologue!.shots.length - 1)[0];
     prologue = null;
-    prologueView.hide();
+    prologueView.lift();
     if (!played) body = arrive(null);
     body.facing = cam.yaw = CELLAR.start.yaw;
     cam.pitch = -0.2;
@@ -606,7 +686,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
     view.camera.position.set(c.eye[0], c.eye[1], c.eye[2]);
     view.camera.lookAt(c.at[0], c.at[1], c.at[2]);
     prologueView.showFrame(f.line >= 0 ? shot.lines[f.line] : '', f.caption, f.black);
-    if (hud) hud.textContent = '';
     view.carrier!.set(body.x, body.y + 1.85, body.z);
     view.frame(body.x, body.y, body.z, now);
     view.camera.getWorldDirection(lampDir);
@@ -649,12 +728,28 @@ export async function startGame(host: HTMLElement): Promise<void> {
     saltAtStart = tin.salt;
     cam.distance = before;
     cam.follow(body.x, body.y + 1.6, body.z, 1);
-    notice = levelName(level); noticeUntil = timer.getElapsed() + NEXT.letter + 5;
+    announce(level, NEXT.letter + 5);
     keepGame();
   };
+  // The first level streams in behind the loading screen, as any later one behind the black.
+  arriving = true;
+  arrivedAt = performance.now() / 1000;
   view.renderer.setAnimationLoop(() => {
     timer.update();
+    // (Only when nothing else is open that Escape would close: then it is theirs.)
+    const others = tinView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || settingsView.open || body.dead || !!prologue || !!document.querySelector('#whatsnew.open');
+    if (!others && !document.pointerLockElement && performance.now() - freedAt > 300 && controls.tap('Escape')) {
+      if (pause.open) goOn();
+      else pause.showMenu();
+    }
+    if (pause.open) { view.frame(body.x, body.y, body.z, timer.getElapsed()); controls.endFrame(); return; }
     const dt = Math.min(0.1, timer.getDelta());
+    if (arriving && (view.settled || performance.now() / 1000 - arrivedAt > ARRIVE.cap)) {
+      arriving = false;
+      if (!climb.active) fadeIn = 0.8; // a climb fades in by itself
+      if (loading.open) { loading.hide(); fadeIn = 0; fade.style.opacity = '0'; }
+    }
+    if (arriving && loading.open) loading.step('Carving the rock', 0.65 + 0.35 * view.streamed);
     if (prologue) { prologueFrame(dt, timer.getElapsed()); return; }
     // A death goes on the notary's list (once).
     if (body.dead && !mourned) mourn();
@@ -686,8 +781,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
     else if (controls.tap('KeyJ') && !tinView.open) { diaryView.show((d) => tin.hasPage(d)); tick('diary'); }
-    if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
-    if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
+    if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(`Sound ${sounds.engine.settings.muted ? 'off' : 'on'} (${keyName('KeyN')}).`, 2); }
+    if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(`Music ${sounds.engine.settings.music ? 'on' : 'off'} (${keyName('KeyB')}).`, 2); }
+    if (controls.tap('KeyO')) settingsView.toggle();
     if (controls.tap('Backquote')) debug.toggle();
     // The bar's slots answer to 1–0, - and = too (not at Kemal's counter); a dead grandchild holds nothing.
     const bar = barOf(cooked);
@@ -823,8 +919,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (!cooked.has(tinSel)) tinSel = TinView.order(cooked)[0];
       tinView.show(cooked, tin, tinSel, null, practice);
     }
+    if (letterView.open && (!nearNote || controls.tap('Escape'))) letterView.hide();
     if (controls.tap('KeyE')) {
-      if (nearLadder) climbFrom(nearLadder);
+      if (letterView.open) letterView.hide();
+      else if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
       else if (nearWeber) say(weber.talk({ deepest: tin.deepest, fallen: fallen.length }, now), 7);
       else if (nearStranger) say(stranger.talk(now), 6);
@@ -845,20 +943,25 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (nearNote && writing!.kind === 'page') {
         const p = level.page!, gain = tin.page(level.depth), k = p.page.key;
         const runes = k !== undefined && key.pencil(k.script, k.letters) > 0;
-        readAt = now; say(`A page torn out of grandma's diary, in her young, fast hand:\n\n${p.page.date}. ${p.page.text}${runes ? `\n\nYou copy her letters into the key in the tin: ${k!.letters.join(', ').toUpperCase()}.` : ''}${gain ? '\n\nYou fold it back into her diary in the tin (J).' : ''}`, 20);
+        readAt = now;
+        letterView.show(`A page torn out of grandma's diary · ${p.page.date}`, p.page.text, `${import.meta.env.BASE_URL}diary/${pageId(p.page)}.webp`,
+          [runes ? `You copy her letters into the key in the tin: ${k!.letters.join(', ').toUpperCase()}.` : '', gain ? 'You fold it back into her diary in the tin (J).' : ''].filter(Boolean));
         gained(gain, note[0], note[1], note[2], now);
         if (diaryView.open) diaryView.show((d) => tin.hasPage(d));
       } else if (nearNote) {
         const found = writing!.kind !== 'letter' && cooked.find('salt-line');
         const runes = writing!.kind !== 'letter' && key.pencil('kerf', GRANDMA_KERF) > 0;
         if (writing!.kind === 'letter') tick('letter');
-        readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}${runes ? `\n\n${RUBBING}` : ''}`, 20);
+        readAt = now;
+        if (writing!.kind === 'letter') letterView.show('A letter from the notary', notaryLetter(heir, params.seed));
+        else letterView.show('Grandma\'s handwriting, young and fast', NOTE.join('\n\n'), null,
+          [found ? `Under the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : '', runes ? RUBBING : ''].filter(Boolean));
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
       }
     }
     const kindling = campfire.kindling(now);
     if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
-      const why = campfire.whyNot(body, body.facing, fauna.after(body), now);
+      const why = shedOf() ? 'Not in a wooden shed. Shut the door and rest.' : campfire.whyNot(body, body.facing, fauna.after(body), now);
       if (why) say(why, 2.5); else { campfire.light(body, body.facing, now); sounds.play('fire_light'); }
     }
     const stirring = now - cookAt < COOK.dur || saltLine.pouring(now);
@@ -880,8 +983,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
         if (fade.style.opacity !== '0') fadeIn = 0.8;
       }
       input.jump = false;
+    } else if (arriving) {
+      fade.style.opacity = '1';
+      input.jump = false;
     } else {
+      meetDoors();
       doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
+      // Shut in a shed: nothing outside notices you, and you can rest.
+      const shed = shedOf(), shedDoor = shed && doors.of(shed.door);
+      body.hidden = !!shedDoor && Doors.shut(shedDoor);
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
       // At the top of a climb: pull up over the edge (played out, then the body stands on the ledge).
       if (body.ledge) {
@@ -960,7 +1070,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body.tiptoe = cooked.tiptoe;
       body.spring = cooked.spring;
       campfire.soup = cooked.soup;
-      campfire.step(body, threat, now, dt);
+      campfire.step(body, threat, now, dt, body.hidden);
       // First steps done by being somewhere or doing something (the rest tick where they happen).
       if (campfire.resting) tick(campfire.inHaven(body) ? 'circle' : 'fire');
       if (body.mode === 'climb') tick('climb');
@@ -977,8 +1087,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           body = arrive(null);
           body.health = hp; body.stamina = st;
           if (to === 0) body.facing = cam.yaw = CELLAR.start.yaw;
-          notice = levelName(level);
-          noticeUntil = now + 5;
+          announce(level);
           fadeIn = 0.8;
         } else {
           fade.style.opacity = String(Math.max(0, (t - (WAY_HOME.dur - WAY_HOME.fade)) / WAY_HOME.fade));
@@ -1034,30 +1143,30 @@ export async function startGame(host: HTMLElement): Promise<void> {
     thrownView.arrange(thrown.missiles, now);
     saltLineView.draw(saltLine, level, now);
     nobody.shown = !cam.firstPerson;
+    cam.room = shedOf();
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     // The map: mark the floor round the nobody seen, now and then; draw it while open.
     if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
     mapView.draw(level, explored, body.x, body.y, body.z, cam.yaw, campfire.burning(timer.getElapsed()) ? campfire.fire : null, timer.getElapsed());
-    const lines = [fauna.bossLine(body), timer.getElapsed() < noticeUntil ? notice : '', now < gainUntil ? gainLine : ''];
-    if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
-    else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
-    else if (nearWeber) lines.push(weber.talking(now) ? '' : 'E: call on Frau Weber');
-    else if (nearStranger) lines.push(stranger.talking(now) ? '' : 'E: speak to the stranger');
+    const lines: string[] = [];
+    const E = keyName('KeyE');
+    if (nearLadder) lines.push(nearLadder.up ? `${E}: climb up the ladder` : `${E}: climb down the ladder`);
+    else if (nearFind) lines.push(`${E}: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
+    else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
     else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
-    else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
-    else if (nearMarks && !readView.open) lines.push('E: read the marks');
-    else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
-    else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : writing!.kind === 'page' ? 'E: read the page under the stone' : 'E: read the note');
-    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. T: open grandma's tin (${tin.salt} salt)`);
-    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');
+    else if (nearPawn) lines.push(pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
+    else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
+    else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
+    else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
+    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : body.hidden ? 'in the miners\' shed, the door shut' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
+    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (draft) lines.push(draft);
     }
-    if (debug.invulnerable || debug.tireless) lines.push(`debug: ${[debug.invulnerable && 'invulnerable', debug.tireless && 'tireless'].filter(Boolean).join(', ')}`);
-    lines.push(...fauna.tally(), `infused salt in grandma's tin: ${tin.salt}`, euros ? `euros in grandma's purse: €${euros}` : '');
-    if (pack.items.length) lines.push(`pack: ${pack.items.length} ${pack.items.length === 1 ? 'find' : 'finds'}, worth about €${pack.worth} at the pawn shop`);
+    const flags = debug.invulnerable || debug.tireless ? `debug: ${[debug.invulnerable && 'invulnerable', debug.tireless && 'tireless'].filter(Boolean).join(', ')}` : '';
     // The ability bar: how soon each slot is ready again, and what is on.
     const slot = (a: Ability): SlotState => {
       const ready = (t0: number, dur: number) => Math.min(1, (now - t0) / dur);
@@ -1082,19 +1191,28 @@ export async function startGame(host: HTMLElement): Promise<void> {
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
     abilityBar.paint(bar, bar.map(slot), passivesOf(cooked), body.dead || tinView.open);
-    stepsView.redraw(steps, now);
-    if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
+    stepsView.pin(steps, now);
+    hudView.render({
+      health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,
+      mode: body.mode === 'climb' ? 'climbing' : body.mode === 'swim' ? 'swimming' : '',
+      hurt: body.time - body.hurtAt < 2 && !body.dead ? `${hurtLine(body.lastCause)}: -${body.lastHurt.toFixed(0)}` : '',
+      boss: fauna.boss(body), notice: timer.getElapsed() < noticeUntil ? notice : '', gain: now < gainUntil ? gainLine : '',
+      prompt: lines.filter(Boolean).join(' · '), tally: fauna.tally(), flags,
+      salt: tin.salt, euros, pack: pack.items.length ? { count: pack.items.length, worth: pack.worth } : null,
+      dead: body.dead, dev: `${backend} · ${view.stage.hudLine()}`, help: !beenDown && steps.over,
+    }, timer.getElapsed());
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
-    view.frame(body.x, body.y, body.z, timer.getElapsed());
+    view.frame(body.x, body.y, body.z, timer.getElapsed(), !loading.open && !(arriving && !climb.active));
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
     sounds.update({
       dt, body, level, fauna, doors: doors.list, fire: campfire.burning(timer.getElapsed()) ? campfire.fire : null,
       resting: campfire.resting, ladder: climb.active, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
-    (globalThis as { __ready?: boolean }).__ready = view.settled;
+    fadeLine.style.opacity = arriving && !loading.open && Number(fade.style.opacity) > 0.9 ? '1' : '0';
+    (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone && !arriving;
     controls.endFrame();
   });
 }
@@ -1103,18 +1221,3 @@ function levelName(level: Level): string {
   return level.depth ? `Level ${level.depth} · ${level.band.name}` : level.band.name;
 }
 
-function bar(value: number, max: number): string {
-  const n = Math.round((Math.max(0, value) / max) * 20);
-  return '█'.repeat(n) + '░'.repeat(20 - n);
-}
-
-/** The HUD. */
-function hudText(b: Body, backend: string): string {
-  const lines = [
-    `health   ${bar(b.health, MOVE.maxHealth)}  ${b.health.toFixed(0)}`,
-    `stamina  ${bar(b.stamina, MOVE.stamina)}${b.mode === 'climb' ? '  climbing' : b.mode === 'swim' ? '  swimming' : ''}`,
-  ];
-  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${hurtLine(b.lastCause)}: -${b.lastHurt.toFixed(0)}`);
-  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · 1–0 or the bar: grandma's cards (Esc frees the mouse to click) · Tab target · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
-  return lines.join('\n');
-}

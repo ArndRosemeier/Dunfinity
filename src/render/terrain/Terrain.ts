@@ -33,8 +33,14 @@ export class Terrain {
   /** Totals for the HUD. */
   stats = { chunks: 0, triangles: 0, pending: 0 };
 
-  constructor(private readonly stage: Stage, private readonly group: Group, readonly level: LevelKey, readonly view: ChunkView = DEFAULT_VIEW) {
+  constructor(private readonly stage: Stage, private readonly group: Group, readonly level: LevelKey, private view: ChunkView = DEFAULT_VIEW) {
     this.pool = createMeshPool();
+  }
+
+  /** Pick chunks by `view` from now on (the graphics quality's detail), at the next frame. */
+  setView(view: ChunkView): void {
+    this.view = view;
+    this.lastAt = [Infinity, Infinity, Infinity];
   }
 
   /** Call every frame with the viewer position. */
@@ -59,6 +65,11 @@ export class Terrain {
   /** True when everything wanted is on screen. */
   get settled(): boolean {
     return this.wanted.length > 0 && this.ready.size === this.wanted.length && this.requested.size === 0;
+  }
+
+  /** How much of what is wanted is ready, 0–1 (for a loading bar). */
+  get progress(): number {
+    return this.wanted.length ? this.ready.size / this.wanted.length : 0;
   }
 
   private want(keys: ChunkKey[]): void {

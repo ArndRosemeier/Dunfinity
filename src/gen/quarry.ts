@@ -17,6 +17,7 @@ import { Noise, hash2i, hashToFloat, deriveSeed, smoothstep, clamp } from '@futu
 import { owns, putSurface, type Style, type StyleId, type Surface } from './style';
 import { blendShare, newNear, voronoiNear, type Near } from './voronoi';
 import { boxDist2 } from './shapes';
+import { unlocal } from './propMesh';
 
 /**
  * Pillars older than the Cisterns (docs/design/town-and-first-strata.md §4): the drum's radius as a
@@ -313,9 +314,7 @@ export class QuarryField implements Style {
 
   /** World (x, z) to the working's pillar-grid coordinates (u, v), metres from its centre. */
   toGrid(w: Working, x: number, z: number): [number, number] {
-    const ca = Math.cos(w.angle), sa = Math.sin(w.angle);
-    const lx = x - w.cx, lz = z - w.cz;
-    return [lx * ca - lz * sa, lx * sa + lz * ca];
+    return unlocal(x, z, w.cx, w.cz, w.angle);
   }
 
   /** Pillar-grid (u, v) back to world (x, z). */

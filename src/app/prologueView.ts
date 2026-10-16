@@ -35,7 +35,7 @@ export class PrologueView {
     this.el.addEventListener('click', onNext);
   }
 
-  show(): void {
+  roll(): void {
     document.body.classList.add('cinematic');
     this.el.classList.add('open');
     requestAnimationFrame(() => requestAnimationFrame(() => this.el.classList.add('shown')));
@@ -49,7 +49,7 @@ export class PrologueView {
   }
 
   /** The bars slide away and the page comes back. */
-  hide(): void {
+  lift(): void {
     this.el.classList.remove('shown');
     this.black.style.opacity = '0';
     this.caption.style.opacity = '0';
