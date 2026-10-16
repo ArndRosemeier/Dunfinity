@@ -40,6 +40,7 @@ import { ShroomView } from '../render/creatures/shroomView';
 import { DogView } from '../render/creatures/dogView';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
+import { GoblinView } from '../render/creatures/goblinView';
 import { NeighbourView } from '../render/humans/neighbourView';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { TallOneView } from '../render/creatures/tallOneView';
@@ -152,7 +153,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
-    touchedView.level = foremanView.level = scavengerView.people.level = neighbourView.people.level = tallView.level = l;
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = neighbourView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
@@ -190,6 +191,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const foremanView = await ForemanView.create(params.seed);
   foremanView.level = level;
   const scavengerView = await ScavengerView.create(params.seed);
+  const goblinView = await GoblinView.create(params.seed);
+  goblinView.level = level;
   const neighbourView = await NeighbourView.create();
   const weber = new Neighbour();
   scavengerView.people.level = neighbourView.people.level = level;
@@ -226,12 +229,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
   await view.stage.add(scavengerView.people.root);
   await view.stage.add(scavengerView.camps.root);
+  await view.stage.add(goblinView.root);
   await view.stage.add(neighbourView.people.root);
   await view.stage.add(tallView.root);
   await view.stage.add(ratView.root);
@@ -428,6 +432,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const say = (text: string, secs: number): void => { notice = text; noticeUntil = timer.getElapsed() + secs; };
   /** Times the Foreman's bell has rung (each ringing gets a notice). */
   let bells = 0, calls = 0, stares = 0;
+  /** A goblin's jab landed: it takes the best thing in the pack (src/creatures/goblins.ts); it drops where the goblin dies. */
+  const snatch = (): Find | null => {
+    if (!pack.items.length) return null;
+    const best = pack.items.reduce((a, b) => (b.value > a.value ? b : a));
+    pack.items.splice(pack.items.indexOf(best), 1);
+    say(`A goblin snatches ${FINDS[best.kind].name} from your pack and runs!`, 3.5);
+    return best;
+  };
   const ladder: [number, number] = [0, 0];
   /** The shaft whose ladder the nobody stands at (a way down or the way up), or null. */
   const atLadder = (): Shaft | null => {
@@ -735,7 +747,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       fauna.glare = candles;
       fauna.salt = saltLine.keeping(now);
       view.props.loose = new Float32Array(candles.flatMap((c) => [c.x, c.y + 0.35, c.z]));
-      if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
+      if (picking && now - pickAt >= PICKUP.at && finds.lying(picking)) {
         finds.take(picking);
         sounds.play('pickup');
         pack.add(picking);
@@ -763,7 +775,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
       view.camera.getWorldDirection(lampDir);
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
+      fauna.goblins.thief = snatch;
       const struck = fauna.advance(dt, body, lamp, body.facing);
+      for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
       for (const f of fauna.fallen()) gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now);
       if (body.health < health) {
         // Flinch away from the nearest foe (thrown back by a pick).
@@ -830,6 +844,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     scavengerView.draw(fauna.scavengers.list, body.x, body.z, dt, now);
     if (fauna.scavengers.calls > calls) say(fauna.scavengers.said, 3.5);
     calls = fauna.scavengers.calls;
+    goblinView.draw(fauna.goblins.list, body.x, body.z, dt, now);
     tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
     if (level.depth === 0) weber.turn(body.x, body.z, dt);
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);

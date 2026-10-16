@@ -48,10 +48,6 @@
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "clone: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
-  },
-  {
     "key": "clone: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
     "reason": "two creature models loaded through Rigged.fetch, the one loader, into two figure pools; the loading is the seam, nothing left to fold"
   },
@@ -66,10 +62,6 @@
   {
     "key": "idiom: [.angry .dead] in dunfinity/creatures/crickets.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/touched.ts",
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
-  },
-  {
-    "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
     "key": "idiom: [.damage .range] in dunfinity/combat/thrown.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
@@ -112,28 +104,12 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "idiom: [.health .height .radius] in dunfinity/creatures/eels.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
-  },
-  {
     "key": "idiom: [.hypot .mode .range .rng .t .tx .tz .x .z Math] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "idiom: [.mode .move .steer] in dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
-    "reason": "the walking fighters (Salt-Touched, Foreman, scavengers) each run their own chase/swing modes; the shared parts already live in Steer.close and pickSwing (src/creatures/pick.ts)"
-  },
-  {
     "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "idiom: [.mode .swingT] in dunfinity/render/creatures/foremanView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/tallOneView.ts + dunfinity/render/creatures/touchedView.ts",
-    "reason": "the views read their creature's mode and swing clock to pose it; the shared part is the Creature fields themselves (src/creatures/creature.ts)."
-  },
-  {
-    "key": "idiom: [.move .steer .x .z] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
     "key": "idiom: [.n2 .noise] in dunfinity/gen/basalt.ts + dunfinity/gen/lava.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
@@ -146,10 +122,6 @@
   {
     "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
-  },
-  {
-    "key": "idiom: [.range .t] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each creature kind sets its own mode timer from a seeded rng (r.t = rng.range(...)); the creatures thread's code, surfaced when the idiom finder's corpus grew with a new level style, not a new copy"
   },
   {
     "key": "idiom: [.roamFrom .tx .tz] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
@@ -2814,5 +2786,213 @@
   {
     "key": "same name: dunfinity/gen/goblin.ts#props + dunfinity/gen/roots.ts#props",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "clone: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
+    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
+  },
+  {
+    "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "idiom: [.dur .mode] in dunfinity/render/creatures/foremanView.ts + dunfinity/render/creatures/goblinView.ts + dunfinity/render/creatures/tallOneView.ts",
+    "reason": "each human view maps its creature's own modes to the animator's actions; the clocks differ per kind"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/goblin.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "each style's per-column cache of what lies near the column (its own WeakMap), read back in at() and color()"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/goblin.ts",
+    "reason": "each style's per-column cache of what lies near the column (its own WeakMap), read back in at() and color()"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts",
+    "reason": "each style's per-column cache of what lies near the column (its own WeakMap), read back in at() and color()"
+  },
+  {
+    "key": "idiom: [.health .height .radius] in dunfinity/creatures/eels.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "idiom: [.mode .move .steer] in dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "the walking fighters (Salt-Touched, Foreman, scavengers) each run their own chase/swing modes; the shared parts already live in Steer.close and pickSwing (src/creatures/pick.ts)"
+  },
+  {
+    "key": "idiom: [.mode .steer .swingT] in dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's act() steps its own modes through the Steer seam; the shared moves (closeIn, pickSwing, brood) are already seams"
+  },
+  {
+    "key": "idiom: [.mode .swingT] in dunfinity/render/creatures/foremanView.ts + dunfinity/render/creatures/goblinView.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/tallOneView.ts + dunfinity/render/creatures/touchedView.ts",
+    "reason": "the views read their creature's mode and swing clock to pose it; the shared part is the Creature fields themselves (src/creatures/creature.ts)."
+  },
+  {
+    "key": "idiom: [.move .steer .x .z] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "idiom: [.move .steer .z] in dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts",
+    "reason": "each kind's act() steps its own modes through the Steer seam; the shared moves (closeIn, pickSwing, brood) are already seams"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/goblins.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#denIn + dunfinity/creatures/goblins.ts#denIn",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#hatch + dunfinity/creatures/goblins.ts#hatch",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/dogs.ts#act + dunfinity/creatures/goblins.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/dogs.ts#denIn + dunfinity/creatures/goblins.ts#denIn",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/dogs.ts#hatch + dunfinity/creatures/goblins.ts#hatch",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/dogs.ts#sleep + dunfinity/creatures/goblins.ts#sleep",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/eels.ts#act + dunfinity/creatures/goblins.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/eels.ts#denIn + dunfinity/creatures/goblins.ts#denIn",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/eels.ts#hatch + dunfinity/creatures/goblins.ts#hatch",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/foreman.ts#act + dunfinity/creatures/goblins.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#act + dunfinity/creatures/rats.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#act + dunfinity/creatures/scavengers.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#act + dunfinity/creatures/shrooms.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#act + dunfinity/creatures/slimes.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#act + dunfinity/creatures/tallOne.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#act + dunfinity/creatures/touched.ts#act",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#denIn + dunfinity/creatures/rats.ts#denIn",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#denIn + dunfinity/creatures/scavengers.ts#denIn",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#denIn + dunfinity/creatures/shrooms.ts#denIn",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#denIn + dunfinity/creatures/slimes.ts#denIn",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#hatch + dunfinity/creatures/rats.ts#hatch",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#hatch + dunfinity/creatures/scavengers.ts#hatch",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#hatch + dunfinity/creatures/touched.ts#hatch",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#hostile + dunfinity/creatures/scavengers.ts#hostile",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#sleep + dunfinity/creatures/rats.ts#sleep",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#sleep + dunfinity/creatures/scavengers.ts#sleep",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/goblins.ts#sleep + dunfinity/creatures/slimes.ts#sleep",
+    "reason": "each creature kind's own override of a Population hook (or its own hostility rule)"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#take + dunfinity/loot/finds.ts#take",
+    "reason": "unrelated methods that share the word take"
+  },
+  {
+    "key": "same name: dunfinity/loot/finds.ts#take + dunfinity/render/shaders/cap.ts#take",
+    "reason": "unrelated methods that share the word take"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/goblinView.ts#create",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/scavengerView.ts#create",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#deriveSeed + dunfinity/render/creatures/scavengerView.ts#deriveSeed",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#deriveSeed + dunfinity/render/creatures/touchedView.ts#deriveSeed",
+    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
   }
 ]

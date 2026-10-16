@@ -164,6 +164,13 @@ const SCAVENGERS: readonly Outfit[] = [
   { clothes: [['chest', 'tunic', [0.16, 0.24, 0.3], [0.12, 0.16, 0.18], 0.8], ['legs', 'trousers', [0.26, 0.24, 0.18], [0.18, 0.16, 0.12], 0.8], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.65]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
 ];
 
+/** What the goblins wear (stolen and cut down: a sack-cloth smock, a miner's jacket gone black, a dyed rag), and a stolen kitchen knife each. */
+const GOBLINS: readonly Outfit[] = [
+  { clothes: [['chest', 'tunic', [0.34, 0.29, 0.2], [0.25, 0.2, 0.13], 0.95], ['legs', 'trousers', [0.2, 0.16, 0.11], [0.14, 0.11, 0.08], 0.9]], hand: ['knife', [0.5, 0.48, 0.45], [0.1, 0.06, 0.03], 0.8] },
+  { clothes: [['chest', 'tunic', [0.12, 0.12, 0.13], [0.3, 0.3, 0.3], 0.95], ['legs', 'trousers', [0.16, 0.13, 0.1], [0.1, 0.09, 0.07], 0.9]], hand: ['knife', [0.5, 0.48, 0.45], [0.1, 0.06, 0.03], 0.8] },
+  { clothes: [['chest', 'tunic', [0.4, 0.14, 0.1], [0.22, 0.1, 0.08], 0.95], ['legs', 'trousers', [0.22, 0.2, 0.14], [0.15, 0.13, 0.1], 0.9], ['feet', 'footwraps', [0.2, 0.15, 0.1], [0.14, 0.1, 0.07], 0.9]], hand: ['knife', [0.5, 0.48, 0.45], [0.1, 0.06, 0.03], 0.8] },
+];
+
 /** Frau Weber's cardigan over a long dark skirt, and her slippers: nothing in her hands. */
 const CARDIGAN: Outfit = {
   clothes: [['chest', 'tunic', [0.42, 0.33, 0.36], [0.3, 0.25, 0.27], 0.35], ['legs', 'trousers', [0.12, 0.12, 0.16], [0.1, 0.1, 0.12], 0.3], ['feet', 'footwraps', [0.3, 0.12, 0.14], [0.2, 0.08, 0.1], 0.3]],
@@ -191,5 +198,6 @@ function dressIn(o: Outfit, seed: number, lid = false): EquipmentVisuals {
 export const rags = (seed: number, lid = false): EquipmentVisuals => dressIn(RAGS, seed, lid);
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
+export const goblinsClothes = (seed: number, look: number): EquipmentVisuals => dressIn(GOBLINS[look % GOBLINS.length], seed);
 export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);
 export const cardigan = (seed: number): EquipmentVisuals => dressIn(CARDIGAN, seed);

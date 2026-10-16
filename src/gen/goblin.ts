@@ -292,6 +292,12 @@ export class Goblin implements Style {
     }
   }
 
+  /** The den of cell (i, j) of the lower storey (its middle, floor and radius; whether it has a cook fire), or null where the knot is a plain one: where the goblins live (src/creatures/goblins.ts). */
+  den(i: number, j: number): { x: number; z: number; floor: number; r: number; fire: boolean } | null {
+    const k = this.low(i, j);
+    return k.r > GOBLIN.knot ? { x: k.x, z: k.z, floor: k.floor, r: k.r, fire: this.f(i, j, 2, 0) < GOBLIN.fire } : null;
+  }
+
   /** A passage from another style ends in the lower storey's nearest knot (E3). */
   portal(x: number, z: number): [number, number] {
     const S = GOBLIN.cell, k = this.low(Math.floor(x / S), Math.floor(z / S));
@@ -309,7 +315,8 @@ export class Goblin implements Style {
     const rope = propModel('prop_rope_coil'), bucket = propModel('prop_bucket');
     for (let i = Math.floor(d.x0 / S); i <= Math.floor((d.x0 + d.size) / S); i++) for (let j = Math.floor(d.z0 / S); j <= Math.floor((d.z0 + d.size) / S); j++) {
       const k = this.low(i, j);
-      if (k.r <= G.knot || this.f(i, j, 2, 0) >= G.fire || !d.mine(k.x, k.z)) continue;
+      const den = this.den(i, j);
+      if (!den?.fire || !d.mine(k.x, k.z)) continue;
       const g = d.level.groundAt(k.x, k.z);
       if (!Number.isFinite(g) || g < d.level.waterAt(k.x, k.z) + 0.02) continue;
       d.glow.ellipsoid(k.x, g + 0.12, k.z, 0.45, 0.14, 0.45, FIRE, 8);

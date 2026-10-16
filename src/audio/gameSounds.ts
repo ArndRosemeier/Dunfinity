@@ -56,6 +56,7 @@ export const VOICES: Record<string, Voice> = {
   touched: { enter: { swing: ['pick_swing'] }, die: 'land', idle: ['work', 'pick_work', 1.6, 3.5, 30] },
   foreman: { enter: { swing: ['pick_swing'] }, die: 'land', pitch: 0.8, gain: 1.2 },
   scavengers: { enter: { swing: ['pick_swing'] }, die: 'land' },
+  goblins: { enter: { shriek: ['rat_squeak'], jab: ['knife_swing'] }, hurt: 'rat_squeak', die: 'land', pitch: 0.7 },
   tall: {},
 };
 
@@ -165,7 +166,7 @@ export class GameSounds {
     const f = s.fauna, b = s.body;
     const pops: [string, readonly { x: number; y: number; z: number; mode: string; hurtT: number; dead: boolean }[]][] = [
       ['rats', f.rats.list], ['crickets', f.crickets.list], ['dogs', f.dogs.list], ['eels', f.eels.list], ['lumen', f.lumen.list],
-      ['murk', f.murk.list], ['touched', f.touched.list], ['foreman', f.foreman.list], ['scavengers', f.scavengers.list], ['tall', f.tall.list],
+      ['murk', f.murk.list], ['touched', f.touched.list], ['foreman', f.foreman.list], ['scavengers', f.scavengers.list], ['goblins', f.goblins.list], ['tall', f.tall.list],
     ];
     for (const [kind, list] of pops) {
       const v = VOICES[kind];
