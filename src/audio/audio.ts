@@ -130,16 +130,20 @@ export class SoundEngine {
     if (b) { this.used.set(id, performance.now() / 1000); go(b); } else void this.load(id).then(go);
   }
 
-  /** A one-shot at (x, y, z); `refDist`: the distance it plays at full gain. Null position: not placed (the listener's own body). */
-  play(id: string, at: { readonly x: number; readonly y: number; readonly z: number } | null, gain = 1, pitch = 1, refDist = 3): void {
+  /**
+   * A one-shot at (x, y, z); `refDist`: the distance it plays at full gain. Null position: not placed
+   * (the listener's own body). `variant`: which of its files, played in tune (none: a seeded one, a
+   * little detuned so repeats differ).
+   */
+  play(id: string, at: { readonly x: number; readonly y: number; readonly z: number } | null, gain = 1, pitch = 1, refDist = 3, variant?: number): void {
     const ctx = this.ctx, m = this.manifest[id];
     if (!ctx || !m || this.voices >= VOICES) return;
     // (Chosen now, not when the clip has loaded: the same seed, the same sounds.)
-    const pick = this.rng.float(), wobble = 0.94 + this.rng.float() * 0.12;
+    const pick = this.rng.float(), wobble = variant === undefined ? 0.94 + this.rng.float() * 0.12 : 1;
     this.withBuffers(id, (bufs) => {
       if (!bufs.length) return;
       const src = ctx.createBufferSource();
-      src.buffer = bufs[Math.floor(pick * bufs.length)];
+      src.buffer = bufs[variant === undefined ? Math.floor(pick * bufs.length) : Math.min(variant, bufs.length - 1)];
       src.playbackRate.value = pitch * wobble;
       const g = ctx.createGain();
       g.gain.value = gain * m.gain;
