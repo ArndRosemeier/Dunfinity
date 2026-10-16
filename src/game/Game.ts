@@ -46,6 +46,7 @@ import { CricketView } from '../render/creatures/cricketView';
 import { SlimeView } from '../render/creatures/slimeView';
 import { ShroomView } from '../render/creatures/shroomView';
 import { DogView } from '../render/creatures/dogView';
+import { HerdView } from '../render/creatures/herdView';
 import { Rigged } from '../render/creatures/rigged';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
@@ -208,6 +209,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
   let arriving = false, arrivedAt = 0;
+  /** The level's own animals on screen (made before the warm-up, below). */
+  let herdView: HerdView | null = null;
   const show = (l: Level) => {
     // Back up from below into her cellar: grandma may have a word.
     if (l.depth === 0 && level.depth > 0) grandma.arrive(heir);
@@ -219,6 +222,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     fauna = new Fauna(l);
     wisps = new Wisps(l);
     thin = new ThinPlaces(l);
+    herdView?.stock(l, fauna.critters.species);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
@@ -354,10 +358,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const slimeView = await SlimeView.create();
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
+  // The level's own animals: one stand-in through the warm-up builds the shaders every species draws with.
+  const herd = new HerdView(view.stage);
+  herdView = herd;
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp]);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
@@ -377,6 +384,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   await view.stage.add(eelView.root);
   await view.stage.add(shroomView.root);
   await view.stage.add(shroomView.spores.root);
+  herd.stock(level, fauna.critters.species);
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
   const lampDir = new Vector3();
@@ -836,7 +844,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
 
   /** Draw everything living on the level shown (the nearest of each kind to `at`). */
-  const drawLife = (f: Fauna, at: { readonly x: number; readonly z: number }, dt: number, now: number): void => {
+  const drawLife = (f: Fauna, at: { readonly x: number; readonly y: number; readonly z: number }, dt: number, now: number): void => {
     ratView.draw(f.rats.list, now, at);
     touchedView.draw(f.touched.list, at.x, at.z, dt, now);
     foremanView.draw(f.foreman.list[0] ?? null, f.foreman.hall, dt, now);
@@ -852,6 +860,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     goblinView.draw(f.goblins.list, at.x, at.z, dt, now);
     ghostView.draw(f.ghosts.list, at.x, at.z, dt, now);
     tallView.draw(f.tall.list, at.x, at.z, dt, now);
+    herd.drawHerds(f.critters.list, { x: at.x, y: at.y + 1.6, z: at.z }, dt, now);
   };
 
   // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): it

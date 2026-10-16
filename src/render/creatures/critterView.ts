@@ -41,6 +41,12 @@ export class CritterModel {
     this.eyeBall = ball;
   }
 
+  /** Free its meshes (its figures are gone). */
+  free(): void {
+    this.geometry.dispose();
+    this.eyeBall.dispose();
+  }
+
   figure(ground: GroundAt): CritterFigure {
     return new CritterFigure(this, this.geometry, this.eyeBall, ground);
   }

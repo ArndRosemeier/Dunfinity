@@ -73,8 +73,9 @@ so every skeleton is padded to 96 bones.
 ## 6. Peaceful creatures
 
 Arnd's picks (2026-10-16):
-- Peaceful procedural species live from level 1 (rare and mild there); the hand-made foes stay on
-  levels 1 to 10; procedural foes start at level 11.
+- Procedural species live from level 1: peaceful ones (rare and mild on levels 1 to 10) and hunters
+  too, as long as a hunter's power fits its level (Arnd's correction: not all of them are peaceful).
+  The hand-made foes stay.
 - Sizes vary widely; now and then a colossus, a slow peaceful grazer some ten metres long.
 - Fighting power scales with size, so attacking a colossus is suicide.
 - Every creature retaliates when attacked, or flees if the fight is hopeless.
