@@ -20,12 +20,7 @@ await page.evaluate(() => { window.__game.debug.invulnerable = true; });
 await page.keyboard.press('Backquote');
 console.log('nest', await page.evaluate(() => {
   const g = window.__game, b = g.body;
-  let best = null, bd = Infinity;
-  for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) {
-    const n = g.rats.nestAt(Math.floor(b.x / 36) + i, Math.floor(b.z / 36) + j);
-    const d = n ? Math.hypot(n.x - b.x, n.z - b.z) : Infinity;
-    if (n && d > 25 && d < bd) { bd = d; best = n; }
-  }
+  const best = g.rats.nearestDen(b.x + 30, b.z, 8) ?? g.rats.nearestDen(b.x, b.z, 8);
   b.x = best.x + 6; b.z = best.z; b.y = best.y + 0.3; b.vx = b.vz = 0;
   g.cam.yaw = Math.PI / 2; g.cam.distance = 3.2; g.cam.pitch = -0.3;
   return [best.x.toFixed(1), best.z.toFixed(1), best.count];
