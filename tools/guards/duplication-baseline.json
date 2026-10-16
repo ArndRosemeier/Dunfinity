@@ -40,10 +40,6 @@
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "clone: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
-    "reason": "two creature models loaded through Rigged.fetch, the one loader, into two figure pools; the loading is the seam, nothing left to fold"
-  },
-  {
     "key": "idiom: [.add .push .root] in dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/props/hearth.ts",
     "reason": "building a three.js group (root.add, parts.push); unrelated views, surfaced when new files shifted the idiom finder's corpus"
   },
@@ -110,10 +106,6 @@
   {
     "key": "idiom: [.roamFrom .tx .tz] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "idiom: [.slide .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
     "key": "idiom: [.solid .stamp] in dunfinity/gen/catacombs.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts + dunfinity/gen/roots.ts",
@@ -3276,10 +3268,6 @@
     "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
   },
   {
-    "key": "idiom: [.abs .atan2 .dead .hypot .x .y .z Math] in dunfinity/creatures/ghosts.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
-    "reason": "the walking fighters (Salt-Touched, Foreman, scavengers) each run their own chase/swing modes; the shared parts already live in Steer.close and pickSwing (src/creatures/pick.ts)"
-  },
-  {
     "key": "idiom: [.dead .lieDead] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's one-line call into the Population seam (`if (c.dead) return this.lieDead(c, dt)`); the work is shared in population.ts. Flips between NEW and STALE as the corpus changes, like [.body .root]."
   },
@@ -3500,10 +3488,6 @@
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
   },
   {
-    "key": "idiom: [.dead .hypot .x .z Math] in dunfinity/combat/snapdragon.ts + dunfinity/creatures/fauna.ts + dunfinity/game/Game.ts",
-    "reason": "each asks its own question of someone alive near a point (a snapdragon's bite, a threat after you, the larder's cold); the reach of a blow itself is combat's reach()"
-  },
-  {
     "key": "same name: dunfinity/audio/music/TrackPlayer.ts#step + dunfinity/combat/snapdragon.ts#step",
     "reason": "a per-tick step method: same verb, unrelated jobs (advancing the music's loops vs the snapdragons biting)."
   },
@@ -3612,15 +3596,71 @@
     "reason": "drawing a number from a seeded Rng in a range: the Rng is the seam"
   },
   {
-    "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/world/thinPlaces.ts#advance",
-    "reason": "the per-frame step of a simulation, same verb (creatures' populations vs thin places opening)"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/thinView.ts#draw",
     "reason": "every view's per-frame draw of its own thing; the things differ"
   },
   {
     "key": "same name: dunfinity/render/props/watchers.ts#draw + dunfinity/render/thinView.ts#draw",
     "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "clone: dunfinity/loot/recipes.ts#flour + dunfinity/loot/recipes.ts#pet",
+    "reason": "two of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
+  },
+  {
+    "key": "clone: dunfinity/render/creatures/petView.ts#load + dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
+    "reason": "each view loads its Blender creatures (Rigged.fetch per model, together) and builds its own pools from them; the loading itself is Rigged.fetch"
+  },
+  {
+    "key": "clone: dunfinity/render/spells.ts#saltFalls + dunfinity/render/spells.ts#snap",
+    "reason": "each spell's own burst of sparks from SpellView's pools (its pool, count, speeds and life); the shared part is Pool.emit"
+  },
+  {
+    "key": "idiom: [.all .fetch Promise] in dunfinity/render/creatures/petView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/slimeView.ts",
+    "reason": "loading several Blender creatures at once through Rigged.fetch, the one loader"
+  },
+  {
+    "key": "idiom: [.biteT .radius .windup] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts",
+    "reason": "a bite's wind-up then snap, each kind with its own timing and reach (rats, crickets, salt pets); blows go through combat.damage"
+  },
+  {
+    "key": "idiom: [.biteT .vx .windup] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts",
+    "reason": "a bite's rear-back then lunge as motion, each kind its own speeds (rats, crickets, salt pets)"
+  },
+  {
+    "key": "idiom: [.dead .hypot .x .z Math] in dunfinity/combat/snapdragon.ts + dunfinity/creatures/fauna.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/population.ts + dunfinity/game/Game.ts",
+    "reason": "how far a living thing is over the floor: plain geometry, each caller its own rule"
+  },
+  {
+    "key": "idiom: [.gait .slide .steer] in dunfinity/creatures/dogs.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts",
+    "reason": "a walker's gait advanced by the distance Steer.slide moved it: Steer is the one way to move on the floor"
+  },
+  {
+    "key": "idiom: [.slide .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
+    "reason": "walkers moving by their velocity through Steer.slide, the one way to move on the floor"
+  },
+  {
+    "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/creatures/spores.ts#advance",
+    "reason": "a per-tick advance method: same verb, unrelated jobs"
+  },
+  {
+    "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/render/humans/ladderClimb.ts#advance",
+    "reason": "a per-tick advance method: same verb, unrelated jobs"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#clipFor + dunfinity/render/creatures/petView.ts#clipFor",
+    "reason": "RiggedFigure.clipFor: the interface every rigged figure implements"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/dogView.ts#clipFor + dunfinity/render/creatures/petView.ts#clipFor",
+    "reason": "RiggedFigure.clipFor: the interface every rigged figure implements"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#draw + dunfinity/render/creatures/petView.ts#draw",
+    "reason": "a view with several FigurePools drawing each from its list: same verb, FigurePool.draw does the drawing"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#roots + dunfinity/render/creatures/petView.ts#roots",
+    "reason": "a view with several FigurePools hands their roots to the Stage: same getter, different pools"
   }
 ]

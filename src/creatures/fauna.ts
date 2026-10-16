@@ -118,18 +118,25 @@ export class Fauna {
    * while (`thwarted`: you are up a ledge it cannot take), nor a cricket still up on its wall.
    */
   after(prey: Fighter): boolean {
+    return this.threats(prey).length > 0;
+  }
+
+  /** The ones near that are after `prey` and can come at it (see `after`); a salt pet goes for them (src/creatures/pets.ts). */
+  threats(prey: Fighter): Foe[] {
     const near = (c: Foe) => !c.dead && !thwarted(c) && Math.hypot(c.x - prey.x, c.z - prey.z) < THREAT;
-    return this.rats.list.some((r) => (r.mode === 'chase' || r.mode === 'bite') && near(r))
-      || [...this.touched.list, ...this.foreman.list].some((t) => t.angry && near(t))
-      || this.crickets.list.some((c) => c.angry && c.mode !== 'perch' && near(c))
-      || this.dogs.list.some((g) => g.hunting && near(g))
-      || this.eels.list.some((e) => e.mode !== 'cruise' && near(e))
-      || this.toadstools.list.some((s) => s.up && near(s))
-      || this.puffcaps.list.some((p) => p.mode === 'puff' && near(p))
-      || this.scavengers.list.some((s) => (s.hostile || s.mode === 'stand') && near(s))
-      || this.goblins.list.some((g) => g.hostile && g.mode !== 'flee' && near(g))
-      || this.tall.list.some((t) => t.hunting && !t.dead && Math.hypot(t.x - prey.x, t.z - prey.z) < TALL.notice)
-      || [...this.lumen.list, ...this.murk.list].some((s) => s.foe === prey && near(s));
+    return [
+      ...this.rats.list.filter((r) => (r.mode === 'chase' || r.mode === 'bite') && near(r)),
+      ...[...this.touched.list, ...this.foreman.list].filter((t) => t.angry && near(t)),
+      ...this.crickets.list.filter((c) => c.angry && c.mode !== 'perch' && near(c)),
+      ...this.dogs.list.filter((g) => g.hunting && near(g)),
+      ...this.eels.list.filter((e) => e.mode !== 'cruise' && near(e)),
+      ...this.toadstools.list.filter((s) => s.up && near(s)),
+      ...this.puffcaps.list.filter((p) => p.mode === 'puff' && near(p)),
+      ...this.scavengers.list.filter((s) => (s.hostile || s.mode === 'stand') && near(s)),
+      ...this.goblins.list.filter((g) => g.hostile && g.mode !== 'flee' && near(g)),
+      ...this.tall.list.filter((t) => t.hunting && !t.dead && Math.hypot(t.x - prey.x, t.z - prey.z) < TALL.notice),
+      ...[...this.lumen.list, ...this.murk.list].filter((s) => s.foe === prey && near(s)),
+    ];
   }
 
   /** The HUD's tally of the killed. */
