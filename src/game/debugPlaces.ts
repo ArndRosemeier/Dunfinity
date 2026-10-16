@@ -1,7 +1,7 @@
 /**
  * The debug menu's places: everything worth checking out on a level (grandma's house and the street
- * at depth 0; the way up, the nearest way down, the bosses, grandma's camp and the nearest den of
- * every kind of creature below), and a spot to stand near each.
+ * at depth 0; the way up, the nearest way down, the bosses, grandma's camp, the nearest living
+ * stalagmite and the nearest den of every kind of creature below), and a spot to stand near each.
  */
 import { CELLAR, CELLAR_SHAFT } from '../gen/cellar';
 import { TOWN, homeDoor, shopDoor } from '../gen/town';
@@ -90,6 +90,8 @@ export function placesOn(level: Level, fauna: Fauna, x: number, z: number): Plac
     ['A Lumen slime colony', fauna.lumen], ['A Murk slime colony', fauna.murk], ['A feral dog pack', fauna.dogs],
     ['Brine eels', fauna.eels], ['A scavenger camp', fauna.scavengers], ['A goblin den', fauna.goblins], ['A ghost', fauna.ghosts], ['Toadstools', fauna.toadstools], ['Puffcaps', fauna.puffcaps],
   ];
+  const drip = level.drips.nearest(x, z);
+  if (drip) out.push(standBy(level, `A living stalagmite (${Math.round(Math.hypot(drip.x - x, drip.z - z))} m)`, drip.x, drip.z, 2.5, 5));
   for (const [name, pop] of dens) {
     const d = pop.nearestDen(x, z, DEN_RINGS);
     if (d) out.push(standBy(level, `${name} (${Math.round(Math.hypot(d.x - x, d.z - z))} m)`, d.x, d.z, 6, 10));
