@@ -18,7 +18,7 @@ import type { Tin } from '../loot/tin';
 import { Modal, esc, keycap } from './panel';
 
 /** What the mouse asked of the tin: choose a card, cook the chosen one, close it, or put a card in (or take one off) a bar slot. */
-export type TinAct = { kind: 'choose'; id: CardId } | { kind: 'cook' } | { kind: 'close' } | { kind: 'slot'; i: number; id: CardId | null };
+export type TinAct = { kind: 'choose'; id: CardId } | { kind: 'cook' } | { kind: 'close' } | { kind: 'slot'; i: number; id: CardId | null } | { kind: 'tap'; i: number };
 
 /** What is dragged (src/app/abilityBar.ts reads it too): a card from the tin, or the card in a bar slot. */
 export const DRAG = { card: 'card:', slot: 'slot:', type: 'text/plain' } as const;
@@ -205,9 +205,9 @@ export class TinView extends Modal {
     if (cost !== null) html += `<button class="ui-btn primary cook" data-act="cook"${cant ? ` disabled title="${esc(cant)}"` : ''}>${r ? `Cook rank ${r + 1}` : 'Cook it'} · ${cost} ${cost === 1 ? 'pinch' : 'pinches'} ${keycap(keyName('KeyE'))}</button>`;
     // Where the chosen card stands on the main bar (src/game/abilities.ts).
     const slot = bar.slotOf(sel), slots = `${keycap(keyName(SLOT_KEYS[0]))}–${keycap(keyName(SLOT_KEYS[BAR - 1]))}`;
-    if (r > 0 && abilityOf(sel)) html += `<div class="hint">${slot >= 0 ? `On your bar: ${keycap(keyName(SLOT_KEYS[slot]))}. ` : 'Not on your bar. '}Drag it onto a slot below, or press ${slots}. Drag a slot's card up here to take it off.</div>`;
+    if (r > 0 && abilityOf(sel)) html += `<div class="hint">${slot >= 0 ? `On your bar: ${keycap(keyName(SLOT_KEYS[slot]))}. ` : 'Not on your bar. '}<span class="ui-keys-only">Drag it onto a slot below, or press ${slots}. Drag a slot's card up here to take it off.</span><span class="ui-touch-only">Tap a slot below to put it there; tap it there again to take it off.</span></div>`;
     else if (r > 0) html += '<div class="hint">Works by itself: no slot needed.</div>';
-    html += `<div class="hint">${keycap(keyName('KeyW'))} ${keycap(keyName('KeyS'))} choose · ${keycap(keyName('KeyA'))} ${keycap(keyName('KeyD'))} chapter · ${keycap(keyName('KeyT'))} close</div></div></div>`;
+    html += `<div class="hint ui-keys-only">${keycap(keyName('KeyW'))} ${keycap(keyName('KeyS'))} choose · ${keycap(keyName('KeyA'))} ${keycap(keyName('KeyD'))} chapter · ${keycap(keyName('KeyT'))} close</div></div></div>`;
     this.showHtml(html);
     if (c.chapter !== this.chapter) this.el.querySelector(`.chapter[data-for="${esc(c.chapter)}"]`)?.scrollIntoView({ block: 'start' });
     this.chapter = c.chapter;

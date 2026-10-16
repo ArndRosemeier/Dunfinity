@@ -3840,10 +3840,6 @@
     "reason": "a view with several FigurePools hands their roots to the Stage: same getter, different pools"
   },
   {
-    "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
-    "reason": "turning a creature towards something at its own rate: plain geometry each kind tunes itself"
-  },
-  {
     "key": "idiom: [.slide .steer .t] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/pets.ts",
     "reason": "walkers moving by their velocity through Steer.slide, the one way to move on the floor"
   },
