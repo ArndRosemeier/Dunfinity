@@ -46,7 +46,7 @@ export class AbilityBar {
   constructor(host: HTMLElement, private readonly use: (i: number) => void, private readonly keyName: (key: string) => string) {
     this.el = panel(host, 'div', 'bar', STYLE);
     this.row = child(this.el, 'div', 'slots ui-grown');
-    growOn(this.row, 'bar', { amount: 0.7 });
+    growOn(this.row, 'bar', { amount: 0.7, moss: false });
     this.passive = child(this.el, 'div', 'passive');
   }
 

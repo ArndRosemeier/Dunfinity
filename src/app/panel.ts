@@ -60,7 +60,8 @@ export class Modal {
   private readonly growth: Growth;
   protected readonly el: HTMLDivElement;
 
-  constructor(host: HTMLElement, id: string, css: string, surface: 'paper' | 'dark' = 'paper') {
+  /** `toggled(open)`: it opened or closed. */
+  constructor(host: HTMLElement, id: string, css: string, surface: 'paper' | 'dark' = 'paper', private readonly toggled?: (open: boolean) => void) {
     this.frame = panel(host, 'div', id, css);
     this.frame.className = `${surface === 'paper' ? 'ui-paper' : 'ui-panel'} ui-modal`;
     this.el = child(this.frame, 'div', 'ui-scroll');
@@ -74,11 +75,15 @@ export class Modal {
   /** Show it with `html` in it. */
   protected showHtml(html: string): void {
     this.el.innerHTML = html;
-    if (!this.open) this.growth.fit();
+    if (this.open) { this.frame.classList.add('open'); return; }
+    this.growth.fit();
     this.frame.classList.add('open');
+    this.toggled?.(true);
   }
 
   hide(): void {
+    if (!this.open) return;
     this.frame.classList.remove('open');
+    this.toggled?.(false);
   }
 }

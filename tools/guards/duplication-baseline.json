@@ -3432,10 +3432,6 @@
     "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
   },
   {
-    "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/targetMark.ts#constructor",
-    "reason": "two HUD pieces each make their panel and a couple of children with `panel` and `child`; the shared part is already those two seams."
-  },
-  {
     "key": "idiom: [.at .descents] in dunfinity/creatures/touched.ts + dunfinity/gen/sheds.ts + dunfinity/loot/finds.ts",
     "reason": "each asks the one seam whether a spot is by a way down (level.descents.at) before putting something there: a camp, a shed, a find"
   },
@@ -3450,5 +3446,17 @@
   {
     "key": "same name: dunfinity/input/bindings.ts#data + dunfinity/loot/practice.ts#data",
     "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
+    "key": "idiom: [.cos .sin .x .z Math] in dunfinity/creatures/population.ts + dunfinity/creatures/tallOne.ts + dunfinity/gen/inscriptions.ts + dunfinity/gen/roots.ts",
+    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
+  },
+  {
+    "key": "idiom: [.cos .sin .x .z Math] in dunfinity/creatures/population.ts + dunfinity/gen/fungal.ts + dunfinity/gen/geode.ts + dunfinity/loot/finds.ts",
+    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
+  },
+  {
+    "key": "idiom: [.dots] in dunfinity/gen/inscriptions.ts + dunfinity/lore/scripts.ts + dunfinity/lore/svg.ts",
+    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
   }
 ]

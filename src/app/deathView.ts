@@ -16,30 +16,28 @@ export const NEXT = { black: 0.8, letter: 2.2 } as const;
 
 const STYLE = `
   #death { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -48%); z-index: 10; width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto;
-    background: #e9dfc6f4; color: #2b2116; border: 1px solid #8a7656; border-radius: 4px; padding: 18px 22px; font: 15px/1.45 Georgia, serif; box-shadow: 0 8px 40px #000c;
+    padding: 20px 26px;
     opacity: 0; pointer-events: none; transition: opacity 0.9s ease, transform 0.9s ease; display: none; }
   #death.up { display: block; }
   #death.shown { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
-  #death .how { font-size: 21px; margin: 0 0 10px; }
-  #death .pen { font-style: italic; color: #5a4a35; margin-bottom: 6px; }
-  #death .list { font: 15px/1.6 Georgia, serif; padding-left: 14px; margin-bottom: 12px; }
+  #death .how { font: 400 30px/1.15 var(--ui-font-display); margin: 0 0 12px; }
+  #death .pen { font-style: italic; color: var(--ui-paper-dim); margin-bottom: 6px; }
+  #death .list { font: 16px/1.6 var(--ui-font-paper); padding-left: 14px; margin-bottom: 12px; }
   #death .list .gone { color: #7b6a50; text-decoration: line-through; }
-  #death .list .struck { text-decoration: line-through; text-decoration-color: #2b2116; text-decoration-thickness: 2px; }
+  #death .list .struck { text-decoration: line-through; text-decoration-color: var(--ui-paper-ink); text-decoration-thickness: 2px; }
   #death .list .where, #death .list .next { opacity: 0; transition: opacity 0.6s; }
   #death .list .where.on, #death .list .next.on { opacity: 1; }
-  #death .list .next { color: #2f5d7a; }
+  #death .list .next { color: var(--ui-paper-blue); font: 400 21px var(--ui-font-display); }
   #death .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; opacity: 0; transition: opacity 0.8s; }
   #death .cols.on { opacity: 1; }
   @media (max-width: 640px) { #death .cols { grid-template-columns: 1fr; } }
-  #death h3 { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6d5a3d; border-bottom: 1px solid #b9a582; margin: 0 0 4px; font-weight: normal; }
+  #death h3 { border-bottom: 1px solid var(--ui-paper-line); margin: 0 0 4px; padding-bottom: 2px; }
   #death .cols div p { margin: 3px 0; font-size: 14px; }
-  #death .kept p { color: #2f5d7a; }
-  #death .lost p { color: #6d5a3d; }
-  #death button { margin-top: 14px; font: 15px Georgia, serif; padding: 6px 14px; background: #d6c59f; color: #2b2116; border: 1px solid #8a7656; border-radius: 3px; cursor: pointer;
-    opacity: 0; transition: opacity 0.6s; }
+  #death .kept p { color: var(--ui-paper-blue); }
+  #death .lost p { color: var(--ui-paper-dim); }
+  #death button { margin-top: 14px; opacity: 0; transition: opacity 0.6s, border-color .12s, box-shadow .12s; }
   #death button.on { opacity: 1; }
-  #death button:hover { background: #c9b78f; }
-  #death-letter { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; color: #d8ccb0; font: italic 22px Georgia, serif;
+  #death-letter { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; color: var(--ui-ink); font: italic 24px var(--ui-font-paper); text-shadow: var(--ui-text-shadow);
     pointer-events: none; opacity: 0; transition: opacity 0.7s; text-align: center; padding: 16px; }
   #death-letter.on { opacity: 1; }`;
 
@@ -71,6 +69,7 @@ export class DeathView {
   private t = 0;
   constructor(host: HTMLElement) {
     this.el = panel(host, 'div', 'death', STYLE);
+    this.el.className = 'ui-paper';
     this.letter = child(host, 'div');
     this.letter.id = 'death-letter';
   }
@@ -91,11 +90,11 @@ export class DeathView {
     this.nextName = child(list, 'div', 'next', m.next);
     this.cols = child(this.el, 'div', 'cols');
     const kept = child(this.cols, 'div', 'kept'), lost = child(this.cols, 'div', 'lost');
-    child(kept, 'h3', '', 'Back on the armchair');
+    child(kept, 'h3', 'ui-label', 'Back on the armchair');
     for (const l of m.end.kept) child(kept, 'p', '', l);
-    child(lost, 'h3', '', 'Gone down with them');
+    child(lost, 'h3', 'ui-label', 'Gone down with them');
     for (const l of m.end.lost) child(lost, 'p', '', l);
-    this.button = child(this.el, 'button', '', `R: send ${m.next} down`);
+    this.button = child(this.el, 'button', 'ui-btn primary', `R: send ${m.next} down`);
     this.button.addEventListener('click', () => { if (this.ready) this.asked = true; });
     this.el.classList.add('up');
     this.up = true;
