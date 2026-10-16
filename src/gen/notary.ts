@@ -42,6 +42,7 @@ export function notaryLetter(heir: number, seed: number): string {
       `Dear ${name},`,
       'It is my duty to inform you that under the will of your late grandmother you have inherited her house, with its contents, the cellar included.',
       'She asked me to add one thing, in her words: "The tin is on the chair. Start with the first card. Mind the arch."',
+      'Her diary is in the tin as well, or what she left of it.',
       'I do not know what this means. I trust you will.',
     ]
     : heir === 2

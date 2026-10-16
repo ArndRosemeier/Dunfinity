@@ -25,18 +25,19 @@ import { Elven } from './elven';
 import { Goblin } from './goblin';
 import { Bones } from './bones';
 import type { Style, StyleId } from './style';
+import type { Traits } from './genes';
 
-/** Makes the style for a level, from the level's seed and band, and its water table (the excavation's, one per level, E5). */
-type Make = (seed: number, band: Band, water: WaterTable) => Style;
+/** Makes the style for a level, from the level's seed and band, its water table (the excavation's, one per level, E5) and its genes (src/gen/genes.ts). */
+type Make = (seed: number, band: Band, water: WaterTable, traits: Traits) => Style;
 
 const MAKE: Partial<Record<StyleId, Make>> = {
-  karst: (seed, band) => new Karst(seed, band),
+  karst: (seed, band, _w, traits) => new Karst(seed, band, traits),
   rift: (seed, band) => new Rift(seed, band),
   collapse: (seed, band) => new Collapse(seed, band),
   catacombs: (seed, band) => new Catacombs(seed, band),
   dungeon: (seed, band) => new Dungeon(seed, band),
-  roots: (seed, band) => new Roots(seed, band),
-  fungal: (seed, band) => new Fungal(seed, band),
+  roots: (seed, band, _w, traits) => new Roots(seed, band, traits),
+  fungal: (seed, band, _w, traits) => new Fungal(seed, band, traits),
   lava: (seed, band) => new Lava(seed, band),
   geode: (seed, band) => new Geode(seed, band),
   basalt: (seed, band) => new Basalt(seed, band),
@@ -50,13 +51,13 @@ const MAKE: Partial<Record<StyleId, Make>> = {
 /** The styles that can be asked for by name (`?style=`), the excavation and the cellar aside. */
 export const NAMED_STYLES = Object.keys(MAKE) as StyleId[];
 
-/** The styles of `mix`, in its order: the excavation (or cellar) for its own id, the rest made here. */
-export function stylesOf(mix: Mix, excavation: QuarryField, seed: number, band: Band): Style[] {
+/** The styles of `mix`, in its order: the excavation (or cellar) for its own id, the rest made here with the level's genes. */
+export function stylesOf(mix: Mix, excavation: QuarryField, seed: number, band: Band, traits: Traits): Style[] {
   return mix.map(([id]) => {
     if (id === excavation.id) return excavation;
     const make = MAKE[id];
     if (!make) throw new Error(`no style '${id}' (src/gen/styles.ts)`);
-    return make(seed, band, (x, z) => excavation.water(x, z));
+    return make(seed, band, (x, z) => excavation.water(x, z), traits);
   });
 }
 

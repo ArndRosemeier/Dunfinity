@@ -104,10 +104,6 @@
     "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
   },
   {
-    "key": "idiom: [.n3 .rough] in dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/karst.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
-    "reason": "each style roughens its walls with its own seeded 3D Noise (this.rough.n3); Noise is the one seam, the scales and amounts are each style's own"
-  },
-  {
     "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
@@ -2448,7 +2444,11 @@
     "reason": "creatures and the prop pass each ask the level for its column at a spot (level.columnAt) for their own placement; one seam called from four places, surfaced when the finder's corpus shifted"
   },
   {
-    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
+    "key": "idiom: [.PI .far .near Math] in dunfinity/gen/diaryPages.ts + dunfinity/gen/grandmasCamp.ts + dunfinity/gen/lair.ts",
+    "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
+  },
+  {
+    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/diaryView.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
     "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
   },
   {
@@ -2462,10 +2462,6 @@
   {
     "key": "same name: dunfinity/gen/fungal.ts#cover + dunfinity/gen/roots.ts#cover",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/collapse.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/karst.ts#constructor + dunfinity/gen/quarry.ts#constructor",
-    "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
   },
   {
     "key": "idiom: [.band .get .noise .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/goblin.ts + dunfinity/gen/lava.ts",
@@ -3033,7 +3029,7 @@
   },
   {
     "key": "same name: dunfinity/gen/bones.ts#floor + dunfinity/gen/elven.ts#floor",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+    "reason": "a local helper of the same name in each file for its own thing (a nave, a vault, a floor, a seeded roll); the shapes and rolls differ"
   },
   {
     "key": "same name: dunfinity/gen/bones.ts#portal + dunfinity/gen/fungal.ts#portal",
@@ -3082,6 +3078,10 @@
   {
     "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "idiom: [.dur .mode] in dunfinity/render/creatures/foremanView.ts + dunfinity/render/creatures/goblinView.ts + dunfinity/render/creatures/tallOneView.ts",
+    "reason": "each human view maps its creature's own modes to the animator's actions; the clocks differ per kind"
   },
   {
     "key": "idiom: [.health .height .radius] in dunfinity/creatures/eels.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
@@ -3262,6 +3262,30 @@
   {
     "key": "same name: dunfinity/render/creatures/goblinView.ts#deriveSeed + dunfinity/render/creatures/touchedView.ts#deriveSeed",
     "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
+  },
+  {
+    "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/collapse.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
+    "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
+  },
+  {
+    "key": "idiom: [.n3 .rough] in dunfinity/gen/collapse.ts + dunfinity/gen/goblin.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
+    "reason": "each style roughens its walls with its own seeded 3D Noise (this.rough.n3); Noise is the one seam, the scales and amounts are each style's own"
+  },
+  {
+    "key": "same name: dunfinity/gen/collapse.ts#at + dunfinity/gen/karst.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#at + dunfinity/gen/lava.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#at + dunfinity/gen/styledField.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/karst.ts#column + dunfinity/gen/quarry.ts#column",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
     "key": "idiom: [.abs .atan2 .dead .hypot .x .y .z Math] in dunfinity/creatures/ghosts.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",

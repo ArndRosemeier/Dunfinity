@@ -175,7 +175,7 @@ test("the notary's letter lies on her table, and he grows wearier with every hei
   assert.match(later, /3 of your cousins/);
   assert.ok(last.length < first.length);
   assert.equal(notaryLetter(3, 9), notaryLetter(3, 9));
-  assert.equal(new Level(1, 1).writing, null);
+  assert.equal(new Level(1, 4).writing, null); // (level 1 has a page of her diary)
 });
 
 test("the notary's list: the fallen crossed out with where it happened, then the next heir", () => {

@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.128 — Karst genes: a deep world's caves stray from ours
+
+- The karst now reads six genes for its level: how big the whole cave is, how high its domes rise, how many cells have a chamber, how wide its tubes are, and how far its outline meanders and how big its scallops are. Levels 1–10 vary only inside the safe ranges; deep strata may push a few genes far out (caves half or one and a half times our size, flat or soaring domes, packed or sparse chambers), the same way on every level of the stratum.
+- Root hollows and the fungal grotto are carved from a karst, so they stray with it.
+- Every style is now made with its level's genes (`Traits`); a new test proves a style at the ends of its genes no steeper than at our standard, its floors walkable, open, and roomy at its portals. The edge tests also sample a level 131 world.
+
+## v0.127 — Grandma's diary
+
+- Grandma's diary is in her tin: press J anywhere to read it. What's left in the book are the pages she wrote at home after 1966. The pages from her trips down, 1959 to 1966, are stubs: she tore them out and took each one back to where she wrote it.
+- Sixteen of those pages lie on levels 1 to 40, folded under a stone somewhere away from the arrival. Press E to read one. It goes back into the book and puts infused salt in the tin the first time anyone in the family finds it.
+- Found pages stay in the tin, so the next grandchild opens a fuller book. The notary's letter now mentions the diary.
+
+## v0.126 — Goblins live in the warrens
+
+- The goblin warrens are lived in now: goblins squat in threes and fours in the dens, some round a cook fire. They're Norgo's goblin race on the same bodies as the people: small and big-headed, with long arms, green to ochre skin, ears that stick out and faintly glowing eyes. They wear stolen clothes and each carries a stolen kitchen knife.
+- The first goblin to see you jumps up and shrieks, and the whole den comes. Each one runs round to its own side of you before it jabs, then circles again, so they come at you from all sides.
+- A jab that lands may snatch the best thing in your pack. The thief runs off with it. Kill it and your find drops where it falls, ready to pick up again.
+- A badly hurt goblin runs. Salt doesn't stop them.
+- The debug menu lists the nearest goblin den, and the first goblin you kill gives salt like a scavenger.
+
 ## v0.125 — Deep laws: water that climbs, pillars on older stone
 
 - Two new laws for deep strata. In some, water runs up the rock wherever it laps it, as it does in a few places in the Cisterns, but everywhere. In others, the old workings' pillars stand on drums of an older people's stone.

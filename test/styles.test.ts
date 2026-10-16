@@ -15,7 +15,7 @@ import { NAMED_STYLES } from '../src/gen/styles';
 
 /** The levels with more than one style, one of each band. */
 // Levels 1–10's bands, and below them a level of each stratum the genome draws (src/gen/genome.ts).
-const MIXED = [1, 4, 7, 9, 25, 45, 61];
+const MIXED = [1, 4, 7, 9, 25, 45, 61, 131];
 
 /** `n` seeded columns within `span` metres of the arrival on `l`, as (x, z). */
 function* spots(l: Level, n: number, span: number, salt: number): Generator<[number, number]> {
@@ -303,7 +303,7 @@ test('the root hollows are none of them: chambers crossed by giant roots from ro
       for (let y = c.floor + 2; y < c.ceiling - 2; y += 0.5) if (l.sdf(x, y, z) < 0) { s.crossed++; break; }
     }
     const crossed = (id: string) => st[id].crossed / st[id].inner;
-    assert.ok(st.roots.inner > 200, `${st.roots.inner} root hollow columns inside chambers on level ${depth}`);
+    assert.ok(st.roots.inner > 150, `${st.roots.inner} root hollow columns inside chambers on level ${depth}`);
     assert.ok(crossed('roots') > 0.3 && crossed('roots') > 2 * crossed('excavation') && crossed('karst') < 0.05, `roots cross ${(crossed('roots') * 100).toFixed(0)}% of the root hollows' chambers on level ${depth}, pillars ${(crossed('excavation') * 100).toFixed(0)}% of the excavation's, karst ${(crossed('karst') * 100).toFixed(0)}%`);
   }
 });
