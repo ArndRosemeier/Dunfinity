@@ -1604,10 +1604,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/fungal.ts#r + dunfinity/gen/town.ts#r",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/geode.ts#at + dunfinity/gen/karst.ts#at",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -2253,10 +2249,6 @@
   },
   {
     "key": "same name: dunfinity/gen/dwarven.ts#r + dunfinity/gen/quarryProps.ts#r",
-    "reason": "a local helper of the same name in each file for its own thing (a nave, a vault, a floor, a seeded roll); the shapes and rolls differ"
-  },
-  {
-    "key": "same name: dunfinity/gen/dwarven.ts#r + dunfinity/gen/town.ts#r",
     "reason": "a local helper of the same name in each file for its own thing (a nave, a vault, a floor, a seeded roll); the shapes and rolls differ"
   },
   {
@@ -4750,5 +4742,29 @@
   {
     "key": "idiom: [.addEventListener .remove] in dunfinity/app/abilityBar.ts + dunfinity/app/tinView.ts + dunfinity/app/touchPad.ts",
     "reason": "DOM listeners that drop a highlight class when a drag or a finger leaves an element; one line each on its own element, nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#climbable + dunfinity/gen/styledField.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#cover + dunfinity/gen/floating.ts#cover",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#cover + dunfinity/gen/fungal.ts#cover",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#cover + dunfinity/gen/roots.ts#cover",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each creature kind turns towards its heading at its own rate (a clamped atan2 step on its yaw); found on main before the village PR, not touched by it"
+  },
+  {
+    "key": "same name: dunfinity/audio/gameSounds.ts#place + dunfinity/render/spells.ts#place",
+    "reason": "where one is for sound (town or cellar) and where a spell lands: different things that share a word"
   }
 ]

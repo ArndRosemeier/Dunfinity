@@ -19,8 +19,8 @@ test('Ilse buys the whole pack for what it is worth, and says so', () => {
 
 test("her shop is across the street from grandma's, and one can stand at its door", () => {
   const { house, x, z } = shopDoor('pawn');
-  assert.equal(HOUSES.filter((h) => h.shop === 'pawn').length, 1);
-  assert.ok(house.x1 <= TOWN.street.x[0] && house.faces === 1, 'across the street, facing it');
+  assert.equal(HOUSES.filter((h) => h.role === 'pawn').length, 1);
+  assert.ok(house.cx + house.hv <= TOWN.street.x[0] + 0.01 && Math.abs(house.yaw - Math.PI / 2) < 0.01, 'across the street, facing it');
   assert.ok(z > 0 && z < 25, `up the street: ${z.toFixed(1)}`);
   const level = new Level(1, 0);
   assert.ok(level.sdf(x, TOWN.ground + 1, z) > 0.5 && Math.abs(level.groundAt(x, z) - TOWN.ground) < 0.1, 'on the street before her door');

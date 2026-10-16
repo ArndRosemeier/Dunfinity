@@ -7,6 +7,7 @@
  * A box is 8 numbers: centre x, z, half sizes along its own x and z, cos and sin of its yaw (as
  * `PropBuilder.upright`: its x axis is (cos, 0, −sin)), bottom and top.
  */
+import { cellKey } from '../gen/cellMemo';
 export const BLOCKER_STRIDE = 8;
 
 export class Blockers {
@@ -106,7 +107,6 @@ export class Blockers {
 
 /** Grid cell size for the lookup, metres. */
 const CELL = 4;
-const cellKey = (i: number, j: number) => (i + 32768) * 65536 + (j + 32768);
 
 /**
  * Where the ray from (x, y, z) along (dx, dy, dz) enters box k grown by `grow` on every side; −1

@@ -103,7 +103,9 @@ export class GameSounds {
     if (level.band.id !== 'cellar') return level.band.id;
     const h = CELLAR.house;
     const inHouse = b.x >= h.x[0] && b.x <= h.x[1] && b.z >= h.z[0] && b.z <= h.z[1];
-    return b.y > TOWN.ground - 0.5 && !inHouse ? 'town' : 'cellar';
+    // (Under the town only in her cellar's own stretch: out in the fields the land falls below the street's level.)
+    const C = CELLAR, below = b.y < TOWN.ground - 0.5 && b.x > C.stairs.x[0] - 1 && b.x < C.chamber.x + C.chamber.r + 1 && Math.abs(b.z) < C.chamber.r + 1;
+    return below || inHouse ? 'cellar' : 'town';
   }
 
   update(s: SoundScene): void {

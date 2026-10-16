@@ -36,7 +36,7 @@ export class Stranger extends Townsperson {
   constructor() {
     const d = shopDoor('pawn');
     // Beside the shop's door, a step off its threshold, looking out at the street.
-    super(d.x - d.house.faces * 0.2, d.z + 2.2, Math.atan2(-d.house.faces, 0), STRANGER);
+    super(d.x - d.nx * 0.2 + d.sx * 2.2, d.z - d.nz * 0.2 + d.sz * 2.2, Math.atan2(-d.nx, -d.nz), STRANGER);
   }
 
   /** Whether it is in the town at all. */
