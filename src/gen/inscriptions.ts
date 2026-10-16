@@ -111,6 +111,14 @@ export function acrossFace(id: string, script: Script, text: string, where: stri
   return { id, script, text, where, place: { kind: 'wall', x: x - oz * w, y: y - ((lo + hi) / 2) * s, z: z + ox * w, rx: oz, rz: -ox, nx: ox, nz: oz, scale: s } };
 }
 
+/** Where lettering `l` lies along the path `pts` on a face looking out along (nx, nz), centred: as large as `scale` metres to a unit, smaller if it would not fill under `fill` of the path. */
+export function alongPath(l: Lettering, pts: readonly V3[], nx: number, nz: number, scale: number, fill = 0.92): PathPlace {
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]);
+  const s = Math.min(scale, (fill * len) / l.width);
+  return { kind: 'path', pts, nx, nz, from: (len - l.width * s) / 2, scale: s };
+}
+
 /** The lettering of an inscription. */
 export function letteringOf(ins: Inscription): Lettering {
   return letter(ins.script, ins.text);
@@ -150,7 +158,12 @@ function placer(p: Place): { point: (u: number, v: number) => V3; normal: V3 } {
  * face (inlay, salt, or the dark of a cut), dots as small squares, rings as strips round.
  */
 export function inscribe(b: PropBuilder, ins: Inscription, width: number, depth: number, colour: Rgb): void {
-  const { point, normal: n } = placer(ins.place), l = letteringOf(ins), scale = ins.place.scale;
+  inscribeLettering(b, ins.place, letteringOf(ins), width, depth, colour);
+}
+
+/** Lay lettering `l` at `place` into `b`, as `inscribe` does (for writing nobody needs the key to read: names, chalk). */
+export function inscribeLettering(b: PropBuilder, place: Place, l: Lettering, width: number, depth: number, colour: Rgb): void {
+  const { point, normal: n } = placer(place), scale = place.scale;
   const lift = (q: V3, k: number): V3 => [q[0] + n[0] * k, q[1] + n[1] * k, q[2] + n[2] * k];
   const strip = (a: V3, c: V3, w: number) => {
     const u: V3 = [(c[0] - a[0]) / 2, (c[1] - a[1]) / 2, (c[2] - a[2]) / 2];

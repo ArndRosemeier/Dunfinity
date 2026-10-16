@@ -15,12 +15,14 @@ import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
 import type { GrandmasCamp } from './grandmasCamp';
-import type { PageSpot } from './diaryPages';
 import type { SaltCircle } from './lair';
 import { furnishCellar } from './cellarProps';
 import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
 import { propModel, type Model } from './models';
-import { acrossFace, inscribe, type Inscription } from './inscriptions';
+import { acrossFace, alongPath, inscribe, inscribeLettering, type Inscription } from './inscriptions';
+import { latin } from '../lore/scripts';
+import type { Mark } from '../lore/diary';
+import { markLine, type PageSpot } from './diaryPages';
 import { THRESHOLD_LINTELS } from '../lore/fragments';
 
 /** Tile size, metres. */
@@ -911,6 +913,13 @@ class TileBuilder {
     const [px, pz] = at(0.05, 0.08);
     this.solid.box(px, g + 0.012, pz, [ca * 0.075, 0, -sa * 0.075], [0, 0.003, 0], [sa * 0.1, 0, ca * 0.1], PAPER);
     this.stones.ellipsoid(p.x, g + 0.06, p.z, 0.12, 0.07, 0.1, this.tone(0.9), 7);
+    // Our letters on the rock beside it: chalk, cut deep, or scratched.
+    const f = p.face;
+    if (!f) return;
+    for (const m of p.page.marks ?? []) {
+      const M = MARK[m.hand], l = latin(m.text), place = alongPath(l, markLine(this.level, f, g + m.high)!, f.nx, f.nz, M.scale);
+      inscribeLettering(this.solid, place, l, M.pen * place.scale, M.depth, M.colour);
+    }
   }
 
   /**
@@ -1132,6 +1141,12 @@ const LEFT = { cell: 6, chance: 0.22, derricks: 0.006 };
 const VOID: Rgb = [0.008, 0.008, 0.01];
 /** The dark of a chisel cut in old stone. */
 const CUT: Rgb = [0.035, 0.03, 0.027];
+/** How each hand of mark is laid (src/lore/diary.ts): metres to a unit, stroke width as a share of a unit, how proud, colour. */
+const MARK: Readonly<Record<Mark['hand'], { scale: number; pen: number; depth: number; colour: Rgb }>> = {
+  chalk: { scale: 0.065, pen: 0.14, depth: 0.004, colour: [0.84, 0.84, 0.8] },
+  cut: { scale: 0.09, pen: 0.2, depth: 0.006, colour: [0.05, 0.04, 0.035] },
+  scratch: { scale: 0.06, pen: 0.08, depth: 0.004, colour: [0.66, 0.64, 0.6] },
+};
 /** Runes on a lintel: at most this many metres to a unit (a rune is two units tall), cut this share of a unit wide; what one sees on reading them. */
 const LINTEL = { scale: 0.2, cut: 0.16, where: 'Cut across the lintel, worn almost smooth: straight strokes on upright staves, none of them level. Runes.' };
 /** Grandma's camp (her tent is CANVAS): the bedroll, ash and charred sticks, her thermos, the note. */

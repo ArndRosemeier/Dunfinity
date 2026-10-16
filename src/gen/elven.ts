@@ -23,7 +23,7 @@ import { unworked, type Column, type Working } from './quarry';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import type { Dress } from './styleProps';
-import type { Inscription } from './inscriptions';
+import { alongPath, type Inscription } from './inscriptions';
 import type { V3 } from './propMesh';
 import { thread } from '../lore/scripts';
 import { ribLine } from '../lore/fragments';
@@ -266,10 +266,7 @@ export class Elven implements Style {
       const [x, z] = this.grain.xz(u, n.v + across);
       pts.push([x, floor + n.spring + L * Math.sin(phi), z]);
     }
-    let len = 0;
-    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]);
-    const w = thread(text).width, scale = Math.min(W.scale, (0.92 * len) / w);
-    return { id: `rib:${depth}:${k}:${b}:${side}`, script: 'thread', text, where: RIB, place: { kind: 'path', pts, nx, nz, from: (len - w * scale) / 2, scale } };
+    return { id: `rib:${depth}:${k}:${b}:${side}`, script: 'thread', text, where: RIB, place: alongPath(thread(text), pts, nx, nz, W.scale) };
   }
 
   climbable(): boolean {
