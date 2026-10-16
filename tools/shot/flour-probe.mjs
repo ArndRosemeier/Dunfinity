@@ -13,7 +13,7 @@ const page = await browser.newPage({ viewport: { width: 900, height: 650 } });
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log(`[${m.type()}] ${m.text().slice(0, 300)}`); });
 page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
 await page.goto(server.resolvedUrls.local[0] + q);
-await page.waitForFunction(() => window.__ready === true, null, { timeout: 300000 });
+await page.waitForFunction(() => window.__ready === true, null, { timeout: 900000 });
 await page.keyboard.press('Backquote');
 await page.click('#debug button:has-text("Give me all abilities")');
 await page.click('#debug label:has-text("Invulnerable") input');
