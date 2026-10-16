@@ -351,5 +351,53 @@
   "gain": 0.7,
   "sound": "a wet, leafy jaw snapping shut, a short crunchy snap",
   "seed": "a fresh crisp stick of celery snapped in half, once, wet and crunchy"
+ },
+ "crystal_hum": {
+  "kind": "shot",
+  "max": 3.0,
+  "files": 5,
+  "gain": 0.4,
+  "sound": "a pure glassy sustained singing tone, like a glass harmonica or singing bowl, soft attack and long fade",
+  "seed": "a small tibetan singing bowl struck very softly once and left ringing, a pure sustained tone fading away"
+ },
+ "bloom_crackle": {
+  "kind": "shot",
+  "max": 2.0,
+  "files": 2,
+  "gain": 0.35,
+  "sound": "a very quiet fine crystalline crackling and tinkling",
+  "seed": "ice cubes crackling softly as water is poured over them in a glass, close up, fine crackling"
+ },
+ "thin_place": {
+  "kind": "shot",
+  "max": 6.0,
+  "files": 2,
+  "gain": 0.5,
+  "sound": "a low airy distant swell, wind through a far hall with a faint choir-like overtone",
+  "seed": "wind blowing softly through a vast empty cathedral far away, a faint distant choir humming one long chord, swelling and fading"
+ },
+ "flour_burst": {
+  "kind": "shot",
+  "max": 1.0,
+  "files": 1,
+  "gain": 0.8,
+  "sound": "a paper bag of flour splitting open, a soft thump and puff",
+  "seed": "someone slapping a heavy sack of flour down onto a wooden table, a soft thump"
+ },
+ "flour_blast": {
+  "kind": "shot",
+  "max": 2.0,
+  "files": 2,
+  "gain": 1.0,
+  "sound": "a dust explosion, a deep fiery whoomph",
+  "seed": "a big fireball, a deep whoomph of flames bursting out"
+ },
+ "match_strike": {
+  "kind": "shot",
+  "max": 1.2,
+  "files": 1,
+  "gain": 0.7,
+  "sound": "a long match struck and flaring up",
+  "seed": "a long wooden match struck on a matchbox and flaring up"
  }
 }

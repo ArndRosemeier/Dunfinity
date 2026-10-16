@@ -1,6 +1,6 @@
 # Grandma's ghost (brainstorm)
 
-Status: **draft 2, 2026-10-16: Arnd picked A, with her ghost kept free to appear deeper down, briefly, in fitting moments (§7). Building.** Part of [lore.md](lore.md); leans on [grandmas-diary.md](grandmas-diary.md), the tin ([recipe-box.md](recipe-box.md)) and the intro (#139).
+Status: **draft 3, 2026-10-16: Arnd picked A, with her ghost kept free to appear deeper down, briefly, in fitting moments (§7). Cellar built (#158); the glimpses below in the next PR.** Part of [lore.md](lore.md); leans on [grandmas-diary.md](grandmas-diary.md), the tin ([recipe-box.md](recipe-box.md)) and the intro (#139).
 
 Arnd's ask (2026-10-16): *How about introducing grandma's ghost? We got ghosts now. Let's brainstorm that.*
 
@@ -78,11 +78,12 @@ Small and on existing seams: a ghost on Scale's human body with the humanoid gho
 
 So the "never go past the arch" rule softens to: **she comes below only at a few set moments, for a few seconds, once each per family.** My defaults for those (built after the cellar):
 - Level 10, the first time the Tall One is seen: she stands between it and you for a moment, at the salt, and is gone. (Her 1963 page: "It has not followed. I don't think it is allowed to.")
-- Level 18, where she laid her first ring: seen kneeling at the rim of one, far off.
-- Level 40, by the two names: she reads them, and says the only line she ever says below: *"I came, Papa."* Then gone; back home she has one new line.
+- Level 18, where she laid her first ring (her page's spot): seen standing there, far off (10–22 m), as you come in sight of it.
+- Level 40, by the two names: she reads them, and says the only line she ever says below: *"I came, Papa."* Then gone; back home she has one new line: *"You saw his name. And mine under it." She looks at you a long time. "That's far enough now. For all of us."*
 
 Other defaults: she is the old Grete everywhere (one ghost, one body; the young look is dropped), salt-blue; questions 2 and 3 of §5 go with my picks (old; no salt mechanic, only lines). At home she shows only when she has something to say: she rises by the armchair as a grandchild comes into the round room, says one line, and fades.
 
 ## Changelog
+- 2026-10-16 draft 3: cellar ghost built (#158); glimpses below built as set out in §7 (each once per family, kept in the tin).
 - 2026-10-16 draft 2: Arnd picked A; deeper appearances reserved for set moments (§7).
 - 2026-10-16 draft 1: five concepts, pick A with the level-40 beat, the nevers, questions.

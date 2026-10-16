@@ -3536,22 +3536,6 @@
     "reason": "each builds one small thrown thing from meshOf parts (a solid part and a glowing one); the shared part is meshOf"
   },
   {
-    "key": "clone: dunfinity/gen/drips.ts#constructor + dunfinity/loot/finds.ts#constructor",
-    "reason": "two lines each: the level's own seed and a CellMemo of its cells; the memo is the seam (src/gen/cellMemo.ts)"
-  },
-  {
-    "key": "same name: dunfinity/gen/descents.ts#nearest + dunfinity/gen/drips.ts#nearest",
-    "reason": "each its own nearest (shafts, grain lines, stalagmite sites) over its own store"
-  },
-  {
-    "key": "same name: dunfinity/gen/drips.ts#near + dunfinity/loot/finds.ts#near",
-    "reason": "each store's own query of its cells within r (finds, stalagmite sites)"
-  },
-  {
-    "key": "same name: dunfinity/gen/drips.ts#nearest + dunfinity/gen/grainLines.ts#nearest",
-    "reason": "each its own nearest (shafts, grain lines, stalagmite sites) over its own store"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/props/dripView.ts#draw",
     "reason": "every view's per-frame draw of its own pool; the pools differ"
   },
@@ -3578,5 +3562,17 @@
   {
     "key": "same name: dunfinity/game/abilities.ts#data + dunfinity/loot/hardware.ts#data",
     "reason": "the save idiom: each kept thing gives its `data` and takes it back with `from` (docs/ARCHITECTURE.md, Keep the game)"
+  },
+  {
+    "key": "clone: dunfinity/gen/drips.ts#constructor + dunfinity/gen/glowworms.ts#constructor + dunfinity/loot/finds.ts#constructor",
+    "reason": "two lines each: the level's own seed and a CellMemo of its cells; the memo is the seam (src/gen/cellMemo.ts)"
+  },
+  {
+    "key": "idiom: [.cells .depth .seed] in dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts + dunfinity/loot/finds.ts",
+    "reason": "each store keeps its own seed and CellMemo; the queries go through cellMemo.ts (sitesNear, siteNearest)"
+  },
+  {
+    "key": "same name: dunfinity/gen/drips.ts#near + dunfinity/gen/glowworms.ts#near",
+    "reason": "one line each over the one seam (cellMemo.ts sitesNear): stalagmite sites vs glow-worm skies"
   }
 ]
