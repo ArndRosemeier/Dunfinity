@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.135 — Fungal and lava genes
+
+- The fungal forest reads its genes: how thick the giant mushrooms stand, how tall they grow (still under the dome) and how broad their caps spread. Its cave strays by the karst's genes.
+- The lava tubes read theirs: how far apart the tubes lie, how wide they flowed, how many branches and skylights they have, and how often a level's flows are still hot.
+- No giant mushroom grows on a chamber's middle any more, nor low over it, so a passage always ends in the open there.
+
+## v0.134 — Sounds for the prologue
+
+- New sounds ready for the prologue and grandma's list: a page turning, a pencil ticking off a line, and the cold draft from the broken arch.
+
+## v0.133 — The peoples of the deep
+
+- Below level 10 the people you meet aren't ours any more. Each game has two peoples of the buried worlds, drawn from Norgo's orcs, halflings, sylvans, drakeborn and umbral, and each stratum belongs to one of them. Scavenger camps there are of that people. A new game meets others.
+- They speak an older tongue, almost like ours. Their warnings and threats come out as words you nearly catch.
+- Once the family has been below level 10, a stranger of the first people of the deep stands at night by Ilse's pawn shop, in a dark travelling coat, selling her things from below. Press E to speak to it.
+
+## v0.132 — Ghosts of the dwarves and elves
+
+- The dwarven halls and elven vaults are haunted now. A pale gold dwarf walks a beat between the columns of the halls, and a pale silver-blue elf walks under the vaults. Both are Norgo's races on the same bodies as the people, and you can see through them. Their edges glow and they flicker a little.
+- A ghost that sees you stops and turns to you. Come close and it speaks once, a line of its people's account. The dwarves say the climbers are coming to take back what they dug out. The elves say the climbers are only going home. Then it fades away and is gone for this visit.
+- Ghosts aren't foes. The knife goes through them and they never touch you.
+- The debug menu lists the nearest ghost.
+
 ## v0.131 — Collapse genes
 
 - The collapse style reads its genes: chamber size (walls, floors and the wander of the walls scale with it), dome height, how many scars and fallen blocks, and how many blocks stand on end. Deep strata get their own fallen halls.

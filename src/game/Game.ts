@@ -44,8 +44,10 @@ import { DogView } from '../render/creatures/dogView';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
 import { GoblinView } from '../render/creatures/goblinView';
+import { GhostView } from '../render/creatures/ghostView';
 import { NeighbourView } from '../render/humans/neighbourView';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
+import { Stranger, STRANGER_KEY } from '../world/stranger';
 import { TallOneView } from '../render/creatures/tallOneView';
 import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
@@ -156,7 +158,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
-    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = neighbourView.people.level = tallView.level = l;
+    if (strangerHere()) view.props.blockers.set(STRANGER_KEY, stranger.blocker); else view.props.blockers.clear(STRANGER_KEY);
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
@@ -198,9 +201,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const scavengerView = await ScavengerView.create(params.seed);
   const goblinView = await GoblinView.create(params.seed);
   goblinView.level = level;
+  const ghostView = await GhostView.create(params.seed);
+  ghostView.level = level;
   const neighbourView = await NeighbourView.create();
+  const strangerView = await NeighbourView.stranger(params.seed);
+  const stranger = new Stranger();
+  /** The stranger at Ilse's is in the town once the family has been below level 10. */
+  const strangerHere = (): boolean => level.depth === 0 && Stranger.here({ deepest: tin.deepest, fallen: fallen.length });
   const weber = new Neighbour();
-  scavengerView.people.level = neighbourView.people.level = level;
+  scavengerView.people.level = neighbourView.people.level = strangerView.people.level = level;
   const tallView = await TallOneView.create(params.seed);
   tallView.level = level;
   /** The grandchild kept from the last visit, where they were. */
@@ -234,14 +243,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
   await view.stage.add(scavengerView.people.root);
   await view.stage.add(scavengerView.camps.root);
   await view.stage.add(goblinView.root);
+  for (const r of ghostView.roots) await view.stage.add(r);
   await view.stage.add(neighbourView.people.root);
+  await view.stage.add(strangerView.people.root);
   await view.stage.add(tallView.root);
   await view.stage.add(ratView.root);
   await view.stage.add(cricketView.root);
@@ -261,6 +272,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   doorView.hang(doors.list);
   doors.into(view.props.blockers);
   if (level.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker);
+  if (strangerHere()) view.props.blockers.set(STRANGER_KEY, stranger.blocker);
   const findView = new FindView();
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
@@ -437,7 +449,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Show `text` as the notice for `secs` seconds. */
   const say = (text: string, secs: number): void => { notice = text; noticeUntil = timer.getElapsed() + secs; };
   /** Times the Foreman's bell has rung (each ringing gets a notice). */
-  let bells = 0, calls = 0, stares = 0;
+  let bells = 0, calls = 0, stares = 0, spoken = 0;
   /** A goblin's jab landed: it takes the best thing in the pack (src/creatures/goblins.ts); it drops where the goblin dies. */
   const snatch = (): Find | null => {
     if (!pack.items.length) return null;
@@ -687,6 +699,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
     atCounter = nearKemal;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
+    const nearStranger = strangerHere() && !busy && !nearLadder && !nearFind && !nearNote && !nearWeber && body.grounded && stranger.canHear(body.x, body.y, body.z);
     const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : [...level.inscriptions, ...view.props.inscriptions].find((i) => canRead(i, body.x, body.y, body.z));
     if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
     const nearDoor = busy || nearLadder || nearFind || nearNote || nearMarks || !body.grounded ? null : doors.near(body.x, body.y, body.z);
@@ -726,6 +739,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (nearLadder) climbFrom(nearLadder);
       else if (nearFind) pickUp(nearFind, now);
       else if (nearWeber) say(weber.talk({ deepest: tin.deepest, fallen: fallen.length }, now), 7);
+      else if (nearStranger) say(stranger.talk(now), 6);
       else if (nearPawn && pack.items.length) {
         const r = sell(pack, sales++);
         euros += r.paid; readAt = now; // (stooping over her counter)
@@ -904,9 +918,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (fauna.scavengers.calls > calls) say(fauna.scavengers.said, 3.5);
     calls = fauna.scavengers.calls;
     goblinView.draw(fauna.goblins.list, body.x, body.z, dt, now);
+    ghostView.draw(fauna.ghosts.list, body.x, body.z, dt, now);
+    if (fauna.ghosts.calls > spoken) say(`The ${fauna.ghosts.saidBy}'s ghost says: "${fauna.ghosts.said}"`, 5);
+    spoken = fauna.ghosts.calls;
     tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
     if (level.depth === 0) weber.turn(body.x, body.z, dt);
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
+    if (strangerHere()) stranger.turn(body.x, body.z, dt);
+    strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
     if (fauna.tall.stares > stares) say('The Tall One looks at you, and the cold of it goes right through you.', 3);
     stares = fauna.tall.stares;
     const fire = campfire.fire, lit = campfire.kindling(now);
@@ -928,6 +947,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
     else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : 'E: call on Frau Weber');
+    else if (nearStranger) lines.push(stranger.talking(now) ? '' : 'E: speak to the stranger');
     else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearMarks && !readView.open) lines.push('E: read the marks');

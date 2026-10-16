@@ -8,10 +8,6 @@
     "reason": "2D and 3D variants of the same noise in one file; merging them would cost the hot path a dimension branch."
   },
   {
-    "key": "clone: dunfinity/creatures/dogs.ts#constructor + dunfinity/creatures/foreman.ts#constructor + dunfinity/creatures/scavengers.ts#constructor + dunfinity/creatures/shrooms.ts#constructor + dunfinity/creatures/slimes.ts#constructor",
-    "reason": "constructors that only pass the kind's name, numbers and gait to Population"
-  },
-  {
     "key": "clone: dunfinity/creatures/dogs.ts#constructor + dunfinity/creatures/rats.ts#constructor + dunfinity/creatures/shrooms.ts#constructor + dunfinity/creatures/slimes.ts#constructor",
     "reason": "constructors that only pass the kind's name, numbers and gait to Population"
   },
@@ -62,14 +58,6 @@
   {
     "key": "idiom: [.damage .range] in dunfinity/combat/thrown.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
     "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
-  },
-  {
-    "key": "idiom: [.dead .hypot .lieDead .x .z Math] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts",
-    "reason": "the first lines of a kind's act(): a dead one lies where it fell (Population.lieDead, the seam), then the distance to you; what each kind does next is its own"
-  },
-  {
-    "key": "idiom: [.dead .lieDead] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
-    "reason": "each kind's one-line call into the Population seam (`if (c.dead) return this.lieDead(c, dt)`); the work is shared in population.ts. Flips between NEW and STALE as the corpus changes, like [.body .root]."
   },
   {
     "key": "idiom: [.dry .groundAt] in dunfinity/creatures/crickets.ts + dunfinity/creatures/touched.ts + dunfinity/gen/diaryPages.ts",
@@ -134,10 +122,6 @@
   {
     "key": "idiom: [.tx .tz] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "idiom: [.x .y .yaw .z] in dunfinity/creatures/foreman.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
-    "reason": "reading a creature's place and heading (x, y, z, yaw) off the Creature fields where it is spawned or followed; the fields are the seam, there is nothing to fold"
   },
   {
     "key": "same name: core/heap.ts#size + dunfinity/workers/pool.ts#size",
@@ -1636,10 +1620,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/fungal.ts#deriveSeed + dunfinity/gen/roots.ts#deriveSeed",
-    "reason": "each cave style derives its own seeds by its own name (deriveSeed(seed, '<style>', ...)) for its Karst and its things; not a copy"
-  },
-  {
     "key": "same name: dunfinity/gen/fungal.ts#portal + dunfinity/gen/lava.ts#portal",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -2780,10 +2760,6 @@
     "reason": "each cell-grid style seeds its own cells and turns them by its own grain (Grain from grainOf, src/gen/grainLines.ts, the seam); the plan drawn on the cells is the style's own"
   },
   {
-    "key": "idiom: [.cells .jitter .lines .meander .noise .spacing] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
-    "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) and ask it for the nearest line as their portal: one seam, called the same way"
-  },
-  {
     "key": "idiom: [.get .own .wall] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts",
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
@@ -3108,10 +3084,6 @@
     "reason": "the views read their creature's mode and swing clock to pose it; the shared part is the Creature fields themselves (src/creatures/creature.ts)."
   },
   {
-    "key": "idiom: [.move .steer .x .z] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
-  },
-  {
     "key": "idiom: [.move .steer .z] in dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts",
     "reason": "each kind's act() steps its own modes through the Steer seam; the shared moves (closeIn, pickSwing, brood) are already seams"
   },
@@ -3296,11 +3268,175 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "clone: dunfinity/gen/bones.ts#constructor + dunfinity/gen/lava.ts#constructor",
-    "reason": "each line style's constructor derives its own seeds and makes its GrainLines (deriveSeed(seed, '<style>', ...)); the shapes match, the seeds and fields differ"
-  },
-  {
     "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
     "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
+  },
+  {
+    "key": "idiom: [.abs .atan2 .dead .hypot .x .y .z Math] in dunfinity/creatures/ghosts.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "the walking fighters (Salt-Touched, Foreman, scavengers) each run their own chase/swing modes; the shared parts already live in Steer.close and pickSwing (src/creatures/pick.ts)"
+  },
+  {
+    "key": "idiom: [.dead .lieDead] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's one-line call into the Population seam (`if (c.dead) return this.lieDead(c, dt)`); the work is shared in population.ts. Flips between NEW and STALE as the corpus changes, like [.body .root]."
+  },
+  {
+    "key": "idiom: [.move .steer .x .z] in dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/ghosts.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "idiom: [.x .y .yaw .z] in dunfinity/creatures/foreman.ts + dunfinity/creatures/ghosts.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
+    "reason": "reading a creature's place and heading (x, y, z, yaw) off the Creature fields where it is spawned or followed; the fields are the seam, there is nothing to fold"
+  },
+  {
+    "key": "same name: core/rng.ts#deriveSeed + dunfinity/render/creatures/ghostView.ts#deriveSeed",
+    "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#denIn + dunfinity/creatures/ghosts.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "same name: dunfinity/creatures/dogs.ts#act + dunfinity/creatures/ghosts.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/eels.ts#act + dunfinity/creatures/ghosts.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/foreman.ts#act + dunfinity/creatures/ghosts.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/foreman.ts#hatch + dunfinity/creatures/ghosts.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#act + dunfinity/creatures/scavengers.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#act + dunfinity/creatures/shrooms.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#act + dunfinity/creatures/slimes.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#act + dunfinity/creatures/tallOne.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#act + dunfinity/creatures/touched.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#denIn + dunfinity/creatures/goblins.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#denIn + dunfinity/creatures/scavengers.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "same name: dunfinity/creatures/ghosts.ts#hatch + dunfinity/creatures/tallOne.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/gen/geode.ts#deriveSeed + dunfinity/render/creatures/ghostView.ts#deriveSeed",
+    "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/ghostView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#figures + dunfinity/render/creatures/ghostView.ts#figures",
+    "reason": "a view made of more than one HumanPool hands all their humans to the warm-up (view.start); a getter, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#level + dunfinity/render/creatures/ghostView.ts#level",
+    "reason": "a getter/setter for the level each view stands on; the Foreman's hands it on to his HumanPool"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/goblinView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/scavengerView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/creatures/goblinView.ts#deriveSeed",
+    "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/creatures/scavengerView.ts#deriveSeed",
+    "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/creatures/touchedView.ts#deriveSeed",
+    "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "clone: dunfinity/creatures/dogs.ts#constructor + dunfinity/creatures/foreman.ts#constructor + dunfinity/creatures/shrooms.ts#constructor + dunfinity/creatures/slimes.ts#constructor",
+    "reason": "constructors that only pass the kind's name, numbers and gait to Population"
+  },
+  {
+    "key": "clone: dunfinity/world/neighbour.ts#constructor + dunfinity/world/stranger.ts#constructor",
+    "reason": "each townsperson stands at its own door (homeDoor/shopDoor) and hands where to Townsperson, which holds the shared part (src/world/townsperson.ts); not a copy"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/bones.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/goblin.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/goblin.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
+  },
+  {
+    "key": "same name: dunfinity/creatures/dogs.ts#hatch + dunfinity/creatures/scavengers.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/rats.ts#hatch + dunfinity/creatures/scavengers.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/scavengers.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/slimeView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "clone: dunfinity/gen/lava.ts#constructor + dunfinity/gen/rift.ts#constructor",
+    "reason": "each line style reads its own genes into its own config (its spacing, jitter and meander scaled together, then its own sizes and chances) and makes its GrainLines from its own seeds; the gene reading (Traits, src/gen/genes.ts) is the seam, the numbers are each style's own"
+  },
+  {
+    "key": "idiom: [.cells .lines .noise] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
   }
 ]

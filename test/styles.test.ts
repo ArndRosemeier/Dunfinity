@@ -494,13 +494,16 @@ test('the goblin warrens are none of them: low burrows with more burrows over th
       if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
       const s = (st[l.field.styles[c.style].id] ??= { n: 0, stacked: 0 });
       s.n++;
-      // Stacked: the roof under 4.5 m up, and over it, past a metre of rock or more, air again within 10 m.
+      // Stacked: the roof under 4.5 m up, and over it, past a metre of rock or more, air again within 10 m:
+      // a burrow, low again (not the open dome over a giant mushroom's cap).
       let y = c.floor + 1.5;
       while (y < c.floor + 6 && l.sdf(x, y, z) > 0) y += 0.25;
       if (y >= c.floor + 4.5) continue;
       let y2 = y;
       while (y2 < y + 10 && l.sdf(x, y2, z) <= 0) y2 += 0.25;
-      if (y2 < y + 10 && y2 - y >= 1) s.stacked++;
+      let y3 = y2;
+      while (y3 < y2 + 6 && l.sdf(x, y3, z) > 0) y3 += 0.25;
+      if (y2 < y + 10 && y2 - y >= 1 && y3 < y2 + 6) s.stacked++;
     }
   }
   const stacked = (id: string) => st[id].stacked / st[id].n;
