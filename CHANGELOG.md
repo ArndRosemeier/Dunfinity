@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.175 — Grandma's tin, reworked, with drag and drop onto the bar
+
+- The tin now stands above the main bar instead of over it, and the bar stays shown while the tin is open.
+- Grandma's dividers run down the left, one per chapter, each with how many of its cards you have cooked. A click (or A/D) jumps to that chapter.
+- Every card is laid out as a little recipe card in one scrolling sheet, under its chapter's heading. Each shows a big coloured capital, its ranks as grains of salt, what the next rank costs, and the bar key it is on. Any number of cards fits.
+- The chosen card is shown in full on the right, with a Cook button that shows the cost.
+- Drag a cooked card onto a bar slot to put it there. Drag one slot onto another to swap them. Drag a slot's card back up into the tin to take it off the bar. Pressing 1–8 still works.
+- The mouse is free while the tin is open, and is captured again when it closes.
+
+## v0.174 — Grandma's Horseradish
+
+- New card in The Garden: Horseradish. Its bar slot sets a root at your feet that tunnels under the floor at 9 m/s to your Tab target (or the foe nearest where you look), comes up under it and bites, then shrivels.
+- Rank 1 bites once (16–24), rank 2 twice, rank 3 three times (18–26 each). It costs 2 stamina, and you can set one every 10 s (9 s at rank 3).
+- If its quarry gets away between bites, it dives and tunnels after it. If the quarry dies, it goes after the nearest other foe. It never bites you.
+- While it tunnels, only its ruff of leaves shows, over a hump of earth with crumbs flying. Then a pale knobbly root bursts out of the floor and snaps with split, fibrous jaws.
+
 ## v0.173 — Procedural creatures, first look
 
 - A creature generator: ten body plans (four-legged, two-legged, insects, spiders, crabs, centipedes, snakes, slugs, walking stars, drifting bells), each with its own skeleton, and parts that vary inside it: heads, jaws, horns, eyes, feelers, eye stalks, lures, claws, tails, plates and shells.
