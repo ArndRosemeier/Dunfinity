@@ -211,6 +211,9 @@ const ROLE_PLANS: Record<CritterRole, { length: [number, number]; plans: [BodyPl
 };
 
 const LEG_PAIRS: Record<BodyPlan, number> = { quadruped: 2, biped: 1, hexapod: 3, octopod: 4, crab: 4, myriapod: 9, serpent: 0, slug: 0, radial: 0, floater: 0 };
+/** Every body plan, and every role (peaceful ones first). */
+export const PLANS = Object.keys(LEG_PAIRS) as BodyPlan[];
+export const ROLES: readonly CritterRole[] = [...PEACEFUL, 'hunter', 'lurker', 'swarmer', 'brute'];
 
 /** Arthropod-like plans: chitin and jointed thread legs. */
 function jointed(plan: BodyPlan): boolean {
@@ -246,11 +249,12 @@ export function bestiaryOf(seed: number, depth: number): Species[] {
   return rolesOf(seed, depth).map((role, slot) => speciesOf(seed, depth, slot, role));
 }
 
-/** Grow one species. */
-export function grow(rng: Rng, role: CritterRole, strange: number, id: string): Species {
+/** Grow one species (its plan and skin may be given: the debug menu's creature maker). */
+export function grow(rng: Rng, role: CritterRole, strange: number, id: string, force: { plan?: BodyPlan; integument?: Integument } = {}): Species {
   const spec = ROLE_PLANS[role];
   const peaceful = PEACEFUL.includes(role);
-  let plan = rng.weighted(spec.plans, (p) => p[1])[0];
+  const drawn = rng.weighted(spec.plans, (p) => p[1])[0];
+  let plan = force.plan ?? drawn;
 
   // ---------------- oddities, bought with strangeness
   const odd = new Set<Oddity>();
@@ -270,7 +274,7 @@ export function grow(rng: Rng, role: CritterRole, strange: number, id: string): 
   const isJointed = jointed(plan);
 
   // ---------------- skin
-  const integ: Integument = (() => {
+  const integ: Integument = force.integument ?? (() => {
     if (plan === 'slug' || plan === 'floater') return 'slime';
     if (isJointed) return rng.chance(0.85) ? 'chitin' : rng.pick(['stone', 'slime'] as const);
     if (plan === 'serpent') return rng.weighted(['scales', 'slime', 'hide'] as const, (_, i) => [5, 2, 1.5][i]);
@@ -281,9 +285,12 @@ export function grow(rng: Rng, role: CritterRole, strange: number, id: string): 
   // ---------------- limbs: thickness from the weight they carry
   let pairs = LEG_PAIRS[plan];
   if (plan === 'myriapod') pairs = rng.int(7, 11);
-  if (odd.has('extraLegs')) pairs += plan === 'biped' ? 1 : plan === 'quadruped' ? 1 : 0;
-  if (odd.has('extraLegs') && plan === 'biped') plan = 'quadruped';
-  if (odd.has('extraLegs') && plan === 'quadruped' && pairs === 3) plan = 'hexapod';
+  // An extra pair of legs makes it the next plan up (not when its plan was given).
+  if (odd.has('extraLegs') && !force.plan) {
+    pairs += plan === 'biped' ? 1 : plan === 'quadruped' ? 1 : 0;
+    if (plan === 'biped') plan = 'quadruped';
+    else if (plan === 'quadruped' && pairs === 3) plan = 'hexapod';
+  }
   const girth = plan === 'serpent' ? rng.range(0.07, 0.11) : plan === 'myriapod' ? rng.range(0.08, 0.12) : plan === 'slug' ? rng.range(0.16, 0.24) : plan === 'radial' || plan === 'floater' ? rng.range(0.4, 0.6) : plan === 'crab' ? rng.range(0.3, 0.42) : isJointed ? rng.range(0.2, 0.3) : rng.range(0.17, 0.26) * (role === 'giant' || role === 'brute' ? 1.15 : 1);
   const legLenRel = (() => {
     if (pairs === 0) return 0;
@@ -364,7 +371,6 @@ export function grow(rng: Rng, role: CritterRole, strange: number, id: string): 
     tip: odd.has('scorpion') ? 'sting' : odd.has('lure') && plan === 'serpent' ? 'lure' : rng.weighted(['none', 'club', 'tuft', 'spikes'] as const, (_, i) => [6, role === 'brute' || role === 'giant' ? 1.2 : 0.2, integ === 'fur' ? 1.5 : 0, 0.3 + strange * 0.2][i]),
   };
   if (plan === 'biped' && !upright) tail.length = Math.max(tail.length, rng.range(0.9, 1.5)); // a counterweight
-  tail.segments = tail.length > 0 ? clamp(Math.round(3 + tail.length * 5), 3, plan === 'serpent' ? 14 : 9) : 0;
   const dorsal: DorsalGenome = {
     spikes: odd.has('spines') || (integ === 'scales' && rng.chance(0.2)) ? rng.int(4, 9) : 0,
     spikeLen: rng.range(0.08, 0.25),
@@ -382,7 +388,40 @@ export function grow(rng: Rng, role: CritterRole, strange: number, id: string): 
 
   // ---------------- gait and speeds (Froude: a walk at Fr ~0.25, a run at Fr ~2)
   const gait: Gait = plan === 'floater' ? 'drift' : plan === 'serpent' ? 'slither' : plan === 'slug' ? 'glide' : plan === 'radial' || pairs >= 4 ? 'wave' : pairs === 3 ? 'tripod' : pairs === 1 ? (rng.chance(0.15) ? 'waddle' : 'stride') : role === 'scuttler' || role === 'swarmer' ? (rng.chance(0.5) ? 'bound' : 'trot') : role === 'hunter' || role === 'grazer' ? 'gallop' : rng.chance(0.5) ? 'trot' : 'walk';
-  const legM = length * legLenRel;
+  const group: readonly [number, number] = role === 'scuttler' ? [3, 8] : role === 'swarmer' ? [5, 10] : role === 'grazer' ? [2, 6] : role === 'floater' ? [2, 6] : role === 'hunter' ? [2, 5] : role === 'watcher' ? [1, 2] : [1, 1];
+  const spineSegs = plan === 'serpent' ? rng.int(9, 13) : plan === 'myriapod' ? pairs + 1 : plan === 'slug' ? 5 : plan === 'radial' || plan === 'floater' ? 1 : rng.int(3, 5);
+
+  return settle({
+    id, seed: rng.nextU32(), role, peaceful, plan, integument: integ,
+    length, girth,
+    bodyWidth: plan === 'radial' || plan === 'floater' ? 1 : plan === 'crab' ? rng.range(1.4, 1.9) : plan === 'slug' ? rng.range(0.9, 1.2) : rng.range(0.82, 1.15),
+    bodyHeight: plan === 'floater' ? rng.range(0.7, 1.1) : plan === 'radial' ? rng.range(0.3, 0.5) : plan === 'crab' ? rng.range(0.45, 0.6) : plan === 'slug' ? rng.range(0.7, 0.95) : rng.range(0.9, 1.2),
+    chest: plan === 'radial' || plan === 'floater' ? 1 : rng.range(0.85, 1.3),
+    belly: rng.range(0, 0.35),
+    spineSegs,
+    spineArch: plan === 'serpent' || plan === 'slug' ? 0 : rng.range(-0.1, 0.3) + (dorsal.shell ? 0.2 : 0),
+    upright, neckLen, neckSegs: 1, neckRaise,
+    head, limbs, tail, dorsal, arms, armLen,
+    chunky: integ === 'stone' ? rng.range(0.5, 0.8) : integ === 'chitin' ? rng.range(0.3, 0.55) : rng.range(0, 0.2),
+    colors, gait, walkSpeed: 0, runSpeed: 0, mass: 0,
+    hipHeight: 0, totalLength: 0, radius: 0,
+    altitude: plan === 'floater' ? rng.range(1.2, 3.5) : 0,
+    group,
+    oddities: [...odd],
+    strangeness: strange,
+  });
+}
+
+/**
+ * What follows from a species' genome: its neck's and tail's joints, how high its hips stand, its
+ * whole length, its mass, its speeds (Froude: a walk at Fr ~0.25, a run at Fr ~2) and its radius for
+ * the sims. `grow` ends with it, and so does a hand-tuned species (src/creatures/knobs.ts).
+ */
+export function settle(sp: Species): Species {
+  const { plan, role, length, girth, limbs, head, neckLen, neckRaise } = sp;
+  const isJointed = jointed(plan), pairs = limbs.pairs;
+  const tail = { ...sp.tail, segments: sp.tail.length > 0 ? clamp(Math.round(3 + sp.tail.length * 5), 3, plan === 'serpent' ? 14 : 9) : 0 };
+  const legM = length * limbs.length;
   const hipHeight = pairs === 0 ? length * girth * (plan === 'floater' ? 1 : 1.1) : isJointed ? legM * 0.42 + length * girth * 0.3 : legM * 0.93 * (1 - limbs.splay * 0.5) + length * girth * 0.2;
   const legForSpeed = Math.max(0.03, pairs ? legM : length * 0.3);
   let walkSpeed = Math.sqrt(0.25 * G * legForSpeed) * (isJointed ? 1.4 : 1);
@@ -394,29 +433,13 @@ export function grow(rng: Rng, role: CritterRole, strange: number, id: string): 
   const neckM = length * neckLen, headR = length * head.size, tailM = length * tail.length;
   const totalLength = length + neckM * Math.cos(neckRaise) + headR * (1 + head.snout) + tailM;
   const vol = length * Math.PI * (length * girth) ** 2;
-  const mass = Math.max(0.005, vol * 1000 * 1.6);
-  const group: readonly [number, number] = role === 'scuttler' ? [3, 8] : role === 'swarmer' ? [5, 10] : role === 'grazer' ? [2, 6] : role === 'floater' ? [2, 6] : role === 'hunter' ? [2, 5] : role === 'watcher' ? [1, 2] : [1, 1];
-  const spineSegs = plan === 'serpent' ? rng.int(9, 13) : plan === 'myriapod' ? pairs + 1 : plan === 'slug' ? 5 : plan === 'radial' || plan === 'floater' ? 1 : rng.int(3, 5);
-
   return {
-    id, seed: rng.nextU32(), role, peaceful, plan, integument: integ,
-    length, girth,
-    bodyWidth: plan === 'radial' || plan === 'floater' ? 1 : plan === 'crab' ? rng.range(1.4, 1.9) : plan === 'slug' ? rng.range(0.9, 1.2) : rng.range(0.82, 1.15),
-    bodyHeight: plan === 'floater' ? rng.range(0.7, 1.1) : plan === 'radial' ? rng.range(0.3, 0.5) : plan === 'crab' ? rng.range(0.45, 0.6) : plan === 'slug' ? rng.range(0.7, 0.95) : rng.range(0.9, 1.2),
-    chest: plan === 'radial' || plan === 'floater' ? 1 : rng.range(0.85, 1.3),
-    belly: rng.range(0, 0.35),
-    spineSegs,
-    spineArch: plan === 'serpent' || plan === 'slug' ? 0 : rng.range(-0.1, 0.3) + (dorsal.shell ? 0.2 : 0),
-    upright, neckLen, neckSegs: clamp(Math.round(1 + neckLen * 5), 1, 6), neckRaise,
-    head, limbs, tail, dorsal, arms, armLen,
-    chunky: integ === 'stone' ? rng.range(0.5, 0.8) : integ === 'chitin' ? rng.range(0.3, 0.55) : rng.range(0, 0.2),
-    colors, gait, walkSpeed, runSpeed, mass,
+    ...sp, tail,
+    neckSegs: clamp(Math.round(1 + neckLen * 5), 1, 6),
+    walkSpeed, runSpeed,
+    mass: Math.max(0.005, vol * 1000 * 1.6),
     hipHeight, totalLength,
     radius: clamp(Math.max(length * girth * 1.2, Math.min(totalLength, length * 1.2) * 0.32), 0.04, 2.5),
-    altitude: plan === 'floater' ? rng.range(1.2, 3.5) : 0,
-    group,
-    oddities: [...odd],
-    strangeness: strange,
   };
 }
 
@@ -511,7 +534,7 @@ function colour(rng: Rng, integ: Integument, plan: BodyPlan, role: CritterRole, 
 }
 
 /** The hue (0..1) of a colour. */
-function rgbHue([r, g, b]: Rgb): number {
+export function rgbHue([r, g, b]: Rgb): number {
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
   if (d < 1e-6) return 0;
   const h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;

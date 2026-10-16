@@ -1,9 +1,12 @@
 /**
  * The debug menu (the key left of 1: ` or ^): give yourself every ability, become invulnerable or
- * tireless, go to any level, teleport into any level style, and to anything worth checking out on this level. A DOM panel;
+ * tireless, go to any level, teleport into any level style, and to anything worth checking out on this level,
+ * and make a procedural creature to look at (src/app/creatureMaker.ts). A DOM panel;
  * it lets go of the mouse while open (click the game to look round again).
  */
 import { bandOf } from '../gen/bands';
+import type { Species } from '../creatures/bestiary';
+import { CreatureMaker, MAKER_STYLE } from './creatureMaker';
 import { button as uiButton, child, panel } from './panel';
 
 /** What the menu asks the game to do. */
@@ -25,6 +28,8 @@ export interface DebugActions {
   position(): string;
   /** Go to the place in a pasted report or link; what to say about it. */
   goTo(text: string): string;
+  /** Put a creature of `species` down in front of one, standing still (null: take it away); what to say about it. */
+  spawnCreature(species: Species | null): string;
 }
 
 /** The levels with a button of their own (any other through the number box). */
@@ -45,7 +50,7 @@ const STYLE = `
   #debug textarea { width: 100%; box-sizing: border-box; height: 120px; margin-top: 4px; font: 11px monospace; }
   #debug input[type=checkbox] { accent-color: var(--ui-accent); }
   #debug .said { color: var(--ui-good); min-height: 1em; margin-top: 4px; white-space: pre-wrap; }
-  #debug .hint { color: var(--ui-ink-faint); margin-top: 8px; }`;
+  #debug .hint { color: var(--ui-ink-faint); margin-top: 8px; }${MAKER_STYLE}`;
 
 export class DebugMenu {
   /** Blows and falls take nothing. */
@@ -102,6 +107,8 @@ export class DebugMenu {
     heading('Teleport to a level style');
     const styles = child(this.el, 'div');
     for (const id of act.styles) button(styles, id, () => { act.toStyle(id); if (this.open) this.toggle(); }).title = 'The nearest region of this style, here or on the nearest level that has one';
+    heading('Make a creature');
+    new CreatureMaker(this.el, (sp) => act.spawnCreature(sp), (text) => this.say(text));
     heading('Teleport on this level');
     this.list = child(this.el, 'div', 'places');
     this.said = child(this.el, 'div', 'said');

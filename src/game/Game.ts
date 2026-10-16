@@ -537,6 +537,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       debug.refresh();
       return `There: level ${p.depth}, ${p.pos.map((v) => v.toFixed(1)).join(' ')}.`;
     },
+    spawnCreature: (sp) => {
+      if (!herdView) return 'Not yet.';
+      if (!sp) { herdView.clearSpecimen(); return 'Taken away.'; }
+      // A few of its lengths ahead of you, facing you.
+      const ahead = Math.max(2.5, sp.totalLength * 1.4 + 1.5), x = body.x - Math.sin(cam.yaw) * ahead, z = body.z - Math.cos(cam.yaw) * ahead;
+      herdView.showSpecimen(sp, x, level.groundAt(x, z), z, Math.atan2(x - body.x, z - body.z));
+      return `${sp.role}, ${sp.plan}, ${sp.integument}: ${sp.totalLength.toFixed(2)} m long, ${sp.mass < 10 ? sp.mass.toFixed(1) : Math.round(sp.mass)} kg${sp.oddities.length ? `; ${sp.oddities.join(', ')}` : ''}.`;
+    },
     styles: DEBUG_STYLES,
     toStyle: (s) => {
       if (!canGo()) return;
