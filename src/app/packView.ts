@@ -17,6 +17,7 @@ const STYLE = `
   #pack .ui-label { margin: 12px 0 4px; }
   #pack .row { padding: 3px 8px; display: flex; justify-content: space-between; gap: 10px; border-radius: 2px; border-left: 3px solid transparent; }
   #pack .row.sel { background: var(--ui-dark-raised); border-left-color: var(--ui-accent); }
+  #pack .row > span:first-child::first-letter { text-transform: uppercase; }
   #pack .row .v { color: var(--ui-ink-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
   #pack .empty { color: var(--ui-ink-faint); font-style: italic; padding: 3px 8px; }
   #pack .note { color: var(--ui-ink-dim); font-size: 14px; margin-top: 10px; }`;
@@ -39,18 +40,15 @@ export class PackView extends Modal {
     const n = pack.items.length;
     let html = `<h2 class="ui-title">Your pack <span class="room${pack.full ? ' full' : ''}">${n} of ${PACK.room} finds${pack.full ? ' · full' : ''}</span></h2>`;
     html += `<div class="ui-label">Finds${n ? ` · Ilse might give about €${pack.worth}` : ''}</div>`;
-    html += n ? pack.items.map((f, i) => `<div class="row${i === sel ? ' sel' : ''}"><span>${esc(cap(FINDS[f.kind].name))}</span><span class="v">€${f.value}</span></div>`).join('')
+    html += n ? pack.items.map((f, i) => `<div class="row${i === sel ? ' sel' : ''}"><span>${esc(FINDS[f.kind].name)}</span><span class="v">€${f.value}</span></div>`).join('')
       : '<div class="empty">Nothing yet. What the miners left lies about down there.</div>';
     html += '<div class="ui-label">Carried</div>'
       + `<div class="row"><span>Grandma's kitchen knife</span><span class="v">${gear.owned.has('whetstone') ? 'honed' : ''}</span></div>`
-      + GEAR_ORDER.filter((k) => gear.owned.has(k)).map((k) => `<div class="row"><span>${esc(cap(GEAR[k].name))}</span><span class="v">${esc(GEAR[k].what)}</span></div>`).join('');
+      + GEAR_ORDER.filter((k) => gear.owned.has(k)).map((k) => `<div class="row"><span>${esc(GEAR[k].name)}</span><span class="v">${esc(GEAR[k].what)}</span></div>`).join('');
     html += `<div class="note">${said ? `${esc(said)} ` : ''}All of it goes down with you. A find left on the floor lies there until you leave the level.</div>`;
-    html += `<div class="ui-keys">${n ? `${keycap(keys.up)} ${keycap(keys.down)} choose · ${keycap(keys.leave)} leave it here · ` : ''}${keycap(keys.close)} close</div>`;
+    const help = [...(n ? [`${[keys.up, keys.down].map(keycap).join(' ')} choose`, `${keycap(keys.leave)} leave it here`] : []), `${keycap(keys.close)} close`];
+    html += `<div class="ui-keys">${help.join(' · ')}</div>`;
     this.showHtml(html);
   }
 }
 
-/** `t` with a capital letter ('a clay pipe' → 'A clay pipe'). */
-function cap(t: string): string {
-  return t.charAt(0).toUpperCase() + t.slice(1);
-}
