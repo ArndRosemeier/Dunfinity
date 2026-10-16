@@ -57,7 +57,7 @@ export class MainBar {
   readonly slots: (CardId | null)[] = new Array<CardId | null>(BAR).fill(null);
 
   /** Put `id` (a card used through the bar) in the first free slot, unless it is on the bar already. Returns its slot, or -1 (full, or not a bar card). */
-  place(id: CardId): number {
+  slotIn(id: CardId): number {
     if (!abilityOf(id)) return -1;
     const at = this.slots.indexOf(id);
     if (at >= 0) return at;
@@ -88,7 +88,7 @@ export class MainBar {
       const a = id === null ? null : ABILITIES.find((x) => x.card === id);
       if (a && cooked.rank(a.card) > 0 && b.slotOf(a.card) < 0) b.slots[i] = a.card;
     });
-    else for (const a of ABILITIES) if (cooked.rank(a.card) > 0) b.place(a.card);
+    else for (const a of ABILITIES) if (cooked.rank(a.card) > 0) b.slotIn(a.card);
     return b;
   }
 }

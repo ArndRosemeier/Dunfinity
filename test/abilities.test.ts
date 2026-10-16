@@ -6,19 +6,19 @@ import { CARDS, Cooked } from '../src/loot/recipes';
 test('the main bar fills its free slots in the order cards are cooked, and holds eight', () => {
   const bar = new MainBar();
   assert.deepEqual(barOf(bar), new Array(BAR).fill(null));
-  assert.equal(bar.place('candle'), 0);
-  assert.equal(bar.place('duck'), 1);
-  assert.equal(bar.place('candle'), 0, 'already on it');
-  assert.equal(bar.place('soup'), -1, 'a passive takes no slot');
-  assert.equal(bar.place('spring'), -1, 'nor a card that makes a move better');
-  for (const a of ABILITIES.slice(2)) bar.place(a.card);
+  assert.equal(bar.slotIn('candle'), 0);
+  assert.equal(bar.slotIn('duck'), 1);
+  assert.equal(bar.slotIn('candle'), 0, 'already on it');
+  assert.equal(bar.slotIn('soup'), -1, 'a passive takes no slot');
+  assert.equal(bar.slotIn('spring'), -1, 'nor a card that makes a move better');
+  for (const a of ABILITIES.slice(2)) bar.slotIn(a.card);
   assert.equal(bar.slots.filter(Boolean).length, BAR, 'eight and no more');
   assert.equal(new Set(bar.slots).size, BAR);
 });
 
 test('a card set in a slot leaves the slot it was in; the one it replaces goes back in the tin', () => {
   const bar = new MainBar();
-  bar.place('candle'); bar.place('duck'); bar.place('stove-flame');
+  bar.slotIn('candle'); bar.slotIn('duck'); bar.slotIn('stove-flame');
   assert.ok(bar.set(0, 'stove-flame'));
   assert.deepEqual(bar.slots.slice(0, 3), ['stove-flame', 'duck', null]);
   assert.equal(bar.slotOf('candle'), -1);

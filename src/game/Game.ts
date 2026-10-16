@@ -442,7 +442,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const debug = new DebugMenu(document.body, {
     allAbilities: () => {
       cooked = Cooked.from(Object.fromEntries(CARDS.map((c) => [c.id, c.cost.length])));
-      for (const a of ABILITIES) mainBar.place(a.card);
+      for (const a of ABILITIES) mainBar.slotIn(a.card);
       gear = new Gear(GEAR_ORDER);
       return 'Every recipe card at its top rank, and all of Kemal\'s gear.';
     },
@@ -1018,7 +1018,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         if (controls.tap('KeyE')) {
           why = cooked.cantCook(tinSel, tin, tin.deepest);
           if (!why) {
-            const r = cooked.cook(tinSel, tin), c = card(tinSel), at = r === 1 ? mainBar.place(tinSel) : -1, fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
+            const r = cooked.cook(tinSel, tin), c = card(tinSel), at = r === 1 ? mainBar.slotIn(tinSel) : -1, fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
             cookAt = now;
             tinView.hide();
             tick('cook');
