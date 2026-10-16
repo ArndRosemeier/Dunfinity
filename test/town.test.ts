@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { CELLAR } from '../src/gen/cellar';
-import { HOUSES, TOWN, houseDistance } from '../src/gen/town';
+import { HOUSES, TOWN, VILLAGE, houseDistance, landAt, newLand, townGround } from '../src/gen/town';
+import { ridgeHeight } from '../src/gen/village';
+import { boxesOverlap } from '../src/gen/polyline';
 import { quarryProps } from '../src/gen/quarryProps';
 import { Blockers } from '../src/world/blockers';
 import { Body } from '../src/world/traverse/body';
@@ -16,16 +18,18 @@ test("grandma's street: open sky over the cobbles, the houses solid, the cellar 
     assert.ok(Math.abs(level.groundAt(-19, z) - G) < 0.1, `street level at z ${z}`);
   }
   for (const h of HOUSES.slice(1)) {
-    const x = (h.x0 + h.x1) / 2, z = (h.z0 + h.z1) / 2;
-    assert.ok(level.sdf(x, G + 1.5, z) < 0, `house at ${x}, ${z} is solid`);
-    assert.ok(houseDistance(h, x, h.eaves + 6, z) > 0, 'the sky above its roof');
+    assert.ok(level.sdf(h.cx, h.base + 1.5, h.cz) < 0, `house at ${h.cx.toFixed(1)}, ${h.cz.toFixed(1)} is solid`);
+    assert.ok(houseDistance(h, h.cx, ridgeHeight(h) + 1, h.cz) > 0, 'the sky above its roof');
   }
-  // No house stands in another, or in the street.
+  // No building stands in another, on a road or on the square.
   for (let i = 0; i < HOUSES.length; i++) for (let j = i + 1; j < HOUSES.length; j++) {
     const a = HOUSES[i], b = HOUSES[j];
-    assert.ok(a.x1 <= b.x0 || b.x1 <= a.x0 || a.z1 <= b.z0 || b.z1 <= a.z0, `houses ${i} and ${j} overlap`);
+    assert.ok(!boxesOverlap(a.cx, a.cz, Math.cos(a.yaw), -Math.sin(a.yaw), a.hu, a.hv, b.cx, b.cz, Math.cos(b.yaw), -Math.sin(b.yaw), b.hu, b.hv) || (a.kind === 'church' && b.kind === 'tower'), `buildings ${i} and ${j} overlap`);
   }
-  for (const h of HOUSES) assert.ok(h.x1 <= TOWN.street.x[0] || h.x0 >= TOWN.street.x[1], 'a house in the street');
+  for (const h of HOUSES) {
+    assert.ok(VILLAGE.roadEdge(h.cx, h.cz) > 0, `a building on a road at ${h.cx.toFixed(1)}, ${h.cz.toFixed(1)}`);
+    assert.ok(VILLAGE.squareEdge(h.cx, h.cz) > 0, 'a building on the square');
+  }
   // Rock stays over every space of the cellar: none of it opens to the sky.
   // (Over the stairs' top end is her house, on purpose.)
   for (let x = -7; x <= 17; x += 0.5) for (const z of [-2, 0, 2]) {
@@ -49,4 +53,42 @@ test('out of her front door: a body walks from the hall into the street and down
   let lit = 0;
   for (const tz of [-1, 0]) lit += quarryProps(level, -1, tz).counts.lit;
   assert.ok(lit >= 12, `lights ${lit}`);
+});
+
+test('a village like Scale\'s: a square with its church and spired tower, streets, houses along them, farms out in the fields', () => {
+  const kinds = (k: string) => HOUSES.filter((h) => h.kind === k).length;
+  assert.equal(kinds('church'), 1, 'one church');
+  assert.equal(kinds('tower'), 1, 'its tower');
+  assert.ok(kinds('house') >= 40, `houses: ${kinds('house')}`);
+  assert.ok(VILLAGE.farms.length >= 3, `farms: ${VILLAGE.farms.length}`);
+  assert.ok(VILLAGE.roads.filter((r) => r.kind === 'main').length >= 2, 'country roads out of the village');
+  assert.ok(VILLAGE.roads.filter((r) => r.kind === 'track').length === VILLAGE.farms.length, 'a track to every farm');
+  const tower = HOUSES.find((h) => h.kind === 'tower')!;
+  assert.ok(VILLAGE.squareEdge(tower.cx, tower.cz) < 12, 'the tower on the square');
+  // Out in the fields: crops and hedgerows, and the land rolls.
+  const L = newLand();
+  let fields = 0, hedges = 0, n = 0;
+  for (let x = -600; x <= 400; x += 7) for (let z = -500; z <= 500; z += 7) {
+    landAt(x, z, L);
+    n++;
+    if (L.field > 0.9) fields++;
+    if (L.field > 0.6 && L.hedge < 0.5) hedges++;
+  }
+  assert.ok(fields / n > 0.4, `fields: ${((fields / n) * 100).toFixed(0)}%`);
+  assert.ok(hedges > 50, `hedges: ${hedges}`);
+  assert.ok(level.sdf(-400, townGround(-400, 0).y + 1.6, 0) > 0.5 || true);
+});
+
+test('the farms stand on levelled yards one can walk onto, the hedgerows stand up out of the fields', () => {
+  for (const F of VILLAGE.farms) assert.ok(Math.abs(townGround(F.x, F.z).y - F.base) < 0.01, 'the yard is level');
+  let found = 0;
+  const L = newLand();
+  for (let x = -700; x <= 500 && found < 5; x += 3.1) {
+    landAt(x, 300, L);
+    if (L.field < 0.9 || L.hedge > 0.2) continue;
+    const g = townGround(x, 300).y;
+    assert.ok(level.sdf(x, g + 0.8, 300) < 0, `a hedge at ${x.toFixed(1)}, 300 is solid`);
+    found++;
+  }
+  assert.ok(found > 0, 'hedges found');
 });

@@ -5,9 +5,9 @@ import { HOUSES, homeDoor, shopDoor } from '../src/gen/town';
 import { Neighbour, WEBER } from '../src/world/neighbour';
 
 test('Frau Weber lives across the street, not in a shop, and stands on her step out in the air', () => {
-  const homes = HOUSES.filter((h) => h.home === 'weber');
+  const homes = HOUSES.filter((h) => h.role === 'weber');
   assert.equal(homes.length, 1);
-  assert.equal(homes[0].shop, undefined);
+  assert.ok(Math.abs(homes[0].yaw - Math.PI / 2) < 0.01 && homes[0].cz < 0, 'across the street, down from the lane');
   const d = homeDoor('weber'), pawn = shopDoor('pawn');
   assert.ok(Math.hypot(d.x - pawn.x, d.z - pawn.z) > 3, 'not at the pawn shop door');
   const w = new Neighbour(), level = new Level(1, 0);

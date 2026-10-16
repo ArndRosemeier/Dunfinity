@@ -50,7 +50,7 @@ export class Neighbour extends Townsperson {
   constructor() {
     const d = homeDoor('weber');
     // On her doorstep, in her lit doorway, looking out at the street.
-    super(d.x - d.house.faces * 0.4, d.z, Math.atan2(-d.house.faces, 0), WEBER);
+    super(d.x - d.nx * 0.4, d.z - d.nz * 0.4, Math.atan2(-d.nx, -d.nz), WEBER);
   }
 
   /** Call on her at `now`: what she says. */

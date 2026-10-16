@@ -42,9 +42,10 @@ test('a helmet takes a share off a blow, not off a fall', () => {
 
 test("his store is next door to grandma's, up the street, and one can stand at its door", () => {
   const { house, x, z } = shopDoor('hardware');
-  assert.equal(HOUSES.filter((h) => h.shop === 'hardware').length, 1);
-  assert.ok(house.x0 >= TOWN.street.x[1] && house.faces === -1, "on her side of the street, facing it");
-  assert.ok(house.z0 > TOWN.grandma.z[1] && house.z0 < TOWN.grandma.z[1] + 4, 'next door');
+  assert.equal(HOUSES.filter((h) => h.role === 'hardware').length, 1);
+  assert.ok(house.cx - house.hv >= TOWN.street.x[1] - 0.01 && Math.abs(house.yaw + Math.PI / 2) < 0.01, "on her side of the street, facing it");
+  const z0 = house.cz - house.hu;
+  assert.ok(z0 > TOWN.grandma.z[1] && z0 < TOWN.grandma.z[1] + 4, 'next door');
   const level = new Level(1, 0);
   assert.ok(level.sdf(x, TOWN.ground + 1, z) > 0.5, 'on the street before his door');
 });
