@@ -7,8 +7,9 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, type Material, type Node } from 'three/webgpu';
-import { Fn, If, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
+import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
+import { Fn, If, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -79,7 +80,10 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const ws = [share(rocksA.x, kindA.x), share(rocksA.y, kindA.y), share(rocksA.z, kindA.z), share(rocksA.w, kindB.x),
     share(rocksB.x, kindB.y), share(rocksB.y, kindB.z), share(rocksB.z, kindC.x), share(rocksB.w, kindC.y)];
   const kinds = ws.reduce((a, b) => a.add(b));
-  const [lime, sand, shale, gran, saltShare, basalt, marble, slate] = ws.map((w) => smoothstep(0.35, 0.65, w.div(kinds)));
+  const slots = ws.map((w) => smoothstep(0.35, 0.65, w.div(kinds)));
+  const kindSum = slots.reduce((a, b) => a.add(b)).add(0.001);
+  // How much of it is rock salt: its own patterns (beds, clay partings, the machines' rings, lumps).
+  const saltShare = slots.map((s, i) => s.mul(recipe(i * 4 + 3).z)).reduce((a, b) => a.add(b));
   const grain = mx_noise_float(p.mul(9.0)); // centimetre grain
   const lumps = mx_noise_float(p.mul(3.1)); // a chiselled roughness, hand-sized
   const steep = smoothstep(0.75, 0.35, abs(normalWorld.y));
@@ -137,16 +141,16 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const veinAt = mx_noise_float(p.mul(vec3(0.22, 0.5, 0.22)).add(vec3(mottle.mul(0.4)))).abs();
   const marbleVein = thinLine(veinAt.mul(1.2), float(0.01)).add(smoothstep(0.05, 0.0, veinAt).mul(0.25)).mul(smoothstep(-0.2, 0.3, mx_noise_float(p.mul(0.15).add(2.2))));
   const cleave = thinLine(p.y.mul(9).add(u.mul(3.5)).add(mottle).fract().sub(0.5).abs().div(9), float(0.005)).mul(smoothstep(0.35, 0.12, p.y.mul(9).add(u.mul(3.5)).fwidth()));
-  const kindSum = lime.add(sand).add(shale).add(gran).add(saltShare).add(basalt).add(marble).add(slate).add(0.001);
-  const rockHue = vec3(1, 1, 1).mul(saltShare.add(0.001))
-    .add(vec3(0.2, 0.2, 0.22).mul(float(1).add(granSpot.mul(0.8))).mul(basalt))
-    .add(vec3(1.55, 1.52, 1.45).mul(float(1).sub(marbleVein.mul(0.45))).mul(marble))
-    .add(vec3(0.5, 0.56, 0.64).mul(float(1).sub(cleave.mul(0.4))).mul(slate))
-    .add(vec3(1.14, 1.1, 1.0).mul(lime))
-    .add(vec3(1.28, 0.98, 0.66).mul(sandBed.mul(0.22).add(0.88)).mul(sand))
-    .add(vec3(0.5, 0.48, 0.47).mul(float(1).sub(lamina.mul(0.5))).mul(shale))
-    .add(vec3(0.86, 0.82, 0.86).mul(float(1).sub(granSpot.mul(1.4))).mul(gran))
-    .div(kindSum);
+  // Each slot's stone from its recipe (src/gen/rockTypes.ts `RockRecipe`, four vec4s): its colour
+  // shading through its beds, darkened along laminae and cleavage, pale or dark crystals, veins.
+  let rockHue: Node<'vec3'> = vec3(0.001, 0.001, 0.001), veinGlow: Node<'vec3'> = vec3(0, 0, 0);
+  for (let i = 0; i < ROCK_SLOTS; i++) {
+    const a = recipe(i * 4), b = recipe(i * 4 + 1), c = recipe(i * 4 + 2), d = recipe(i * 4 + 3);
+    const stone = mix(a.xyz, b.xyz, a.w.mul(sandBed)).mul(float(1).sub(b.w.mul(lamina))).mul(float(1).add(d.x.mul(granSpot))).mul(float(1).sub(d.y.mul(cleave)));
+    rockHue = rockHue.add(mix(stone, c.xyz, c.w.mul(marbleVein)).mul(slots[i]));
+    veinGlow = veinGlow.add(c.xyz.mul(marbleVein.mul(d.w).mul(slots[i])));
+  }
+  rockHue = rockHue.div(kindSum);
   const rockKind = mix(vec3(1, 1, 1), rockHue, float(1).sub(masonry).mul(float(1).sub(flow.mul(0.7))));
   // Rock salt (the Salt Works), as it looks in a real mine: dark grey-brown salt with pale, near white
   // beds and thin streaks running level along the walls, a pinkish bed here and there, dark clay
@@ -274,9 +278,27 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const facet = mx_worley_noise_float(p.mul(9));
   const twinkle = smoothstep(0.5, 0.85, mx_noise_float(p.mul(13).add(cameraPosition.mul(1.7))));
   const glint = smoothstep(0.16, 0.04, facet).mul(twinkle).mul(smoothstep(14, 2, length(positionView))).mul(natural.add(worked).clamp(0, 1)).mul(saltShare);
-  m.emissiveNode = vec3(0.25, 0.6, 1.0).mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2)));
+  m.emissiveNode = vec3(0.25, 0.6, 1.0).mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
   return m;
 });
+
+/**
+ * The level's rock recipes, one per slot (src/gen/rockTypes.ts `RockRecipe`, packed four vec4s each by
+ * `packRecipe`); a vertex's `rocks`, `rocks2` weigh the slots. Uniforms: any stone, never a new shader.
+ * Set by `LevelView` (`setRockRecipes`).
+ */
+export const ROCK_RECIPES = uniformArray(Array.from({ length: ROCK_SLOTS * 4 }, () => new Vector4()), 'vec4');
+
+/** The k-th vec4 of `ROCK_RECIPES`. */
+const recipe = (k: number) => ROCK_RECIPES.element(k) as unknown as Node<'vec4'>;
+
+/** Load `recipes` (one per slot) into `ROCK_RECIPES`. */
+export function setRockRecipes(recipes: readonly RockRecipe[]): void {
+  const packed = new Array<number>(ROCK_SLOTS * RECIPE_SIZE).fill(0);
+  recipes.forEach((r, i) => packRecipe(r, packed, i * RECIPE_SIZE));
+  (ROCK_RECIPES.array as Vector4[]).forEach((v, k) => v.fromArray(packed, k * 4));
+}
+setRockRecipes(ROCK_TYPES.map((t) => ROCK_PRESETS[t]));
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);

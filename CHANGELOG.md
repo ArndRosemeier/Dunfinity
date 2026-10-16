@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.120 — Goblin warrens
+
+- New level style, goblin warrens: low, round, crooked burrows dug from knot to knot, most knots swelling into a small den, and a second storey of burrows over the first, joined by steep ramps and climbing shafts.
+- Dug through soft sandstone, shale and limestone, scratched and soot-black over the dens; bones, skulls and stolen crates, barrels, ropes and buckets about the burrows, and a cook fire in some dens.
+- The Old Halls (levels 21–40) draw them as a minority style; `?style=goblin` shows a level of them.
+
+## v0.119 — Rock types become recipes
+
+- The rock shader no longer hard-codes its eight kinds of stone: each is now a recipe of sixteen numbers (colours, beds, laminae, veins and how they glow, crystals, cleavage, salt) loaded into eight slots per level, so a level can carry any stone without a new shader.
+- Today's eight rock types are the eight presets and look the same as before (a side-by-side check of four long walls differs by at most 1 in 255 per pixel).
+
 ## v0.118 — New cards: salt-magic and Spring in Your Step
 
 - Stove Flame (Fire & Frost, R): a gout of flame 4 m ahead burns everything in it (6–10 damage, every 2.5 s, 3 stamina); rank 2 reaches 5.5 m, 9–14 damage, every 1.8 s.

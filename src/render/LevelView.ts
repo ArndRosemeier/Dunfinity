@@ -10,7 +10,7 @@ import { airOf, type Air } from '../gen/air';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
 import { Dust } from './dust';
-import { ROCK_FINISH, ROCK_VEINS } from './materials';
+import { ROCK_FINISH, ROCK_VEINS, setRockRecipes } from './materials';
 import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
@@ -115,6 +115,7 @@ export class LevelView {
     this.spill.color.setRGB(...this.air.lamp, SRGBColorSpace);
     this.lamps.tint(this.air.flame);
     this.dark = this.dark_; // the fog's distances, as clear as the air
+    setRockRecipes(this.level_.rockRecipes);
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;
     this.lamps.power = this.level_.band.lamplight;

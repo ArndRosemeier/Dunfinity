@@ -12,7 +12,7 @@ import type { Column } from './quarry';
 import type { Dress } from './styleProps';
 import type { RockMix } from './rockTypes';
 
-export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt' | 'flooded' | 'dwarven' | 'elven';
+export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt' | 'flooded' | 'dwarven' | 'elven' | 'goblin';
 
 export interface Style {
   readonly id: StyleId;
