@@ -97,6 +97,9 @@ export class TvSet {
     this.offAt ??= now;
   }
 
+  /** What was on the air at the last frame (null before the first). */
+  playing: OnAir | null = null;
+
   /** How rough the signal is now, 0..1 (for the hiss). */
   get trouble(): number { return this.rough; }
 
@@ -119,7 +122,7 @@ export class TvSet {
     }
     this.rough = Math.max(0, this.rough - dt * 0.6);
     this.fit();
-    const air = onAir(this.from + (this.onAt === null || this.pinned !== null ? 0 : now - this.onAt)); // a pinned shot holds
+    const air = this.playing = onAir(this.from + (this.onAt === null || this.pinned !== null ? 0 : now - this.onAt)); // a pinned shot holds
     this.broadcast(air, now);
     this.compose(air, now);
     return this.slipAt !== slipped && this.offAt === null;

@@ -5,7 +5,7 @@
  * build slips the set's vertical hold. The choice switches the set off and ends it.
  */
 import { Rng, deriveSeed } from '@futuremagic/core';
-import { REPORT, shotStart } from '../lore/report';
+import { REPORT, shotStart, voiceOf } from '../lore/report';
 import { TitleScreen, type TitleChoice } from '../app/titleScreen';
 import { TvSet } from '../app/tvSet';
 import type { SoundEngine, SoundLoop } from '../audio/audio';
@@ -41,7 +41,7 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
   const from = cast.canContinue ? shotStart(new Rng(deriveSeed(cast.seed, 'title', Math.floor(performance.timeOrigin))).int(1, REPORT.length - 1)) : 0;
   const tv = new TvSet(screen.back, cast.seed, from, cast.pinned);
   await tv.loaded.catch(() => {}); // a missing picture leaves its shot dark, nothing worse
-  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null;
+  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null, said: string | null = null;
   const now = (): number => performance.now() / 1000;
   const start = now();
   tv.on(start);
@@ -60,6 +60,10 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
       if (!hiss && chosen === null && cast.sound.ctx && (hiss = cast.sound.loop('tv_static')) && t - start < SOUND.clunk) cast.sound.play('tv_on', null);
       hiss?.set(0, 0, -1, (SOUND.hiss + SOUND.rough * tv.trouble) * (1 - leaving));
       if (slipped) cast.sound.play('tv_glitch', null, SOUND.crackle);
+      // The presenter speaks as each of his lines comes up (not one already under way when the set came on).
+      const air = tv.playing, line = air ? `${air.shot}:${air.line}` : null, voice = air && voiceOf(air);
+      if (line !== said && said !== null && voice && chosen === null) cast.sound.play(voice, null);
+      said = line;
       (globalThis as { __ready?: boolean }).__ready = revealed && chosen === null;
       if (leaving >= 1) {
         hiss?.stop();

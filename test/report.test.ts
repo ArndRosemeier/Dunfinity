@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { AIRING, PACE, REPORT, linesOf, onAir, shotSeconds, shotStart } from '../src/lore/report';
+import { readFileSync } from 'node:fs';
+import { AIRING, PACE, REPORT, linesOf, onAir, shotSeconds, shotStart, voiceOf } from '../src/lore/report';
 
 test('every still of the report and the set it plays on are painted', () => {
   for (const id of new Set([...REPORT.map((s) => s.still).filter(Boolean), 'set'])) assert.ok(existsSync(`public/report/${id}.webp`), `public/report/${id}.webp`);
@@ -28,4 +29,18 @@ test('a caption shows in whole sentences, a line at a time, all of it in order',
     if (seen.at(-1) !== line) seen.push(line);
   }
   assert.deepEqual(seen, linesOf(REPORT[i].caption));
+});
+
+test('the presenter speaks each voiced line as it comes up, and only then', () => {
+  const sounds = JSON.parse(readFileSync('public/sounds/manifest.json', 'utf8'));
+  const heard: string[] = [];
+  let last = '';
+  for (let t = 0; t < AIRING; t += 0.05) {
+    const air = onAir(t), key = `${air.shot}:${air.line}`;
+    if (key !== last) { const v = voiceOf(air); if (v) heard.push(v); }
+    last = key;
+  }
+  const voiced = REPORT.filter((s) => s.voice).map((s) => s.voice!.id);
+  assert.deepEqual(heard, voiced);
+  for (const id of voiced) assert.ok(sounds[id], `${id} in the sound manifest`);
 });
