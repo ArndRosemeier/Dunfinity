@@ -42,8 +42,8 @@ export class AbilityBar {
   private shown = '';
   private slots: { root: HTMLDivElement; wait: HTMLDivElement; c: HTMLDivElement }[] = [];
 
-  /** `use(i)`: slot i was clicked. */
-  constructor(host: HTMLElement, private readonly use: (i: number) => void) {
+  /** `use(i)`: slot i was clicked; `keyName`: what an ability's key is called now (the player may have moved it). */
+  constructor(host: HTMLElement, private readonly use: (i: number) => void, private readonly keyName: (key: string) => string) {
     this.el = panel(host, 'div', 'bar', STYLE);
     this.row = child(this.el, 'div', 'slots ui-grown');
     growOn(this.row, 'bar', { amount: 0.7, moss: false });
@@ -53,7 +53,7 @@ export class AbilityBar {
   /** Show `bar` (its states in `states`) and the passives; hidden while `hide`. */
   paint(bar: readonly Ability[], states: readonly SlotState[], passives: readonly CardId[], hide: boolean): void {
     this.el.style.display = hide || (!bar.length && !passives.length) ? 'none' : 'flex';
-    const key = bar.map((a) => a.card).join() + '|' + passives.join();
+    const key = bar.map((a) => `${a.card}:${this.keyName(a.key)}`).join() + '|' + passives.join();
     if (key !== this.shown) {
       this.shown = key;
       this.row.querySelectorAll('.slot').forEach((s) => s.remove());
@@ -61,9 +61,10 @@ export class AbilityBar {
       this.row.style.display = bar.length ? 'flex' : 'none';
       this.slots = bar.map((a, i) => {
         const root = child(row, 'div', 'slot'), wait = child(root, 'div', 'wait');
-        root.title = `${card(a.card).title}: ${a.hold ? 'hold' : 'press'} ${a.label} or ${SLOT_LABELS[i]}${a.hold ? ' (a click holds it until the next)' : ''}`;
+        const label = this.keyName(a.key);
+        root.title = `${card(a.card).title}: ${a.hold ? 'hold' : 'press'} ${label} or ${SLOT_LABELS[i]}${a.hold ? ' (a click holds it until the next)' : ''}`;
         child(root, 'div', 'n', SLOT_LABELS[i]);
-        child(root, 'div', 'k', a.label);
+        child(root, 'div', 'k', label);
         const c = child(root, 'div', 'c');
         child(root, 'div', 't', a.short);
         root.addEventListener('mousedown', (e) => { e.stopPropagation(); e.preventDefault(); this.use(i); });

@@ -5,7 +5,7 @@
 import changelog from '../../CHANGELOG.md?raw';
 import { noteHtml, parseChangelog } from './changelog';
 import { growOn } from './growth';
-import { addStyle, child, onClick } from './panel';
+import { addStyle, button, child } from './panel';
 
 /** The version this build is (the newest in CHANGELOG.md). */
 export const VERSION = parseChangelog(changelog)[0]?.version ?? 'v?';
@@ -25,10 +25,8 @@ export function mountWhatsNew(host: HTMLElement): void {
     #whatsnew li { margin: 3px 0; }
     #whatsnew li::marker { color: var(--ui-ink-faint); }
     #whatsnew code { font-size: 12px; color: var(--ui-salt); }`);
-  const button = document.createElement('button');
-  button.id = 'version';
-  button.className = 'ui-btn small';
-  button.textContent = `${releases[0]?.version ?? 'v?'} · What's new`;
+  const version = button(host, `${releases[0]?.version ?? 'v?'} · What's new`, () => toggle(), 'ui-btn small');
+  version.id = 'version';
   const panel = document.createElement('div');
   panel.id = 'whatsnew';
   panel.className = 'ui-panel';
@@ -40,7 +38,6 @@ export function mountWhatsNew(host: HTMLElement): void {
     panel.classList.toggle('open', open);
     if (open && document.pointerLockElement) document.exitPointerLock();
   };
-  onClick(button, () => toggle());
   window.addEventListener('keydown', (e) => { if (e.code === 'Escape') toggle(false); });
-  host.append(button, panel);
+  host.append(panel);
 }

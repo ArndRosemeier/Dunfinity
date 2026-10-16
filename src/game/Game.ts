@@ -28,6 +28,10 @@ import { LevelView } from '../render/LevelView';
 import { OrbitCamera } from '../render/camera/OrbitCamera';
 import { Nobody } from '../render/humans/nobody';
 import { Controls } from '../input/controls';
+import { Bindings, keyLabel } from '../input/bindings';
+import { readGraphicsSettings, readKeySettings, writeGraphicsSettings, writeKeySettings } from '../persist/settings';
+import { QUALITY_NOTES } from '../render/quality';
+import { SettingsView } from '../app/settingsView';
 import { parseViewParams } from '../app/params';
 import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
@@ -75,9 +79,9 @@ import { Thrown } from '../combat/thrown';
 import { GameSounds } from '../audio/gameSounds';
 import { ThrownView } from '../render/humans/thrownView';
 import { AbilityBar, type SlotState } from '../app/abilityBar';
-import { ABILITIES, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
+import { ABILITIES, FIXED_KEYS, KEY_ACTIONS, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
 import { TargetMark } from '../app/targetMark';
-import { Hud } from '../app/hud';
+import { Hud, keysOf } from '../app/hud';
 import { LetterView } from '../app/letterView';
 import { PauseMenu } from '../app/pauseMenu';
 import { pageId } from '../lore/diary';
@@ -118,7 +122,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
   view.headlampPower = { survey: 14, dark: 3.5 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
   view.carrier = new Vector3(); // the headlamp is on the nobody's forehead
+  let graphics = readGraphicsSettings();
+  view.quality = graphics.quality;
+  // Reduced motion: the interface's own animations keep still under this class (as under prefers-reduced-motion).
+  document.documentElement.classList.toggle('ui-still', graphics.still);
   const controls = new Controls(canvas);
+  /** The player's own keys (the settings): the game asks for an action by its own key, the controls answer with the key moved onto it. */
+  const bindings = new Bindings(KEY_ACTIONS.map((a) => a.key), FIXED_KEYS, readKeySettings());
+  controls.bind(bindings);
+  /** What the key for `action` is called now. */
+  const keyName = (action: string): string => keyLabel(bindings.keyOf(action));
   const cam = new OrbitCamera(view.camera, level);
   if (params.look) [cam.yaw, cam.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
@@ -306,18 +319,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (!a) return;
     if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
     else controls.press(a.key);
-  });
+  }, keyName);
   /** At Kemal's counter (last frame): 1, 2, 3 buy there, not use the bar. */
   let atCounter = false;
   /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
   let target: Foe | null = null, targetFull = 1;
   const targetMark = new TargetMark(document.body);
   const hudView = new Hud(document.body);
+  hudView.keys(keysOf(keyName));
   const letterView = new LetterView(document.body);
   /** The pause menu: Escape once the mouse is free (not the Escape that freed it), or its button; the game's clock stands still while it is open. */
   const goOn = (): void => { pause.hide(); canvas.requestPointerLock?.(); };
   const pause = new PauseMenu(document.body, {
-    resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), sound: () => sounds.engine.settings, setSound: (s) => sounds.engine.set(s),
+    resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), keys: () => keysOf(keyName),
+    settings: () => { pause.hide(); settingsView.toggle(); },
   });
   let freedAt = -Infinity;
   document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement) pause.hide(); else freedAt = performance.now(); });
@@ -419,6 +434,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
   host.appendChild(pain);
   /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. */
   const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
+  const settingsView = new SettingsView(document.body, {
+    sound: () => sounds.engine.settings,
+    setSound: (s) => sounds.engine.set(s),
+    actions: KEY_ACTIONS,
+    bindings,
+    keysChanged: () => { writeKeySettings(bindings.data); controls.bind(bindings); hudView.keys(keysOf(keyName)); },
+    qualityNow: () => view.quality,
+    setQuality: (q) => { view.quality = q; graphics = { ...graphics, quality: q }; writeGraphicsSettings(graphics); },
+    still: () => graphics.still,
+    setStill: (on) => { graphics = { ...graphics, still: on }; writeGraphicsSettings(graphics); document.documentElement.classList.toggle('ui-still', on); },
+    qualityNotes: QUALITY_NOTES,
+    opened: (open) => { controls.paused = open; },
+  });
   await sounds.init();
   const timer = new Timer();
   let acc = 0;
@@ -591,7 +619,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   view.renderer.setAnimationLoop(() => {
     timer.update();
     // (Only when nothing else is open that Escape would close: then it is theirs.)
-    const others = tinView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || body.dead || !!document.querySelector('#whatsnew.open');
+    const others = tinView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || settingsView.open || body.dead || !!document.querySelector('#whatsnew.open');
     if (!others && !document.pointerLockElement && performance.now() - freedAt > 300 && controls.tap('Escape')) {
       if (pause.open) goOn();
       else pause.showMenu();
@@ -628,8 +656,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
     else if (controls.tap('KeyJ') && !tinView.open) diaryView.show((d) => tin.hasPage(d));
-    if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
-    if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
+    if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(`Sound ${sounds.engine.settings.muted ? 'off' : 'on'} (${keyName('KeyN')}).`, 2); }
+    if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(`Music ${sounds.engine.settings.music ? 'on' : 'off'} (${keyName('KeyB')}).`, 2); }
+    if (controls.tap('KeyO')) settingsView.toggle();
     if (controls.tap('Backquote')) debug.toggle();
     // The bar's slots answer to 1–0, - and = too (not at Kemal's counter); a dead grandchild holds nothing.
     const bar = barOf(cooked);
@@ -979,17 +1008,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
     mapView.draw(level, explored, body.x, body.y, body.z, cam.yaw, campfire.burning(timer.getElapsed()) ? campfire.fire : null, timer.getElapsed());
     const lines: string[] = [];
-    if (nearLadder) lines.push(nearLadder.up ? 'E: climb up the ladder' : 'E: climb down the ladder');
-    else if (nearFind) lines.push(`E: pick up ${FINDS[nearFind.kind].name}`);
-    else if (nearWeber) lines.push(weber.talking(now) ? '' : 'E: call on Frau Weber');
-    else if (nearStranger) lines.push(stranger.talking(now) ? '' : 'E: speak to the stranger');
+    const E = keyName('KeyE');
+    if (nearLadder) lines.push(nearLadder.up ? `${E}: climb up the ladder` : `${E}: climb down the ladder`);
+    else if (nearFind) lines.push(`${E}: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
+    else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
     else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
-    else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
-    else if (nearMarks && !readView.open) lines.push('E: read the marks');
-    else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
-    else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : writing!.kind === 'page' ? 'E: read the page under the stone' : 'E: read the note');
-    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. T: open grandma's tin (${tin.salt} salt)`);
-    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');
+    else if (nearPawn) lines.push(pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
+    else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
+    else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
+    else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
+    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
+    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(`${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);

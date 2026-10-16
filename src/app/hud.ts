@@ -45,34 +45,39 @@ const STYLE = `
   #game-hud .prompt .ui-key { margin-right: 6px; }
   #game-hud .flags { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); color: #e0a050; font-size: 12px; }
   #game-hud .dev { position: absolute; left: 12px; bottom: 8px; font-size: 11px; color: var(--ui-ink-faint); }
-  #game-hud .help { position: absolute; left: 16px; bottom: 32px; padding: 10px 14px; font-size: 13px; display: grid; grid-template-columns: auto auto auto auto; gap: 4px 10px; align-items: center; max-width: calc(50vw - 290px); }
-  @media (max-width: 1300px) { #game-hud .help { grid-template-columns: auto auto; } }
+  #game-hud .help { position: absolute; left: 16px; bottom: 32px; padding: 10px 14px; font-size: 13px; }
+  #game-hud .help .keys { display: grid; grid-template-columns: auto auto; gap: 4px 10px; align-items: center; }
   #game-hud .help .k { text-align: right; white-space: nowrap; }
   #game-hud .help .t { color: var(--ui-ink-dim); }
-  #game-hud .help .foot { grid-column: 1 / -1; margin-top: 4px; font-size: 12px; color: var(--ui-ink-faint); }
+  #game-hud .help .foot { margin-top: 6px; font-size: 12px; color: var(--ui-ink-faint); }
     background: radial-gradient(ellipse at center, #1a0503aa, #000e 75%); }
   @media (max-width: 720px) { #game-hud .help, #game-hud .tally { display: none; } #game-hud .banner .name { font-size: 32px; } }`;
 
-/** The keys the help card lists while it is shown. */
-export const HELP: readonly (readonly [string, string])[] = [
-  ['Click', 'look round, then stab'],
-  ['W A S D', 'walk'],
-  ['Shift', 'run'],
-  ['Space', 'jump'],
-  ['E', 'use, climb a ladder, pick up, read'],
-  ['C', 'light a fire and rest'],
-  ['1–0', 'grandma\'s cards (the bar)'],
-  ['Tab', 'pick a target'],
-  ['F', 'headlamp'],
-  ['M', 'map'],
-  ['J', 'grandma\'s diary'],
-  ['N · B', 'sound · music'],
-  ['Esc', 'free the mouse; again: the menu'],
+/** The keys the help card and the pause menu list: the actions' own keys (bound by the player: `keysOf`), and what they do. */
+export const HELP: readonly (readonly [readonly string[], string])[] = [
+  [['Mouse0'], 'stab (click first to look round)'],
+  [['KeyW', 'KeyA', 'KeyS', 'KeyD'], 'walk'],
+  [['ShiftLeft'], 'run'],
+  [['Space'], 'jump'],
+  [['KeyE'], 'use, climb a ladder, pick up, read'],
+  [['KeyC'], 'light a fire and rest'],
+  [['Digit1'], 'to 0: grandma\'s cards (the bar)'],
+  [['Tab'], 'pick a target'],
+  [['KeyF'], 'headlamp'],
+  [['KeyM'], 'map'],
+  [['KeyJ'], 'grandma\'s diary'],
+  [['KeyO'], 'settings'],
+  [['Escape'], 'free the mouse; again: the menu'],
 ];
 
+/** `HELP` with each key as the player has it (`label(action)`: its key's name). */
+export function keysOf(label: (action: string) => string): readonly (readonly [readonly string[], string])[] {
+  return HELP.map(([keys, t]) => [keys.map(label), t] as const);
+}
+
 /** Keys and what they do as the cells of a grid (a keycap cell, a text cell), for innerHTML. */
-export function keysHtml(keys: readonly (readonly [string, string])[]): string {
-  return keys.map(([k, t]) => `<div class="k">${k.split(' ').map((p) => (p === '·' ? ' ' : keycap(p))).join(' ')}</div><div class="t">${esc(t)}</div>`).join('');
+export function keysHtml(keys: readonly (readonly [readonly string[], string])[]): string {
+  return keys.map(([k, t]) => `<div class="k">${k.map(keycap).join(' ')}</div><div class="t">${esc(t)}</div>`).join('');
 }
 
 /** What the HUD shows this frame. */
@@ -90,7 +95,7 @@ export interface HudState {
   /** The notice of the moment, and the salt just gained (or ''). */
   notice: string;
   gain: string;
-  /** What a key would do now ('E: climb down the ladder'): keys before ': ' are drawn as keycaps. */
+  /** What a key would do now ('E: climb down the ladder'): a key's name before ': ' (at the start or after a sentence) is drawn as a keycap. */
   prompt: string;
   /** Lines under the vitals (what has been killed). */
   tally: readonly string[];
@@ -114,6 +119,7 @@ export class Hud {
   /** What each part shows now, so the DOM changes only when it does. */
   private readonly shown = new Map<string, string>();
   private bannerUntil = -Infinity;
+  private readonly helpKeys: HTMLDivElement;
 
   constructor(host: HTMLElement) {
     this.el = panel(host, 'div', 'game-hud', STYLE);
@@ -139,7 +145,8 @@ export class Hud {
     const bannerLabel = child(banner, 'div', 'ui-label'), bannerName = child(banner, 'div', 'name');
     child(banner, 'div', 'ui-rule');
     const help = child(this.el, 'div', 'help ui-panel ui-grown');
-    help.innerHTML = keysHtml(HELP) + '<div class="foot">The help goes once you are below the cellar.</div>';
+    this.helpKeys = child(help, 'div', 'keys');
+    child(help, 'div', 'foot', 'The help goes once you are below the cellar.');
     growOn(help, 'help', { amount: 0.5, moss: false });
     const parts = {
       health, stamina, hn, mode, purse: purseText, boss, bossName, bossBar, banner, bannerLabel, bannerName, help,
@@ -150,6 +157,11 @@ export class Hud {
     growOn(parts.prompt, 'prompt', { amount: 0.35, moss: false });
     growOn(parts.notice, 'notice', { amount: 0.35, moss: false });
     this.parts = parts;
+  }
+
+  /** The keys on the help card (after the player has bound them anew: `keysOf`). */
+  keys(keys: readonly (readonly [readonly string[], string])[]): void {
+    this.helpKeys.innerHTML = keysHtml(keys);
   }
 
   /** Show the name of a level as one arrives: its number (none for the town and cellar) over its name, for `secs` from `now`. */
@@ -184,11 +196,11 @@ export class Hud {
     this.set('gain', alive ? s.gain : '', (v) => { if (v) p.gain.textContent = v; p.gain.classList.toggle('on', !!v); });
     this.set('prompt', alive ? s.prompt : '', (v) => {
       p.prompt.style.display = v ? 'block' : 'none';
-      p.prompt.innerHTML = esc(v).replace(/(^|[.(] )([A-Z]): /g, (_, pre: string, k: string) => `${pre}${keycap(k)}`);
+      p.prompt.innerHTML = esc(v).replace(/(^|[.(] )([A-Z][\w ]{0,10}?): /g, (_, pre: string, k: string) => `${pre}${keycap(k)}`);
     });
     this.set('flags', s.flags, (v) => (p.flags.textContent = v));
     this.set('dev', s.dev, (v) => (p.dev.textContent = v));
-    this.set('help', String(s.help && alive), (v) => { p.help.style.display = v === 'true' ? 'grid' : 'none'; });
+    this.set('help', String(s.help && alive), (v) => { p.help.style.display = v === 'true' ? 'block' : 'none'; });
     if (this.text) {
       this.set('text', this.lines(s).join('\n'), (v) => (this.text!.textContent = v));
     }

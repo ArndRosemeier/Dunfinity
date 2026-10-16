@@ -37,9 +37,11 @@ export function child<K extends keyof HTMLElementTagNameMap>(parent: HTMLElement
   return el;
 }
 
-/** Run `act` when `el` is clicked, the click kept from the game (it would take the mouse); `blur`: let go of the focus after (so keys go to the game). */
-export function onClick(el: HTMLElement, act: () => void, blur = false): void {
-  el.addEventListener('click', (e) => { e.stopPropagation(); act(); if (blur) el.blur(); });
+/** A button of class `cls` saying `text` in `parent`: a click does `click` (and goes no further, and leaves no focus behind). */
+export function button(parent: HTMLElement, text: string, click: () => void, cls = ''): HTMLButtonElement {
+  const b = child(parent, 'button', cls, text);
+  b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
+  return b;
 }
 
 /** `key` as a keycap (the theme's `ui-key`), for innerHTML. */
