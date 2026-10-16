@@ -135,6 +135,7 @@ Every chapter is **open from the start**, so every way of playing has its first 
 | **Force** | kinesis, gravitas | Rolling Pin | 5, 10, 15, 25 |
 | **The Garden** (added 2026-10-16, Arnd's seed idea) | herbalism, animism | Snapdragons (a tossed seed comes up and bites the nearest thing, you too), Horseradish (a root tunnels to a foe and bites it 1, 2 or 3 times by rank) | 5, 10, 15, 25 |
 | **Baking** (added 2026-10-16, Arnd's flour idea) | blinding, combos | Flour Bag (a thrown bag bursts into a cloud that blinds what is in it), Matchstick (a match into the cloud sets it off: a dust explosion, you too) | 5, 10, 15, 25 |
+| **Company** (added 2026-10-16, Arnd's salt pet idea) | companions | Salt Pet (pinches of the tin's salt stand up as a salt rat, rank 2 a salt dog, that keeps at your heel and fights for you until it dies) | 5, 10, 15, 25 |
 
 **The salt-worker (mage) path starts in the kitchen.** The infused salt is already magic; grandma's first fire and frost are household: *Stove Flame* (a match and a pinch of salt: a short gout of flame ahead), *Cold Larder* (a breath of the larder's cold: things nearby slow down), and *Rolling Pin* (Force: a shove that sends things back without touching them). The big spells come deeper in the same chapters.
 

@@ -442,6 +442,8 @@ export interface CoatLook {
 export interface CoatKind extends MaterialKind {
   readonly maps: CoatMaps;
   readonly look: CoatLook;
+  /** Made of salt (a salt pet, src/creatures/pets.ts): its own look, never a level's kin. */
+  readonly salt?: true;
 }
 
 /**
@@ -449,7 +451,7 @@ export interface CoatKind extends MaterialKind {
  * arrive with the glb (a new image is not a new shader). The skinned meshes compile their own
  * variant when the creature's pool is added with the Stage.
  */
-function defineCoat(name: string, roughness = 0.85): CoatKind {
+function defineCoat(name: string, roughness = 0.85, salt = false): CoatKind {
   const maps: CoatMaps = { colour: new Texture(), normal: new Texture() };
   maps.colour.colorSpace = SRGBColorSpace;
   maps.normal.colorSpace = NoColorSpace;
@@ -466,9 +468,18 @@ function defineCoat(name: string, roughness = 0.85): CoatKind {
     const coat = saturation(hue(texture(maps.colour).rgb, look.hue), look.sat).mul(look.val);
     m.colorNode = coat.mul(float(1).sub(mark.mul(0.75)));
     m.normalNode = normalMap(texture(maps.normal));
+    if (salt) {
+      // Made of salt: the coat's shape in crusted white, grains catching the light, and the blue veins of the rock glowing slowly through it.
+      const grain = mx_cell_noise_float(positionGeometry.mul(90));
+      const crust = mix(vec3(0.78, 0.8, 0.84), vec3(0.97, 0.98, 1), grain).mul(saturation(coat, 0).mul(0.5).add(0.6));
+      m.colorNode = crust;
+      const vein = smoothstep(0.035, 0, abs(mx_noise_float(positionGeometry.mul(7).add(vec3(0, time.mul(0.05), 0)))));
+      const pulse = sin(time.mul(1.3).add(positionGeometry.y.mul(9))).mul(0.25).add(0.75);
+      m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).mul(1.6)).add(vec3(0.6, 0.7, 0.8).mul(smoothstep(0.93, 1, grain).mul(0.35)));
+    }
     return m;
   });
-  return Object.assign(kind, { maps, look });
+  return Object.assign(kind, { maps, look }, salt ? { salt: true as const } : {});
 }
 
 /** The feral dogs' coat (AssetGenerator spec creature_feral_dog). */
@@ -476,6 +487,10 @@ export const DOG_COAT = defineCoat('dogCoat');
 
 /** The quarry rats' coat (AssetGenerator spec creature_quarry_rat). */
 export const RAT_COAT = defineCoat('ratCoat');
+
+/** A salt pet's coats (src/creatures/pets.ts): the rat's and the dog's shapes, made of salt. */
+export const SALT_RAT_COAT = defineCoat('saltRatCoat', 0.6, true);
+export const SALT_DOG_COAT = defineCoat('saltDogCoat', 0.6, true);
 
 /** The cave crickets' shell (AssetGenerator spec creature_cave_cricket). */
 export const CRICKET_COAT = defineCoat('cricketCoat');
