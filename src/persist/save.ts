@@ -28,6 +28,8 @@ export interface GrandchildData {
   readonly gear?: readonly string[];
   /** What they have seen of each level (src/world/explored.ts). */
   readonly explored?: Record<string, readonly number[]>;
+  /** The salt in grandma's tin when they took it up (the death screen says what they added). */
+  readonly saltAtStart?: number;
 }
 
 export interface SaveData {

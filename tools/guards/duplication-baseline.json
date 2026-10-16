@@ -1620,10 +1620,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/fungal.ts#deriveSeed + dunfinity/gen/roots.ts#deriveSeed",
-    "reason": "each cave style derives its own seeds by its own name (deriveSeed(seed, '<style>', ...)) for its Karst and its things; not a copy"
-  },
-  {
     "key": "same name: dunfinity/gen/fungal.ts#portal + dunfinity/gen/lava.ts#portal",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -2776,10 +2772,6 @@
     "reason": "each cell-grid style seeds its own cells and turns them by its own grain (Grain from grainOf, src/gen/grainLines.ts, the seam); the plan drawn on the cells is the style's own"
   },
   {
-    "key": "idiom: [.cells .jitter .lines .meander .noise .spacing] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
-    "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) and ask it for the nearest line as their portal: one seam, called the same way"
-  },
-  {
     "key": "idiom: [.get .own .wall] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts",
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
@@ -3288,10 +3280,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "clone: dunfinity/gen/bones.ts#constructor + dunfinity/gen/lava.ts#constructor",
-    "reason": "each line style's constructor derives its own seeds and makes its GrainLines (deriveSeed(seed, '<style>', ...)); the shapes match, the seeds and fields differ"
-  },
-  {
     "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
     "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
   },
@@ -3454,5 +3442,13 @@
   {
     "key": "same name: dunfinity/render/creatures/slimeView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
     "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "clone: dunfinity/gen/lava.ts#constructor + dunfinity/gen/rift.ts#constructor",
+    "reason": "each line style reads its own genes into its own config (its spacing, jitter and meander scaled together, then its own sizes and chances) and makes its GrainLines from its own seeds; the gene reading (Traits, src/gen/genes.ts) is the seam, the numbers are each style's own"
+  },
+  {
+    "key": "idiom: [.cells .lines .noise] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
   }
 ]

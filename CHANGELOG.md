@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.138 — A proper death, and the next grandchild
+
+- Dying now plays out: the view darkens round the body, then Herr Brüggemann's sheet comes up with how it ended, and he crosses the name off his list stroke by stroke and writes the next heir's under it.
+- The sheet says what the family keeps (grandma's tin and its salt, how deep the family has been, diary pages, letters of the old scripts, her purse, finds taken) and what went down with the grandchild (cards cooked, practice, gear, the pack).
+- The next grandchild can only be sent once the pen is down (R, or the button), so keys pressed in the fight do not skip it. Then the screen goes black, a line says who the next letter is for, and they wake in the cellar.
+- Scavengers, goblins and the Tall One now have their own death lines.
+
+## v0.137 — Glowing veins creep
+
+- The blue veins of infused salt now creep slowly through the rock, a few centimetres a second: a line wanders, splits and fades over a minute or two, slow enough to notice only when you stop and look.
+
+## v0.136 — Kin: the deep's copies of our animals
+
+- From level 11 down, every stratum has its own drafts of our rats, crickets, slimes, eels and dogs, all of one stratum's alike: a coat of another colour, darker or paler, striped or spotted, a longer or squatter body, a bigger head, a longer tail, huge ears or feelers.
+- Close to the surface they are only a little off; the deeper the stratum, and the stranger it is, the further they stray.
+- They move and fight as before, and a longer body takes longer strides, so their feet stay planted.
+
+## v0.135 — Fungal and lava genes
+
+- The fungal forest reads its genes: how thick the giant mushrooms stand, how tall they grow (still under the dome) and how broad their caps spread. Its cave strays by the karst's genes.
+- The lava tubes read theirs: how far apart the tubes lie, how wide they flowed, how many branches and skylights they have, and how often a level's flows are still hot.
+- No giant mushroom grows on a chamber's middle any more, nor low over it, so a passage always ends in the open there.
+
 ## v0.134 — Sounds for the prologue
 
 - New sounds ready for the prologue and grandma's list: a page turning, a pencil ticking off a line, and the cold draft from the broken arch.

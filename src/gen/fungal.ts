@@ -15,7 +15,7 @@ import { Noise, deriveSeed, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { CaveThings, THING_REACH, karstChambers, type Chamber } from './caveThings';
 import { Karst } from './karst';
-import { STANDARD, type Traits } from './genes';
+import { STANDARD, gene, type Traits, type Tuned } from './genes';
 import type { Column } from './quarry';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
@@ -36,6 +36,17 @@ export const FUNGAL = {
   /** Mushrooms stand no further than this many chamber radii from its middle, and under this much of its dome. */
   spread: 0.75,
   under: 0.65,
+} as const;
+
+/**
+ * The fungal forest's genes (src/gen/genes.ts): how a deep world's mushrooms stray from ours (its
+ * cave strays by the karst's genes). Density is how thick they stand, size how tall they grow (still
+ * under the dome), broad how wide their caps spread for their height.
+ */
+export const FUNGAL_GENES = {
+  density: gene('fungal.density', 1, [0.6, 1.5], [0.25, 2.5]),
+  size: gene('fungal.size', 1, [0.8, 1.3], [0.5, 1.6]),
+  broad: gene('fungal.broad', FUNGAL.capPer, [0.28, 0.45], [0.2, 0.6]),
 } as const;
 
 /** One mushroom: its stalk's foot, the cap's underside height and radius, the ball the cap is cut from, its hue. */
@@ -62,12 +73,22 @@ export class Fungal implements Style {
   private readonly shrooms: CaveThings<Shroom>;
   /** The level's mushroom hue, 0..1 round the wheel of CAP_HUES. */
   private readonly hue: number;
+  /** FUNGAL as this level's genes read it. */
+  readonly F: Tuned<typeof FUNGAL>;
 
   constructor(readonly seed: number, readonly band: Band, traits: Traits = STANDARD) {
+    const G = FUNGAL_GENES, dense = traits(G.density), size = traits(G.size);
+    const F = this.F = {
+      ...FUNGAL,
+      density: [FUNGAL.density[0] * dense, FUNGAL.density[1] * dense],
+      height: [FUNGAL.height[0] * size, FUNGAL.height[1] * size],
+      cap: [FUNGAL.cap[0] * size, FUNGAL.cap[1] * size],
+      capPer: traits(G.broad),
+    };
     this.cave = new Karst(deriveSeed(seed, 'fungal', 'cave'), band, traits);
     this.noise = new Noise(deriveSeed(seed, 'fungal', 'shape'));
     this.hue = hashToFloat(deriveSeed(seed, 'fungal', 'hue'));
-    this.shrooms = new CaveThings(karstChambers(this.cave), deriveSeed(seed, 'fungal', 'shrooms'), { make: shroomsOf, plan, dist: shroom, radii: FUNGAL.spread, pad: FUNGAL.cap[0] + FUNGAL.cap[1] + FUNGAL.capPer * (FUNGAL.height[0] + FUNGAL.height[1]) });
+    this.shrooms = new CaveThings(karstChambers(this.cave), deriveSeed(seed, 'fungal', 'shrooms'), { make: (c, f) => shroomsOf(F, c, f), plan, dist: shroom, radii: F.spread, pad: F.cap[0] + F.cap[1] + F.capPer * (F.height[0] + F.height[1]) });
   }
 
   column(x: number, z: number, col: Column): Column {
@@ -149,8 +170,8 @@ function capHue(t: number): [number, number, number] {
 }
 
 /** The mushrooms of chamber `c`. */
-function shroomsOf(c: Chamber, f: () => number): Shroom[] {
-  const F = FUNGAL, out: Shroom[] = [];
+function shroomsOf(F: Tuned<typeof FUNGAL>, c: Chamber, f: () => number): Shroom[] {
+  const out: Shroom[] = [];
   const count = Math.round((F.density[0] + F.density[1] * f()) * c.r * c.r * Math.PI / 100);
   for (let k = 0; k < count; k++) {
     const a = f() * Math.PI * 2, d = Math.sqrt(f()) * F.spread * c.r;
@@ -158,8 +179,10 @@ function shroomsOf(c: Chamber, f: () => number): Shroom[] {
     const height = Math.min(F.height[0] + F.height[1] * f() ** 1.4, c.dome * F.under);
     const r = F.cap[0] + F.cap[1] * f() + F.capPer * height, rise = r * (F.dome[0] + F.dome[1] * f()) + F.dome[2];
     // The ball the cap is cut from: through the cap's rim at its underside, `rise` high in the middle.
-    const ball = (r * r + rise * rise) / (2 * rise), base = c.floor + height;
-    out.push({ x, z, foot: c.floor - 1, base, r, ball, by: base + rise - ball, stalk: Math.max(F.stalk[1], r * F.stalk[0]), hue: f() });
+    const ball = (r * r + rise * rise) / (2 * rise), base = c.floor + height, stalk = Math.max(F.stalk[1], r * F.stalk[0]);
+    // None on the chamber's middle, where passages end (E3); none low over it either.
+    if (d < stalk + 1.5 || (d < r + 1 && height < 4)) continue;
+    out.push({ x, z, foot: c.floor - 1, base, r, ball, by: base + rise - ball, stalk, hue: f() });
   }
   return out;
 }
