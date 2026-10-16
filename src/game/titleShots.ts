@@ -33,8 +33,9 @@ export function shotAt(seed: number, depth: number): Shot {
   const level = new Level(seed, depth);
   const [x, , z] = level.arrival;
   const places = placesOn(level, new Fauna(level), x, z);
+  const street = places.find((p) => p.name.startsWith('The street'));
   const at = depth === 0
-    ? places.find((p) => p.name.startsWith('The street')) ?? places[0]
+    ? (street ? { ...street, yaw: 0 } : places[0]) // looking down the street (it runs along z), not at her door
     : places.find((p) => p.name.endsWith('(boss)')) ?? pick(places.filter(isDen), depth) ?? places[0];
   return { level, at, caption: depth === 0 ? 'Grandma\'s street, at night' : levelName(level) };
 }
