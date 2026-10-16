@@ -7,6 +7,7 @@
 import { HOUSE_DOORS, type DoorSpec } from './doorways';
 import { deriveSeed } from '@futuremagic/core';
 import { bandOf, mixOf, type Band } from './bands';
+import { lawfulBand, lawsOf } from './laws';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
@@ -75,7 +76,7 @@ export class Level {
 
   /** `style`: the whole level of that style (but where one arrives), instead of its band's mix; not in the cellar. */
   constructor(readonly seed: number, readonly depth: number, readonly style?: StyleId) {
-    this.band = bandOf(depth);
+    this.band = lawfulBand(bandOf(depth), lawsOf(seed, depth)); // the world's laws on the stratum's band
     // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
     const s = deriveSeed(seed, 'level', depth);
     const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
