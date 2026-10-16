@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.148 — A live title screen
+
+- The game now opens on a title screen: DUNFINITY over the game itself, going down. The nobody stands on one level after another, each deeper than the last (grandma's street at night, the Quarry, the Salt Works and the Foreman's hall, the Tall One's lair, then the strange strata far below), knife in hand, while what lives there moves about and the camera drifts round behind them.
+- Continue goes on with the family you have; New Game starts a new one (it asks first, since grandma's tin and everything found is forgotten).
+- Links with a seed, depth, place or style still go straight into the game; `?title` shows the title anyway.
+
 ## v0.147 — The introduction: a prologue and first steps
 
 - A new game opens with a short prologue played in the game itself, behind black bars: the town at night, your figure walking up the street to grandma's house and opening her front door, then her cellar with the armchair, the salt circle and the broken arch. Captions tell who she was and why the house is yours. Click (or Space) for the next caption, Escape to skip.
