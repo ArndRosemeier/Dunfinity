@@ -8,6 +8,7 @@
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
+import { PULSE } from '../gen/veinPulse';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
 import { Fn, If, abs, attribute, modelPosition, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
@@ -275,12 +276,17 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const stretch = smoothstep(0.15, 0.5, mx_noise_float(p.mul(0.045).add(vec3(7.3, 1.1, -4.2))));
   const vein = smoothstep(0.975, 0.996, line).add(smoothstep(0.985, 0.998, fine).mul(smoothstep(0.85, 0.97, line)).mul(0.7)).mul(stretch);
   const pulse = sin(time.mul(1.1).add(p.x.mul(0.13)).add(p.z.mul(0.09))).mul(0.15).add(0.85);
+  // Now and then a ring of brighter light runs out through them (`VEIN_PULSE`).
+  const toRing = length(p.xz.sub(VEIN_PULSE.xy)).sub(VEIN_PULSE.z).div(PULSE.width);
+  // Where it passes, the veins widen and the faint ones round them light too, even where the rock has few.
+  const wave = toRing.mul(toRing).negate().exp().mul(VEIN_PULSE.w);
+  const woken = smoothstep(0.93, 0.995, line).add(smoothstep(0.95, 0.998, fine).mul(0.6)).mul(stretch.mul(0.6).add(0.4)).mul(wave).mul(1.6);
   // Salt crystals glinting in the headlamp (it is carried at the eye): tiny facets that catch the
   // light as the viewer moves, only close by.
   const facet = mx_worley_noise_float(p.mul(9));
   const twinkle = smoothstep(0.5, 0.85, mx_noise_float(p.mul(13).add(cameraPosition.mul(1.7))));
   const glint = smoothstep(0.16, 0.04, facet).mul(twinkle).mul(smoothstep(14, 2, length(positionView))).mul(natural.add(worked).clamp(0, 1)).mul(saltShare);
-  m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
+  m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).add(woken).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
   return m;
 });
 
@@ -310,6 +316,9 @@ const VEIN_CREEP = 0.008;
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);
+
+/** The pulse running through the veins now (src/gen/veinPulse.ts): its middle (x, z), its ring's radius (m), its strength (0: none). Set by `LevelView`. */
+export const VEIN_PULSE = uniform(new Vector4(0, 0, 0, 0));
 
 /**
  * The band's finish of its rock (`band.finish`), set by `LevelView`: worked walls cast in concrete
