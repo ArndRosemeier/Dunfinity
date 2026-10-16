@@ -8,6 +8,8 @@
  * `creature.mushroom`) has its `skin` in vertex colours on `VERTEX_COLOR_SOLID`, as the props are. `rig.figure()` clones it with its own skeleton,
  * and `Animator` plays its clips: one clip at a time, faded into the next, so nothing ever pops; gaits
  * by distance travelled (`stride`), so the paws stay planted at any speed; a flinch layered on top.
+ * `Rigged.kinOn` dresses them all as a level's kin (src/creatures/kin.ts): the coat kind's look, the
+ * body stretched, head, tail and ears scaled.
  */
 import { AnimationMixer, AnimationUtils, AdditiveAnimationBlendMode, Group, LoopOnce, LoopRepeat, Mesh, type AnimationAction, type AnimationClip, type Object3D, type Texture } from 'three/webgpu';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -16,9 +18,27 @@ import { GLOW, VERTEX_COLOR_SOLID, type CoatKind, type MaterialKind } from '../m
 import { wear } from '../meshes';
 import { placeFigure, type Figure } from './figures';
 import { groundSpeed, type Creature } from '../../creatures/creature';
+import { kinOf, OURS, type Kin } from '../../creatures/kin';
 
 export class Rigged {
-  private constructor(private readonly template: Object3D, readonly clips: ReadonlyMap<string, AnimationClip>) {}
+  /** Every creature loaded, to dress as a level's kin (`Rigged.kinOn`). */
+  private static readonly loaded: Rigged[] = [];
+  /** How this species looks on the level shown (src/creatures/kin.ts). */
+  kin: Kin = OURS;
+
+  private constructor(private readonly template: Object3D, readonly clips: ReadonlyMap<string, AnimationClip>, readonly species: string, private readonly coat?: CoatKind) {
+    Rigged.loaded.push(this);
+  }
+
+  /** Dress every creature as its kin on the level of `depth` (set when a level is shown): its coat's look, and the proportions its figures take. */
+  static kinOn(seed: number, depth: number): void {
+    for (const r of Rigged.loaded) {
+      const k = r.kin = kinOf(seed, depth, r.species);
+      if (!r.coat) continue;
+      const l = r.coat.look;
+      l.hue.value = k.hue; l.sat.value = k.sat; l.val.value = k.val; l.pattern.value = k.pattern; l.stripes.value = k.stripes; l.grain.value = k.grain;
+    }
+  }
 
   /** Load `public/creatures/<file>`; the glb's coat maps go into `coat`'s textures (none: a skin in vertex colours). */
   static async fetch(file: string, coat?: CoatKind): Promise<Rigged> {
@@ -41,7 +61,7 @@ export class Rigged {
     });
     const clips = new Map<string, AnimationClip>();
     for (const c of gltf.animations) clips.set(c.name, c);
-    return new Rigged(gltf.scene, clips);
+    return new Rigged(gltf.scene, clips, file.replace(/\.glb$/, ''), coat);
   }
 
   /** A copy with its own skeleton (geometry and materials shared). */
@@ -145,11 +165,16 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size?
   private hurtT = 9;
   /** Ground speed this frame, metres per second at size 1. */
   protected speed = 0;
+  private readonly model: Object3D;
+  /** The bones a kin's head, tail and ears scale (src/creatures/kin.ts): each scales all that hangs from it. */
+  private readonly parts: { readonly head: Object3D[]; readonly tail: Object3D[]; readonly ears: Object3D[] };
 
-  constructor(rig: Rigged, private readonly uses: Readonly<Record<string, ClipUse>>, flinch = 'Hurt') {
-    const model = rig.figure();
-    this.root.add(model);
-    this.anim = new Animator(model, rig, uses, flinch);
+  constructor(private readonly rig: Rigged, private readonly uses: Readonly<Record<string, ClipUse>>, flinch = 'Hurt') {
+    this.model = rig.figure();
+    this.root.add(this.model);
+    this.anim = new Animator(this.model, rig, uses, flinch);
+    const bones = (...names: string[]) => names.map((n) => this.model.getObjectByName(n)).filter((b): b is Object3D => !!b);
+    this.parts = { head: bones('head'), tail: bones('tail1'), ears: bones('ear.L', 'ear.R', 'feeler1.L', 'feeler1.R') };
   }
 
   /** The clip for the creature's state now. */
@@ -172,6 +197,9 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size?
 
   pose(c: T, time: number): void {
     this.place(c);
+    // A kin's body, stretched in its own frame: the feet stay on the ground (y = 0) and a longer body strides longer.
+    const kin = this.rig.kin;
+    this.model.scale.set(1, kin.tall, kin.long);
     const dt = Math.min(0.1, Math.max(0, time - this.last));
     this.last = time;
     const fresh = c !== this.who;
@@ -182,11 +210,16 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size?
     this.anim.play(clip);
     this.anim.fade = 0.22;
     const stride = this.uses[clip].stride;
-    if (stride) this.anim.pace(clip, this.travelled(c), stride);
+    if (stride) this.anim.pace(clip, this.travelled(c), stride * kin.long);
     // Hit: the flinch, on top.
     if (c.hurtT < this.hurtT && !fresh && !c.dead) this.anim.hurt();
     this.hurtT = c.hurtT;
+    // The clips key what they move; a kin's parts are scaled from 1 on top (a bone no clip scales would otherwise grow every frame).
+    for (const list of [this.parts.head, this.parts.tail, this.parts.ears]) for (const b of list) b.scale.setScalar(1);
     this.anim.update(fresh ? 0 : dt);
+    for (const b of this.parts.head) b.scale.multiplyScalar(kin.head);
+    for (const b of this.parts.tail) b.scale.multiplyScalar(kin.tail);
+    for (const b of this.parts.ears) b.scale.multiplyScalar(kin.ears);
     this.posed(c, time);
   }
 

@@ -11,6 +11,7 @@
 import { angleDiff } from '@futuremagic/core';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
+import { thwarted } from './steer';
 import type { Level } from '../gen/level';
 import { damage, type Fighter, noticed } from '../combat/combat';
 import { CANDLE } from '../combat/thrown';
@@ -26,6 +27,8 @@ export const RAT = {
   /** They notice you this close (closer when you sneak about in the dark later); give up beyond `forget`. */
   notice: 9,
   forget: 26,
+  /** Seconds it leaves you be after giving up on getting at you (you stand up a ledge it cannot take). */
+  balk: 8,
   /** A bite: reach beyond touching, damage, seconds between bites, and the wind-up before the snap. */
   biteReach: 0.35,
   biteDamage: [2, 4] as const,
@@ -73,6 +76,8 @@ export class Rat extends Creature<RatMode> {
   fz = NaN;
   /** Seconds since the last bite started (the snap is at RAT.windup). */
   biteT = 9;
+  /** Seconds it still leaves you be, having given up on getting at you (`RAT.balk`). */
+  balk = 0;
   /** Where it is going (scurrying about). */
   tx: number;
   tz: number;
@@ -124,12 +129,13 @@ export class Rats extends Population<Nest, Rat> {
     r.biteT += dt;
     const provoked = r.provoked;
     r.provoked = false;
+    r.balk = provoked ? 0 : Math.max(0, r.balk - dt);
     if (provoked) r.nest.alarmed = true;
     if (r.dead) return this.lieDead(r, dt, 6);
     const dx = prey.x - r.x, dz = prey.z - r.z, d = Math.hypot(dx, dz);
     const sees = !prey.dead && noticed(prey, d, RAT.notice) && Math.abs(prey.y - r.y) < 2.5;
-    if (sees && r.mode !== 'chase' && r.mode !== 'bite' && r.mode !== 'flee') r.nest.alarmed = true;
-    const hunting = r.nest.alarmed && !prey.dead && d < RAT.forget && Math.abs(prey.y - r.y) < 4;
+    if (sees && !r.balk && r.mode !== 'chase' && r.mode !== 'bite' && r.mode !== 'flee') r.nest.alarmed = true;
+    const hunting = r.nest.alarmed && !r.balk && !prey.dead && d < RAT.forget && Math.abs(prey.y - r.y) < 4;
     if (!hunting && (r.mode === 'chase' || r.mode === 'bite')) { r.mode = 'scurry'; r.t = 0; r.nest.alarmed = r.nest.alarmed && !prey.dead && d < RAT.forget; }
     if (hunting && (r.mode === 'sniff' || r.mode === 'scurry')) { r.mode = 'alert'; r.t = RAT.alert + (r.slot % 3) * 0.12; }
     // Badly hurt: now and then it bolts for a moment.
@@ -169,6 +175,8 @@ export class Rats extends Population<Nest, Rat> {
         gx = prey.x + Math.cos(a) * ring; gz = prey.z + Math.sin(a) * ring;
         speed = RAT.run;
         if (d - prey.radius - r.radius < RAT.biteReach && r.biteT > RAT.biteEvery) { r.mode = 'bite'; r.biteT = 0; }
+        // No way to you (up a ledge, past a drop): it gives up for a while and goes home.
+        else if (thwarted(r)) { r.balk = RAT.balk; r.mode = 'scurry'; r.t = 4; [r.tx, r.tz] = this.roamFrom(r.nest, RAT.roam); }
         break;
       }
       case 'bite': {

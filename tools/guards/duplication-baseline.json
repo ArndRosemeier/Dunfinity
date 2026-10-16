@@ -68,7 +68,7 @@
     "reason": "creatures, quarry props and fire each ask the level whether a spot is dry (level.dry) for their own placement; one seam called from three places, surfaced when the finder's corpus grew"
   },
   {
-    "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts + dunfinity/render/creatures/rigged.ts",
+    "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/input/bindings.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts + dunfinity/render/creatures/rigged.ts",
     "reason": "Object.entries over a record, a language idiom (parsing a manifest, walking ambience levels, practice and recipe tables); nothing to share."
   },
   {
@@ -454,10 +454,6 @@
   {
     "key": "same name: dunfinity/creatures/rats.ts#act + dunfinity/creatures/tallOne.ts#act",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population, Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/rats.ts#act + dunfinity/creatures/touched.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
   },
   {
     "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/shrooms.ts#denIn",
@@ -1620,10 +1616,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/fungal.ts#deriveSeed + dunfinity/gen/roots.ts#deriveSeed",
-    "reason": "each cave style derives its own seeds by its own name (deriveSeed(seed, '<style>', ...)) for its Karst and its things; not a copy"
-  },
-  {
     "key": "same name: dunfinity/gen/fungal.ts#portal + dunfinity/gen/lava.ts#portal",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -2448,10 +2440,6 @@
     "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
   },
   {
-    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/diaryView.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
-    "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
-  },
-  {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   },
@@ -2762,10 +2750,6 @@
   {
     "key": "idiom: [.cells .grain] in dunfinity/gen/catacombs.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts",
     "reason": "each cell-grid style seeds its own cells and turns them by its own grain (Grain from grainOf, src/gen/grainLines.ts, the seam); the plan drawn on the cells is the style's own"
-  },
-  {
-    "key": "idiom: [.cells .jitter .lines .meander .noise .spacing] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
-    "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) and ask it for the nearest line as their portal: one seam, called the same way"
   },
   {
     "key": "idiom: [.get .own .wall] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts",
@@ -3276,10 +3260,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "clone: dunfinity/gen/bones.ts#constructor + dunfinity/gen/lava.ts#constructor",
-    "reason": "each line style's constructor derives its own seeds and makes its GrainLines (deriveSeed(seed, '<style>', ...)); the shapes match, the seeds and fields differ"
-  },
-  {
     "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
     "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
   },
@@ -3444,6 +3424,26 @@
     "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
   },
   {
+    "key": "clone: dunfinity/gen/lava.ts#constructor + dunfinity/gen/rift.ts#constructor",
+    "reason": "each line style reads its own genes into its own config (its spacing, jitter and meander scaled together, then its own sizes and chances) and makes its GrainLines from its own seeds; the gene reading (Traits, src/gen/genes.ts) is the seam, the numbers are each style's own"
+  },
+  {
+    "key": "idiom: [.cells .lines .noise] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
+  },
+  {
+    "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/targetMark.ts#constructor",
+    "reason": "two HUD pieces each make their panel and a couple of children with `panel` and `child`; the shared part is already those two seams."
+  },
+  {
+    "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/settingsView.ts#toggle",
+    "reason": "each DOM panel's open/close on its own key; the shared part is panel() and button() in src/app/panel.ts"
+  },
+  {
+    "key": "same name: dunfinity/input/bindings.ts#data + dunfinity/loot/practice.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
     "key": "idiom: [.__ready globalThis] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer, report __ready; the shared part is LevelView.frame"
   },
@@ -3454,5 +3454,9 @@
   {
     "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer, report __ready; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.dots] in dunfinity/gen/inscriptions.ts + dunfinity/lore/scripts.ts + dunfinity/lore/svg.ts",
+    "reason": "a Lettering's dots read where it is drawn (the inscription mesh, the SVG) and made (scripts); the field is the seam. Surfaced when the title's files shifted the idiom weights"
   }
 ]

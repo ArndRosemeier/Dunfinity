@@ -4,7 +4,7 @@
  * it lets go of the mouse while open (click the game to look round again).
  */
 import { bandOf } from '../gen/bands';
-import { child, panel } from './panel';
+import { button as uiButton, child, panel } from './panel';
 
 /** What the menu asks the game to do. */
 export interface DebugActions {
@@ -31,22 +31,21 @@ export interface DebugActions {
 const LEVELS = 12;
 
 const STYLE = `
-  #debug { position: fixed; right: 12px; top: 44px; z-index: 9; display: none; width: 300px; max-height: calc(100vh - 54px); overflow-y: auto;
-    padding: 10px 12px; background: #15130fef; color: #e3d9c4; border: 1px solid #8a7656; border-radius: 4px; box-shadow: 0 6px 30px #000a;
-    font: 12px/1.35 system-ui, sans-serif; }
+  #debug { position: fixed; right: 12px; top: 44px; z-index: 9; display: none; width: 300px; max-height: calc(100vh - 54px); overflow-y: auto; padding: 10px 12px; font-size: 13px; line-height: 1.35; }
   #debug.open { display: block; }
-  #debug h3 { margin: 10px 0 4px; font-size: 12px; color: #c9a86a; text-transform: uppercase; letter-spacing: 0.05em; }
+  #debug h3 { margin: 12px 0 4px; }
   #debug h3:first-child { margin-top: 0; }
-  #debug button { margin: 2px 2px 2px 0; padding: 3px 7px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; border-radius: 3px; cursor: pointer; font: inherit; }
-  #debug button:hover { background: #3b3328; }
-  #debug button.here { border-color: #e8d27a; color: #e8d27a; }
+  #debug button { margin: 2px 2px 2px 0; }
+  #debug button.here { border-color: var(--ui-accent); color: var(--ui-accent); }
   #debug .places button { display: block; width: 100%; text-align: left; }
   #debug label { display: block; margin: 2px 0; cursor: pointer; }
-  #debug input[type=text] { width: 180px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; font: inherit; }
-  #debug textarea { width: 100%; height: 120px; margin-top: 4px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; font: 11px monospace; }
-  #debug input[type=number] { width: 52px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; font: inherit; }
-  #debug .said { color: #a8c98a; min-height: 1em; margin-top: 4px; white-space: pre-wrap; }
-  #debug .hint { color: #8d8270; margin-top: 8px; }`;
+  #debug input, #debug textarea { background: var(--ui-dark-raised); color: var(--ui-ink); border: 1px solid var(--ui-line-bright); border-radius: 3px; font: inherit; }
+  #debug input[type=text] { width: 180px; }
+  #debug input[type=number] { width: 52px; }
+  #debug textarea { width: 100%; box-sizing: border-box; height: 120px; margin-top: 4px; font: 11px monospace; }
+  #debug input[type=checkbox] { accent-color: var(--ui-accent); }
+  #debug .said { color: var(--ui-good); min-height: 1em; margin-top: 4px; white-space: pre-wrap; }
+  #debug .hint { color: var(--ui-ink-faint); margin-top: 8px; }`;
 
 export class DebugMenu {
   /** Blows and falls take nothing. */
@@ -62,12 +61,9 @@ export class DebugMenu {
 
   constructor(host: HTMLElement, private readonly act: DebugActions) {
     this.el = panel(host, 'div', 'debug', STYLE);
-    const heading = (text: string) => child(this.el, 'h3', '', text);
-    const button = (parent: HTMLElement, text: string, click: () => void): HTMLButtonElement => {
-      const b = child(parent, 'button', '', text);
-      b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
-      return b;
-    };
+    this.el.className = 'ui-panel';
+    const heading = (text: string) => child(this.el, 'h3', 'ui-label', text);
+    const button = (parent: HTMLElement, text: string, click: () => void) => uiButton(parent, text, click, 'ui-btn small');
     const toggle = (text: string, set: (on: boolean) => void) => {
       const l = document.createElement('label'), c = document.createElement('input');
       c.type = 'checkbox';
@@ -132,12 +128,7 @@ export class DebugMenu {
     const depth = this.act.depth();
     [...this.levels.children].forEach((b, d) => b.classList.toggle('here', d === depth));
     this.list.replaceChildren();
-    this.act.places().forEach((p, i) => {
-      const b = document.createElement('button');
-      b.textContent = p.name;
-      b.addEventListener('click', (e) => { e.stopPropagation(); this.act.toPlace(i); b.blur(); });
-      this.list.appendChild(b);
-    });
+    this.act.places().forEach((p, i) => uiButton(this.list, p.name, () => this.act.toPlace(i), 'ui-btn small'));
   }
 
   /** The clipboard refused: show the text selected, to copy with Ctrl+C. */

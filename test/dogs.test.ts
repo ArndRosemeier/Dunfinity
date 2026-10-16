@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { DOG, Dogs, type Dog, type Pack } from '../src/creatures/dogs';
-import type { Fighter } from '../src/combat/combat';
+import { STAB, blowFrom, damage, nearestReached, type Fighter } from '../src/combat/combat';
 
 const level = new Level(1, 6);
 
@@ -100,4 +100,20 @@ test('they never jitter', () => {
     });
     assert.equal(back, 0, `back and forth ${back} times at dt ${dt}`);
   }
+});
+
+test('after a bite the dog hangs on a moment: someone who stabs back beats a pack and lives', () => {
+  const { dogs, me } = near(10);
+  let facing = 0, next = 0;
+  run(dogs, me, 60, 0, 1 / 60, (t) => {
+    const near = dogs.list.filter((g) => !g.dead && Math.hypot(g.x - me.x, g.z - me.z) < STAB.aim).sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
+    if (!near) return;
+    facing = Math.atan2(-(near.x - me.x), -(near.z - me.z));
+    if (t < next) return;
+    next = t + STAB.dur;
+    const hit = nearestReached(blowFrom(me, facing, STAB), dogs.list);
+    if (hit) damage(hit, 8, me.x, me.z, 3.5, 'knife');
+  });
+  assert.ok(dogs.list.filter((g) => !g.dead).length === 0, `${dogs.list.filter((g) => !g.dead).length} dogs still up`);
+  assert.ok(me.taken < 100, `took ${me.taken.toFixed(0)}`);
 });
