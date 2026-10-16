@@ -71,9 +71,27 @@ export const HELP: readonly (readonly [readonly string[], string])[] = [
   [['Escape'], 'free the mouse; again: the menu'],
 ];
 
-/** `HELP` with each key as the player has it (`label(action)`: its key's name). */
-export function keysOf(label: (action: string) => string): readonly (readonly [readonly string[], string])[] {
-  return HELP.map(([keys, t]) => [keys.map(label), t] as const);
+/** The help played by touch (src/app/touchPad.ts): actions named by their buttons, and what fingers do. */
+export const TOUCH_HELP: readonly (readonly [readonly string[], string])[] = [
+  [['Stick'], 'walk where your left thumb lands; to the rim: run'],
+  [['Drag'], 'look round (two fingers pinch nearer or farther)'],
+  [['Mouse0'], 'stab'],
+  [['Space'], 'jump'],
+  [['KeyE'], 'use, climb a ladder, pick up, read'],
+  [['Tab'], 'pick a target'],
+  [['KeyZ'], 'sneak (tap again to stand)'],
+  [['KeyC'], 'light a fire and rest'],
+  [['KeyT'], 'grandma\'s tin, by the fire'],
+  [['Bar'], 'tap a card on the bar to use it'],
+  [['KeyM'], 'map'],
+  [['KeyJ'], 'grandma\'s diary'],
+  [['KeyI'], 'your pack'],
+  [['Menu'], 'stop the game, settings'],
+];
+
+/** `HELP` (played by touch: `TOUCH_HELP`) with each key as the player has it (`label(action)`: its key's or button's name). */
+export function keysOf(label: (action: string) => string, touch = false): readonly (readonly [readonly string[], string])[] {
+  return (touch ? TOUCH_HELP : HELP).map(([keys, t]) => [keys.map(label), t] as const);
 }
 
 /** Keys and what they do as the cells of a grid (a keycap cell, a text cell), for innerHTML. */

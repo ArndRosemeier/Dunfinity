@@ -83,7 +83,7 @@ export class AbilityBar {
         child(root, 'div', 'n', label);
         const c = child(root, 'div', 'c');
         child(root, 'div', 't', a?.short ?? '');
-        if (a) root.addEventListener('mousedown', (e) => { if (this.editing) return; e.stopPropagation(); e.preventDefault(); this.use(i); });
+        if (a) root.addEventListener('pointerdown', (e) => { if (this.editing) return; e.stopPropagation(); e.preventDefault(); this.use(i); });
         this.droppable(root, i, !!a);
         return { root, wait, c };
       });

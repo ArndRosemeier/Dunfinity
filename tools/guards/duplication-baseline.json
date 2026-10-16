@@ -4750,5 +4750,9 @@
   {
     "key": "clone: dunfinity/gen/floating.ts#props + dunfinity/gen/organic.ts#props",
     "reason": "each is one scatter call placing one glowCluster (the shared seam in src/gen/styleProps.ts); only the spot test, chance and look differ"
+  },
+  {
+    "key": "idiom: [.addEventListener .remove] in dunfinity/app/abilityBar.ts + dunfinity/app/tinView.ts + dunfinity/app/touchPad.ts",
+    "reason": "DOM listeners that drop a highlight class when a drag or a finger leaves an element; one line each on its own element, nothing to fold"
   }
 ]
