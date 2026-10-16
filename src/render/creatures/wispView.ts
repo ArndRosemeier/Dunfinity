@@ -23,6 +23,7 @@ export class WispView {
       indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
     }, WISP_KIND);
     proto.name = 'wisp';
+    proto.matrixAutoUpdate = true; // moved every frame (meshFromData makes static meshes)
     for (let i = 0; i < WISP.most; i++) {
       const m = proto.clone();
       m.visible = false;
