@@ -160,7 +160,7 @@ export function fleshOf(anatomy: Anatomy, species: Species, res = 64): FleshData
   nets(anatomy, solid, frames, h, m, paint);
   for (const f of fine) {
     if (f.p.type === 'ellipsoid') ball(f, 8, m, paint);
-    else thinTube(f, 6, m, paint);
+    else thinTube(f, 8, m, paint);
   }
   return {
     positions: new Float32Array(m.pos),
@@ -297,9 +297,13 @@ function thinTube(f: Frame, sides: number, m: Mesh, paint: Painter): void {
   const b = one(p);
   const [sx, sy, sz] = f.sxv, [ux, uy, uz] = f.upv;
   const ax = f.ax, ay = f.ay, az = f.az;
+  // A spindle, not a pipe: a thin limb's segment swells along its middle (where its muscle is) and
+  // narrows into its joints.
+  const along = [0.25, 0.5, 0.75].map((t) => ({ t, r: lerp(p.ra, p.rb, t) * (1 + 0.32 * Math.sin(Math.PI * t)), off: 0, nAx: 0 }));
   const rings = [
     { t: 0, r: p.ra * 0.7, off: -p.ra * 0.7, nAx: -0.7 },
     { t: 0, r: p.ra, off: 0, nAx: 0 },
+    ...along,
     { t: 1, r: p.rb, off: 0, nAx: 0 },
     { t: 1, r: p.rb * 0.7, off: p.rb * 0.7, nAx: 0.7 },
   ];
