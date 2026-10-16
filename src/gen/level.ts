@@ -115,6 +115,11 @@ export class Level {
   }
 
   /** What this level is made from (for workers to make the same one). */
+  /** Its name as the game shows it on arrival and over the map ("Level 5 · The Salt Works"; the town has no number). */
+  get name(): string {
+    return this.depth ? `Level ${this.depth} · ${this.band.name}` : this.band.name;
+  }
+
   get key(): LevelKey {
     return { seed: this.seed, depth: this.depth, style: this.style };
   }

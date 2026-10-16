@@ -48,8 +48,8 @@ export function parseViewParams(search: string): ViewParams {
 }
 
 /**
- * Whether the game opens on the title screen: on a plain visit, or with `?title` (`&shot=<depth>` holds
- * on that depth's shot, for screenshots). A link that names
+ * Whether the game opens on the title screen: on a plain visit, or with `?title` (`&shot=<n>` holds
+ * on that shot of the report, for screenshots). A link that names
  * a seed, depth, place or style (a shared spot, a test view, the screenshot tools) goes straight in.
  */
 export function titleWanted(search: string): boolean {

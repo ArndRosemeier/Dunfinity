@@ -3408,14 +3408,6 @@
     "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
   },
   {
-    "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
-    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
-  },
-  {
-    "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
-    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
-  },
-  {
     "key": "same name: dunfinity/audio/music/TrackPlayer.ts#step + dunfinity/combat/snapdragon.ts#step",
     "reason": "a per-tick step method: same verb, unrelated jobs (advancing the music's loops vs the snapdragons biting)."
   },

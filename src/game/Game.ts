@@ -75,7 +75,6 @@ import type { StyleId } from '../gen/style';
 import { positionReport, readPosition } from './report';
 import { VERSION } from '../app/whatsNew';
 import { playTitle } from './title';
-import { levelName } from './titleShots';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
 import { growthAt, setGrowth } from '../app/growth';
@@ -549,7 +548,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!p) { show(new Level(params.seed, Math.max(1, level.depth), id)); p = styleSpot(level, id, level.arrival[0], level.arrival[2]); }
       const [ax, , az] = level.arrival;
       if (p) putDown(p.x, p.y, p.z, p.yaw); else putDown(ax, level.groundAt(ax, az), az, cam.yaw);
-      say(`${levelName(level)}\n${p ? p.name : `no ${id} found: at the arrival`}`, 5);
+      say(`${level.name}\n${p ? p.name : `no ${id} found: at the arrival`}`, 5);
     },
   });
   /** The card chosen in the open tin, and when the last one was cooked (the nobody stirs the pot). */
@@ -785,7 +784,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     cam.pitch = -0.2;
     acc = 0;
     cam.follow(body.x, body.y + 1.6, body.z, 1);
-    say(levelName(level), 5);
+    say(level.name, 5);
   };
   /** A frame of the prologue: the nobody walks its shot, the camera keeps to the shot's way, the captions show. */
   const prologueFrame = (dt: number, now: number): void => {
@@ -884,13 +883,18 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     herd.drawHerds(f.critters.list, { x: at.x, y: at.y + 1.6, z: at.z }, dt, now);
   };
 
-  // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): it
-  // plays on this view, then hands over in the black, on the game's own level.
+  // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): the
+  // television plays while the game's level streams in and its shaders build, then hands over in the black.
   if (titled) {
-    const choice = await playTitle(host, { view, cam, nobody, seed: params.seed, canContinue: !!saved, ready: castWarm, shown: () => { if (loading.open) loading.hide(); }, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null, look, drawLife });
+    const choice = await playTitle(host, {
+      seed: params.seed, canContinue: !!saved, ready: castWarm, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
+      sound: sounds.engine,
+      builds: () => view.stage.monitor.events.length,
+      shown: () => { if (loading.open) loading.hide(); },
+      stream: (now) => view.frame(body.x, body.y, body.z, now, false),
+    });
     if (choice === 'new' && saved) freshFamily();
     if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family
-    look(level);
     fauna = new Fauna(level);
     wisps = new Wisps(level);
     thin = new ThinPlaces(level);
@@ -954,7 +958,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (controls.tap('KeyM') || (mapView.open && controls.tap('Escape'))) mapView.toggle(level.depth ? `Level ${level.depth} · ${level.band.name}` : level.band.name);
+    if (controls.tap('KeyM') || (mapView.open && controls.tap('Escape'))) mapView.toggle(level.name);
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
     else if (controls.tap('KeyJ') && !tinView.open) { diaryView.show((d) => tin.hasPage(d)); tick('diary'); }
