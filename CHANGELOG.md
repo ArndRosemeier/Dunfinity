@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.134 — Sounds for the prologue
+
+- New sounds ready for the prologue and grandma's list: a page turning, a pencil ticking off a line, and the cold draft from the broken arch.
+
+## v0.133 — The peoples of the deep
+
+- Below level 10 the people you meet aren't ours any more. Each game has two peoples of the buried worlds, drawn from Norgo's orcs, halflings, sylvans, drakeborn and umbral, and each stratum belongs to one of them. Scavenger camps there are of that people. A new game meets others.
+- They speak an older tongue, almost like ours. Their warnings and threats come out as words you nearly catch.
+- Once the family has been below level 10, a stranger of the first people of the deep stands at night by Ilse's pawn shop, in a dark travelling coat, selling her things from below. Press E to speak to it.
+
 ## v0.132 — Ghosts of the dwarves and elves
 
 - The dwarven halls and elven vaults are haunted now. A pale gold dwarf walks a beat between the columns of the halls, and a pale silver-blue elf walks under the vaults. Both are Norgo's races on the same bodies as the people, and you can see through them. Their edges glow and they flicker a little.

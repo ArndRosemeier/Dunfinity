@@ -177,6 +177,12 @@ const GHOSTS: Readonly<Record<'dwarf' | 'elf', Outfit>> = {
   elf: { clothes: [['chest', 'tunic', [0.7, 0.72, 0.76], [0.55, 0.6, 0.68], 0.3], ['legs', 'trousers', [0.62, 0.64, 0.7], [0.5, 0.52, 0.58], 0.3]], hand: null },
 };
 
+/** The stranger at Ilse's: a long dark travelling coat over dark trousers, worn boots. */
+const TRAVELLER: Outfit = {
+  clothes: [['chest', 'tunic', [0.14, 0.13, 0.12], [0.24, 0.2, 0.15], 0.7], ['legs', 'trousers', [0.12, 0.11, 0.1], [0.1, 0.09, 0.08], 0.7], ['feet', 'footwraps', [0.22, 0.16, 0.1], [0.15, 0.11, 0.07], 0.75]],
+  hand: null,
+};
+
 /** Frau Weber's cardigan over a long dark skirt, and her slippers: nothing in her hands. */
 const CARDIGAN: Outfit = {
   clothes: [['chest', 'tunic', [0.42, 0.33, 0.36], [0.3, 0.25, 0.27], 0.35], ['legs', 'trousers', [0.12, 0.12, 0.16], [0.1, 0.1, 0.12], 0.3], ['feet', 'footwraps', [0.3, 0.12, 0.14], [0.2, 0.08, 0.1], 0.3]],
@@ -206,5 +212,6 @@ export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, 
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
 export const goblinsClothes = (seed: number, look: number): EquipmentVisuals => dressIn(GOBLINS[look % GOBLINS.length], seed);
 export const ghostsClothes = (seed: number, race: 'dwarf' | 'elf'): EquipmentVisuals => dressIn(GHOSTS[race], seed);
+export const travellersClothes = (seed: number): EquipmentVisuals => dressIn(TRAVELLER, seed);
 export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);
 export const cardigan = (seed: number): EquipmentVisuals => dressIn(CARDIGAN, seed);
