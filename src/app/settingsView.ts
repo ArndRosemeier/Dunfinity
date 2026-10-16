@@ -7,7 +7,7 @@
 import type { SoundSettings, Quality } from '../persist/settings';
 import { QUALITIES } from '../persist/settings';
 import { keyLabel, type Bindings } from '../input/bindings';
-import { button, child, panel } from './panel';
+import { Modal, button, child, keycap } from './panel';
 
 /** What the panel reads and changes. */
 export interface SettingsHooks {
@@ -33,48 +33,38 @@ type Tab = 'sound' | 'keys' | 'graphics';
 const TABS: readonly [Tab, string][] = [['sound', 'Sound'], ['keys', 'Keys'], ['graphics', 'Graphics']];
 
 const STYLE = `
-  #settings { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10; display: none;
-    width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box;
-    padding: 14px 18px 16px; background: #15130ff2; color: #e3d9c4; border: 1px solid #8a7656; border-radius: 5px; box-shadow: 0 6px 30px #000a;
-    font: 13px/1.4 system-ui, sans-serif; }
-  #settings.open { display: block; }
-  #settings h2 { margin: 0 0 10px; font: 18px Georgia, serif; color: #f0e6cf; display: flex; justify-content: space-between; align-items: baseline; }
-  #settings h2 .hint { font: 12px system-ui, sans-serif; color: #8d8270; }
-  #settings .tabs { display: flex; gap: 4px; border-bottom: 1px solid #6b5a40; margin-bottom: 12px; }
-  #settings .tabs button { background: none; border: 1px solid transparent; border-bottom: none; color: #b9a582; padding: 5px 12px; border-radius: 4px 4px 0 0; cursor: pointer; font: inherit; }
-  #settings .tabs button.on { background: #2a251d; border-color: #6b5a40; color: #f0c860; }
+  #settings { width: min(560px, calc(100vw - 32px)); z-index: 10; }
+  #settings > .ui-scroll { padding: 14px 18px 16px; }
+  #settings .head { display: flex; justify-content: space-between; align-items: baseline; }
+  #settings .head .ui-keys { margin: 0; }
+  #settings .tabs { display: flex; gap: 6px; margin: 4px 0 12px; }
   #settings .row { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 10px; margin: 6px 0; }
-  #settings .row input[type=range] { width: 100%; accent-color: #f0c860; }
-  #settings .row .v { text-align: right; color: #b9a582; font-variant-numeric: tabular-nums; }
+  #settings .row input[type=range], #settings label.check input { accent-color: var(--ui-accent); }
+  #settings .row input[type=range] { width: 100%; }
+  #settings .row .v { text-align: right; color: var(--ui-ink-dim); font-variant-numeric: tabular-nums; }
   #settings label.check { display: block; margin: 8px 0 0; cursor: pointer; }
-  #settings label.check input { accent-color: #f0c860; margin-right: 6px; }
-  #settings h3 { margin: 12px 0 4px; font-size: 11px; color: #c9a86a; text-transform: uppercase; letter-spacing: 0.06em; }
-  #settings h3:first-child { margin-top: 0; }
+  #settings label.check input { margin-right: 6px; }
+  #settings h3 { margin: 12px 0 4px; }
   #settings .key { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
-  #settings .key button, #settings .act { min-width: 92px; padding: 3px 8px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; border-radius: 3px; cursor: pointer; font: inherit; }
-  #settings .key button:hover, #settings .act:hover, #settings .quality:hover { border-color: #b9a582; }
-  #settings .key button.moved { color: #f0c860; }
-  #settings .key button.wait { border-color: #f0c860; color: #f0c860; }
-  #settings .said { min-height: 1.4em; margin-top: 8px; color: #a8c98a; }
-  #settings .quality { display: block; width: 100%; text-align: left; margin: 6px 0; padding: 8px 10px; background: #2a251d; color: #e3d9c4; border: 1px solid #6b5a40; border-radius: 4px; cursor: pointer; font: inherit; }
+  #settings .key .ui-btn { min-width: 92px; }
+  #settings .key .ui-btn.moved { color: var(--ui-accent); }
+  #settings .key .ui-btn.wait { border-color: var(--ui-accent); box-shadow: var(--ui-glow); }
+  #settings .said { min-height: 1.4em; margin-top: 8px; color: var(--ui-good); }
+  #settings .quality { display: block; width: 100%; text-align: left; margin: 6px 0; line-height: 1.35; }
   #settings .quality b { display: block; margin-bottom: 2px; }
-  #settings .quality span { color: #8d8270; }
-  #settings .quality.on { border-color: #f0c860; }
-  #settings .quality.on b { color: #f0c860; }
-  #settings .foot { display: flex; justify-content: space-between; margin-top: 14px; }
-  #settings-open { position: fixed; right: 12px; bottom: 14px; z-index: 6; padding: 3px 9px; background: #14110dcc; color: #b9a582; border: 1px solid #6d5a3d; border-radius: 4px; cursor: pointer; font: 12px system-ui, sans-serif; }
-  #settings-open:hover { color: #f0c860; border-color: #b9a582; }`;
+  #settings .quality span { color: var(--ui-ink-dim); }
+  #settings .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; color: var(--ui-ink-dim); }
+  #settings-open { position: fixed; right: 12px; bottom: 14px; z-index: 6; }`;
 
-export class SettingsView {
-  private readonly el: HTMLDivElement;
+export class SettingsView extends Modal {
   private tab: Tab = 'sound';
   /** The action waiting for its new key, and the button showing it. */
   private waiting: { action: string; button: HTMLButtonElement } | null = null;
   private said = '';
 
   constructor(host: HTMLElement, private readonly hooks: SettingsHooks) {
-    this.el = panel(host, 'div', 'settings', STYLE);
-    button(host, 'Settings (O)', () => this.toggle()).id = 'settings-open';
+    super(host, 'settings', STYLE, 'dark');
+    button(host, 'Settings (O)', () => this.toggle(), 'ui-btn small').id = 'settings-open';
     // Ahead of the game's listeners: keys go to the panel while it is open (a key being set, Escape or O to close).
     window.addEventListener('keydown', (e) => this.key(e), { capture: true });
     // A mouse button pressed on the key waiting for one is that key (anywhere else: never mind).
@@ -82,14 +72,11 @@ export class SettingsView {
     this.el.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
-  get open(): boolean { return this.el.classList.contains('open'); }
-
   toggle(): void {
     const open = !this.open;
-    this.el.classList.toggle('open', open);
     this.waiting = null;
     this.said = '';
-    if (open) { document.exitPointerLock?.(); this.redraw(); }
+    if (open) { document.exitPointerLock?.(); this.showHtml(''); this.redraw(); } else this.hide();
     this.hooks.opened(open);
   }
 
@@ -131,11 +118,12 @@ export class SettingsView {
 
   private redraw(): void {
     this.el.textContent = '';
-    const h = child(this.el, 'h2', '', 'Settings');
-    child(h, 'span', 'hint', 'Esc or O to close');
+    const h = child(this.el, 'div', 'head');
+    child(h, 'h2', 'ui-title', 'Settings');
+    child(h, 'div', 'ui-keys').innerHTML = `${keycap('Esc')} or ${keycap(keyLabel(this.hooks.bindings.keyOf('KeyO')))} to close`;
     const tabs = child(this.el, 'div', 'tabs');
     for (const [id, title] of TABS) {
-      button(tabs, title, () => { this.tab = id; this.waiting = null; this.said = ''; this.redraw(); }, id === this.tab ? 'on' : '');
+      button(tabs, title, () => { this.tab = id; this.waiting = null; this.said = ''; this.redraw(); }, `ui-btn small${id === this.tab ? ' primary' : ''}`);
     }
     const body = child(this.el, 'div');
     if (this.tab === 'sound') this.sound(body);
@@ -176,7 +164,7 @@ export class SettingsView {
     const b = this.hooks.bindings;
     let group = '';
     for (const a of this.hooks.actions) {
-      if (a.group !== group) { group = a.group; child(body, 'h3', '', group); }
+      if (a.group !== group) { group = a.group; child(body, 'h3', 'ui-label', group); }
       const row = child(body, 'div', 'key');
       child(row, 'span', '', a.name);
       const key = b.keyOf(a.key), waiting = this.waiting?.action === a.key;
@@ -185,19 +173,19 @@ export class SettingsView {
         this.waiting = { action: a.key, button: set };
         this.said = 'Press the new key or click here with a mouse button; Esc keeps the old one.';
         this.redraw();
-      }, `${waiting ? 'wait' : ''} ${key !== a.key ? 'moved' : ''}`.trim());
+      }, `ui-btn small${waiting ? ' wait' : ''}${key !== a.key ? ' moved' : ''}`);
       set.title = key !== a.key ? `Was ${keyLabel(a.key)}` : '';
       if (waiting) this.waiting = { action: a.key, button: set };
     }
     const foot = child(body, 'div', 'foot');
     child(foot, 'span', '', '1–0, - and = always use the bar.');
-    button(foot, 'Reset keys', () => { b.clear(); this.waiting = null; this.said = 'Every key is back where it was.'; this.hooks.keysChanged(); this.redraw(); }, 'act');
+    button(foot, 'Reset keys', () => { b.clear(); this.waiting = null; this.said = 'Every key is back where it was.'; this.hooks.keysChanged(); this.redraw(); }, 'ui-btn small');
   }
 
   private graphics(body: HTMLElement): void {
     const now = this.hooks.qualityNow();
     for (const q of QUALITIES) {
-      const b = button(body, '', () => { this.hooks.setQuality(q); this.redraw(); }, `quality${q === now ? ' on' : ''}`);
+      const b = button(body, '', () => { this.hooks.setQuality(q); this.redraw(); }, `ui-btn quality${q === now ? ' primary' : ''}`);
       child(b, 'b', '', q[0].toUpperCase() + q.slice(1));
       child(b, 'span', '', this.hooks.qualityNotes[q]);
     }

@@ -58,7 +58,7 @@ import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
 import { Doors } from '../world/doors';
 import { DoorView } from '../render/props/doorView';
-import { blowFrom, damage, nearestReached, reach } from '../combat/combat';
+import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
@@ -71,6 +71,7 @@ import { positionReport, readPosition } from './report';
 import { VERSION } from '../app/whatsNew';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
+import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
 import { SpellView } from '../render/spells';
 import { SaltDrift } from '../render/loot/saltDrift';
@@ -88,11 +89,6 @@ const STEP = 1 / 120;
 const LADDER_REACH = 1.6;
 /** How much of the ladder is climbed on each level when going from one to the other, metres. */
 const CLIMB_SHOWN = 4.5;
-/**
- * A stab with the kitchen knife: seconds it takes, when it lands, its reach (beyond the nobody's
- * centre), sweep and heights, damage and knockback; and how far it turns the nobody to a rat.
- */
-const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
 /** Grandma's Tenderising (V): an overhead blow with the knife's handle, slower, wider, knocking far back; its stamina (damage: the card's). */
 /** Grandma's salt-magic: Stove Flame's sweep and stamina, Cold Larder's, Rolling Pin's (how far, how much and how often: the card's); how long the nobody's cast pose lasts. */
 const FLAME = { arc: 0.45, low: -0.3, high: 2, knock: 2, stamina: 3 };
@@ -117,6 +113,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
+  setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   view.headlampPower = { survey: 14, dark: 3.5 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
@@ -165,6 +162,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   const show = (l: Level) => {
     level = l;
+    setGrowth(growthAt(l.depth));
     fauna = new Fauna(l);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);

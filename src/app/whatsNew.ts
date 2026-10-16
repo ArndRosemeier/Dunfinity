@@ -4,7 +4,8 @@
  */
 import changelog from '../../CHANGELOG.md?raw';
 import { noteHtml, parseChangelog } from './changelog';
-import { addStyle } from './panel';
+import { growOn } from './growth';
+import { addStyle, child } from './panel';
 
 /** The version this build is (the newest in CHANGELOG.md). */
 export const VERSION = parseChangelog(changelog)[0]?.version ?? 'v?';
@@ -13,21 +14,27 @@ export const VERSION = parseChangelog(changelog)[0]?.version ?? 'v?';
 export function mountWhatsNew(host: HTMLElement): void {
   const releases = parseChangelog(changelog);
   addStyle(`
-    #version { position: fixed; right: 12px; top: 10px; z-index: 10; font: inherit; color: #cfd6dc; background: #0b0d10cc; border: 1px solid #3a4148; border-radius: 4px; padding: 3px 9px; cursor: pointer; }
-    #version:hover { border-color: #8a96a2; }
-    #whatsnew { position: fixed; right: 12px; top: 40px; bottom: 12px; width: min(460px, calc(100vw - 24px)); z-index: 10; overflow-y: auto; background: #0b0d10ee; border: 1px solid #3a4148; border-radius: 6px; padding: 4px 16px 12px; display: none; }
-    #whatsnew.open { display: block; }
-    #whatsnew h2 { font-size: 15px; margin: 12px 0 2px; }
-    #whatsnew h3 { font-size: 13px; margin: 14px 0 4px; color: #e8d9b8; }
-    #whatsnew ul { margin: 0; padding-left: 18px; }
+    #version { position: fixed; right: 12px; top: 10px; z-index: 10; }
+    #whatsnew { position: fixed; right: 12px; top: 44px; width: min(460px, calc(100vw - 24px)); z-index: 10;
+      visibility: hidden; opacity: 0; transform: translateY(-6px); transition: opacity .18s var(--ui-ease), transform .18s var(--ui-ease), visibility 0s .18s; }
+    #whatsnew.open { visibility: visible; opacity: 1; transform: none; transition: opacity .18s var(--ui-ease), transform .18s var(--ui-ease); }
+    #whatsnew > .ui-scroll { max-height: calc(100vh - 58px); padding: 6px 18px 14px; }
+    #whatsnew h2 { margin: 12px 0 4px; }
+    #whatsnew h3 { font: 700 14px var(--ui-font); margin: 16px 0 4px; color: var(--ui-accent); }
+    #whatsnew ul { margin: 0; padding-left: 18px; color: var(--ui-ink); }
     #whatsnew li { margin: 3px 0; }
-    #whatsnew code { font-size: 12px; color: #a9c3d6; }`);
+    #whatsnew li::marker { color: var(--ui-ink-faint); }
+    #whatsnew code { font-size: 12px; color: var(--ui-salt); }`);
   const button = document.createElement('button');
   button.id = 'version';
+  button.className = 'ui-btn small';
   button.textContent = `${releases[0]?.version ?? 'v?'} · What's new`;
   const panel = document.createElement('div');
   panel.id = 'whatsnew';
-  panel.innerHTML = '<h2>What\'s new</h2>' + releases.map((r) =>
+  panel.className = 'ui-panel';
+  const text = child(panel, 'div', 'ui-scroll');
+  growOn(panel, 'whatsnew', { amount: 0.8 });
+  text.innerHTML = '<h2 class="ui-title">What\'s new</h2>' + releases.map((r) =>
     `<h3>${r.version} · ${noteHtml(r.title)}</h3><ul>${r.notes.map((n) => `<li>${noteHtml(n)}</li>`).join('')}</ul>`).join('');
   const toggle = (open = !panel.classList.contains('open')) => {
     panel.classList.toggle('open', open);
