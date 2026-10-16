@@ -11,7 +11,7 @@ import { hexToRgb, hsl2rgb, mixRgb } from '@futuremagic/core';
 import { bandOf } from './bands';
 import { express, gene } from './genes';
 import { lawsOf } from './laws';
-import { stratumOf } from './genome';
+import { strangeness, stratumOf } from './genome';
 
 type Rgb = [number, number, number];
 
@@ -21,8 +21,9 @@ export interface Air {
   /** The ambient light from above and from below. */
   readonly sky: Rgb;
   readonly ground: Rgb;
-  /** The headlamp's colour. */
+  /** The headlamp's colour, and the burning lamps' flames. */
   readonly lamp: Rgb;
+  readonly flame: Rgb;
   /** How far one sees: the fog's distances are multiplied by this (1: ours). */
   readonly clear: number;
   /** How strongly the rock's seams glow (`ROCK_VEINS`). */
@@ -30,7 +31,7 @@ export interface Air {
 }
 
 /** Our air: what LevelView had before strata drew their own. */
-const OURS = { fog: 0x050607, sky: 0x9aa6b4, ground: 0x2a2218, lamp: 0xfff0dc } as const;
+const OURS = { fog: 0x050607, sky: 0x9aa6b4, ground: 0x2a2218, lamp: 0xfff0dc, flame: 0xffbe80 } as const;
 
 /** The air's hue (0–1 round the wheel) and how much of it the light takes on (0: our grey-blue). */
 const HUE = gene('air.hue', 0.6, [0.55, 0.65], [0, 1]);
@@ -44,19 +45,24 @@ const GLOW = gene('air.glow', 0, [0, 0.2], [0, 1]);
 
 export function airOf(seed: number, depth: number): Air {
   const band = bandOf(depth);
-  if (!stratumOf(depth)) return { fog: hexToRgb(OURS.fog), sky: hexToRgb(OURS.sky), ground: hexToRgb(OURS.ground), lamp: hexToRgb(OURS.lamp), clear: 1, veins: band.veins };
+  if (!stratumOf(depth)) return { fog: hexToRgb(OURS.fog), sky: hexToRgb(OURS.sky), ground: hexToRgb(OURS.ground), lamp: hexToRgb(OURS.lamp), flame: hexToRgb(OURS.flame), clear: 1, veins: band.veins };
   const laws = lawsOf(seed, depth);
+  // A law's light is as strong as the stratum is strange: a tinge at the Ossuaries, a colour one names deeper.
+  const law = Math.min(1, 0.5 + strangeness(seed, stratumOf(depth)!.from).amplitude / 4);
   const hue = laws.includes('tinted') ? express(LAW_HUE, seed, depth) : express(HUE, seed, depth);
-  const tint = laws.includes('tinted') ? 0.85 : express(TINT, seed, depth);
-  const lampTint = laws.includes('tinted') ? 0.55 : express(LAMP_TINT, seed, depth);
+  const tint = laws.includes('tinted') ? 0.85 * law : express(TINT, seed, depth);
+  const lampTint = laws.includes('tinted') ? 0.6 * law : express(LAMP_TINT, seed, depth);
   const clear = laws.includes('haze') ? 0.4 : express(CLEAR, seed, depth);
   const glow = laws.includes('glow') ? 1 : express(GLOW, seed, depth);
-  const tinted = (hex: number, l: number, t: number): Rgb => mixRgb(hexToRgb(hex), hsl2rgb(hue, 0.6, l), t);
+  // A tinted stratum's light is a colour one can name: saturated, every light in it.
+  const sat = laws.includes('tinted') ? 0.9 : 0.6;
+  const tinted = (hex: number, l: number, t: number): Rgb => mixRgb(hexToRgb(hex), hsl2rgb(hue, sat, l), t);
   return {
     fog: tinted(OURS.fog, 0.03, tint),
     sky: tinted(OURS.sky, 0.6, tint),
     ground: tinted(OURS.ground, 0.15, tint),
-    lamp: tinted(OURS.lamp, 0.85, lampTint),
+    lamp: tinted(OURS.lamp, 0.72, lampTint),
+    flame: tinted(OURS.flame, 0.62, laws.includes('tinted') ? 0.8 * law : lampTint),
     clear,
     veins: Math.max(band.veins, glow),
   };

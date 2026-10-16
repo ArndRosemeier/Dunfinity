@@ -113,6 +113,7 @@ export class LevelView {
     this.ambient.groundColor.setRGB(...this.air.ground, SRGBColorSpace);
     this.headlamp.color.setRGB(...this.air.lamp, SRGBColorSpace);
     this.spill.color.setRGB(...this.air.lamp, SRGBColorSpace);
+    this.lamps.tint(this.air.flame);
     this.dark = this.dark_; // the fog's distances, as clear as the air
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;

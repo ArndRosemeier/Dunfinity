@@ -11,6 +11,7 @@ test('down to level 10 the air is ours, every world alike', () => {
     const a = airOf(seed, d);
     assert.deepEqual(a.fog, hexToRgb(0x050607));
     assert.deepEqual(a.lamp, hexToRgb(0xfff0dc));
+    assert.deepEqual(a.flame, hexToRgb(0xffbe80));
     assert.equal(a.clear, 1);
     assert.equal(a.veins, bandOf(d).veins);
     assert.deepEqual(lawsOf(seed, d), []);
@@ -33,11 +34,11 @@ test('a stratum has its laws on all its levels, as many as its strangeness says,
 test('the laws show in the air: tinted light, thick air, glowing seams; and deep air stays in its ranges', () => {
   for (let seed = 1; seed <= 80; seed++) for (const d of [15, 45, 120, 600]) {
     const a = airOf(seed, d), laws = lawsOf(seed, d);
-    for (const c of [a.fog, a.sky, a.ground, a.lamp]) for (const v of c) assert.ok(v >= 0 && v <= 1, `seed ${seed} level ${d}`);
+    for (const c of [a.fog, a.sky, a.ground, a.lamp, a.flame]) for (const v of c) assert.ok(v >= 0 && v <= 1, `seed ${seed} level ${d}`);
     assert.ok(a.clear >= 0.35 && a.clear <= 1.4);
     if (laws.includes('haze')) assert.equal(a.clear, 0.4);
     if (laws.includes('glow')) assert.equal(a.veins, 1);
     // The headlamp stays a bright light, whatever its tint.
-    assert.ok(a.lamp[0] + a.lamp[1] + a.lamp[2] > 1.8, `seed ${seed} level ${d}: lamp ${a.lamp}`);
+    assert.ok(a.lamp[0] + a.lamp[1] + a.lamp[2] > 1.6, `seed ${seed} level ${d}: lamp ${a.lamp}`);
   }
 });

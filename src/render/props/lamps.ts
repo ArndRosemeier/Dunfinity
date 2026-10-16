@@ -3,7 +3,7 @@
  * part of every shader's cache key, docs/SHADERS.md), moved each frame to the burning lamps nearest
  * the viewer. Unused lights stay in the scene at intensity 0, so no shader ever changes.
  */
-import { PointLight, type Object3D } from 'three/webgpu';
+import { PointLight, SRGBColorSpace, type Object3D } from 'three/webgpu';
 import { hash3f, smoothstep } from '@futuremagic/core';
 
 /** Lamps further than this get no light, metres. */
@@ -24,6 +24,11 @@ export class LampLights {
       this.lights.push(l);
       parent.add(l);
     }
+  }
+
+  /** The colour of the flames (sRGB 0-1; the level's air, src/gen/air.ts): a light's colour, never a new shader. */
+  tint(rgb: readonly [number, number, number]): void {
+    for (const l of this.lights) l.color.setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace);
   }
 
   /** Light the lamps nearest (x, y, z). `lamps` lists x, y, z per burning lamp; `time` in seconds, for the flicker. */
