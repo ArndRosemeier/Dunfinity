@@ -14,9 +14,10 @@ const browser = await chromium.launch({
 });
 const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
 page.on('pageerror', (e) => console.error(`[page error] ${e.message}`));
-await page.goto(server.resolvedUrls.local[0] + '?title&gl&shot=1');
+await page.goto(server.resolvedUrls.local[0] + (process.env.QUERY ?? '?title&gl&shot=1'));
 await page.waitForFunction(() => window.__ready === true, null, { timeout: 900000 });
 await page.screenshot({ path: `${out}/title.png`, timeout: 900000 });
+await page.waitForSelector('#title .menu > button:not([disabled])', { state: 'attached', timeout: 900000 }); // greyed out until the game is warm
 await page.getByRole('button', { name: 'New Game' }).click({ force: true, timeout: 600000 }); // frames are slow in SwiftShader: no waiting for it to hold still
 await page.waitForFunction(() => !document.getElementById('title') && window.__ready === true && window.__game, null, { timeout: 900000 });
 console.log('game:', await page.evaluate(() => { const g = window.__game, b = g.body; return `level ${g.depth} at ${[b.x, b.y, b.z].map((v) => v.toFixed(1)).join(' ')} ${b.mode}`; }));

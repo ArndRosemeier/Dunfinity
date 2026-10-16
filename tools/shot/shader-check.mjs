@@ -7,6 +7,8 @@
  *     apart and at most 5 per second, each under 100 ms of blocking.
  *  3. The game: after its warm-up, the first seconds of play (figure, rats, finds, shadows) build
  *     no new shader.
+ *  4. The title: the figures warm while it plays, every build async under the cap; once the menu
+ *     wakes, nothing more is built, through New Game and the first seconds of play.
  */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
@@ -71,6 +73,26 @@ try {
   console.log(`game: ${played.built} shaders built after warm-up`);
   if (played.built) problems.push(`game: ${played.built} shaders built after warm-up (something drawn differs from what was warmed: a light moved to another parent, shadow flags set per mesh, ...)`);
   problems.push(...played.violations);
+
+  await game.close();
+  const title = await browser.newPage({ viewport: { width: 960, height: 600 } });
+  title.on('pageerror', (e) => problems.push(`title page error: ${e.message}`));
+  await title.goto(server.resolvedUrls.local[0] + '?title&seed=1&gl&fresh', { timeout: 120000 });
+  const woke = Date.now();
+  await title.waitForSelector('#title .menu > button:not([disabled])', { state: 'attached', timeout: 900000 });
+  const warm = await title.evaluate(() => ({ at: window.shaders.events.length, sync: window.shaders.events.filter((e) => e.kind === 'node-sync' && e.phase === 'run').length }));
+  console.log(`title: menu awake after ${((Date.now() - woke) / 1000).toFixed(0)} s, ${warm.sync} synchronous builds while warming`);
+  if (warm.sync) problems.push(`title: ${warm.sync} shaders built synchronously on the render path while the title warmed`);
+  await title.evaluate(() => document.querySelector('#title .menu > button').click());
+  await title.waitForFunction(() => !document.querySelector('#title') && window.__ready === true, null, { timeout: 600000 });
+  const after = await title.evaluate(async (at) => {
+    const g = window.__game;
+    for (let t = 0; t < 20; t++) { g.cam.yaw += 0.3; await new Promise((r) => setTimeout(r, 150)); }
+    return { built: window.shaders.events.slice(at).filter((e) => e.kind === 'node-async' || e.kind === 'node-sync').length, violations: window.shaders.violations() };
+  }, warm.at);
+  console.log(`title: ${after.built} shaders built after the menu woke`);
+  if (after.built) problems.push(`title: ${after.built} shaders built after the menu woke (something play draws was not warmed under the title)`);
+  problems.push(...after.violations);
 } catch (e) {
   problems.push(String(e?.stack || e));
 } finally {

@@ -88,10 +88,18 @@ export class LevelView {
     this.dust = new Dust(level_.seed);
   }
 
-  /** Warm up the shaders (with `extra`, see Stage.warmUp), then start streaming the level. */
-  async start(extra: readonly Object3D[] = []): Promise<void> {
+  /** Everything given to `start` as `later` is warm (resolved at once if nothing was). */
+  warmed: Promise<void> = Promise.resolve();
+
+  /**
+   * Warm up the shaders (with `extra`, see Stage.warmUp), then start streaming the level. `later`:
+   * objects like `extra` that need not be ready yet (the title screen plays meanwhile): they warm
+   * while the view draws (Stage.warmLater), and `warmed` says when.
+   */
+  async start(extra: readonly Object3D[] = [], later: readonly Object3D[] = []): Promise<void> {
     this.aimHeadlamp(); // the warm-up draws the shadow pass too: the lamp must shine where the camera looks
     await this.stage.warmUp(extra);
+    this.warmed = later.length ? this.stage.warmLater(later, this.headlamp.shadow.camera) : Promise.resolve();
     this.scene.add(this.rock, this.things);
     await this.stage.add(this.dust.mesh);
     await this.stage.add(this.watchers.root);

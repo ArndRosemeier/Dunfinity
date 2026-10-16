@@ -128,6 +128,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
+  /** The game opens on the title screen (src/game/title.ts). */
+  const titled = titleWanted(location.search);
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
   setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
@@ -315,24 +317,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root];
+  // Under the title screen only the nobody warms up now; everyone else warms while it plays.
+  await view.start(titled ? [nobody.root] : [nobody.root, ...figures], titled ? figures : []);
   await view.stage.add(nobody.root);
-  await view.stage.add(touchedView.root);
-  await view.stage.add(foremanView.root);
-  await view.stage.add(scavengerView.people.root);
-  await view.stage.add(scavengerView.camps.root);
-  await view.stage.add(goblinView.root);
-  for (const r of ghostView.roots) await view.stage.add(r);
-  await view.stage.add(neighbourView.people.root);
-  await view.stage.add(strangerView.people.root);
-  await view.stage.add(tallView.root);
-  await view.stage.add(ratView.root);
-  await view.stage.add(cricketView.root);
-  await view.stage.add(slimeView.root);
-  await view.stage.add(dogView.root);
-  await view.stage.add(eelView.root);
-  await view.stage.add(shroomView.root);
-  await view.stage.add(shroomView.spores.root);
+  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, strangerView.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root];
+  /** Every figure in the scene and warm (each enters once compiled). */
+  const castWarm = view.warmed.then(() => Promise.all(roots.map((r) => view.stage.add(r)))).then(() => {}); // in after their shadows are built, never before
+  if (!titled) await castWarm;
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
   const lampDir = new Vector3();
@@ -713,7 +705,6 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     (globalThis as { __ready?: boolean }).__ready = view.settled;
     controls.endFrame();
   };
-  const titled = titleWanted(location.search);
   if (introduce && !titled) beginIntro(); // under the title, New Game begins it
   const deathView = new DeathView(document.body);
   /** When this grandchild died, and when the next was asked for (null: not yet); the camera's distance before death pulled it back. */
@@ -771,7 +762,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): it
   // plays on this view, then hands over in the black, on the game's own level.
   if (titled) {
-    const choice = await playTitle(host, { view, cam, nobody, seed: params.seed, canContinue: !!saved, shown: () => { if (loading.open) loading.hide(); }, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null, look, drawLife });
+    const choice = await playTitle(host, { view, cam, nobody, seed: params.seed, canContinue: !!saved, ready: castWarm, shown: () => { if (loading.open) loading.hide(); }, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null, look, drawLife });
     if (choice === 'new' && saved) freshFamily();
     if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family
     look(level);

@@ -17,6 +17,29 @@ import { installShaderPolicy } from './shaders/patches';
 
 /** Frames drawn to warm the shadow pass (async pipelines finish over a few). */
 const WARM_FRAMES = 8;
+/** A layer only the headlamp's shadow camera sees: casters warmed later are drawn into its map alone. */
+const WARM_LAYER = 7;
+/** Frames a caster warmed later stays in the shadow map (its build happens on the first). */
+const SHADOW_FRAMES = 3;
+
+/** Wait `n` animation frames. */
+function frames(n: number): Promise<void> {
+  return new Promise((done) => {
+    const next = (): void => { if (--n <= 0) done(); else requestAnimationFrame(next); };
+    requestAnimationFrame(next);
+  });
+}
+
+/**
+ * What the shadow pass's shader for a caster depends on (it draws every caster with one material, so
+ * not on the caster's own): skinned or instanced, its attributes and morphs, its material's side and
+ * cut-outs. Casters alike share a shader; one of each is drawn.
+ */
+function casterKey(m: Mesh): string {
+  const g = m.geometry, mat = (Array.isArray(m.material) ? m.material[0] : m.material) as { side?: number; alphaTest?: number; alphaMap?: unknown; positionNode?: unknown };
+  return [(m as { isSkinnedMesh?: boolean }).isSkinnedMesh, (m as { isInstancedMesh?: boolean }).isInstancedMesh, Object.keys(g.attributes).sort().join(','),
+    Object.keys(g.morphAttributes).join(','), mat.side, (mat.alphaTest ?? 0) > 0, !!mat.alphaMap, !!mat.positionNode].join('|');
+}
 
 export class Stage {
   readonly cap = new ShaderCap();
@@ -80,6 +103,43 @@ export class Stage {
       parents[i]?.add(o);
       o.traverse((c) => { c.frustumCulled = true; });
     });
+  }
+
+  /**
+   * Warm `objs` while the game is already drawing (behind the title screen) instead of in the
+   * warm-up: each is compiled under the cap like anything added, then its shadow-pass shaders are
+   * built by drawing each caster into `shadow` (the headlamp's shadow camera) only, on a layer the camera does
+   * not see, one new kind of caster at a time and a cap slot apart. Something has to keep rendering
+   * meanwhile. Resolves when all are warm.
+   */
+  async warmLater(objs: readonly Object3D[], shadow: Camera): Promise<void> {
+    for (const o of objs) await this.prepare(o);
+    shadow.layers.enable(WARM_LAYER);
+    const group = new Group();
+    this.scene.add(group);
+    const seen = new Set<string>();
+    for (const o of objs) {
+      const parent = o.parent;
+      if (!parent) group.add(o);
+      const meshes: Mesh[] = [];
+      o.traverse((c) => { if ((c as Mesh).isMesh) meshes.push(c as Mesh); });
+      const masks = meshes.map((m) => m.layers.mask), culled = meshes.map((m) => m.frustumCulled);
+      for (const m of meshes) m.layers.disableAll();
+      for (const m of meshes) {
+        if (!m.castShadow) continue; // the shadow pass draws casters only
+        const key = casterKey(m);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        await this.cap.slot(); // the build it starts counts against the cap like any other
+        m.layers.set(WARM_LAYER);
+        m.frustumCulled = false;
+        await frames(SHADOW_FRAMES);
+        m.layers.disableAll();
+      }
+      meshes.forEach((m, i) => { m.layers.mask = masks[i]; m.frustumCulled = culled[i]; });
+      if (!parent) group.remove(o);
+    }
+    this.scene.remove(group);
   }
 
   /** Put `obj` into the scene once everything it draws with is compiled. */
