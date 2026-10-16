@@ -888,9 +888,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   if (titled) {
     const choice = await playTitle(host, {
       seed: params.seed, canContinue: !!saved, ready: castWarm, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
+      sound: sounds.engine,
       builds: () => view.stage.monitor.events.length,
       shown: () => { if (loading.open) loading.hide(); },
-      frame: (now) => view.frame(body.x, body.y, body.z, now, false),
+      stream: (now) => view.frame(body.x, body.y, body.z, now, false),
     });
     if (choice === 'new' && saved) freshFamily();
     if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family

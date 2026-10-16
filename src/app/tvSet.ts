@@ -97,9 +97,15 @@ export class TvSet {
     this.offAt ??= now;
   }
 
-  /** Draw a frame at `now` (seconds); `builds`: shader builds so far (each new one may slip the hold). */
-  frameAt(now: number, builds: number): void {
-    const dt = clamp(now - this.last, 0, 0.1);
+  /** How rough the signal is now, 0..1 (for the hiss). */
+  get trouble(): number { return this.rough; }
+
+  /**
+   * Draw a frame at `now` (seconds); `builds`: shader builds so far (each new one may slip the hold).
+   * True when the picture slipped this frame (for its crackle).
+   */
+  frameAt(now: number, builds: number): boolean {
+    const dt = clamp(now - this.last, 0, 0.1), slipped = this.slipAt;
     this.last = now;
     if (builds > this.builds) {
       this.rough = Math.min(1, this.rough + 0.25 * (builds - this.builds));
@@ -116,6 +122,7 @@ export class TvSet {
     const air = onAir(this.from + (this.onAt === null || this.pinned !== null ? 0 : now - this.onAt)); // a pinned shot holds
     this.broadcast(air, now);
     this.compose(air, now);
+    return this.slipAt !== slipped && this.offAt === null;
   }
 
   /** Where the glass is on the window (CSS pixels), and the scale of the set's picture. */

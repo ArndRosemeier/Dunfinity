@@ -8,9 +8,12 @@ import { Rng, deriveSeed } from '@futuremagic/core';
 import { REPORT, shotStart } from '../lore/report';
 import { TitleScreen, type TitleChoice } from '../app/titleScreen';
 import { TvSet } from '../app/tvSet';
+import type { SoundEngine, SoundLoop } from '../audio/audio';
 
 /** Seconds: the set warming up before the name and menu come; from the choice to black. */
 const TIMING = { reveal: 1.2, leave: 0.8 };
+/** The set's sound: the hiss (and how much louder a rough signal makes it), a slip's crackle, and how soon after it comes on its clunk still plays (s). */
+const SOUND = { hiss: 0.45, rough: 0.5, crackle: 0.8, clunk: 2 };
 
 /** What the title needs from the game. */
 export interface TitleCast {
@@ -21,12 +24,14 @@ export interface TitleCast {
   readonly pinned: number | null;
   /** Resolves once everything play needs is compiled (src/render/stage.ts warmLater); the menu waits for it. */
   readonly ready: Promise<void>;
+  /** The game's sound (it starts on the first touch or key: then the set hisses). */
+  readonly sound: SoundEngine;
   /** Shader builds so far (src/render/shaders/monitor.ts): each new one slips the picture. */
   builds(): number;
   /** The set is on (the loading screen can go). */
   shown(): void;
   /** Once a frame: the game's level streams in behind the title (nothing is drawn). */
-  frame(now: number): void;
+  stream(now: number): void;
 }
 
 /** Play the title until the player chooses; resolves with the screen black, the overlay gone. */
@@ -36,7 +41,7 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
   const from = cast.canContinue ? shotStart(new Rng(deriveSeed(cast.seed, 'title', Math.floor(performance.timeOrigin))).int(1, REPORT.length - 1)) : 0;
   const tv = new TvSet(screen.back, cast.seed, from, cast.pinned);
   await tv.loaded.catch(() => {}); // a missing picture leaves its shot dark, nothing worse
-  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false;
+  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null;
   const now = (): number => performance.now() / 1000;
   const start = now();
   tv.on(start);
@@ -44,22 +49,27 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
   screen.chosen.then((c) => { chosen = c; chosenAt = now(); tv.off(chosenAt); });
   cast.ready.then(() => screen.ready());
   return new Promise((resolve) => {
-    const frame = (): void => {
+    const beat = (): void => {
       const t = now();
       if (!revealed && t - start > TIMING.reveal) { revealed = true; screen.reveal(); }
       const leaving = chosen === null ? 0 : Math.min(1, (t - chosenAt) / TIMING.leave);
       screen.dark = leaving * leaving;
-      tv.frameAt(t, cast.builds());
-      cast.frame(t);
+      const slipped = tv.frameAt(t, cast.builds());
+      cast.stream(t);
+      // The sound, once the browser lets it start: the clunk if the set has only just come on, its hiss, a crackle when the picture slips.
+      if (!hiss && chosen === null && cast.sound.ctx && (hiss = cast.sound.loop('tv_static')) && t - start < SOUND.clunk) cast.sound.play('tv_on', null);
+      hiss?.set(0, 0, -1, (SOUND.hiss + SOUND.rough * tv.trouble) * (1 - leaving));
+      if (slipped) cast.sound.play('tv_glitch', null, SOUND.crackle);
       (globalThis as { __ready?: boolean }).__ready = revealed && chosen === null;
       if (leaving >= 1) {
+        hiss?.stop();
         tv.dispose();
         screen.close();
         resolve(chosen!);
         return;
       }
-      requestAnimationFrame(frame);
+      requestAnimationFrame(beat);
     };
-    requestAnimationFrame(frame);
+    requestAnimationFrame(beat);
   });
 }
