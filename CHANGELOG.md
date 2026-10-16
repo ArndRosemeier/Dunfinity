@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.183 — Creature look pass
+
+- Insects and spiders among the procedural creatures now have a body in parts: a swollen abdomen behind, a narrow waist, and a smaller thorax in front that carries the legs. Before, they were one capsule.
+- Thin legs swell along each segment and narrow into the joints, instead of being plain tubes.
+- A creature's outline catches a faint blue from the cave's salt veins, so one standing off in the dark still reads as a shape.
+
 ## v0.182 — Grandma's Salt Pet
 
 - New chapter in grandma's tin: Company, with the Salt Pet card. Its bar slot makes you kneel and pour pinches of the tin's salt, which stand up as an animal made of salt: a salt rat at rank 1 (2 pinches, 45 health, bites 6–9) or a salt dog at rank 2 (3 pinches, 90 health, bites 11–16). One at a time, every 20 s.
