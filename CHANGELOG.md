@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.134 — Sounds for the prologue
+
+- New sounds ready for the prologue and grandma's list: a page turning, a pencil ticking off a line, and the cold draft from the broken arch.
+
 ## v0.133 — The peoples of the deep
 
 - Below level 10 the people you meet aren't ours any more. Each game has two peoples of the buried worlds, drawn from Norgo's orcs, halflings, sylvans, drakeborn and umbral, and each stratum belongs to one of them. Scavenger camps there are of that people. A new game meets others.
