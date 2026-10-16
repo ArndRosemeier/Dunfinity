@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.166 — Your kit on the body
+
+- Kemal's miner's helmet, a dented green enamel hard hat with its lamp, sits on the grandchild's head with the hair tucked under it, and his work gloves are on their hands.
+- A worn piece looks more worn than a fine one.
+
+## v0.165 — What you wear and hold
+
+- The pack (I) now shows what you wear and hold, slot by slot: head, body, hands, legs, feet, main hand, off hand and a trinket.
+- Choose a line with W and S, then press E to take a piece off into your pack, put on a spare one, or leave a find on the floor.
+- Kemal's gloves and helmet are things you wear now, and his whetstone hones grandma's knife to fine.
+- The pack's 8 places hold finds and spare things together.
+
 ## v0.164 — Sounds for the deep wonders, the flour bag and the match
 
 - Singing crystals hum in five notes that sound well together, a distant choir swells when a thin place opens, and salt blooms crackle faintly as they grow.
