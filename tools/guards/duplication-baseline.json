@@ -3558,5 +3558,13 @@
   {
     "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/props/watchers.ts#draw",
     "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/stepsView.ts + dunfinity/gen/notary.ts",
+    "reason": "lines of text built from a list (a map, then a join): each list is its own (finds in the pack, steps, the notary's names, the tin's cards, the shop's gear)"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/tinView.ts + dunfinity/game/Game.ts",
+    "reason": "lines of text built from a list (a map, then a join): each list is its own (finds in the pack, steps, the notary's names, the tin's cards, the shop's gear)"
   }
 ]
