@@ -51,7 +51,7 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
 
   const hud = document.getElementById('hud');
   const timer = new Timer();
-  (globalThis as { __lab?: unknown }).__lab = { camera, stage, fly, terrain, props, level };
+  (globalThis as { __lab?: unknown }).__lab = { view, camera, stage, fly, terrain, props, level };
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());

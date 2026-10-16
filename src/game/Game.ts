@@ -99,6 +99,7 @@ import { FirstSteps, type StepId } from './firstSteps';
 import { PrologueView } from '../app/prologueView';
 import { StepsView } from '../app/stepsView';
 import type { LoadingScreen } from '../app/loadingScreen';
+import { heard, tipOf, type DripLook } from '../gen/drips';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -106,6 +107,8 @@ const STEP = 1 / 120;
 const LADDER_REACH = 1.6;
 /** How much of the ladder is climbed on each level when going from one to the other, metres. */
 const CLIMB_SHOWN = 4.5;
+/** Living stalagmites' drops are heard this close (m). */
+const DRIP_HEARD = 22;
 /** Grandma's Tenderising (V): an overhead blow with the knife's handle, slower, wider, knocking far back; its stamina (damage: the card's). */
 /** Grandma's salt-magic: Stove Flame's sweep and stamina, Cold Larder's, Rolling Pin's (how far, how much and how often: the card's); how long the nobody's cast pose lasts. */
 const FLAME = { arc: 0.45, low: -0.3, high: 2, knock: 2, stamina: 3 };
@@ -645,6 +648,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let onLanded: (() => void) | null = null;
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
+  /** The clock at the last frame, and a look to reuse, for the living stalagmites' drops. */
+  let dripThen = 0;
+  const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
     view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, garden, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
@@ -1317,7 +1323,15 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
-    view.frame(body.x, body.y, body.z, timer.getElapsed(), !loading.open && !(arriving && !climb.active));
+    const dripNow = timer.getElapsed();
+    view.frame(body.x, body.y, body.z, dripNow, !loading.open && !(arriving && !climb.active));
+    // A drop landing on each living stalagmite's tip (src/gen/drips.ts), heard close by.
+    for (const s of view.drips.shown) {
+      if ((s.x - body.x) ** 2 + (s.z - body.z) ** 2 > DRIP_HEARD ** 2) continue;
+      const drops = heard(s, dripThen, dripNow, dripSeen);
+      for (let k = 0; k < drops; k++) sounds.play('drip', { x: s.x, y: s.y + Math.max(0, tipOf(dripSeen)), z: s.z }, dripSeen.drip);
+    }
+    dripThen = dripNow;
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
     sounds.update({

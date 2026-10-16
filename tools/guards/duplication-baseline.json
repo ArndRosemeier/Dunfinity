@@ -104,7 +104,7 @@
     "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
@@ -3440,7 +3440,7 @@
     "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
   },
   {
-    "key": "idiom: [.at .descents] in dunfinity/creatures/touched.ts + dunfinity/gen/sheds.ts + dunfinity/loot/finds.ts",
+    "key": "idiom: [.at .descents] in dunfinity/creatures/touched.ts + dunfinity/gen/drips.ts + dunfinity/gen/sheds.ts + dunfinity/loot/finds.ts",
     "reason": "each asks the one seam whether a spot is by a way down (level.descents.at) before putting something there: a camp, a shed, a find"
   },
   {
@@ -3530,5 +3530,41 @@
   {
     "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/tinView.ts + dunfinity/game/Game.ts",
     "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
+  },
+  {
+    "key": "clone: dunfinity/gen/drips.ts#constructor + dunfinity/loot/finds.ts#constructor",
+    "reason": "two lines each: the level's own seed and a CellMemo of its cells; the memo is the seam (src/gen/cellMemo.ts)"
+  },
+  {
+    "key": "same name: dunfinity/gen/descents.ts#nearest + dunfinity/gen/drips.ts#nearest",
+    "reason": "each its own nearest (shafts, grain lines, stalagmite sites) over its own store"
+  },
+  {
+    "key": "same name: dunfinity/gen/drips.ts#near + dunfinity/loot/finds.ts#near",
+    "reason": "each store's own query of its cells within r (finds, stalagmite sites)"
+  },
+  {
+    "key": "same name: dunfinity/gen/drips.ts#nearest + dunfinity/gen/grainLines.ts#nearest",
+    "reason": "each its own nearest (shafts, grain lines, stalagmite sites) over its own store"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/loot/findView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "every view's per-frame draw of its own pool; the pools differ"
   }
 ]
