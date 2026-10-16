@@ -1,9 +1,10 @@
 /**
  * Grandma's diary open (docs/design/grandmas-diary.md): the pages in the book in date order, the
  * ones she tore out as stubs until someone of the family finds them. Her young, fast hand for the
- * pages from down there, her careful old one for those written at home. J or Escape closes it.
+ * pages from down there, her careful old one for those written at home: each page as painted in her
+ * hand (public/diary, tools/lore/diaryPages.ts), its text under it. J or Escape closes it.
  */
-import { COVER, PAGES, theBook } from '../lore/diary';
+import { COVER, PAGES, pageId, theBook } from '../lore/diary';
 import { esc, panel } from './panel';
 
 const STYLE = `
@@ -16,6 +17,8 @@ const STYLE = `
   #diary .page { margin: 10px 0; }
   #diary .date { font-size: 13px; color: #6d5a3d; }
   #diary .young { font-style: italic; color: #24304a; }
+  #diary img { display: block; width: 100%; margin: 4px 0; border-radius: 2px; }
+  #diary .page img + div { font-size: 12px; }
   #diary .stub { color: #a8987c; font-size: 13px; border-left: 3px solid #c9b78f; padding-left: 8px; }
   #diary .keys { margin-top: 10px; font: 12px system-ui, sans-serif; color: #6d5a3d; }`;
 
@@ -37,7 +40,7 @@ export class DiaryView {
     for (const { page, text } of theBook(found)) {
       html += text === null
         ? `<div class="page stub">${esc(page.date)}: torn out</div>`
-        : `<div class="page"><div class="date">${esc(page.date)}</div><div class="${page.depth === null ? 'old' : 'young'}">${esc(text)}</div></div>`;
+        : `<div class="page"><div class="date">${esc(page.date)}</div><img src="${import.meta.env.BASE_URL}diary/${pageId(page)}.webp" alt="${esc(text).replace(/"/g, '&quot;')}" loading="lazy"><div class="${page.depth === null ? 'old' : 'young'}">${esc(text)}</div></div>`;
     }
     this.el.innerHTML = `${html}<div class="keys">J or Escape: close</div>`;
     this.el.classList.add('open');

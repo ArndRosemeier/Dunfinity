@@ -72,6 +72,10 @@
     "reason": "each kind's one-line call into the Population seam (`if (c.dead) return this.lieDead(c, dt)`); the work is shared in population.ts. Flips between NEW and STALE as the corpus changes, like [.body .root]."
   },
   {
+    "key": "idiom: [.dry .groundAt] in dunfinity/creatures/crickets.ts + dunfinity/creatures/touched.ts + dunfinity/gen/diaryPages.ts",
+    "reason": "asking the level whether a spot is dry and how high its floor is, through the level's own seams; unrelated callers"
+  },
+  {
     "key": "idiom: [.dry .level] in dunfinity/creatures/crickets.ts + dunfinity/gen/quarryProps.ts + dunfinity/world/fire.ts",
     "reason": "creatures, quarry props and fire each ask the level whether a spot is dry (level.dry) for their own placement; one seam called from three places, surfaced when the finder's corpus grew"
   },
