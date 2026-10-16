@@ -54,6 +54,7 @@ import { GhostView } from '../render/creatures/ghostView';
 import { NeighbourView } from '../render/humans/neighbourView';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { Stranger, STRANGER_KEY } from '../world/stranger';
+import { Grandma, GRANDMA } from '../world/grandma';
 import { TallOneView } from '../render/creatures/tallOneView';
 import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
@@ -80,6 +81,8 @@ import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
 import { PackView } from '../app/packView';
 import { SpellView } from '../render/spells';
+import { SnapdragonView } from '../render/snapdragons';
+import { Snapdragons } from '../combat/snapdragon';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { Thrown } from '../combat/thrown';
 import { GameSounds } from '../audio/gameSounds';
@@ -110,6 +113,8 @@ const FLAME = { arc: 0.45, low: -0.3, high: 2, knock: 2, stamina: 3 };
 const LARDER = { stamina: 3, every: 8 };
 const PIN = { arc: 0.75, low: -0.3, high: 2, damage: [2, 4] as const, stamina: 2.5, every: 3 };
 const CAST = { dur: 0.5, glints: 8 };
+/** Grandma's Snapdragons (U): the stamina a seed costs (what the plant does and how often: the card's). */
+const SEED = { stamina: 2 };
 const POUND = { dur: 0.9, hit: 0.5, range: 1.15, arc: 1.1, low: -0.3, high: 1.3, knock: 8, aim: 2.6, aimArc: 1.2, stamina: 3 };
 /** Picking a find up: seconds it takes, when it is in hand; how far round the nobody finds are drawn. */
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
@@ -184,6 +189,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
   let arriving = false, arrivedAt = 0;
   const show = (l: Level) => {
+    // Back up from below into her cellar: grandma may have a word.
+    if (l.depth === 0 && level.depth > 0) grandma.arrive(heir);
     level = l;
     setGrowth(growthAt(l.depth));
     arriving = true;
@@ -200,12 +207,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
-    thrown.missiles.length = 0;
+    thrown.missiles.length = 0; thrown.sown.length = 0; garden.plants.length = 0;
     look(l);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
   const look = (l: Level): void => {
-    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = tallView.level = l;
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = tallView.level = l;
     view.go(l);
     Rigged.kinOn(params.seed, l.depth);
     cam.level = l;
@@ -232,6 +239,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth, params.style)); // the next grandchild starts at the top
     heir++;
     reached = level.depth;
+    if (level.depth === 0) grandma.arrive(heir);
     const b = arrive();
     // In grandma's cellar: by her armchair, facing the broken arch.
     if (level.depth === 0 && !params.pos) b.facing = cam.yaw = CELLAR.start.yaw;
@@ -278,12 +286,15 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const ghostView = await GhostView.create(params.seed);
   ghostView.level = level;
   const neighbourView = await NeighbourView.create();
+  const grandmaView = await NeighbourView.grandma();
+  /** Grandma's ghost, keeping the circle in the round room. */
+  const grandma = new Grandma();
   const strangerView = await NeighbourView.stranger(params.seed);
   const stranger = new Stranger();
   /** The stranger at Ilse's is in the town once the family has been below level 10. */
   const strangerHere = (): boolean => level.depth === 0 && Stranger.here({ deepest: tin.deepest, fallen: fallen.length });
   const weber = new Neighbour();
-  scavengerView.people.level = neighbourView.people.level = strangerView.people.level = level;
+  scavengerView.people.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = level;
   const tallView = await TallOneView.create(params.seed);
   tallView.level = level;
   /** The grandchild kept from the last visit, where they were. */
@@ -319,7 +330,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
@@ -330,6 +341,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   for (const r of ghostView.roots) await view.stage.add(r);
   await view.stage.add(neighbourView.people.root);
   await view.stage.add(strangerView.people.root);
+  await view.stage.add(grandmaView.people.root);
   await view.stage.add(tallView.root);
   await view.stage.add(ratView.root);
   await view.stage.add(cricketView.root);
@@ -364,7 +376,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const thrown = new Thrown();
   const thrownView = new ThrownView();
   await view.stage.add(thrownView.root);
-  let throwAt = -9, released = true, tossing: 'knife' | 'candle' = 'knife';
+  let throwAt = -9, released = true, tossing: 'knife' | 'candle' | 'seed' = 'knife';
+  /** Grandma's Snapdragons: the plants come up from seeds, and when the last seed was tossed. */
+  const garden = new Snapdragons();
+  const gardenView = new SnapdragonView();
+  await view.stage.add(gardenView.root);
+  let seedAt = -Infinity;
   /** Grandma's Salt Line, poured (one at a time; it stays on the level it was poured on). */
   const saltLineView = new SaltLineView(SALT_RINGS.map((k) => k.r));
   await view.stage.add(saltLineView.root);
@@ -632,9 +649,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
+    /** Grandma's ghost in the round room. */
+    grandma,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Dress the creatures as the kin of another depth (a look at them without going down). */
@@ -748,7 +767,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     body = nextGrandchild();
     fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
     pack = new Pack(); kit = new Kit(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
-    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0;
+    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; garden.plants.length = 0;
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
     cam.distance = before;
@@ -847,7 +866,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (controls.tap('Backquote')) debug.toggle();
     // The bar's slots answer to 1–0, - and = too (not at Kemal's counter); a dead grandchild holds nothing.
     const bar = barOf(cooked);
-    controls.alias(atCounter ? [] : bar.map((a, i) => [SLOT_KEYS[i], a.key] as const));
+    controls.alias(atCounter ? [] : bar.slice(0, SLOT_KEYS.length).map((a, i) => [SLOT_KEYS[i], a.key] as const));
     if (body.dead) for (const a of ABILITIES) controls.latch(a.key, false);
     /** Rummaging in the tin or the pack: no blows, no casting, no walking off. */
     const handsBusy = tinView.open || packView.open;
@@ -876,6 +895,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (controls.tap('Mouse2') && every !== null && canThrow && now - throwAt > every) { throwAt = now; released = false; tossing = 'knife'; }
     // Grandma's Sunday Candle: G tosses a lit candle (as many burning at once as the card's rank).
     if (controls.tap('KeyG') && canThrow && thrown.candles.length < cooked.candles) { throwAt = now; released = false; tossing = 'candle'; }
+    // Grandma's Snapdragons: U tosses a seed that comes up where it lands and bites whatever is near, you too.
+    const snap = cooked.snapdragon;
+    if (controls.tap('KeyU') && snap && canThrow && now - seedAt > snap.between) {
+      if (body.stamina < SEED.stamina) say('Too out of breath to throw it far enough.', 2);
+      else { body.stamina -= SEED.stamina; seedAt = throwAt = now; released = false; tossing = 'seed'; }
+    }
     // Grandma's Duck card: Q rolls the way you are going (back, standing still).
     const duck = cooked.duck;
     if (controls.tap('KeyQ') && duck && !busy && !handsBusy && !body.rolling) {
@@ -1097,11 +1122,23 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         const hx = body.x - Math.sin(aim) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(aim) * 0.3;
         sounds.play('throw', null, 0.8, tossing === 'knife' ? 1.1 : 0.85);
         if (tossing === 'knife') thrown.throw(hx, hy, hz, aim, foes());
-        else thrown.toss(hx, hy, hz, aim);
+        else thrown.toss(hx, hy, hz, aim, tossing);
       }
       thrown.power = practice.more('throwing');
       const hit = thrown.fly(level, foes(), blows, dt);
       if (hit.length) practised('throwing', hit.length);
+      // A seed come down comes up; the snapdragons bite the nearest in reach, the nobody among them.
+      for (const s of thrown.sown.splice(0)) {
+        if (!snap) continue;
+        garden.sow(s.x, s.y, s.z, Math.atan2(-s.vx, -s.vz), snap);
+        spells.sprout(s.x, s.y, s.z, now);
+        sounds.play('snap_sprout', s);
+      }
+      for (const f of garden.step(dt, [...foes(), body], blows)) {
+        const p = garden.plants.find((g) => g.target === f);
+        spells.snap(f.x, f.y + f.height * 0.6, f.z, now);
+        sounds.play('snap_bite', p ?? null, 1, 0.85);
+      }
       const candles = thrown.candles;
       fauna.glare = candles;
       fauna.salt = saltLine.keeping(now);
@@ -1203,6 +1240,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
     strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
+    // Not while the level streams in behind the black, nor through the prologue.
+    const word = level.depth === 0 && !body.dead && !arriving && !loading.open && !prologue ? grandma.keep(dt, now, body.x, body.y, body.z, { deepest: tin.deepest, fallen, seed: params.seed }) : null;
+    if (word) say(`Grandma: ${word}`, GRANDMA.talk + 1);
+    grandmaView.people.draw(level.depth === 0 && grandma.mode !== 'away' ? [grandma] : [], body.x, body.z, dt, now);
     if (fauna.tall.stares > stares) say('The Tall One looks at you, and the cold of it goes right through you.', 3);
     stares = fauna.tall.stares;
     const fire = campfire.fire, lit = campfire.kindling(now);
@@ -1214,6 +1255,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (body.sprangAt !== sprangSeen) { sprangSeen = body.sprangAt; if (Number.isFinite(sprangSeen)) spells.puff(body.x, body.y, body.z, now); }
     spells.place(now);
     thrownView.arrange(thrown.missiles, now);
+    gardenView.draw(garden.plants, now);
     saltLineView.draw(saltLine, level, now);
     nobody.shown = !cam.firstPerson;
     cam.room = shedOf();
@@ -1253,6 +1295,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         case 'rolling-pin': return { ready: ready(pinAt, PIN.every), on: false, dim: body.stamina < PIN.stamina };
         case 'pot-lid': return { ready: 1, on: body.guarding, dim: false };
         case 'tiptoe': return { ready: 1, on: !!input.sneak, dim: false };
+        case 'snapdragon': return { ready: ready(seedAt, snap?.between ?? 1), on: garden.plants.length > 0, dim: body.stamina < SEED.stamina };
         case 'candle': return { ready: 1, on: false, dim: thrown.candles.length >= cooked.candles, count: `${thrown.candles.length}/${cooked.candles}` };
         case 'salt-line': {
           const c = saltLine.circle;
