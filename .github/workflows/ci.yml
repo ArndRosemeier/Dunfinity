@@ -4,8 +4,15 @@ on:
     branches: [main]
   pull_request:
 
+# A new push to a PR cancels that PR's older run; runs on main are never cancelled.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Three jobs side by side: the unit tests and guards, and the two halves of the shader check
+# (the Lab, the game), which each spend minutes in SwiftShader.
 jobs:
-  check:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,6 +24,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  shaders:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [lab, game]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - run: npm run check:shaders
+      - run: npm run check:shaders -- ${{ matrix.part }}
