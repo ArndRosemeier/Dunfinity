@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.141 — A shack with its doorway open
+
+- The miners' shack now also comes with an open doorway, ready for a door that swings.
+
 ## v0.140 — The interface grows salt
 
 - One look for the whole interface: old printed type for titles, a book face for grandma's tin, diary and the inscriptions, and a clean face for the game's own text, with keys shown as keycaps.
