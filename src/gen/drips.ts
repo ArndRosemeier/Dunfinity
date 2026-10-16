@@ -10,7 +10,7 @@
  */
 import { Rng, deriveSeed, smoothstep } from '@futuremagic/core';
 import type { Level } from './level';
-import { CellMemo } from './cellMemo';
+import { CellMemo, siteNearest, sitesNear } from './cellMemo';
 
 export const DRIP = {
   /** One site at most per cell this wide (m); the chance a cell has one, on dry rock and near water or salt. */
@@ -136,25 +136,12 @@ export class Drips {
 
   /** The sites within `r` of (x, z), into `out`. */
   near(x: number, z: number, r: number, out: DripSite[] = []): DripSite[] {
-    out.length = 0;
-    const c = DRIP.cell;
-    for (let j = Math.floor((z - r) / c); j <= Math.floor((z + r) / c); j++) for (let i = Math.floor((x - r) / c); i <= Math.floor((x + r) / c); i++) {
-      const s = this.cells.at(i, j);
-      if (s && (s.x - x) ** 2 + (s.z - z) ** 2 <= r * r) out.push(s);
-    }
-    return out;
+    return sitesNear(this.cells, DRIP.cell, x, z, r, out);
   }
 
   /** The site nearest (x, z) within `far` m, or null. */
   nearest(x: number, z: number, far = 300): DripSite | null {
-    let best: DripSite | null = null, bd = Infinity;
-    for (let r = DRIP.cell; r <= far + DRIP.cell && !best; r += DRIP.cell) {
-      for (const s of this.near(x, z, Math.min(r, far))) {
-        const d = (s.x - x) ** 2 + (s.z - z) ** 2;
-        if (d < bd) { bd = d; best = s; }
-      }
-    }
-    return best;
+    return siteNearest(this.cells, DRIP.cell, x, z, far);
   }
 
   /** The site of cell (i, j), if it has one: a flat spot of open floor under a roof, not in the water. */
