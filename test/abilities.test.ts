@@ -16,12 +16,17 @@ test('the main bar fills its free slots in the order cards are cooked, and holds
   assert.equal(new Set(bar.slots).size, BAR);
 });
 
-test('a card set in a slot leaves the slot it was in; the one it replaces goes back in the tin', () => {
+test('a card moved to a slot swaps with the one there; one from the tin puts it back in the tin; a slot can be emptied', () => {
   const bar = new MainBar();
   bar.slotIn('candle'); bar.slotIn('duck'); bar.slotIn('stove-flame');
   assert.ok(bar.set(0, 'stove-flame'));
-  assert.deepEqual(bar.slots.slice(0, 3), ['stove-flame', 'duck', null]);
+  assert.deepEqual(bar.slots.slice(0, 3), ['stove-flame', 'duck', 'candle'], 'swapped');
+  assert.ok(bar.set(1, 'rolling-pin'));
+  assert.deepEqual(bar.slots.slice(0, 3), ['stove-flame', 'rolling-pin', 'candle']);
+  assert.equal(bar.slotOf('duck'), -1, 'back in the tin');
+  bar.clear(2);
   assert.equal(bar.slotOf('candle'), -1);
+  assert.equal(bar.slots[2], null);
   assert.ok(!bar.set(1, 'kneading'), 'a passive cannot go on the bar');
 });
 

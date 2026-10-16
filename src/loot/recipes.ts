@@ -15,8 +15,9 @@
 import type { Tin } from './tin';
 import type { Sowing } from '../combat/snapdragon';
 import type { Dusting } from '../combat/flour';
+import type { Rooting } from '../combat/horseradish';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'flour-bag' | 'matchstick' | 'salt-line';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'horseradish' | 'flour-bag' | 'matchstick' | 'salt-line';
 
 export interface Card {
   readonly id: CardId;
@@ -156,6 +157,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['A bigger seed, and a bigger step back. Don\'t feed it.'],
     cost: [5, 9],
     does: ['toss a seed that comes up in 1.6 s and for 12 s bites the nearest living thing within 2.2 m, you too (5–8 damage, about every 1.1 s); costs 2 stamina; every 15 s', 'bites within 3 m (7–11 damage, about every 0.9 s) for 15 s; every 13 s'],
+  },
+  {
+    id: 'horseradish', title: 'Horseradish', chapter: 'The Garden',
+    need: 'one root from the bed behind the compost, the one that never dies. Salt rubbed into the cut end.',
+    method: 'Push it into the ground at your feet and point at whatever it is. It goes under like a mole with a grudge, comes up under them and bites. Then it is spent, and so would you be.',
+    ranks: ['An older root. It bites twice before it gives up.', 'The one from your great-grandmother\'s garden. Three times, and it does not let go easily.'],
+    cost: [5, 9, 14],
+    does: ['set a root that tunnels under the floor at 9 m/s to your Tab target (or the foe nearest where you look, up to 22 m), comes up under it and bites once (16–24 damage), then shrivels; it goes after the next foe near if its quarry dies, and dives after one that gets away; costs 2 stamina; every 10 s', 'bites twice', 'bites three times (18–26 damage each); every 9 s'],
   },
   {
     id: 'flour-bag', title: 'Flour Bag', chapter: 'Baking',
@@ -334,6 +343,11 @@ export class Cooked {
   /** Grandma's Rolling Pin, if cooked: how far in front it reaches, metres, and how hard it shoves, m/s. */
   get pin(): { reach: number; knock: number } | null {
     return this.at('rolling-pin', [{ reach: 3.5, knock: 9 }, { reach: 4.5, knock: 18 }]);
+  }
+
+  /** Grandma's Horseradish, if cooked: what a root does (src/combat/horseradish.ts), and the seconds between roots. */
+  get horseradish(): (Rooting & { every: number }) | null {
+    return this.at('horseradish', [{ bites: 1, damage: [16, 24] as const, every: 10 }, { bites: 2, damage: [16, 24] as const, every: 10 }, { bites: 3, damage: [18, 26] as const, every: 9 }]);
   }
 
   /** Grandma's Snapdragons, if cooked: what a plant does (src/combat/snapdragon.ts), and the seconds between seeds. */

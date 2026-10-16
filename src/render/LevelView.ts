@@ -163,6 +163,9 @@ export class LevelView {
     this.spill.intensity = this.headlamp.intensity * HEADLAMP.spill;
   }
 
+  /** Show or hide the streamed rock and props (the Lab's creature studio draws on a plain floor). */
+  set worldShown(v: boolean) { this.rock.visible = v; this.things.visible = v; }
+
   /** True when the rock and props around the viewer are all on screen. */
   get settled(): boolean {
     return !!this.terrain_?.settled && !!this.props_?.settled;

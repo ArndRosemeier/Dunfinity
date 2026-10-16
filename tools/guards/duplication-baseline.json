@@ -3452,10 +3452,6 @@
     "reason": "each checks that a column belongs to the working it is placing on (col.working.id), the Column's own field"
   },
   {
-    "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/tinView.ts#show",
-    "reason": "each Modal's show builds its own panel's html (the tin's cards, the pack's kit and finds) and hands it to Modal.showHtml, the one seam"
-  },
-  {
     "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/settingsView.ts#toggle",
     "reason": "each DOM panel's open/close on its own key; the shared part is panel() and button() in src/app/panel.ts"
   },
@@ -3520,8 +3516,20 @@
     "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
   },
   {
-    "key": "clone: dunfinity/loot/recipes.ts#match + dunfinity/loot/recipes.ts#snapdragon",
-    "reason": "two of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
+    "key": "same name: dunfinity/render/horseradish.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
+    "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
+  },
+  {
+    "key": "same name: dunfinity/render/horseradish.ts#pose + dunfinity/render/snapdragons.ts#pose",
+    "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
+  },
+  {
+    "key": "clone: dunfinity/render/horseradish.ts#constructor + dunfinity/render/snapdragons.ts#constructor",
+    "reason": "each is the FigurePool subclass idiom: a name, a pool size and a builder handing each figure its own parts; the pool itself is FigurePool"
+  },
+  {
+    "key": "clone: dunfinity/loot/recipes.ts#flame + dunfinity/loot/recipes.ts#horseradish + dunfinity/loot/recipes.ts#match + dunfinity/loot/recipes.ts#snapdragon",
+    "reason": "four of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
   },
   {
     "key": "clone: dunfinity/render/creatures/figures.ts#constructor + dunfinity/render/humans/thrownView.ts#pool",
