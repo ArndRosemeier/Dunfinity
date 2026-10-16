@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseViewParams } from '../src/app/params';
+import { parseViewParams, titleWanted } from '../src/app/params';
 
 test('Lab params: numeric and text seeds, depth floor, position', () => {
   assert.equal(parseViewParams('?seed=42').seed, 42);
@@ -26,4 +26,14 @@ test('Lab params: look direction and colour mode', () => {
 test('dark starts in headlamp darkness', () => {
   assert.equal(parseViewParams('?seed=1').dark, false);
   assert.equal(parseViewParams('?seed=1&dark').dark, true);
+});
+
+test('the title screen: on a plain visit or ?title, not on a link to a seed, depth, place or style', () => {
+  assert.equal(titleWanted(''), true);
+  assert.equal(titleWanted('?gl'), true);
+  assert.equal(titleWanted('?seed=1&gl'), false);
+  assert.equal(titleWanted('?depth=3'), false);
+  assert.equal(titleWanted('?pos=1,2,3'), false);
+  assert.equal(titleWanted('?style=karst'), false);
+  assert.equal(titleWanted('?title&seed=7'), true);
 });

@@ -3302,5 +3302,21 @@
   {
     "key": "clone: dunfinity/gen/catacombs.ts#constructor + dunfinity/gen/dwarven.ts#constructor + dunfinity/gen/elven.ts#constructor + dunfinity/gen/goblin.ts#constructor + dunfinity/gen/quarry.ts#constructor",
     "reason": "each style's constructor derives its own seeds (deriveSeed(seed, '<style>', ...)) and its grain angle; the shapes match, the seeds and fields differ"
+  },
+  {
+    "key": "idiom: [.__ready globalThis] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
+    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer, report __ready; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
+    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer, report __ready; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.range .t] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each creature kind draws its own timers from its own numbers' ranges (rng.range(K.x[0], K.x[1])); surfaced when the title's files shifted the idiom weights"
+  },
+  {
+    "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
+    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer, report __ready; the shared part is LevelView.frame"
   }
 ]
