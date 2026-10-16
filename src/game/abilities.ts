@@ -67,6 +67,7 @@ export const KEY_ACTIONS: readonly KeyAction[] = (() => {
     { key: 'KeyF', name: 'Headlamp', group: 'Looking' },
     { key: 'KeyM', name: 'Map', group: 'Looking' },
     { key: 'KeyJ', name: "Grandma's diary", group: 'Looking' },
+    { key: 'KeyI', name: 'Your pack', group: 'Looking' },
     { key: 'KeyN', name: 'Sound on and off', group: 'Looking' },
     { key: 'KeyB', name: 'Music on and off', group: 'Looking' },
     { key: 'KeyO', name: 'Settings', group: 'Looking' },
