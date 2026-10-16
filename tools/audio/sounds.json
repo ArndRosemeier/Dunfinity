@@ -287,5 +287,29 @@
   "gain": 0.4,
   "sound": "deep natural caverns: a low eerie wind moaning through, very distant rumbles",
   "seed": "deep natural caverns far underground, a low eerie wind moaning through and very distant rumbles, no voices"
+ },
+ "paper": {
+  "kind": "shot",
+  "max": 1.0,
+  "files": 2,
+  "gain": 0.5,
+  "sound": "a sheet of old paper being unfolded or turned over, soft and crisp",
+  "seed": "turning the page of an old book, one page"
+ },
+ "pencil_tick": {
+  "kind": "shot",
+  "max": 0.35,
+  "files": 2,
+  "gain": 0.5,
+  "sound": "a pencil quickly ticking off a line on paper, a short scratch",
+  "seed": "someone quickly signing their name with a pencil on paper, close up"
+ },
+ "draft": {
+  "kind": "shot",
+  "max": 3.0,
+  "files": 1,
+  "gain": 0.5,
+  "sound": "a quiet low airy whoosh of cold air blowing out of a dark opening",
+  "seed": "deep natural caverns, a low eerie wind moaning out of the dark once and fading away"
  }
 }
