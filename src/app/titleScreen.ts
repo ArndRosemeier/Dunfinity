@@ -26,6 +26,8 @@ const CSS = `
   #title .caption { position: absolute; right: clamp(16px, 4vw, 48px); bottom: clamp(16px, 4vh, 40px); font-style: italic; font-size: 15px; letter-spacing: 0.05em; color: var(--ui-ink-dim); text-shadow: var(--ui-text-shadow); opacity: 0; transition: opacity 1.2s; }
   #title .caption.on { opacity: 0.85; }
   #title.gone { transition: opacity 0.6s; opacity: 0; }
+  /* The game's own HUD waits under the title (the ability bar's frame would show through). */
+  body:has(#title) #bar { visibility: hidden; }
 `;
 
 export class TitleScreen {
