@@ -27,7 +27,9 @@ const TIMING = { in: 1.6, hold: 14, out: 1.4, load: 30, leave: 0.8 };
  * The camera over each shot: from `from` to `to` (yaw off the way the nobody looks, radians; pitch;
  * distance behind, metres), and how far left of the nobody it aims (they stand right of the menu).
  */
-const MOVE = { from: { yaw: 0.75, pitch: -0.04, distance: 5.6 }, to: { yaw: -0.3, pitch: -0.2, distance: 3.4 }, aside: 0.9, eye: 1.45 };
+const MOVE = { from: { yaw: 0.75, pitch: -0.04, distance: 5.6 }, to: { yaw: -0.3, pitch: -0.2, distance: 3.4 }, aside: 1.5, eye: 1.45 };
+/** The headlamp a little brighter than in play: the title is seen, not explored. */
+const LAMP = { survey: 14, dark: 6 };
 
 /** Where in its move a pinned shot holds. */
 const PINNED = 0.45;
@@ -52,6 +54,9 @@ export interface TitleCast {
 export function playTitle(host: HTMLElement, cast: TitleCast): Promise<TitleChoice> {
   const { view, cam, nobody } = cast;
   const screen = new TitleScreen(host, cast.canContinue);
+  const played = view.headlampPower;
+  view.headlampPower = LAMP;
+  view.dark = view.dark; // the new power
   const timer = new Timer();
   const input: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: false };
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
@@ -90,6 +95,8 @@ export function playTitle(host: HTMLElement, cast: TitleCast): Promise<TitleChoi
       if (leaving >= 1) {
         view.renderer.setAnimationLoop(null);
         screen.close();
+        view.headlampPower = played;
+        view.dark = view.dark;
         resolve(choice);
         return;
       }

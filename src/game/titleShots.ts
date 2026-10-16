@@ -27,7 +27,8 @@ export function levelName(level: Level): string {
 
 /**
  * The shot on level `depth`: on the street outside grandma's door at the top; below, the boss's hall
- * if the level has one, else one of the dens near the arrival (a different kind from level to level).
+ * if the level has one, else one of the dens near the arrival with dry ground to stand on (a different
+ * kind from level to level).
  */
 export function shotAt(seed: number, depth: number): Shot {
   const level = new Level(seed, depth);
@@ -36,7 +37,7 @@ export function shotAt(seed: number, depth: number): Shot {
   const street = places.find((p) => p.name.startsWith('The street'));
   const at = depth === 0
     ? (street ? { ...street, yaw: 0 } : places[0]) // looking down the street (it runs along z), not at her door
-    : places.find((p) => p.name.endsWith('(boss)')) ?? pick(places.filter(isDen), depth) ?? places[0];
+    : places.find((p) => p.name.endsWith('(boss)')) ?? pick(places.filter((p) => isDen(p) && level.dry(p.x, p.z, 0.1)), depth) ?? places[0];
   return { level, at, caption: depth === 0 ? 'Grandma\'s street, at night' : levelName(level) };
 }
 
