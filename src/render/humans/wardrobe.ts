@@ -40,8 +40,8 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
     case 'trousers': return shell([{ region: 'pelvis' }, { region: 'buttocks' }, { region: 'thigh.L' }, { region: 'thigh.R' }, { region: 'shin.L', to: 0.8 }, { region: 'shin.R', to: 0.8 }], 0.009, 1, cloth(v, 'plain'));
     /** Leather wrapped round the feet and ankles. */
     case 'footwraps': return shell([{ region: 'foot.L' }, { region: 'foot.R' }, { region: 'shin.L', from: 0.6 }, { region: 'shin.R', from: 0.6 }], 0.012, 2, cloth(v, 'leather', { roughness: 0.75 }));
-    /** Kemal's miner's helmet: a hard shell over the scalp, the hair tucked under, a dark rim. */
-    case 'miners-helmet': return { ...shell([{ region: 'scalp' }], 0.03, 3, { ...cloth(v, 'plain', { roughness: 0.45, sheen: 0 }), metalness: 0.35 }, { trim: { width: 0.014, color: dark } }), hideHair: true };
+    /** Kemal's miner's helmet: a hard shell over the crown with a dark rim, the hair showing under it (hidden, the bare scalp below the shell's edge reads as bald). A modelled hard hat is the Props thread's to make. */
+    case 'miners-helmet': return shell([{ region: 'scalp' }], 0.03, 3, { ...cloth(v, 'plain', { roughness: 0.45, sheen: 0 }), metalness: 0.35 }, { trim: { width: 0.014, color: dark } });
     /** Work gloves: leather over the hands, a cuff over the wrist. */
     case 'work-gloves': return shell([{ region: 'hand.L' }, { region: 'hand.R' }, { region: 'forearm.L', from: 0.85 }, { region: 'forearm.R', from: 0.85 }], 0.006, 3, cloth(v, 'leather', { roughness: 0.7 }));
     default: return null;
