@@ -11,6 +11,7 @@ import { lawfulBand, lawsOf } from './laws';
 import { QuarryField, newColumn, type Column, type Working } from './quarry';
 import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
+import { traitsOf } from './genes';
 import { shareOf } from './regions';
 import { owns, SURFACE_STRIDE, type StyleId } from './style';
 import { rockRecipesOf, type RockRecipe } from './rockTypes';
@@ -84,7 +85,7 @@ export class Level {
     const s = deriveSeed(seed, 'level', depth);
     const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
     const mix = style && depth > 0 ? onlyMix(style, excavation.id) : mixOf(seed, depth);
-    this.field = new StyledField(excavation, stylesOf(mix, excavation, s, this.band), mix, s);
+    this.field = new StyledField(excavation, stylesOf(mix, excavation, s, this.band, traitsOf(seed, depth)), mix, s);
     this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined, shareOf(mix, excavation.id));
   }
 

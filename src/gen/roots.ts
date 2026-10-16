@@ -16,6 +16,7 @@ import { Noise, deriveSeed, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
 import { CaveThings, THING_REACH, karstChambers, taperDist, taperPlan, type Chamber, type Taper } from './caveThings';
 import { Karst } from './karst';
+import { STANDARD, type Traits } from './genes';
 import type { Column } from './quarry';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
@@ -54,8 +55,8 @@ export class Roots implements Style {
   private readonly noise: Noise;
   private readonly roots: CaveThings<Taper>;
 
-  constructor(readonly seed: number, readonly band: Band) {
-    this.cave = new Karst(deriveSeed(seed, 'roots', 'cave'), band);
+  constructor(readonly seed: number, readonly band: Band, traits: Traits = STANDARD) {
+    this.cave = new Karst(deriveSeed(seed, 'roots', 'cave'), band, traits);
     this.noise = new Noise(deriveSeed(seed, 'roots', 'shape'));
     // (No root reaches further than 1.15 radii from its chamber's middle, plus its own thickness.)
     this.roots = new CaveThings(karstChambers(this.cave), deriveSeed(seed, 'roots', 'roots'), { make: rootsOf, plan: taperPlan, dist: taperDist, radii: 1.2, pad: ROOTS.top[0] + ROOTS.top[1] });
