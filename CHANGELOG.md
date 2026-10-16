@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.162 — Snapdragon leaves above the floor
+
+- The rosette of leaves at a snapdragon's foot sits on the floor and curls up, instead of sinking into it.
+
 ## v0.161 — Glow-worm skies
 
 - Here and there the roof of a high cavern is covered with tiny blue-green lights, like a night sky, with brighter stars drawn into constellations that are not ours. They twinkle slowly and fade where your headlamp falls on them, as glow-worms do.
