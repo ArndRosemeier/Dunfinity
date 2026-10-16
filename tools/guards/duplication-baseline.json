@@ -3854,5 +3854,9 @@
   {
     "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/thinView.ts#draw",
     "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "idiom: [.addEventListener .remove] in dunfinity/app/abilityBar.ts + dunfinity/app/tinView.ts + dunfinity/app/touchPad.ts",
+    "reason": "DOM listeners that drop a highlight class when a drag or a finger leaves an element; one line each on its own element, nothing to fold"
   }
 ]

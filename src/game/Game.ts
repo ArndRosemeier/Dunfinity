@@ -97,6 +97,8 @@ import { AbilityBar, type SlotState } from '../app/abilityBar';
 import { ABILITIES, FIXED_KEYS, KEY_ACTIONS, MainBar, SLOT_KEYS, barOf, passivesOf, useOf, type Ability } from './abilities';
 import { TargetMark } from '../app/targetMark';
 import { Hud, keysOf } from '../app/hud';
+import { TouchPad } from '../app/touchPad';
+import { touchLabel } from '../input/touchButtons';
 import { LetterView } from '../app/letterView';
 import { PauseMenu } from '../app/pauseMenu';
 import { pageId } from '../lore/diary';
@@ -162,12 +164,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   view.quality = graphics.quality;
   // Reduced motion: the interface's own animations keep still under this class (as under prefers-reduced-motion).
   document.documentElement.classList.toggle('ui-still', graphics.still);
-  const controls = new Controls(canvas);
+  // Played by touch (a tablet) from the first touch, or from the start on a touch screen without a mouse (or with ?touch).
+  const controls = new Controls(canvas, params.touch || matchMedia('(pointer: coarse)').matches);
   /** The player's own keys (the settings): the game asks for an action by its own key, the controls answer with the key moved onto it. */
   const bindings = new Bindings(KEY_ACTIONS.map((a) => a.key), FIXED_KEYS, readKeySettings());
   controls.bind(bindings);
-  /** What the key for `action` is called now. */
-  const keyName = (action: string): string => keyLabel(bindings.keyOf(action));
+  /** What the key for `action` is called now (played by touch: its button on the touch pad, if it has one). */
+  const keyName = (action: string): string => (controls.byTouch && touchLabel(action)) || keyLabel(bindings.keyOf(action));
   const cam = new OrbitCamera(view.camera, level);
   if (params.look) [cam.yaw, cam.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
@@ -453,12 +456,15 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let target: Foe | null = null, targetFull = 1;
   const targetMark = new TargetMark(document.body);
   const hudView = new Hud(document.body);
-  hudView.keys(keysOf(keyName));
+  hudView.keys(keysOf(keyName, controls.byTouch));
+  /** The thumb stick and buttons, played by touch (src/app/touchPad.ts). */
+  const touchPad = new TouchPad(document.body, controls);
+  controls.onTouch = () => hudView.keys(keysOf(keyName, controls.byTouch));
   const letterView = new LetterView(document.body);
   /** The pause menu: Escape once the mouse is free (not the Escape that freed it), or its button; the game's clock stands still while it is open. */
-  const goOn = (): void => { pause.hide(); canvas.requestPointerLock?.(); };
+  const goOn = (): void => { pause.hide(); if (!controls.byTouch) canvas.requestPointerLock?.(); };
   const pause = new PauseMenu(document.body, {
-    resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), keys: () => keysOf(keyName),
+    resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), keys: () => keysOf(keyName, controls.byTouch),
     settings: () => { pause.hide(); settingsView.toggle(); },
   });
   let freedAt = -Infinity;
@@ -572,7 +578,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     setSound: (s) => sounds.engine.set(s),
     actions: KEY_ACTIONS,
     bindings,
-    keysChanged: () => { writeKeySettings(bindings.data); controls.bind(bindings); hudView.keys(keysOf(keyName)); },
+    keysChanged: () => { writeKeySettings(bindings.data); controls.bind(bindings); hudView.keys(keysOf(keyName, controls.byTouch)); },
     qualityNow: () => view.quality,
     setQuality: (q) => { view.quality = q; graphics = { ...graphics, quality: q }; writeGraphicsSettings(graphics); },
     still: () => graphics.still,
@@ -924,9 +930,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const wheel = controls.takeWheel();
     if (mapView.open && wheel) mapView.zoomBy(-Math.sign(wheel));
     cam.look(mx, my, mapView.open ? 0 : wheel);
-    input.forward = (controls.held('KeyW') ? 1 : 0) - (controls.held('KeyS') ? 1 : 0);
-    input.right = (controls.held('KeyD') ? 1 : 0) - (controls.held('KeyA') ? 1 : 0);
-    input.sprint = controls.held('ShiftLeft') || controls.held('ShiftRight');
+    input.forward = Math.max(-1, Math.min(1, (controls.held('KeyW') ? 1 : 0) - (controls.held('KeyS') ? 1 : 0) + controls.stick.forward));
+    input.right = Math.max(-1, Math.min(1, (controls.held('KeyD') ? 1 : 0) - (controls.held('KeyA') ? 1 : 0) + controls.stick.right));
+    input.sprint = controls.held('ShiftLeft') || controls.held('ShiftRight') || touchPad.running;
     input.sneak = controls.held('KeyZ'); // (not Ctrl: Ctrl+W closes the tab)
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
@@ -1081,7 +1087,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const acts = tinView.take();
       if (controls.tap('KeyT') || controls.tap('Escape') || acts.some((a) => a.kind === 'close') || !campfire.resting || body.dead) {
         tinView.hide();
-        if (!body.dead) canvas.requestPointerLock?.();
+        if (!body.dead && !controls.byTouch) canvas.requestPointerLock?.();
       } else {
         const order = TinView.order(cooked), at = order.indexOf(tinSel);
         let why: string | null = null, redraw = false, cookNow = controls.tap('KeyE');
@@ -1110,7 +1116,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
             const r = cooked.cook(tinSel, tin), c = card(tinSel), at = r === 1 ? mainBar.slotIn(tinSel) : -1, fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
             cookAt = now;
             tinView.hide();
-            canvas.requestPointerLock?.();
+            if (!controls.byTouch) canvas.requestPointerLock?.();
             tick('cook');
             say(r === 1 ? `${c.title}, cooked${at >= 0 ? `, on your bar (${keyName(SLOT_KEYS[at])})` : ''}.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
@@ -1490,6 +1496,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
     abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead, tinView.open);
+    touchPad.reflect(controls.byTouch && !body.dead && !pause.open, tinView.open || packView.open || readView.open || diaryView.open || letterView.open || mapView.open || settingsView.open, campfire.resting);
     stepsView.pin(steps, now);
     hudView.render({
       health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,

@@ -4,6 +4,10 @@ import type { Bindings } from './bindings';
  * Keyboard and mouse for the canvas: held keys, mouse look while the pointer is captured (click to
  * capture), mouse buttons (as 'Mouse0', 'Mouse2' keys) and the wheel. The Lab's fly camera and the game read input through this.
  * Keys come in as the actions they stand for (`bind`: the player's own keys), and none while `paused` (a menu is open).
+ *
+ * A touch screen feeds the same: the touch pad (src/app/touchPad.ts) adds look (`turn`), wheel steps
+ * (`zoom`), a thumb stick (`stick`) and presses. `byTouch` says which hands are on the game: true from
+ * the first touch (or on a coarse-pointer screen), false again from the first key or mouse click.
  */
 export class Controls {
   private readonly keys = new Set<string>();
@@ -18,10 +22,19 @@ export class Controls {
   private readonly latched = new Set<string>();
   private bindings: Bindings | null = null;
   private paused_ = false;
+  private touch_: boolean;
+  /** Called when `byTouch` changes. */
+  onTouch: (on: boolean) => void = () => {};
+  /** The thumb stick, -1 … 1 each way (forward: away from the thumb's start upwards). */
+  readonly stick = { forward: 0, right: 0 };
 
-  constructor(private readonly el: HTMLElement) {
-    el.addEventListener('click', () => { if (!this.paused_) el.requestPointerLock?.(); });
+  /** `touch`: start with touch hands (a coarse-pointer screen, or `?touch`). */
+  constructor(private readonly el: HTMLElement, touch = false) {
+    this.touch_ = touch;
+    el.addEventListener('click', () => { if (!this.paused_ && !this.touch_) el.requestPointerLock?.(); });
+    window.addEventListener('pointerdown', (e) => { this.byTouch = e.pointerType !== 'mouse'; }, { capture: true, passive: true });
     window.addEventListener('keydown', (e) => {
+      if (!e.repeat && e.code !== 'Escape') this.byTouch = false;
       if (e.code === 'Tab') e.preventDefault();
       const code = this.action(e.code);
       if (code === null) return;
@@ -50,6 +63,25 @@ export class Controls {
     this.letGo();
   }
 
+  /** Whether the game is played by touch now (the touch pad shown, no pointer lock). */
+  get byTouch(): boolean { return this.touch_; }
+  set byTouch(on: boolean) {
+    if (on === this.touch_) return;
+    this.touch_ = on;
+    if (!on) this.stick.forward = this.stick.right = 0;
+    this.onTouch(on);
+  }
+
+  /** Turn as a mouse would by (dx, dy) pixels (a finger dragged); nothing while paused. */
+  turn(dx: number, dy: number): void {
+    if (this.paused_) return;
+    this.dx += dx;
+    this.dy += dy;
+  }
+
+  /** Wheel steps (a pinch); nothing while paused. */
+  zoom(steps: number): void { if (!this.paused_) this.wheel += steps; }
+
   /** While paused (a menu open) no key, button, look or wheel reaches the game. */
   get paused(): boolean { return this.paused_; }
   set paused(on: boolean) {
@@ -68,6 +100,7 @@ export class Controls {
     this.keys.clear();
     this.latched.clear();
     this.pressed.clear();
+    this.stick.forward = this.stick.right = 0;
   }
 
   /** Is the key (a KeyboardEvent.code) held (or one of its aliases, or latched)? */
