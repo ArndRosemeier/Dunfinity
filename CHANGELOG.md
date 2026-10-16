@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.160 — Grandma, briefly, below
+
+- The first time the Tall One looks at anyone of the family, grandma's ghost stands between it and you for a moment, then is gone.
+- On level 18, far off, she is seen where she laid her first ring of salt.
+- On level 40, by the two names cut in the rock, she comes and stands beside you, looking at her father's name: "I came, Papa." Back home she has one more thing to say.
+- Each of these happens once for the whole family, never again.
+
 ## v0.159 — Miner's hard hat model
 
 - A Blender-made miner's hard hat (`wear_hard_hat`) is now in the model pack, ready for the inventory's head slot: dented dark green enamel, a crown ridge, a brim and a lamp on the front.
