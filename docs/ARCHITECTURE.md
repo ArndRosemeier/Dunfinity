@@ -25,6 +25,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | Make the renderer | `createRenderer` (guarded: nothing else constructs one) | `src/render/renderer.ts` |
+| Can this browser draw the game at all (WebGPU, else WebGL 2)? What to show when it cannot | `graphicsSupport()`; `createRenderer` throws `GraphicsUnavailable`, shown with `loading.fail(NO_GRAPHICS...)` | `src/render/renderer.ts`, `src/app/loadingScreen.ts` |
+| Show progress while the game starts (and hide it when the first picture is ready) | the `LoadingScreen` from `main.ts` (`step(text, fraction)`, `hide`, `open`, `gone`; index.html draws it before any script); a level change waits black in `Game.ts` (`arriving`) until `view.settled` (`view.streamed` for a bar) | `src/app/loadingScreen.ts` |
 | I need a material | Add or reuse a *kind*: `VERTEX_COLOR_SOLID.make()`, `ROCK.make()` (the generated rock), `DUST.make()` (motes, moved by the shader), `GLOW.make()`, `METAL.make()`, `WATER.make()`, `FLOW.make()` (water running over rock, rippling upwards). Never `new ...Material` elsewhere (guarded). The one exception: humans, whose node materials the humanoid package makes (they are compiled through `stage.warmUp(extra)`). | `src/render/materials.ts` |
 | Put something into the visible scene | `stage.add(obj)`: compiles first, then adds | `src/render/stage.ts` |
 | Compile something you add to your own group later | `stage.prepare(obj)` | `src/render/stage.ts` |

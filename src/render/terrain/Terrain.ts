@@ -67,6 +67,11 @@ export class Terrain {
     return this.wanted.length > 0 && this.ready.size === this.wanted.length && this.requested.size === 0;
   }
 
+  /** How much of what is wanted is ready, 0–1 (for a loading bar). */
+  get progress(): number {
+    return this.wanted.length ? this.ready.size / this.wanted.length : 0;
+  }
+
   private want(keys: ChunkKey[]): void {
     this.wanted = keys;
     this.wantedIds = new Set(keys.map((k) => k.id));
