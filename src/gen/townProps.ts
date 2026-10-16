@@ -79,7 +79,7 @@ export function furnishTown(f: Furnish): void {
  * its corners at the mesh's metre cells), the gables filled. Grandma's keeps her front door open.
  */
 function shell(f: Furnish, H: House, door: boolean): void {
-  const s = f.solid, G = TOWN.ground, { wall, roof } = houseColors(H);
+  const s = f.house, G = TOWN.ground, { wall, roof } = houseColors(H); // (plaster and tiles: src/render/materials.ts `HOUSE`)
   const cz = (H.z0 + H.z1) / 2, half = (H.z1 - H.z0) / 2, hx = (H.x1 - H.x0) / 2, cx = (H.x0 + H.x1) / 2;
   const y0 = G - 0.4, cy = (y0 + H.eaves) / 2, hy = (H.eaves - y0) / 2;
   // The long walls (along x) and the ends (along z), the end to the street with her doorway cut out.
@@ -99,7 +99,7 @@ function shell(f: Furnish, H: House, door: boolean): void {
   // A stone plinth round the foot, over the field's fillet where its ground meets its walls.
   const P = { out: SHELL + 0.4, top: G + 0.55 }, py = (y0 + P.top) / 2, ph = (P.top - y0) / 2;
   const plinth = (x: number, z: number, hx: number, hz: number) => {
-    s.upright(x, py, z, 0, hx, ph, hz, STONE);
+    f.solid.upright(x, py, z, 0, hx, ph, hz, STONE);
     f.block(x, z, 0, hx, hz, G, P.top);
   };
   for (const z of [H.z0, H.z1]) plinth(cx, z, hx + P.out, P.out);

@@ -79,6 +79,12 @@ export class Fungal implements Style {
     return Math.min(this.cave.at(col, x, y, z), this.shrooms.at(col, x, y, z), THING_REACH);
   }
 
+  /** Moss in the damp between the mushrooms (not on them), in patches (src/gen/style.ts `Cover`). */
+  cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    out[o] = this.shrooms.nearest(col, x, y, z, 0.4) ? 0 : 0.3 + 0.3 * this.noise.n2(x / 7 - 1.3, z / 7 + 3.8);
+    out[o + 1] = 0;
+  }
+
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     const B = this.band, n = this.noise, h = y - col.floor;
     const s = this.shrooms.nearest(col, x, y, z, 0.4);
