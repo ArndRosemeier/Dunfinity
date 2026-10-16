@@ -275,6 +275,20 @@
   "loop": false,
   "gain": 0.5
  },
+ "snap_bite": {
+  "files": [
+   "snap_bite_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
+ "snap_sprout": {
+  "files": [
+   "snap_sprout_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.7
+ },
  "step_stone": {
   "files": [
    "step_stone_1.ogg",

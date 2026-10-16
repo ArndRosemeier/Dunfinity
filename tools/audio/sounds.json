@@ -335,5 +335,21 @@
   "gain": 0.5,
   "sound": "a single water drop landing on wet stone in a cave, with a short cave echo",
   "seed": "a leaky kitchen tap dripping slowly into a full sink of water, single drops, plink, plink"
+ },
+ "snap_sprout": {
+  "kind": "shot",
+  "max": 1.2,
+  "files": 1,
+  "gain": 0.7,
+  "sound": "earth bursting open and a thick fleshy plant stalk shooting up with a whoosh and a creak",
+  "seed": "a big tree root tearing up out of the ground, soil ripping open and wood creaking"
+ },
+ "snap_bite": {
+  "kind": "shot",
+  "max": 0.35,
+  "files": 1,
+  "gain": 0.7,
+  "sound": "a wet, leafy jaw snapping shut, a short crunchy snap",
+  "seed": "a fresh crisp stick of celery snapped in half, once, wet and crunchy"
  }
 }
