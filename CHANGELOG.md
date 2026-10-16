@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.156 — Snapdragons sound like themselves
+
+- A snapdragon coming up and its bite now have their own sounds.
+
 ## v0.155 — Grandma's Snapdragons
 
 - A new chapter in grandma's tin, The Garden, with its first card: Snapdragons (U, or its slot on the bar).
