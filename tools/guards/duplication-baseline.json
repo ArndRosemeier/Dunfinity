@@ -3530,5 +3530,13 @@
   {
     "key": "same name: dunfinity/render/humans/ladderClimb.ts#pose + dunfinity/render/snapdragons.ts#pose",
     "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/stepsView.ts + dunfinity/gen/notary.ts",
+    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/tinView.ts + dunfinity/game/Game.ts",
+    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
   }
 ]
