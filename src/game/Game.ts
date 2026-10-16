@@ -697,8 +697,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
         readView.show(breakLines(nearMarks.script, nearMarks.text, 22).map((t) => letter(nearMarks.script, t)), nearMarks.script === 'kerf' ? '#8a6420' : '#2f4f6a', nearMarks.where,
           key.makeOut(nearMarks.script, nearMarks.text), learned && `Looking long enough, you are sure of one: ${learned.toUpperCase()}. You pencil it into the key in her tin.`);
       } else if (nearNote && writing!.kind === 'page') {
-        const p = level.page!, gain = tin.page(level.depth);
-        readAt = now; say(`A page torn out of grandma's diary, in her young, fast hand:\n\n${p.page.date}. ${p.page.text}${gain ? '\n\nYou fold it back into her diary in the tin (J).' : ''}`, 20);
+        const p = level.page!, gain = tin.page(level.depth), k = p.page.key;
+        const runes = k !== undefined && key.pencil(k.script, k.letters) > 0;
+        readAt = now; say(`A page torn out of grandma's diary, in her young, fast hand:\n\n${p.page.date}. ${p.page.text}${runes ? `\n\nYou copy her letters into the key in the tin: ${k!.letters.join(', ').toUpperCase()}.` : ''}${gain ? '\n\nYou fold it back into her diary in the tin (J).' : ''}`, 20);
         gained(gain, note[0], note[1], note[2], now);
         if (diaryView.open) diaryView.show((d) => tin.hasPage(d));
       } else if (nearNote) {
