@@ -70,6 +70,8 @@ export interface Hoard { x: number; y: number; z: number }
 export class Finds {
   private readonly seed: number;
   private readonly cells: CellMemo<Find[]>;
+  /** Finds dropped on this visit (`drop`), not yet picked up again. */
+  private readonly loose: Find[] = [];
 
   /**
    * `nestAt(i, j)`: the nest in cell (i, j) (Rats.denAt), whose hoard lies round it.
@@ -87,6 +89,7 @@ export class Finds {
     for (let j = Math.floor((z - r) / c); j <= Math.floor((z + r) / c); j++) for (let i = Math.floor((x - r) / c); i <= Math.floor((x + r) / c); i++) {
       for (const f of this.cells.at(i, j)) if (!this.taken.has(f.id) && Math.hypot(f.x - x, f.z - z) < r) out.push(f);
     }
+    for (const f of this.loose) if (Math.hypot(f.x - x, f.z - z) < r) out.push(f);
     return out;
   }
 
@@ -103,6 +106,20 @@ export class Finds {
   /** Pick f up: it is gone from this level for good. */
   take(f: Find): void {
     this.taken.add(f.id);
+    const k = this.loose.indexOf(f);
+    if (k >= 0) this.loose.splice(k, 1);
+  }
+
+  /** Whether `f` still lies about to be picked up. */
+  lying(f: Find): boolean {
+    return this.loose.includes(f) || !this.taken.has(f.id);
+  }
+
+  /** Lay `f` (taken before: something of the pack, dropped where a goblin thief died) on the floor at (x, z) for this visit. */
+  drop(f: Find, x: number, z: number): Find {
+    const y = this.level.groundAt(x, z), laid = { ...f, x, y: Number.isFinite(y) ? y : f.y, z };
+    this.loose.push(laid);
+    return laid;
   }
 
   /** What lies in cell (i, j): finds on its floor and its nest's hoard. */
