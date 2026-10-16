@@ -37,7 +37,8 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       # A PR that touches nothing the browser loads (only docs, change notes, tests or tools) skips
-      # the check; on main it always runs.
+      # the check, and one that touches neither the Stage nor the shader hooks skips its cap test
+      # (the build scheduler lives only there); on main everything runs.
       - name: Does this change reach the browser?
         id: scope
         run: |
@@ -48,6 +49,9 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"; echo "Nothing the browser loads changed: shader check skipped."
+          fi
+          if ! echo "$files" | grep -qE '^(src/render/shaders/|src/render/stage\.ts$|src/render/renderer\.ts$|vendor/|package(-lock)?\.json$|tools/shot/shader-check\.mjs$|\.github/workflows/ci\.yml$)'; then
+            echo "flags=--no-cap" >> "$GITHUB_OUTPUT"; echo "Stage and shader hooks unchanged: cap test skipped."
           fi
       - if: steps.scope.outputs.run == 'true'
         uses: actions/setup-node@v4
@@ -61,4 +65,4 @@ jobs:
       - if: steps.scope.outputs.run == 'true'
         run: npx playwright install --with-deps chromium
       - if: steps.scope.outputs.run == 'true'
-        run: npm run check:shaders -- ${{ matrix.part }}
+        run: npm run check:shaders -- ${{ matrix.part }} ${{ steps.scope.outputs.flags }}
