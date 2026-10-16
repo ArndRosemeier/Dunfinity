@@ -267,9 +267,11 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   // Thin lines alias into glitter far off: they fade out with distance (the fog hides the rest).
   const near = smoothstep(55, 20, length(positionView));
   // Veins of infused salt (the Salt Works): thin glowing blue lines where a noise crosses zero,
-  // branching finer near the main ones, only in some stretches of rock, pulsing slowly.
-  const line = float(1).sub(abs(mx_noise_float(p.mul(0.16).add(vec3(mottle.mul(0.7))))));
-  const fine = float(1).sub(abs(mx_noise_float(p.mul(0.55).add(13.1))));
+  // branching finer near the main ones, only in some stretches of rock, pulsing slowly. They creep:
+  // the noise drifts through the rock a few centimetres a second, so a line wanders, splits and fades.
+  const creep = vec3(0.3, 1, -0.4).mul(time.mul(VEIN_CREEP));
+  const line = float(1).sub(abs(mx_noise_float(p.mul(0.16).add(vec3(mottle.mul(0.7))).add(creep))));
+  const fine = float(1).sub(abs(mx_noise_float(p.mul(0.55).add(13.1).add(creep.mul(2)))));
   const stretch = smoothstep(0.15, 0.5, mx_noise_float(p.mul(0.045).add(vec3(7.3, 1.1, -4.2))));
   const vein = smoothstep(0.975, 0.996, line).add(smoothstep(0.985, 0.998, fine).mul(smoothstep(0.85, 0.97, line)).mul(0.7)).mul(stretch);
   const pulse = sin(time.mul(1.1).add(p.x.mul(0.13)).add(p.z.mul(0.09))).mul(0.15).add(0.85);
@@ -299,6 +301,9 @@ export function setRockRecipes(recipes: readonly RockRecipe[]): void {
   (ROCK_RECIPES.array as Vector4[]).forEach((v, k) => v.fromArray(packed, k * 4));
 }
 setRockRecipes(ROCK_TYPES.map((t) => ROCK_PRESETS[t]));
+
+/** How fast the glowing veins creep (noise units a second: 0.004 moves a line about 2.5 cm a second). */
+const VEIN_CREEP = 0.004;
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);
