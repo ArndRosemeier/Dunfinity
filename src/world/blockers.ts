@@ -59,6 +59,21 @@ export class Blockers {
     return hit;
   }
 
+  /**
+   * How far from (x, y, z) along the unit direction (dx, dy, dz), up to `max`, one stays `skin` clear
+   * of every box (as `Level.trace` for the rock): where a camera behind someone has to stop.
+   */
+  trace(x: number, y: number, z: number, dx: number, dy: number, dz: number, max: number, skin = 0.05): number {
+    let t = max;
+    this.each(x + dx * max / 2, z + dz * max / 2, max / 2 + skin, (b, k) => {
+      // Kept `skin` out of each box; from right by one (inside that margin), out of the box itself.
+      const e = enter(b, k, x, y, z, dx, dy, dz, skin);
+      const hit = e >= 0 ? e : enter(b, k, x, y, z, dx, dy, dz, 0) - skin;
+      if (hit >= -skin && hit < t) t = Math.max(0, hit);
+    });
+    return t;
+  }
+
   private each(x: number, z: number, r: number, f: (b: Float32Array, k: number) => void): void {
     if (this.dirty) this.index();
     const seen = new Set<number>();
@@ -92,6 +107,24 @@ export class Blockers {
 /** Grid cell size for the lookup, metres. */
 const CELL = 4;
 const cellKey = (i: number, j: number) => (i + 32768) * 65536 + (j + 32768);
+
+/**
+ * Where the ray from (x, y, z) along (dx, dy, dz) enters box k grown by `grow` on every side; −1
+ * when it misses it or starts inside it.
+ */
+function enter(b: Float32Array, k: number, x: number, y: number, z: number, dx: number, dy: number, dz: number, grow: number): number {
+  const ox = x - b[k], oz = z - b[k + 1], c = b[k + 4], s = b[k + 5];
+  const lo = [ox * c - oz * s, y - (b[k + 6] + b[k + 7]) / 2, ox * s + oz * c];
+  const ld = [dx * c - dz * s, dy, dx * s + dz * c];
+  const half = [b[k + 2] + grow, (b[k + 7] - b[k + 6]) / 2 + grow, b[k + 3] + grow];
+  let t0 = -Infinity, t1 = Infinity;
+  for (let a = 0; a < 3; a++) {
+    if (Math.abs(ld[a]) < 1e-9) { if (Math.abs(lo[a]) > half[a]) return -1; continue; }
+    const ta = (-half[a] - lo[a]) / ld[a], tb = (half[a] - lo[a]) / ld[a];
+    t0 = Math.max(t0, Math.min(ta, tb)); t1 = Math.min(t1, Math.max(ta, tb));
+  }
+  return t0 <= t1 && t0 >= 0 ? t0 : -1;
+}
 
 const _p: [number, number] = [0, 0];
 /** The push out of box k for a circle at (x, z) of radius r, or null when they do not overlap. */

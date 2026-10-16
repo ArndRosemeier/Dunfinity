@@ -302,8 +302,8 @@ export function setRockRecipes(recipes: readonly RockRecipe[]): void {
 }
 setRockRecipes(ROCK_TYPES.map((t) => ROCK_PRESETS[t]));
 
-/** How fast the glowing veins creep (noise units a second: 0.004 moves a line about 2.5 cm a second). */
-const VEIN_CREEP = 0.004;
+/** How fast the glowing veins creep (noise units a second: 0.008 moves a line about 5 cm a second). */
+const VEIN_CREEP = 0.008;
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);

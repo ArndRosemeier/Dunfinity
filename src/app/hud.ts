@@ -66,6 +66,7 @@ export const HELP: readonly (readonly [readonly string[], string])[] = [
   [['KeyF'], 'headlamp'],
   [['KeyM'], 'map'],
   [['KeyJ'], 'grandma\'s diary'],
+  [['KeyI'], 'your pack'],
   [['KeyO'], 'settings'],
   [['Escape'], 'free the mouse; again: the menu'],
 ];
@@ -103,7 +104,8 @@ export interface HudState {
   flags: string;
   salt: number;
   euros: number;
-  pack: { count: number; worth: number } | null;
+  /** The finds carried, the room for them, what they might fetch. */
+  pack: { count: number; room: number; worth: number } | null;
   /** The grandchild is dead (the death screen, src/app/deathView.ts, has the screen: prompts and notices go). */
   dead: boolean;
   /** The renderer's line (backend, shaders), small in a corner. */
@@ -180,10 +182,10 @@ export class Hud {
     this.set('mode', s.mode, (v) => { p.mode.textContent = v; p.mode.style.display = v ? 'block' : 'none'; });
     this.set('hurt', s.hurt, (v) => { if (v) p.hurt.textContent = v; p.hurt.classList.toggle('on', !!v); });
     this.set('tally', s.tally.join('\n'), (v) => (p.tally.textContent = v));
-    this.set('purse', `${s.salt}|${s.euros}|${s.pack?.count}|${s.pack?.worth}`, () => {
+    this.set('purse', `${s.salt}|${s.euros}|${s.pack?.count}|${s.pack?.room}|${s.pack?.worth}`, () => {
       p.purse.innerHTML = `<div class="salt">${s.salt} infused salt</div>`
         + (s.euros ? `<div>€${s.euros} <span class="dim">in grandma's purse</span></div>` : '')
-        + (s.pack ? `<div>${s.pack.count} ${s.pack.count === 1 ? 'find' : 'finds'} <span class="dim">· about €${s.pack.worth}</span></div>` : '');
+        + (s.pack ? `<div>${s.pack.count} of ${s.pack.room} finds <span class="dim">· about €${s.pack.worth}</span></div>` : '');
     });
     this.set('boss', s.boss ? `${s.boss.name}|${s.boss.left.toFixed(3)}` : '', () => {
       p.boss.style.display = s.boss ? 'block' : 'none';
@@ -210,7 +212,7 @@ export class Hud {
   private lines(s: HudState): string[] {
     return [`health ${s.health.toFixed(0)}`, `stamina ${s.stamina.toFixed(0)}${s.mode ? `  ${s.mode}` : ''}`, s.hurt, s.dev, '', s.boss ? s.boss.name : '', s.notice, s.gain, s.prompt,
       s.flags, ...s.tally, `infused salt in grandma's tin: ${s.salt}`, s.euros ? `euros in grandma's purse: €${s.euros}` : '',
-      s.pack ? `pack: ${s.pack.count} finds, worth about €${s.pack.worth}` : '', s.dead ? 'dead' : ''].filter((l, i) => i < 5 || l);
+      s.pack ? `pack: ${s.pack.count} of ${s.pack.room} finds, worth about €${s.pack.worth}` : '', s.dead ? 'dead' : ''].filter((l, i) => i < 5 || l);
   }
 
   /** Run `apply(value)` when part `key` is to show something new. */
