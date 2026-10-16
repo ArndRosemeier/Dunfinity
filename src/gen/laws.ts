@@ -9,20 +9,38 @@
  */
 import { Rng, deriveSeed } from '@futuremagic/core';
 import { strangeness, stratumOf } from './genome';
+import type { Band } from './bands';
 
 /**
  * - `tinted`: the light is another colour (the air, the fog, the headlamp; src/gen/air.ts).
  * - `haze`: the air is thick: the fog closes in and the dust hangs heavy (src/gen/air.ts).
  * - `glow`: the rock glows in its seams, as the infused salt does in the Salt Works (src/gen/air.ts).
+ * - `uphill`: water runs up the rock wherever it laps it, as in the Cisterns, but everywhere (`lawfulBand`).
+ * - `older`: the old workings' pillars stand on drums of an older people's stone (`lawfulBand`).
  */
-export type LawId = 'tinted' | 'haze' | 'glow';
+export type LawId = 'tinted' | 'haze' | 'glow' | 'uphill' | 'older';
 
 /** Each law: the strangeness it needs, and how likely it is drawn. */
 export const LAWS: readonly { readonly id: LawId; readonly from: number; readonly weight: number }[] = [
   { id: 'tinted', from: 1, weight: 1.5 },
   { id: 'haze', from: 1, weight: 1 },
   { id: 'glow', from: 1.5, weight: 1 },
+  { id: 'uphill', from: 1.2, weight: 1 },
+  { id: 'older', from: 1, weight: 0.8 },
 ];
+
+/** How strongly `uphill` and `older` hold: the chance per spot of water climbing the rock, the share of pillars on older drums. */
+const UPHILL = 0.5, OLDER = 0.45;
+
+/** A level's band with its stratum's laws applied (`Level.band`): the band is the stratum's, the laws the world's. */
+export function lawfulBand(band: Band, laws: readonly LawId[]): Band {
+  if (!laws.includes('uphill') && !laws.includes('older')) return band;
+  return {
+    ...band,
+    uphill: laws.includes('uphill') ? Math.max(band.uphill, UPHILL) : band.uphill,
+    older: laws.includes('older') ? Math.max(band.older, OLDER) : band.older,
+  };
+}
 
 /** The laws that hold on level `depth` of world `seed` (the same on all levels of a stratum). */
 export function lawsOf(seed: number, depth: number): readonly LawId[] {
