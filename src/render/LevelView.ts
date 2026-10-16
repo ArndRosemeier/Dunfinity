@@ -9,7 +9,7 @@ import type { Level } from '../gen/level';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
 import { Dust } from './dust';
-import { ROCK_FINISH, ROCK_VEINS } from './materials';
+import { ROCK_FINISH, ROCK_VEINS, setRockRecipes } from './materials';
 import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
@@ -102,6 +102,7 @@ export class LevelView {
 
   private stream(): void {
     ROCK_VEINS.value = this.level_.band.veins; // a uniform: the same shader in every band
+    setRockRecipes(this.level_.rockRecipes);
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;
     this.lamps.power = this.level_.band.lamplight;
