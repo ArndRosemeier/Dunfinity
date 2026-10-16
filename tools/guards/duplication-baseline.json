@@ -44,10 +44,6 @@
     "reason": "two creature models loaded through Rigged.fetch, the one loader, into two figure pools; the loading is the seam, nothing left to fold"
   },
   {
-    "key": "idiom: [.add .push .root] in dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/props/hearth.ts",
-    "reason": "building a three.js group (root.add, parts.push); unrelated views, surfaced when new files shifted the idiom finder's corpus"
-  },
-  {
     "key": "idiom: [.aim .dur .mode .rng .steer .swingT] in dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
     "reason": "the swing mode's two lines: the blow itself is pickSwing and the approach closeIn (src/creatures/pick.ts); what each kind does after a swing (chase on, go home, wait by the bell) is its own"
   },
@@ -98,10 +94,6 @@
   {
     "key": "idiom: [.n2 .noise] in dunfinity/gen/basalt.ts + dunfinity/gen/lava.ts + dunfinity/gen/quarry.ts + dunfinity/gen/rift.ts",
     "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
-  },
-  {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
-    "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
     "key": "idiom: [.solid .stamp] in dunfinity/gen/catacombs.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts + dunfinity/gen/roots.ts",
@@ -3512,10 +3504,6 @@
     "reason": "four of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
   },
   {
-    "key": "clone: dunfinity/render/creatures/figures.ts#constructor + dunfinity/render/humans/thrownView.ts#pool",
-    "reason": "each fills a fixed pool of hidden figures added once to its root; FigurePool's are creature Figures with poses, ThrownView's plain groups for missiles"
-  },
-  {
     "key": "clone: dunfinity/render/humans/thrownView.ts#bag + dunfinity/render/humans/thrownView.ts#match + dunfinity/render/humans/thrownView.ts#seed",
     "reason": "each builds one small thrown thing from meshOf parts (a solid part and a glowing one); the shared part is meshOf"
   },
@@ -3546,18 +3534,6 @@
   {
     "key": "same name: dunfinity/game/abilities.ts#data + dunfinity/loot/items.ts#data",
     "reason": "the save idiom: each kept thing gives its `data` and takes it back with `from` (docs/ARCHITECTURE.md, Keep the game)"
-  },
-  {
-    "key": "clone: dunfinity/gen/drips.ts#constructor + dunfinity/gen/glowworms.ts#constructor + dunfinity/loot/finds.ts#constructor",
-    "reason": "two lines each: the level's own seed and a CellMemo of its cells; the memo is the seam (src/gen/cellMemo.ts)"
-  },
-  {
-    "key": "idiom: [.cells .depth .seed] in dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts + dunfinity/loot/finds.ts",
-    "reason": "each store keeps its own seed and CellMemo; the queries go through cellMemo.ts (sitesNear, siteNearest)"
-  },
-  {
-    "key": "same name: dunfinity/gen/drips.ts#near + dunfinity/gen/glowworms.ts#near",
-    "reason": "one line each over the one seam (cellMemo.ts sitesNear): stalagmite sites vs glow-worm skies"
   },
   {
     "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/humanPool.ts#draw",
@@ -3774,5 +3750,109 @@
   {
     "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/ghosts.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "clone: dunfinity/render/creatures/figures.ts#constructor + dunfinity/render/humans/thrownView.ts#pool + dunfinity/render/props/slotPool.ts#constructor",
+    "reason": "building a fixed pool of meshes once: SlotPool for seeded things, figures and thrown missiles keep their own pools (different meshes per slot vs shared)"
+  },
+  {
+    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
+    "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
+  },
+  {
+    "key": "idiom: [.cell .depth .level .seed] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
+    "reason": "each SiteField seeds itself from its level and its cell size (one line in each constructor)"
+  },
+  {
+    "key": "idiom: [.phase .sin Math] in dunfinity/creatures/wisps.ts + dunfinity/render/horseradish.ts + dunfinity/render/snapdragons.ts",
+    "reason": "a slow sine sway by phase in unrelated things (wisps, plants)"
+  },
+  {
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
+    "reason": "placing an object at a thing's position: the three.js idiom"
+  },
+  {
+    "key": "idiom: [.range .tries] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
+    "reason": "a few seeded tries at a spot in a cell: the Rng is the seam"
+  },
+  {
+    "key": "same name: dunfinity/game/Game.ts#shown + dunfinity/render/props/bloomView.ts#shown",
+    "reason": "each view's things drawn now, read for their sounds; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/game/Game.ts#shown + dunfinity/render/props/dripView.ts#shown",
+    "reason": "each view's things drawn now, read for their sounds; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/gen/blooms.ts#cellSite + dunfinity/gen/drips.ts#cellSite",
+    "reason": "each SiteField says how it decides a cell (cellMemo.ts SiteField.cellSite): the override is the seam"
+  },
+  {
+    "key": "same name: dunfinity/gen/blooms.ts#cellSite + dunfinity/gen/glowworms.ts#cellSite",
+    "reason": "each SiteField says how it decides a cell (cellMemo.ts SiteField.cellSite): the override is the seam"
+  },
+  {
+    "key": "same name: dunfinity/gen/caveThings.ts#nearest + dunfinity/gen/cellMemo.ts#nearest",
+    "reason": "the SiteField's own near/nearest; other fields of things find theirs their own way (dens, grain lines, finds)"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellMemo.ts#near + dunfinity/loot/finds.ts#near",
+    "reason": "the SiteField's own near/nearest; other fields of things find theirs their own way (dens, grain lines, finds)"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellMemo.ts#nearest + dunfinity/gen/grainLines.ts#nearest",
+    "reason": "the SiteField's own near/nearest; other fields of things find theirs their own way (dens, grain lines, finds)"
+  },
+  {
+    "key": "same name: dunfinity/gen/drips.ts#cellSite + dunfinity/gen/glowworms.ts#cellSite",
+    "reason": "each SiteField says how it decides a cell (cellMemo.ts SiteField.cellSite): the override is the seam"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/thrownView.ts#shape + dunfinity/render/props/slotPool.ts#shape",
+    "reason": "a slot's or a missile's own geometry builder, same word"
+  },
+  {
+    "key": "same name: dunfinity/render/loot/findView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/bloomView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/bloomView.ts#draw + dunfinity/render/props/saltLine.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/bloomView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/bloomView.ts#shown + dunfinity/render/props/dripView.ts#shown",
+    "reason": "each view's things drawn now, read for their sounds; the things differ"
+  },
+  {
+    "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "every view's per-frame draw of its own thing; the things differ"
   }
 ]

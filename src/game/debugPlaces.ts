@@ -93,7 +93,9 @@ export function placesOn(level: Level, fauna: Fauna, x: number, z: number): Plac
   ];
   const drip = level.drips.nearest(x, z);
   if (drip) out.push(standBy(level, `A living stalagmite (${Math.round(Math.hypot(drip.x - x, drip.z - z))} m)`, drip.x, drip.z, 2.5, 5));
-  const sky = level.skies.closest(x, z);
+  const bloom = level.blooms.nearest(x, z);
+  if (bloom) out.push(standBy(level, `A salt bloom (${Math.round(Math.hypot(bloom.x - x, bloom.z - z))} m)`, bloom.x, bloom.z, 2, 4));
+  const sky = level.skies.nearest(x, z);
   if (sky) out.push({ name: `A glow-worm sky (${Math.round(Math.hypot(sky.x - x, sky.z - z))} m)`, x: sky.x, y: sky.y, z: sky.z, yaw: 0 });
   for (const [name, pop] of dens) {
     const d = pop.nearestDen(x, z, DEN_RINGS);

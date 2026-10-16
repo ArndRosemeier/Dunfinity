@@ -18,6 +18,7 @@ import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
 import { Watchers } from './props/watchers';
 import { DripView } from './props/dripView';
+import { BloomView } from './props/bloomView';
 import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
 import { QUALITY } from './quality';
 import type { Quality } from '../persist/settings';
@@ -49,6 +50,8 @@ export class LevelView {
   private readonly watchers = new Watchers();
   /** The living stalagmites near the viewer (src/gen/drips.ts). */
   readonly drips = new DripView();
+  /** The salt blooms near the viewer (src/gen/blooms.ts). */
+  readonly blooms = new BloomView();
   private lastTime = 0;
   /** The pulse in the veins running now: when it started and where from. */
   private pulse: { start: number; at: [number, number] } | null = null;
@@ -107,6 +110,7 @@ export class LevelView {
     await this.stage.add(this.dust.mesh);
     await this.stage.add(this.watchers.root);
     await this.stage.add(this.drips.root);
+    await this.stage.add(this.blooms.root);
     this.stream();
   }
 
@@ -210,6 +214,7 @@ export class LevelView {
     this.terrain.update(x, y, z);
     this.props.update(x, y, z, time);
     this.drips.draw(this.level_, x, z, time);
+    this.blooms.draw(this.level_, x, z, time);
     this.pulseVeins(x, z, time);
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;
