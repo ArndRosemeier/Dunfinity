@@ -371,6 +371,30 @@
   "loop": false,
   "gain": 0.5
  },
+ "tv_glitch": {
+  "files": [
+   "tv_glitch_1.ogg",
+   "tv_glitch_2.ogg",
+   "tv_glitch_3.ogg",
+   "tv_glitch_4.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "tv_on": {
+  "files": [
+   "tv_on_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
+ "tv_static": {
+  "files": [
+   "tv_static.ogg"
+  ],
+  "loop": true,
+  "gain": 0.5
+ },
  "wisp_pop": {
   "files": [
    "wisp_pop_1.ogg"
