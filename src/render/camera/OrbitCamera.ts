@@ -1,12 +1,15 @@
 /**
  * Third-person camera (decision D9): orbits a target with the mouse, the wheel zooms in down to first
  * person. It never goes through rock: it pulls in along its ray to the target (level.trace) at once,
- * and eases back out. A target in the rock (a head under a low vault, climbing) is first moved out of it.
- * Inside a shed (`room`) it stays within the shed's walls and under its roof.
+ * and eases back out. Nor through the props (`blockers`: the thin walls of grandma's rooms, shut doors,
+ * the sheds' boards, carts): those pull it in the same way. A target in the rock (a head under a low
+ * vault, climbing) is first moved out of it. Inside a shed (`room`) it stays within the shed's walls and
+ * under its roof.
  */
 import type { PerspectiveCamera } from 'three/webgpu';
 import type { Level } from '../../gen/level';
 import { SHED, inFrame, type Shed } from '../../gen/sheds';
+import type { Blockers } from '../../world/blockers';
 
 /** Closer than this the camera is in first person. */
 const FIRST_PERSON = 0.6;
@@ -26,6 +29,9 @@ export class OrbitCamera {
 
   /** The shed the target is in, whose walls and roof pull the camera in too. */
   room: Shed | null = null;
+
+  /** The props in the way (src/world/blockers.ts), which pull the camera in as the rock does. */
+  blockers: Blockers | null = null;
 
   /** `level`: the rock that pulls the camera in (changes on the way down). */
   constructor(readonly camera: PerspectiveCamera, public level: Level) {}
@@ -53,6 +59,7 @@ export class OrbitCamera {
     const cp = Math.cos(this.pitch);
     const bx = Math.sin(this.yaw) * cp, by = -Math.sin(this.pitch), bz = Math.cos(this.yaw) * cp; // backwards
     let reach = this.distance > 0 ? this.level.trace(x, y, z, bx, by, bz, this.distance, 0.3) : 0;
+    if (this.blockers && reach > 0) reach = this.blockers.trace(x, y, z, bx, by, bz, reach, 0.3);
     if (this.room && reach > 0) reach = Math.min(reach, inside(this.room, x, y, z, bx, by, bz));
     this.current = reach < this.current ? reach : this.current + (reach - this.current) * Math.min(1, dt * 4);
     this.camera.position.set(x + bx * this.current, y + by * this.current, z + bz * this.current);
