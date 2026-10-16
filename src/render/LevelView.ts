@@ -15,6 +15,9 @@ import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
 import { Watchers } from './props/watchers';
+import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
+import { QUALITY } from './quality';
+import type { Quality } from '../persist/settings';
 
 /** Fog distances: a lit survey view, and roughly what a headlamp shows. */
 const FOG = { survey: [80, 900], dark: [10, 140] } as const;
@@ -46,6 +49,9 @@ export class LevelView {
   private dark_ = false;
   /** The level's light and air (src/gen/air.ts). */
   private air: Air = airOf(0, 0);
+  /** Which chunks the rock is streamed in (the quality's detail). */
+  private chunkView: ChunkView = DEFAULT_VIEW;
+  private quality_: Quality = 'high';
   /** Headlamp intensity in the survey view and in the dark (a lamp carried close to the body wants less). */
   headlampPower = { survey: 60, dark: 17 };
 
@@ -119,8 +125,19 @@ export class LevelView {
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;
     this.lamps.power = this.level_.band.lamplight;
-    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key);
+    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key, this.chunkView);
     this.props_ = new Props(this.stage, this.things, this.level_.key, this.lamps);
+  }
+
+  /** The graphics quality: pixels drawn, the headlamp's shadow map, the rock's detail far off (src/render/quality.ts). Applies at once; compiles nothing. */
+  get quality(): Quality { return this.quality_; }
+  set quality(q: Quality) {
+    const p = QUALITY[q];
+    this.quality_ = q;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, p.pixels));
+    this.headlamp.shadow.mapSize.set(p.shadowMap, p.shadowMap);
+    this.chunkView = { ...DEFAULT_VIEW, split: p.split };
+    this.terrain_?.setView(this.chunkView);
   }
 
   get terrain(): Terrain { return need(this.terrain_); }

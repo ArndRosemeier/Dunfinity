@@ -37,6 +37,13 @@ export function child<K extends keyof HTMLElementTagNameMap>(parent: HTMLElement
   return el;
 }
 
+/** A button of class `cls` saying `text` in `parent`: a click does `click` (and goes no further, and leaves no focus behind). */
+export function button(parent: HTMLElement, text: string, click: () => void, cls = ''): HTMLButtonElement {
+  const b = child(parent, 'button', cls, text);
+  b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
+  return b;
+}
+
 /** `key` as a keycap (the theme's `ui-key`), for innerHTML. */
 export function keycap(key: string): string {
   return `<span class="ui-key">${esc(key)}</span>`;

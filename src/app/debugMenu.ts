@@ -4,7 +4,7 @@
  * it lets go of the mouse while open (click the game to look round again).
  */
 import { bandOf } from '../gen/bands';
-import { child, panel } from './panel';
+import { button as uiButton, child, panel } from './panel';
 
 /** What the menu asks the game to do. */
 export interface DebugActions {
@@ -63,11 +63,7 @@ export class DebugMenu {
     this.el = panel(host, 'div', 'debug', STYLE);
     this.el.className = 'ui-panel';
     const heading = (text: string) => child(this.el, 'h3', 'ui-label', text);
-    const button = (parent: HTMLElement, text: string, click: () => void): HTMLButtonElement => {
-      const b = child(parent, 'button', 'ui-btn small', text);
-      b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
-      return b;
-    };
+    const button = (parent: HTMLElement, text: string, click: () => void) => uiButton(parent, text, click, 'ui-btn small');
     const toggle = (text: string, set: (on: boolean) => void) => {
       const l = document.createElement('label'), c = document.createElement('input');
       c.type = 'checkbox';
@@ -132,10 +128,7 @@ export class DebugMenu {
     const depth = this.act.depth();
     [...this.levels.children].forEach((b, d) => b.classList.toggle('here', d === depth));
     this.list.replaceChildren();
-    this.act.places().forEach((p, i) => {
-      const b = child(this.list, 'button', 'ui-btn small', p.name);
-      b.addEventListener('click', (e) => { e.stopPropagation(); this.act.toPlace(i); b.blur(); });
-    });
+    this.act.places().forEach((p, i) => uiButton(this.list, p.name, () => this.act.toPlace(i), 'ui-btn small'));
   }
 
   /** The clipboard refused: show the text selected, to copy with Ctrl+C. */

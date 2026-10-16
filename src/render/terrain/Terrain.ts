@@ -33,8 +33,14 @@ export class Terrain {
   /** Totals for the HUD. */
   stats = { chunks: 0, triangles: 0, pending: 0 };
 
-  constructor(private readonly stage: Stage, private readonly group: Group, readonly level: LevelKey, readonly view: ChunkView = DEFAULT_VIEW) {
+  constructor(private readonly stage: Stage, private readonly group: Group, readonly level: LevelKey, private view: ChunkView = DEFAULT_VIEW) {
     this.pool = createMeshPool();
+  }
+
+  /** Pick chunks by `view` from now on (the graphics quality's detail), at the next frame. */
+  setView(view: ChunkView): void {
+    this.view = view;
+    this.lastAt = [Infinity, Infinity, Infinity];
   }
 
   /** Call every frame with the viewer position. */
