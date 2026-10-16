@@ -17,7 +17,8 @@ const STYLE = `
   #pause .keys .k { text-align: right; white-space: nowrap; }
   #pause .keys .t { color: var(--ui-ink-dim); }
   @media (max-width: 560px) { #pause .keys { grid-template-columns: auto 1fr; } }
-  #menu-button { position: fixed; right: 136px; top: 10px; z-index: 10; }`;
+  #menu-button { position: fixed; right: 136px; top: 10px; z-index: 10; }
+  :root.ui-touch #menu-button { right: 156px; }`;
 
 /** What the menu asks of the game. */
 export interface PauseActions {

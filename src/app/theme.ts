@@ -118,6 +118,9 @@ const CSS = `
   .ui-touch-only { display: none; }
   :root.ui-touch .ui-touch-only { display: revert; }
   :root.ui-touch .ui-keys-only, :root.ui-touch .ui-keys { display: none; }
+  /* Buttons big enough for a fingertip (at least 40 px high). */
+  :root.ui-touch .ui-btn { min-height: 40px; padding: 10px 18px; font-size: 15px; }
+  :root.ui-touch .ui-btn.small { min-height: 40px; padding: 6px 10px; font-size: 13px; }
 
   /* Thin scrollbars that suit the panels. */
   .ui-scroll { scrollbar-width: thin; scrollbar-color: var(--ui-line-bright) transparent; }

@@ -28,6 +28,8 @@ export interface GraphicsSettings {
 }
 
 export const GRAPHICS_DEFAULTS: GraphicsSettings = { quality: 'high', still: false };
+/** A tablet's (a touch screen, no mouse) until the player picks: one pixel per screen point, as its GPU is a laptop's at best and its screen has twice the points. */
+export const TABLET_GRAPHICS: GraphicsSettings = { quality: 'medium', still: false };
 
 /** Keys the player moved: an action (the key it answers to by default) → the key it answers to now. */
 export type KeySettings = Readonly<Record<string, string>>;
@@ -45,9 +47,10 @@ export const readSoundSettings = (): SoundSettings => kept('sound', SOUND_DEFAUL
 }));
 export const writeSoundSettings = (s: SoundSettings): void => keep('sound', s);
 
-export const readGraphicsSettings = (): GraphicsSettings => kept('graphics', GRAPHICS_DEFAULTS, (o) => ({
-  quality: QUALITIES.includes(o.quality as Quality) ? (o.quality as Quality) : GRAPHICS_DEFAULTS.quality,
-  still: flag(o.still, GRAPHICS_DEFAULTS.still),
+/** The graphics kept, or `defaults` for what was never set (`TABLET_GRAPHICS` on a tablet). */
+export const readGraphicsSettings = (defaults = GRAPHICS_DEFAULTS): GraphicsSettings => kept('graphics', defaults, (o) => ({
+  quality: QUALITIES.includes(o.quality as Quality) ? (o.quality as Quality) : defaults.quality,
+  still: flag(o.still, defaults.still),
 }));
 export const writeGraphicsSettings = (s: GraphicsSettings): void => keep('graphics', s);
 
