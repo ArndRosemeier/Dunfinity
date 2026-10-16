@@ -38,6 +38,9 @@ export const NOTE = [
   'If you are reading this, I never came back for my thermos, and you should go home.',
 ];
 
+/** Folded into the note: a pencil rubbing of runes from a stone, with the letters she was sure of written over them (src/lore/key.ts GRANDMA_KERF). */
+export const RUBBING = 'Folded into it, a pencil rubbing of runes taken off a stone, her letters written over the ones she was sure of: T, H, TH, E, O, A, N, S, D. "The rest, ask Papa." You copy them into the key in her tin.';
+
 /** The camp on `level`, or null (only on level 9, and only where the floor allows). */
 export function grandmasCamp(level: Level): GrandmasCamp | null {
   if (level.depth !== CAMP.depth) return null;

@@ -22,6 +22,9 @@ export function lettersOf(script: Script, text: string): string[][] {
   return script === 'kerf' ? kerfSpell(text) : threadSpell(text).map((w) => w.flatMap((s) => [...(s.c ? [s.c] : []), ...s.v]));
 }
 
+/** The runes grandma was sure of, pencilled over a rubbing she folded into her note at the Threshold camp. */
+export const GRANDMA_KERF: readonly string[] = ['t', 'h', 'th', 'e', 'o', 'a', 'n', 's', 'd'];
+
 export class Key {
   private readonly known: Record<Script, Set<string>>;
   private readonly seen: Set<string>;
@@ -42,6 +45,13 @@ export class Key {
   /** What can be made out of `text`: known letters as themselves, the rest as '_' (one per letter). */
   makeOut(script: Script, text: string): string {
     return lettersOf(script, text).map((w) => w.map((l) => (this.knows(script, l) ? l : '_')).join('')).join(' ');
+  }
+
+  /** Pencil in `letters` (grandma's rubbing): how many were new. */
+  pencil(script: Script, letters: readonly string[]): number {
+    const before = this.known[script].size;
+    for (const l of letters) this.known[script].add(l);
+    return this.known[script].size - before;
   }
 
   /** Read the inscription `id`: the first time, it teaches a letter (see `learn`). The letter learned, or null. */

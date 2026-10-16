@@ -22,6 +22,11 @@ import { Grain, grainOf } from './grainLines';
 import { unworked, type Column, type Working } from './quarry';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
+import type { Dress } from './styleProps';
+import type { Inscription } from './inscriptions';
+import type { V3 } from './propMesh';
+import { thread } from '../lore/scripts';
+import { ribLine } from '../lore/fragments';
 
 export const ELVEN = {
   /** One nave to a stripe this wide across the grain, metres, strayed by up to `jitter`. */
@@ -43,7 +48,17 @@ export const ELVEN = {
   /** How far the floor dishes down to a nave's middle, and how far it rolls along it (up from clear of the water) over what distance, metres. */
   dish: 0.4,
   roll: [3, 320] as const,
+  /**
+   * Thread script along the ribs (docs/design/lore.md §4.3): the chance a rib carries a line, its
+   * thread this far in under the vault, at most this many metres to a unit, strokes this share of
+   * a unit wide.
+   */
+  writing: { rib: 0.2, inset: 0.3, scale: 0.55, pen: 0.16 },
 } as const;
+
+/** Salt-white, faintly alight, like the ward round grandma's circle. */
+const SALT = [0.72, 0.84, 0.95] as const;
+const RIB = 'High along the rib, in pale salt-white that catches the light: one unbroken line running up and over the arch, marks hanging from it. The same hand as the ring round grandma\'s circle.';
 
 /** Rock further than this from a nave or transept counts as this far, metres; every one this near is looked at. */
 const FAR = 14;
@@ -208,6 +223,53 @@ export class Elven implements Style {
   portal(x: number, z: number): [number, number] {
     const u = this.grain.u(x, z), n = this.nave(Math.round(this.grain.v(x, z) / ELVEN.spacing));
     return this.grain.xz(u, n.v);
+  }
+
+  /**
+   * The vaults' writing: on some ribs, a line of Thread script in salt-white running up one face of
+   * the rib and over the point of the arch, the keepers' account. Placed only where the rib is there
+   * to carry it, by the tile that owns the nave's floor before it.
+   */
+  props(d: Dress): void {
+    const E = ELVEN, W = E.writing, us: number[] = [], vs: number[] = [];
+    for (const [x, z] of [[d.x0, d.z0], [d.x0 + d.size, d.z0], [d.x0, d.z0 + d.size], [d.x0 + d.size, d.z0 + d.size]]) { us.push(this.grain.u(x, z)); vs.push(this.grain.v(x, z)); }
+    const seed = d.seed ^ 0x72696273;
+    for (let k = Math.round(Math.min(...vs) / E.spacing) - 1; k <= Math.round(Math.max(...vs) / E.spacing) + 1; k++) {
+      const n = this.nave(k);
+      for (let b = Math.floor(Math.min(...us) / E.bay); b <= Math.ceil(Math.max(...us) / E.bay); b++) {
+        const r = (m: number) => hashToFloat(hash2i(hash2i(seed, k, b), m, 7));
+        if (r(0) >= W.rib) continue;
+        const side = r(1) < 0.5 ? 1 : -1, ub = b * E.bay, [fx, fz] = this.grain.xz(ub + side * 2, n.v);
+        if (!d.mine(fx, fz)) continue;
+        const ins = this.rib(k, n, b, side, ribLine((m) => r(m + 2)), d.level.depth);
+        // Rock behind the line and air before it, all along it.
+        const p = ins.place, ok = p.kind === 'path' && p.pts.every((q, i) => i % 4 || (d.level.sdf(q[0] - p.nx * 0.3, q[1], q[2] - p.nz * 0.3) < 0 && d.level.sdf(q[0] + p.nx * 0.6, q[1], q[2] + p.nz * 0.6) > 0.1));
+        if (!ok) continue;
+        d.write(ins, W.pen * p.scale, 0.02, SALT);
+        d.placed();
+      }
+    }
+  }
+
+  /** The line along rib b of nave k, on its face looking along u's `side`: up from where the vault springs on the left, over its point, down to its spring on the right. */
+  private rib(k: number, n: Nave, b: number, side: number, text: string, depth: number): Inscription {
+    const E = ELVEN, W = E.writing, ub = b * E.bay, u = ub + side * E.rib.half, mid = this.floor(k, ub);
+    const [nx, nz] = this.grain.xz(side, 0), [ax, az] = this.grain.xz(0, 1);
+    // Which way across the nave is right, as one faces the rib.
+    const right = Math.sign(ax * nz - az * nx) || 1;
+    // (From where it clears the arcade's columns, which stand on the rib's feet.)
+    const C = E.column, L = 2 * n.half - W.inset, top = Math.acos(n.half / L), low = Math.acos((2 * n.half - C.out - C.shaft - 0.3) / L), N = 24, pts: V3[] = [];
+    for (let i = 0; i <= 2 * N; i++) {
+      // Up the left half of the arch to its point, then down the right; each half is a circle about the far side's spring.
+      const phi = low + ((top - low) * (i <= N ? i : 2 * N - i)) / N, half = i <= N ? -1 : 1;
+      const across = right * half * (L * Math.cos(phi) - n.half), floor = mid - E.dish * Math.max(0, 1 - (across / n.half) ** 2);
+      const [x, z] = this.grain.xz(u, n.v + across);
+      pts.push([x, floor + n.spring + L * Math.sin(phi), z]);
+    }
+    let len = 0;
+    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]);
+    const w = thread(text).width, scale = Math.min(W.scale, (0.92 * len) / w);
+    return { id: `rib:${depth}:${k}:${b}:${side}`, script: 'thread', text, where: RIB, place: { kind: 'path', pts, nx, nz, from: (len - w * scale) / 2, scale } };
   }
 
   climbable(): boolean {

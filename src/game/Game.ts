@@ -10,7 +10,7 @@ import { readSave, writeSave, type GrandchildData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
 import { ReadView } from '../app/readView';
-import { Key } from '../lore/key';
+import { GRANDMA_KERF, Key } from '../lore/key';
 import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
 import { CELLAR } from '../gen/cellar';
@@ -19,7 +19,7 @@ import { PAWN, sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, Gear } from '../loot/hardware';
 import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { Level } from '../gen/level';
-import { CAMP, NOTE } from '../gen/grandmasCamp';
+import { CAMP, NOTE, RUBBING } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
 import { LevelView } from '../render/LevelView';
 import { OrbitCamera } from '../render/camera/OrbitCamera';
@@ -622,7 +622,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
     atCounter = nearKemal;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
-    const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : level.inscriptions.find((i) => canRead(i, body.x, body.y, body.z));
+    const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : [...level.inscriptions, ...view.props.inscriptions].find((i) => canRead(i, body.x, body.y, body.z));
     if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
     const nearDoor = busy || nearLadder || nearFind || nearNote || nearMarks || !body.grounded ? null : doors.near(body.x, body.y, body.z);
     // Kemal's counter: 1, 2, 3 buy what is on it.
@@ -677,7 +677,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
           key.makeOut(nearMarks.script, nearMarks.text), learned && `Looking long enough, you are sure of one: ${learned.toUpperCase()}. You pencil it into the key in her tin.`);
       } else if (nearNote) {
         const found = writing!.kind !== 'letter' && cooked.find('salt-line');
-        readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}`, 20);
+        const runes = writing!.kind !== 'letter' && key.pencil('kerf', GRANDMA_KERF) > 0;
+        readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}${runes ? `\n\n${RUBBING}` : ''}`, 20);
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
       }
     }
