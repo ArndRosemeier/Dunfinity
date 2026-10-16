@@ -83,6 +83,8 @@ import { PackView } from '../app/packView';
 import { SpellView } from '../render/spells';
 import { SnapdragonView } from '../render/snapdragons';
 import { Snapdragons } from '../combat/snapdragon';
+import { Horseradish } from '../combat/horseradish';
+import { HorseradishView } from '../render/horseradish';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { THROW, Thrown } from '../combat/thrown';
 import { FLOUR, Flour } from '../combat/flour';
@@ -95,7 +97,7 @@ import { Hud, keysOf } from '../app/hud';
 import { LetterView } from '../app/letterView';
 import { PauseMenu } from '../app/pauseMenu';
 import { pageId } from '../lore/diary';
-import { keeps, nextTarget, yawTo } from './target';
+import { candidates, keeps, nextTarget, yawTo } from './target';
 import { Prologue, Walk } from './prologue';
 import { FirstSteps, type StepId } from './firstSteps';
 import { PrologueView } from '../app/prologueView';
@@ -121,6 +123,8 @@ const PIN = { arc: 0.75, low: -0.3, high: 2, damage: [2, 4] as const, stamina: 2
 const CAST = { dur: 0.5, glints: 8 };
 /** Grandma's Snapdragons (U): the stamina a seed costs (what the plant does and how often: the card's). */
 const SEED = { stamina: 2 };
+/** Grandma's Horseradish: the stamina a root costs; how often the earth it throws up is drawn, per second (what it does and how often: the card's). */
+const ROOTING = { stamina: 2, crumbs: 10 };
 /** Grandma's Flour Bag (Y): the stamina a bag costs; her Matchstick (middle mouse): how far off its aim may be from where one looks for a cloud to flick it at, radians. */
 const FLOURING = { stamina: 2, arc: 0.6 };
 const POUND = { dur: 0.9, hit: 0.5, range: 1.15, arc: 1.1, low: -0.3, high: 1.3, knock: 8, aim: 2.6, aimArc: 1.2, stamina: 3 };
@@ -221,7 +225,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
-    thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; flour.clouds.length = 0;
+    thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; radish.roots.length = 0; flour.clouds.length = 0;
     look(l);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
@@ -390,7 +394,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Grandma's salt-magic: when each was last cast, and the last cast (its pose, and which way it went). */
   /** The last sprung jump seen (Spring in Your Step: its puff of salt). */
   let sprangSeen = -Infinity;
-  let flameAt = -Infinity, larderAt = -Infinity, pinAt = -Infinity, castAt = -Infinity, castYaw = 0, casting: 'flame' | 'larder' | 'pin' = 'flame';
+  let flameAt = -Infinity, larderAt = -Infinity, pinAt = -Infinity, castAt = -Infinity, castYaw = 0, casting: 'flame' | 'larder' | 'pin' | 'root' = 'flame';
   /** Knives thrown (grandma's Second Helpings), and when the last throw began. */
   const thrown = new Thrown();
   const thrownView = new ThrownView();
@@ -404,6 +408,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const gardenView = new SnapdragonView();
   await view.stage.add(gardenView.root);
   let seedAt = -Infinity;
+  /** Grandma's Horseradish: the roots tunnelling and biting, and when the last was set. */
+  const radish = new Horseradish();
+  const radishView = new HorseradishView();
+  await view.stage.add(radishView.root);
+  let radishAt = -Infinity;
   /** Grandma's Salt Line, poured (one at a time; it stays on the level it was poured on). */
   const saltLineView = new SaltLineView(SALT_RINGS.map((k) => k.r));
   await view.stage.add(saltLineView.root);
@@ -420,7 +429,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!a) return;
     if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
     else controls.press(a.key);
-  }, keyName);
+  }, (i, id) => tinView.ask({ kind: 'slot', i, id }), keyName);
   /** At Kemal's counter (last frame): 1, 2, 3 buy there, not use the bar. */
   let atCounter = false;
   /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
@@ -675,7 +684,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -809,7 +818,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     body = nextGrandchild();
     fauna = new Fauna(level); thin = new ThinPlaces(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
     pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
-    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; flour.clouds.length = 0;
+    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; radish.roots.length = 0; flour.clouds.length = 0;
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
     cam.distance = before;
@@ -997,6 +1006,18 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const b = blowFrom(body, castYaw, { range: pin.reach, arc: PIN.arc, low: PIN.low, high: PIN.high });
       for (const f of foes()) if (reach(b, f)) damage(f, blows.range(PIN.damage[0], PIN.damage[1]), body.x, body.z, pin.knock, 'force');
     }
+    // Grandma's Horseradish: stoop and set a root at your feet; it tunnels to the Tab target (or the foe nearest where you look).
+    const rooting = cooked.horseradish;
+    if (controls.tap(useOf('horseradish')) && rooting && canCast && now - radishAt > rooting.every) {
+      const quarry = target ?? candidates(foes(), body.x, body.y, body.z, cam.yaw)[0] ?? null;
+      if (!quarry) say('Nothing near enough to set it at.', 2);
+      else if (cast('root', ROOTING.stamina, 'Too out of breath to push it in.')) {
+        radishAt = now; castYaw = yawTo(quarry, body.x, body.z);
+        const r = radish.set(body.x - Math.sin(castYaw) * 0.5, level.groundAt(body.x, body.z), body.z - Math.cos(castYaw) * 0.5, quarry, rooting);
+        spells.breaks(r.x, r.y, r.z, now);
+        sounds.play('snap_sprout', r, 0.7, 0.8);
+      }
+    }
     // The larder's cold wears off; frost glints on what it caught meanwhile.
     const glint = Math.floor(now * CAST.glints) !== Math.floor((now - dt) * CAST.glints);
     for (const f of foes()) {
@@ -1034,25 +1055,41 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       euros = r.euros;
       say(r.line, 6);
     });
-    // Grandma's tin, open by the fire: choose a card, cook it.
+    // Grandma's tin, open by the fire: choose a card, cook it, arrange the bar; by key or with the mouse (the mouse is let go while it is open).
     if (tinView.open) {
-      if (controls.tap('KeyT') || controls.tap('Escape') || !campfire.resting || body.dead) tinView.hide();
-      else {
+      const acts = tinView.take();
+      if (controls.tap('KeyT') || controls.tap('Escape') || acts.some((a) => a.kind === 'close') || !campfire.resting || body.dead) {
+        tinView.hide();
+        if (!body.dead) canvas.requestPointerLock?.();
+      } else {
         const order = TinView.order(cooked), at = order.indexOf(tinSel);
-        let why: string | null = null, redraw = false;
+        let why: string | null = null, redraw = false, cookNow = controls.tap('KeyE');
         if (controls.tap('KeyW')) { tinSel = order[(at + order.length - 1) % order.length]; redraw = true; }
         if (controls.tap('KeyS')) { tinSel = order[(at + 1) % order.length]; redraw = true; }
+        if (controls.tap('KeyA')) { tinSel = TinView.chapterStep(cooked, tinSel, -1); redraw = true; }
+        if (controls.tap('KeyD')) { tinSel = TinView.chapterStep(cooked, tinSel, 1); redraw = true; }
         // 1–8: the chosen card (cooked, one used through the bar) into that slot.
         SLOT_KEYS.forEach((k, i) => {
           if (!controls.tap(k) || cooked.rank(tinSel) === 0) return;
           redraw = mainBar.set(i, tinSel) || redraw;
         });
-        if (controls.tap('KeyE')) {
+        for (const a of acts) {
+          if (a.kind === 'choose' && cooked.has(a.id)) { tinSel = a.id; redraw = true; }
+          else if (a.kind === 'cook') cookNow = true;
+          // A card dropped on a slot goes in it (one dragged from another slot swaps with it); a slot's card dropped in the tin comes off the bar.
+          else if (a.kind === 'slot') {
+            if (a.id === null) mainBar.clear(a.i);
+            else if (cooked.rank(a.id) > 0) mainBar.set(a.i, a.id);
+            redraw = true;
+          }
+        }
+        if (cookNow) {
           why = cooked.cantCook(tinSel, tin, tin.deepest);
           if (!why) {
             const r = cooked.cook(tinSel, tin), c = card(tinSel), at = r === 1 ? mainBar.slotIn(tinSel) : -1, fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
             cookAt = now;
             tinView.hide();
+            canvas.requestPointerLock?.();
             tick('cook');
             say(r === 1 ? `${c.title}, cooked${at >= 0 ? `, on your bar (${keyName(SLOT_KEYS[at])})` : ''}.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
@@ -1062,7 +1099,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
     } else if (controls.tap('KeyT') && campfire.resting) {
       if (!cooked.has(tinSel)) tinSel = TinView.order(cooked)[0];
+      tinView.take();
       tinView.show(cooked, tin, tinSel, null, practice, mainBar, keyName);
+      document.exitPointerLock?.();
     }
     // The pack (I), open anywhere: W/S choose a line, E uses it (a find left on the floor before you, a spare item put on, a worn one taken off).
     const packKeys = { up: keyName('KeyW'), down: keyName('KeyS'), use: keyName('KeyE'), close: keyName('KeyI') };
@@ -1218,6 +1257,17 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         for (const f of foes()) if (!f.dead && (f.blind ?? 0) > 0) spells.dusted(f.x, f.y, f.z, f.height, now);
       }
       body.unseenFrom = (x, z) => flour.blinds(x, body.y, z, foes());
+      // The horseradish tunnels on, comes up under its quarry and bites; the earth flies where it goes.
+      for (const { root: r, hit } of radish.tunnel(dt, foes(), (x, z) => level.groundAt(x, z), blows)) {
+        spells.snap(hit.x, hit.y + hit.height * 0.5, hit.z, now);
+        sounds.play('snap_bite', r, 0.8, 0.75);
+      }
+      const crumb = Math.floor(now * ROOTING.crumbs) !== Math.floor((now - dt) * ROOTING.crumbs);
+      for (const r of radish.roots) {
+        // It has just broken out of the floor, or gone back in.
+        if ((r.phase === 'rise' || r.phase === 'dive') && r.t === 0) { spells.breaks(r.x, r.y, r.z, now); sounds.play('snap_sprout', r, 0.6, 0.7); }
+        else if (r.phase === 'dig' && crumb) spells.furrow(r.x, r.y, r.z, r.yaw, now);
+      }
       for (const f of garden.step(dt, [...foes(), body], blows)) {
         const p = garden.plants.find((g) => g.target === f);
         spells.snap(f.x, f.y + f.height * 0.6, f.z, now);
@@ -1306,7 +1356,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const lighting = campfire.kindling(now);
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'root' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
@@ -1362,6 +1412,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     spells.place(now);
     thrownView.arrange(thrown.missiles, now);
     gardenView.draw(garden.plants, now);
+    radishView.draw(radish.roots, now, body);
     saltLineView.draw(saltLine, level, now);
     nobody.shown = !cam.firstPerson;
     cam.room = shedOf();
@@ -1401,6 +1452,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         case 'pot-lid': return { ready: 1, on: body.guarding, dim: false };
         case 'flour-bag': return { ready: ready(flourAt, bag?.every ?? 1), on: flour.clouds.length > 0, dim: body.stamina < FLOURING.stamina };
         case 'matchstick': return { ready: ready(matchAt, match?.every ?? 1), on: flour.clouds.length > 0, dim: false };
+        case 'horseradish': return { ready: ready(radishAt, rooting?.every ?? 1), on: radish.roots.length > 0, dim: body.stamina < ROOTING.stamina };
         case 'snapdragon': return { ready: ready(seedAt, snap?.between ?? 1), on: garden.plants.length > 0, dim: body.stamina < SEED.stamina };
         case 'candle': return { ready: 1, on: false, dim: thrown.candles.length >= cooked.candles, count: `${thrown.candles.length}/${cooked.candles}` };
         case 'salt-line': {
@@ -1412,7 +1464,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
-    abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead || tinView.open);
+    abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead, tinView.open);
     stepsView.pin(steps, now);
     hudView.render({
       health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,

@@ -32,7 +32,7 @@ const LUNGE_REACH = (() => {
 })();
 
 /** A leaf from the origin out along `yaw` (forward is (-sin, -cos)), `len` long, rising by `lift` then drooping: both faces. */
-function leafOut(b: PropBuilder, x: number, y: number, z: number, yaw: number, len: number, width: number, lift: number): void {
+export function leafOut(b: PropBuilder, x: number, y: number, z: number, yaw: number, len: number, width: number, lift: number): void {
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), sx = Math.cos(yaw), sz = -Math.sin(yaw);
   const a: V3[] = [], c: V3[] = [], up: V3[] = [], down: V3[] = [], col: Rgb[] = [];
   const N = 6;
@@ -116,7 +116,7 @@ function parts(k: number): Parts {
 }
 
 /** 0 → 1 with a little overshoot past 1 (the stalk shooting up with a bounce). */
-function springUp(t: number): number {
+export function springUp(t: number): number {
   const s = 1.7;
   const u = clamp(t, 0, 1) - 1;
   return 1 + (s + 1) * u * u * u + s * u * u;
