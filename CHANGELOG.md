@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.147 — The introduction: a prologue and first steps
+
+- A new game opens with a short prologue played in the game itself, behind black bars: the town at night, your figure walking up the street to grandma's house and opening her front door, then her cellar with the armchair, the salt circle and the broken arch. Captions tell who she was and why the house is yours. Click (or Space) for the next caption, Escape to skip.
+- Then a small paper card at the top right lists your first steps. In the cellar they come one at a time: read the notary's letter, stand in her salt circle, cook a card from her tin, look into her diary, and go down the old shaft. On level 1 they come all at once: stab something, climb a rock face, pick something up, rest by a fire, and find the way down. Each line is struck through as you do it, and when the list is done the card says goodbye.
+- The list is kept with the family's save. A new family sees it again, later grandchildren don't, and `?intro` plays it all on any load.
+
 ## v0.146 — Every race in the Lab
 
 - The Level Lab can stand every race side by side for looking them over: `?lab&races` puts a man and a woman of each of Norgo's ten races in two rows before the view.
