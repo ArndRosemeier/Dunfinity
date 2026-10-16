@@ -123,7 +123,7 @@ Every chapter is **open from the start**, so every way of playing has its first 
 |---|---|---|---|
 | **Kitchen Work** (knives) | blades | Hold It Properly | 5, 10, 15, 25 |
 | **Throwing** | throwing | Second Helpings | 5, 10, 15, 25 |
-| **Footwork** | acrobatics, athletics | Duck | 5, 10, 15, 25 |
+| **Footwork** | acrobatics, athletics | Duck, Spring in Your Step | 5, 10, 15, 25 |
 | **Climbing & Water** | climbing, swimming | Kneading | 5, 10, 15, 25 |
 | **Light** | luminism, parts of lore | Sunday Candle | 5, 10, 15, 25 |
 | **Grandma's Remedies** | vitae, herbalism, cooking, survival | Chicken Soup | 5, 10, 15, 25 |
