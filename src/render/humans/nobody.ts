@@ -8,6 +8,7 @@ import { Humanoid, type ActionAnim, type MoveState } from '@futuremagic/humanoid
 import { deriveSeed } from '@futuremagic/core';
 import type { Body } from '../../world/traverse/body';
 import type { Level } from '../../gen/level';
+import type { Item } from '../../loot/items';
 import { WARDROBE, rags } from './wardrobe';
 import { moveOf, SWIM, swimLift } from './move';
 
@@ -44,14 +45,15 @@ export class Nobody {
     return new Nobody(h, level, seed);
   }
 
-  /** Grandma's pot lid on the arm (the Pot Lid card), or not. Re-dresses only when it changes. */
-  set lid(on: boolean) {
-    if (on === this.lid_) return;
-    this.lid_ = on;
-    this.human.dress(rags(this.seed, on));
+  /** Dress in grandma's pot lid on the arm (the Pot Lid card) or not, and what of the kit is on (src/loot/items.ts). Re-dresses only when it changes. */
+  wear(lid: boolean, items: readonly Item[]): void {
+    const key = `${lid}|${items.map((i) => `${i.kind}:${i.quality}`).join(',')}`;
+    if (key === this.worn) return;
+    this.worn = key;
+    this.human.dress(rags(this.seed, lid, items));
   }
 
-  private lid_ = false;
+  private worn = 'false|';
 
   /** How far the figure is drawn over the body's feet now (`swimLift` while swimming, else 0, eased). */
   lift = 0;

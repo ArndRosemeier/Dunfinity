@@ -56,7 +56,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | The player's figure | `Nobody` (Scale's human in rags, posed from the `Body`) | `src/render/humans/nobody.ts` |
 | A human: body, skeleton, materials, clothes, animation | `Humanoid` (`Humanoid.create(look, { wardrobe })`, `dress`, `update`) | `@futuremagic/humanoid/three` |
 | A human's look (race, age, hair, skin) from a seed | `randomAppearance(race, seed, opts)` | `@futuremagic/humanoid` |
-| Which clothes and held items exist and how they sit | `WARDROBE` (the package's `Wardrobe` hook: clothes, and items like the kitchen knife) and outfits like `rags(seed)` | `src/render/humans/wardrobe.ts` |
+| Which clothes and held items exist and how they sit; what of a grandchild's kit shows on the body | `WARDROBE` (the package's `Wardrobe` hook: clothes, and items like the kitchen knife) and outfits like `rags(seed, lid, items)` (an item's look in `WORN`); the nobody dressed by `nobody.wear(lid, kit.items)` | `src/render/humans/wardrobe.ts`, `src/render/humans/nobody.ts` |
 | What the animator plays for the body's state | `moveOf(body)` | `src/render/humans/move.ts` |
 | Play out a ladder climb (walk up, over a rim or at the foot, hands and feet on the rungs, a level change in the middle), and the pull-up over the top of a climb on the rock (step `ledge`) | `LadderClimb` (`play(steps)`, `advance`) | `src/render/humans/ladderClimb.ts` |
 | Pose the nobody in a scripted scene (not from the body) | `nobody.puppet(...)` with the animator's `override` / `limbs` | `src/render/humans/nobody.ts` |

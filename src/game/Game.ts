@@ -1056,7 +1056,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Grandma's Pot Lid: hold X to keep it up between you and whatever it is.
     const lid = cooked.lid;
     body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard') };
-    nobody.lid = !!cooked.lid;
+    nobody.wear(!!cooked.lid, kit.items);
     body.guarding = !!cooked.lid && controls.held('KeyX') && !busy && !handsBusy && !body.rolling && homeTo === null && now - stabAt > stabDur;
     if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
     if (climb.active) {
