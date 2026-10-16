@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { Rats, RAT } from '../src/creatures/rats';
-import { FIND, FINDS, Finds, Pack } from '../src/loot/finds';
+import { FIND, FINDS, Finds, PACK, Pack } from '../src/loot/finds';
 
 const level = new Level(1, 1);
 const rats = new Rats(level);
@@ -46,4 +46,18 @@ test('a taken find is gone for good, also for the next grandchild', () => {
   p.add(near);
   assert.equal(p.worth, f.value);
   assert.ok(!finds(taken).near(ax, az, 200).some((g) => g.id === f.id));
+});
+
+test('the pack holds PACK.room finds; one taken out makes room for the next', () => {
+  const p = new Pack();
+  const f = (id: number, value: number) => ({ id, kind: 'coin' as const, x: 0, y: 0, z: 0, yaw: 0, value });
+  for (let i = 0; i < PACK.room; i++) assert.ok(p.add(f(i, i + 1)));
+  assert.ok(p.full);
+  assert.equal(p.add(f(99, 50)), false, 'no room');
+  assert.equal(p.items.length, PACK.room);
+  const out = p.takeOut(2)!;
+  assert.equal(out.id, 2);
+  assert.ok(!p.full && p.add(f(99, 50)));
+  assert.equal(p.takeOut(-1), null);
+  assert.equal(p.takeOut(PACK.room), null);
 });
