@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.163 — Held tool models
+
+- Blender-made hatchet, miner's pick and crowbar models (`held_hatchet`, `held_pick`, `held_crowbar`) are now in the model pack, ready for the inventory's weapons.
+
 ## v0.162 — Snapdragon leaves above the floor
 
 - The rosette of leaves at a snapdragon's foot sits on the floor and curls up, instead of sinking into it.
