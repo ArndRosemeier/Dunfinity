@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.177 — Peaceful animals in the levels
+
+- Every level now has a few herds of its own animals, grown by the creature generator: grazers, scuttlers, watchers, drifters and giants. They are rare on levels 1 to 10 and more common deeper.
+- They graze, wander, watch you from a distance and keep out of your way. None of them comes after you.
+- Attack one and it fights back, or runs if the fight is hopeless. Its strength is its size, so leave the giants alone.
+
 ## v0.176 — Light wisps out of the glowing rock
 
 - Now and then a small light pulls itself out of the glowing salt veins, drifts slowly along the rock and lights it up around it, swells, and pops in a bright flash. They are harmless: there for wonder, not to fight.
