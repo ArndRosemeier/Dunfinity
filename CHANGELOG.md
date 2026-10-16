@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.159 — Miner's hard hat model
+
+- A Blender-made miner's hard hat (`wear_hard_hat`) is now in the model pack, ready for the inventory's head slot: dented dark green enamel, a crown ridge, a brim and a lamp on the front.
+
+## v0.158 — Living stalagmites
+
+- Here and there, under a little stalactite, water starts to drip, and a stalagmite grows under it while you watch: about a metre in a minute, its fresh tip glinting blue each time a drop lands.
+- When the dripping stops it stands a while, wet and dark, then sinks slowly back into the floor; after a rest the dripping starts again. The whole round takes about three minutes.
+- A few on every level below the cellar, more by water and in the salt. The debug menu can take you to the nearest one.
+- You hear each drop land when you are near.
+
+## v0.157 — Grandma's ghost
+
+- Grandma Grete is still keeping her circle. When a grandchild comes into the round room, the first time or back up from below, she sometimes rises beside her armchair, a ghost in the salt's blue, says one thing, and fades.
+- A new grandchild hears a word from her about the cousin who fell before them. Coming back up, she may have one of a few lines, only ever about what the family has already seen. Most visits she says nothing.
+
+## v0.156 — Snapdragons sound like themselves
+
+- A snapdragon coming up and its bite now have their own sounds.
+
+## v0.155 — Grandma's Snapdragons
+
+- A new chapter in grandma's tin, The Garden, with its first card: Snapdragons (U, or its slot on the bar).
+- Toss a seed: where it lands the floor bursts green and a snapping plant shoots up in under two seconds.
+- For 12 seconds it turns to the nearest living thing within 2.2 m and bites it, coiling back, lunging and snapping its jaws shut. That includes you, so step back.
+- Cooked again, it bites harder, further (3 m) and for longer (15 s).
+
 ## v0.154 — Sounds for the light wisps, the dripping stalagmite and the Snapdragons
 
 - The light wisps that rise out of glowing salt rock now have a soft wind-chime shimmer as they rise and a short glassy ting when they pop.

@@ -3,7 +3,8 @@
  * their way (a blow through combat's damage(), so a kill is the knife's and counts), and land: one
  * that hit drops at the creature's feet, one that missed sticks where it struck the rock. There are
  * always more knives in the block, so a landed one just fades after a while. Candles (her Sunday
- * Candle) are tossed ahead, land and burn: a light the things of the dark keep away from.
+ * Candle) are tossed ahead, land and burn: a light the things of the dark keep away from. A seed
+ * (her Snapdragons) is tossed the same way; where it comes down it is handed on (`sown`) to come up.
  *
  * Pure: what flies is plain data, stepped against the level and the creatures.
  */
@@ -31,7 +32,7 @@ export const THROW = {
 export const CANDLE = { speed: 8, lift: 3.5, burn: 40, shun: 6 } as const;
 
 export interface Missile {
-  readonly kind: 'knife' | 'candle';
+  readonly kind: 'knife' | 'candle' | 'seed';
   x: number; y: number; z: number;
   vx: number; vy: number; vz: number;
   /** Seconds since thrown, and since it landed (-1: still flying). */
@@ -69,9 +70,12 @@ export class Thrown {
     return k;
   }
 
-  /** Toss a candle from (x, y, z) along `yaw`: it lands a few metres ahead and burns. */
-  toss(x: number, y: number, z: number, yaw: number): Missile {
-    const c: Missile = { kind: 'candle', x, y, z, vx: -Math.sin(yaw) * CANDLE.speed, vy: CANDLE.lift, vz: -Math.cos(yaw) * CANDLE.speed, t: 0, landed: -1, spent: true };
+  /** Seeds that came down since last asked, on the floor where they landed (the game takes them: `sown.splice(0)`). */
+  readonly sown: Missile[] = [];
+
+  /** Toss a candle (or a seed) from (x, y, z) along `yaw`: it lands a few metres ahead and burns (or comes up). */
+  toss(x: number, y: number, z: number, yaw: number, kind: 'candle' | 'seed' = 'candle'): Missile {
+    const c: Missile = { kind, x, y, z, vx: -Math.sin(yaw) * CANDLE.speed, vy: CANDLE.lift, vz: -Math.cos(yaw) * CANDLE.speed, t: 0, landed: -1, spent: true };
     this.missiles.push(c);
     return c;
   }
@@ -113,8 +117,9 @@ export class Thrown {
         }
         if (level.sdf(k.x, k.y, k.z) < 0.02) {
           k.landed = 0;
-          // A candle stands up where it comes down (just above the floor, not in it).
-          if (k.kind === 'candle') k.y = level.groundAt(k.x, k.z);
+          // A candle stands up where it comes down (just above the floor, not in it); a seed goes in there.
+          if (k.kind !== 'knife') k.y = level.groundAt(k.x, k.z);
+          if (k.kind === 'seed') { this.sown.push(k); this.missiles.splice(i, 1); }
         }
       }
     }
