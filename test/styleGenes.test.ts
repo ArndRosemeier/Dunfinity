@@ -15,6 +15,7 @@ import { Collapse, COLLAPSE_GENES } from '../src/gen/collapse';
 import { Fungal, FUNGAL_GENES } from '../src/gen/fungal';
 import { Lava, LAVA_GENES } from '../src/gen/lava';
 import { Organic, ORGANIC_GENES } from '../src/gen/organic';
+import { GlyphCut, GLYPH_GENES } from '../src/gen/glyph';
 import { Level } from '../src/gen/level';
 import { newColumn } from '../src/gen/quarry';
 import type { Style } from '../src/gen/style';
@@ -27,6 +28,7 @@ const GENED: [string, (t: Traits) => Style, Record<string, Gene>][] = [
   ['fungal', (t) => new Fungal(7, bandOf(45), t), FUNGAL_GENES],
   ['lava', (t) => new Lava(7, bandOf(45), t), LAVA_GENES],
   ['organic', (t) => new Organic(7, bandOf(45), t), ORGANIC_GENES],
+  ['glyph', (t) => new GlyphCut(7, bandOf(45), t), GLYPH_GENES],
 ];
 
 /** Every gene low, every gene high, and four seeded mixes of the ends. */

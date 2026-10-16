@@ -19,6 +19,7 @@ import { newColumn, type Column, type ColumnMix, type QuarryField } from './quar
 import { REGIONS, Regions, newShares, type Mix, type Shares } from './regions';
 import { BARE, NATURAL, SHARE_OWN, type Style } from './style';
 import { putRocks, rockMix, type RockMix } from './rockTypes';
+import { segDist } from './shapes';
 
 /**
  * How far from zero the field counts (E4), on a level of more than one style: CLAMP metres on a
@@ -152,7 +153,7 @@ export class StyledField {
     for (let i = 0; i < sh.others; i++) {
       const p = this.passage(sh.id, sh.px, sh.pz, sh.styles[0], sh.oids[i], sh.opx[i], sh.opz[i], sh.ostyles[i]);
       if (!p) continue;
-      best = Math.max(best, PASSAGE.half - Math.min(segment(x, z, p.ax, p.az, p.mx, p.mz), segment(x, z, p.mx, p.mz, p.bx, p.bz)));
+      best = Math.max(best, PASSAGE.half - Math.min(segDist(x, z, p.ax, p.az, p.mx, p.mz), segDist(x, z, p.mx, p.mz, p.bx, p.bz)));
     }
     return best;
   }
@@ -240,11 +241,4 @@ export class StyledField {
   water(x: number, z: number): number {
     return this.excavation.water(x, z);
   }
-}
-
-/** Distance from (x, z) to the segment from (ax, az) to (bx, bz). */
-function segment(x: number, z: number, ax: number, az: number, bx: number, bz: number): number {
-  const ex = bx - ax, ez = bz - az, l2 = ex * ex + ez * ez;
-  const t = l2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * ex + (z - az) * ez) / l2)) : 0;
-  return Math.hypot(x - ax - ex * t, z - az - ez * t);
 }

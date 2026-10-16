@@ -2104,10 +2104,6 @@
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
   {
-    "key": "idiom: [.grain .u .v] in dunfinity/gen/catacombs.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts",
-    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
-  },
-  {
     "key": "same name: dunfinity/gen/basalt.ts#climbable + dunfinity/gen/elven.ts#climbable",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -3884,14 +3880,6 @@
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
   {
-    "key": "idiom: [.get .own .v] in dunfinity/gen/bones.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts + dunfinity/gen/organic.ts + dunfinity/gen/rift.ts",
-    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
-  },
-  {
-    "key": "idiom: [.grain .u] in dunfinity/gen/catacombs.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts",
-    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
-  },
-  {
     "key": "idiom: [.lines .nearest] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/organic.ts + dunfinity/gen/rift.ts",
     "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) and ask it for the nearest line as their portal: one seam, called the same way"
   },
@@ -4230,5 +4218,205 @@
   {
     "key": "clone: dunfinity/gen/lava.ts#radius + dunfinity/gen/organic.ts#radius",
     "reason": "each tube style rolls its own tube radius from its own genes and noise; lava widens with heat, organic narrows at its rings"
+  },
+  {
+    "key": "idiom: [.floor .n2 .noise] in dunfinity/gen/catacombs.ts + dunfinity/gen/geode.ts + dunfinity/gen/glyph.ts",
+    "reason": "each style rolls its own floor from its own seeded Noise; the scales and offsets differ per style"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/bones.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/glyph.ts + dunfinity/gen/goblin.ts + dunfinity/gen/lava.ts + dunfinity/gen/organic.ts + dunfinity/gen/rift.ts",
+    "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
+  },
+  {
+    "key": "idiom: [.grain .u .v] in dunfinity/gen/catacombs.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/glyph.ts",
+    "reason": "the grid and line styles all read their (u, v) from the one Grain seam (src/gen/grainLines.ts); the call is the seam, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/gen/basalt.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/basalt.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/basalt.ts#portal + dunfinity/gen/glyph.ts#portal",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/bones.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/catacombs.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/catacombs.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/catacombs.ts#props + dunfinity/gen/glyph.ts#props",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/caveThings.ts#column + dunfinity/gen/glyph.ts#column",
+    "reason": "CaveThings (src/gen/caveThings.ts) is the seam the cave styles call from their own column/at; same names on purpose, one implementation"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellar.ts#at + dunfinity/gen/glyph.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/collapse.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/collapse.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/collapse.ts#portal + dunfinity/gen/glyph.ts#portal",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/dungeon.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/dungeon.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/dwarven.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/dwarven.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/elven.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/elven.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/flooded.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/flooded.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/fungal.ts#at + dunfinity/gen/glyph.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/fungal.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/fungal.ts#color + dunfinity/gen/glyph.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/fungal.ts#props + dunfinity/gen/glyph.ts#props",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/geode.ts#climbable + dunfinity/gen/glyph.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#at + dunfinity/gen/roots.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#at + dunfinity/render/humans/ladderClimb.ts#at",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#climbable + dunfinity/gen/goblin.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#climbable + dunfinity/gen/karst.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#climbable + dunfinity/gen/lava.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#climbable + dunfinity/gen/organic.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#climbable + dunfinity/gen/quarry.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#climbable + dunfinity/gen/rift.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#climbable + dunfinity/gen/roots.ts#climbable",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#color + dunfinity/gen/goblin.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#color + dunfinity/gen/karst.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#color + dunfinity/gen/lava.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#color + dunfinity/gen/organic.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#color + dunfinity/gen/quarry.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#color + dunfinity/gen/rift.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#color + dunfinity/gen/roots.ts#color",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#plan + dunfinity/gen/sheds.ts#plan",
+    "reason": "unrelated things of one name: the glyph-cut trench plan, a shed's floor plan, a climb's plan of moves"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#plan + dunfinity/render/humans/ladderClimb.ts#plan",
+    "reason": "unrelated things of one name: the glyph-cut trench plan, a shed's floor plan, a climb's plan of moves"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#portal + dunfinity/gen/karst.ts#portal",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#props + dunfinity/gen/lava.ts#props",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#props + dunfinity/gen/organic.ts#props",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
+  },
+  {
+    "key": "same name: dunfinity/gen/glyph.ts#surface + dunfinity/gen/organic.ts#surface",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   }
 ]
