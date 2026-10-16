@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.125 — Deep laws: water that climbs, pillars on older stone
+
+- Two new laws for deep strata. In some, water runs up the rock wherever it laps it, as it does in a few places in the Cisterns, but everywhere. In others, the old workings' pillars stand on drums of an older people's stone.
+- Like the light laws, a stratum keeps them on all its levels. Levels 1–10 are unchanged.
+
 ## v0.124 — Bone hollows
 
 - New level style, bone hollows: caverns inside the carcasses of something enormous and long dead, lying one after another down the level's grain and joined by low passages.
