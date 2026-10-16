@@ -635,6 +635,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
+    /** Grandma's ghost in the round room. */
+    grandma,
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Dress the creatures as the kin of another depth (a look at them without going down). */
@@ -1176,7 +1178,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
     strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
-    const word = level.depth === 0 && !body.dead ? grandma.keep(dt, now, body.x, body.y, body.z, { deepest: tin.deepest, fallen, seed: params.seed }) : null;
+    // Not while the level streams in behind the black, nor through the prologue.
+    const word = level.depth === 0 && !body.dead && !arriving && !loading.open && !prologue ? grandma.keep(dt, now, body.x, body.y, body.z, { deepest: tin.deepest, fallen, seed: params.seed }) : null;
     if (word) say(`Grandma: ${word}`, GRANDMA.talk + 1);
     grandmaView.people.draw(level.depth === 0 && grandma.mode !== 'away' ? [grandma] : [], body.x, body.z, dt, now);
     if (fauna.tall.stares > stares) say('The Tall One looks at you, and the cold of it goes right through you.', 3);
