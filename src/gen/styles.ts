@@ -33,7 +33,7 @@ type Make = (seed: number, band: Band, water: WaterTable, traits: Traits) => Sty
 const MAKE: Partial<Record<StyleId, Make>> = {
   karst: (seed, band, _w, traits) => new Karst(seed, band, traits),
   rift: (seed, band, _w, traits) => new Rift(seed, band, traits),
-  collapse: (seed, band) => new Collapse(seed, band),
+  collapse: (seed, band, _w, traits) => new Collapse(seed, band, traits),
   catacombs: (seed, band) => new Catacombs(seed, band),
   dungeon: (seed, band) => new Dungeon(seed, band),
   roots: (seed, band, _w, traits) => new Roots(seed, band, traits),
