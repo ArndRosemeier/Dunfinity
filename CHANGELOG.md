@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.176 — Light wisps out of the glowing rock
+
+- Now and then a small light pulls itself out of the glowing salt veins, drifts slowly along the rock and lights it up around it, swells, and pops in a bright flash. They are harmless: there for wonder, not to fight.
+- They come where the rock glows (the Salt Works most, the Threshold and glowing strata now and then, rarely where the seams only glow faintly, never in the cellar), never more than three at a time.
+
 ## v0.175 — Grandma's tin, reworked, with drag and drop onto the bar
 
 - The tin now stands above the main bar instead of over it, and the bar stays shown while the tin is open.
