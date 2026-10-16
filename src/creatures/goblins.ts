@@ -37,6 +37,9 @@ export const GOBLIN_FOLK = {
   aim: 7,
   reach: 2.2,
   round: 2.5,
+  /** Coming for you and getting nowhere for `stuck` seconds (rock in the way), it gives up on you for `balk` seconds. */
+  stuck: 1.5,
+  balk: 5,
   /** The chance a jab that lands snatches something; how long a thief runs, s. */
   snatch: 0.35,
   fleeT: 9,
@@ -57,6 +60,11 @@ export type GoblinMode = 'squat' | 'shriek' | 'chase' | 'jab' | 'flee' | 'home' 
 export class Goblin extends Creature<GoblinMode> {
   t = 0;
   swingT = 9;
+  /** Coming for you: where it last got going from, and seconds since (it is getting nowhere); seconds left of giving up on you (it cannot get at you from here). */
+  fromX = 0;
+  fromZ = 0;
+  stuckT = 0;
+  balk = 0;
   /** What it snatched from you (the game's), carried until it dies. */
   loot: unknown = null;
   /** Where it squats in the den. */
@@ -127,6 +135,7 @@ export class Goblins extends Population<Lair, Goblin> {
     const G = GOBLIN_FOLK, W = G.swing, den = g.den;
     g.swingT += dt;
     g.t += dt;
+    g.balk = Math.max(0, g.balk - dt);
     if (g.provoked) {
       g.provoked = false;
       if (!g.dead) den.roused = true;
@@ -138,7 +147,7 @@ export class Goblins extends Population<Lair, Goblin> {
     }
     const dx = prey.x - g.x, dz = prey.z - g.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     const seen = !prey.dead && Math.abs(prey.y - g.y) < 3;
-    const after = den.roused && seen && (g.mode === 'squat' || g.mode === 'home' ? noticed(prey, d, G.notice * 1.4) : d < G.forget);
+    const after = den.roused && seen && g.balk <= 0 && (g.mode === 'squat' || g.mode === 'home' ? noticed(prey, d, G.notice * 1.4) : d < G.forget);
 
     let hit = 0;
     switch (g.mode) {
@@ -158,7 +167,17 @@ export class Goblins extends Population<Lair, Goblin> {
         const a = toYou + Math.PI + g.flank, fx = prey.x - Math.sin(a) * G.reach, fz = prey.z - Math.cos(a) * G.reach;
         if (g.t < G.round && Math.hypot(fx - g.x, fz - g.z) > 0.8 && d > G.reach * 0.7) this.steer.move(g, fx, fz, G.run, dt, toYou);
         else {
-          g.t = G.round;
+          if (g.t < G.round) { g.t = G.round; g.fromX = g.x; g.fromZ = g.z; g.stuckT = 0; }
+          // Getting nowhere (rock between it and you): it gives up on you for a while, rather than push at the rock.
+          if (Math.hypot(g.x - g.fromX, g.z - g.fromZ) > 0.4) { g.fromX = g.x; g.fromZ = g.z; g.stuckT = 0; } else g.stuckT += dt;
+          if (g.stuckT > G.stuck && d > G.reach + 0.5) { g.mode = 'home'; g.balk = G.balk; break; }
+          // Stuck a moment, it stands and glares at you rather than shuffle at what is in the way;
+          // close by (the others in the way) it tries again after a while.
+          if (g.stuckT > G.stuck * 0.25) {
+            this.steer.move(g, g.x, g.z, 0, dt, toYou);
+            if (d <= G.reach + 0.5 && g.stuckT > G.stuck * 0.75) { g.fromX = g.x; g.fromZ = g.z; g.stuckT = 0; }
+            break;
+          }
           if (closeIn(g, g.swingT, prey, W, G.run, this.steer, dt, 0.8)) { g.mode = 'jab'; g.swingT = 0; }
         }
         break;
