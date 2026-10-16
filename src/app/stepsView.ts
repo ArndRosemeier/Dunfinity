@@ -9,7 +9,7 @@ import { child, esc, keycap, panel } from './panel';
 import { growOn, type Growth } from './growth';
 
 const STYLE = `
-  #steps { position: fixed; right: 14px; top: 52px; z-index: 6; width: min(330px, calc(100vw - 28px)); pointer-events: none; box-sizing: border-box;
+  #steps { position: fixed; right: 16px; top: 130px; z-index: 6; width: min(330px, calc(100vw - 28px)); pointer-events: none; box-sizing: border-box;
     padding: 10px 14px 11px; font: 15px/1.35 var(--ui-font-paper); box-shadow: var(--ui-shadow);
     transform: rotate(0.6deg); opacity: 0; transition: opacity 0.8s var(--ui-ease), transform 0.8s var(--ui-ease); display: none; }
   #steps.open { display: block; }
