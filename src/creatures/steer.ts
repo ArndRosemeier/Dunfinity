@@ -23,8 +23,12 @@ export interface Walker {
   yaw: number;
   /** Which way it last went round something in its way (+1 / -1). */
   side: number;
-  /** Getting nowhere (see `Steer.move`): its goal, the nearest it has come to it, for how long not nearer (seconds), and how long it still stands. */
-  aim?: { x: number; z: number; best: number; since: number; wait: number };
+  /**
+   * Getting nowhere (see `Steer.move`): its goal, the nearest it has come to it, for how long not
+   * nearer (seconds), how long it still stands, and for how long it has tried and got nowhere,
+   * whatever the goal (`thwarted`).
+   */
+  aim?: { x: number; z: number; best: number; since: number; wait: number; stuck: number };
   /** Chilled (grandma's Cold Larder): seconds left, and the share of its pace it keeps meanwhile. */
   chill?: { left: number; by: number };
   readonly radius: number;
@@ -53,7 +57,15 @@ export interface Gait {
  * the time it takes to get up to speed, if longer) stands for `wait` seconds; one slowed to `slow`
  * of its pace (arriving) is not trying. A goal moved by `moved` metres is a fresh start.
  */
-const GIVE_UP = { share: 0.17, after: 0.12, slow: 0.06, wait: 0.6, moved: 0.6 } as const;
+const GIVE_UP = { share: 0.17, after: 0.12, slow: 0.06, wait: 0.6, moved: 0.6, thwarted: 2.5 } as const;
+
+/**
+ * Whether w has tried to get somewhere for a while and got nowhere (its goal up a ledge it cannot
+ * take, behind rock): whoever it is after is out of its reach for now.
+ */
+export function thwarted(w: Walker): boolean {
+  return (w.aim?.stuck ?? 0) > GIVE_UP.thwarted;
+}
 
 export class Steer {
   /** The props in the way (src/world/blockers.ts). */
@@ -81,15 +93,16 @@ export class Steer {
     // Getting nowhere (shoved back by its fellows, its goal behind rock or up a ledge, boxed in among
     // fallen blocks): it stands a moment instead of trying this way and that on the spot, and then
     // tries again. A goal that moves on is a fresh start.
-    const aim = (w.aim ??= { x: gx, z: gz, best: dist, since: 0, wait: 0 });
+    const aim = (w.aim ??= { x: gx, z: gz, best: dist, since: 0, wait: 0, stuck: 0 });
     if (Math.hypot(gx - aim.x, gz - aim.z) > GIVE_UP.moved) { aim.x = gx; aim.z = gz; aim.best = dist; aim.since = 0; aim.wait = 0; }
     if (aim.wait > 0) {
       speed = 0;
+      aim.stuck += dt;
       if ((aim.wait -= dt) <= 0) { aim.best = dist; aim.since = 0; }
     } else if (speed > GIVE_UP.slow * pace) {
-      if (dist < aim.best - GIVE_UP.share * pace * after) { aim.best = dist; aim.since = 0; }
-      else if ((aim.since += dt) > after) aim.wait = GIVE_UP.wait;
-    } else aim.since = 0;
+      if (dist < aim.best - GIVE_UP.share * pace * after) { aim.best = dist; aim.since = 0; aim.stuck = 0; }
+      else { aim.stuck += dt; if ((aim.since += dt) > after) aim.wait = GIVE_UP.wait; }
+    } else aim.since = aim.stuck = 0;
     if (speed > 0.02) {
       ddx /= dist; ddz /= dist;
       let want = Math.atan2(-ddx, -ddz);

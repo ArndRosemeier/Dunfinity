@@ -34,7 +34,7 @@ export const SCAVENGER = {
   /** On getting up: a moment before they move, s. */
   rise: 0.9,
   /** The crowbar (see pick.ts): a short wind-up over the shoulder and a quick blow. */
-  swing: { dur: 1.1, hit: 0.55, start: 0.9, range: 1.15, arc: 0.7, low: 0, high: 1.9, damage: [10, 16] as const, knock: 3, rest: 0.6 },
+  swing: { dur: 1.1, hit: 0.55, start: 0.9, range: 1.15, arc: 0.7, low: 0, high: 1.9, damage: [8, 13] as const, knock: 3, rest: 0.6 },
   aim: 4,
   /** Below this share of its health it runs for it, this long. */
   fear: 0.35,

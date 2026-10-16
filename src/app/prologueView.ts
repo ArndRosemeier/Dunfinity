@@ -4,7 +4,7 @@
  * Everything else on the page hides while it plays (the `cinematic` class on the body). A click on
  * it hurries the caption on (`onNext`).
  */
-import { esc, panel } from './panel';
+import { esc, keycap, panel } from './panel';
 
 const STYLE = `
   body.cinematic > :not(canvas):not(#prologue) { visibility: hidden !important; }
@@ -16,10 +16,9 @@ const STYLE = `
   #prologue.shown .bar { transform: none; }
   #prologue .black { position: absolute; inset: 0; background: #000; opacity: 1; pointer-events: none; }
   #prologue .caption { position: absolute; left: 50%; bottom: calc(13vh + 18px); transform: translateX(-50%); width: min(820px, calc(100vw - 48px));
-    text-align: center; color: #efe6cf; font: italic 22px/1.45 Georgia, 'Times New Roman', serif; text-shadow: 0 2px 6px #000, 0 0 18px #000c; opacity: 0; }
-  @media (max-width: 720px) { #prologue .caption { font-size: 17px; } }
-  #prologue .keys { position: absolute; right: 18px; bottom: calc(6.5vh - 8px); color: #8d8574; font: 12px system-ui, sans-serif; letter-spacing: 0.04em; opacity: 0.8; }
-  #prologue .keys b { color: #c9bfa6; font-weight: 600; }`;
+    text-align: center; color: var(--ui-ink); font: italic 24px/1.4 var(--ui-font-display); text-shadow: 0 2px 6px #000, 0 0 18px #000c; opacity: 0; }
+  @media (max-width: 720px) { #prologue .caption { font-size: 18px; } }
+  #prologue .keys { position: absolute; right: 18px; bottom: calc(6.5vh - 12px); margin: 0; opacity: 0.8; }`;
 
 export class PrologueView {
   private readonly el: HTMLDivElement;
@@ -30,7 +29,7 @@ export class PrologueView {
   constructor(host: HTMLElement, onNext: () => void) {
     this.el = panel(host, 'div', 'prologue', STYLE);
     this.el.innerHTML = '<div class="bar top"></div><div class="bar bottom"></div><div class="caption"></div><div class="black"></div>'
-      + '<div class="keys"><b>click</b> next &nbsp;·&nbsp; <b>Esc</b> skip</div>';
+      + `<div class="keys ui-keys">${keycap('click')} next &nbsp; ${keycap('Esc')} skip</div>`;
     this.caption = this.el.querySelector('.caption')!;
     this.black = this.el.querySelector('.black')!;
     this.el.addEventListener('click', onNext);
