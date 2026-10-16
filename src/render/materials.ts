@@ -8,13 +8,14 @@
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
+import { PULSE } from '../gen/veinPulse';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
-import { Fn, If, abs, attribute, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, modelPosition, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
   /** The geometry attributes meshes of this kind carry (warm-up builds a matching stand-in). Meshes are always indexed. */
-  readonly attributes: readonly ('position' | 'normal' | 'color' | 'uv' | 'surface')[]; // 'surface' carries `rocks` and `rocks2` with it (meshes.ts `surfaceAttributes`)
+  readonly attributes: readonly ('position' | 'normal' | 'color' | 'uv' | 'surface' | 'look')[]; // 'surface' carries `rocks` and `rocks2` with it (meshes.ts `surfaceAttributes`)
   /** Whether meshes of this kind cast and receive the headlamp's shadow (receiving is part of the shader's cache key). */
   readonly shadow: { readonly cast: boolean; readonly receive: boolean };
   /** The kind's material (one instance, made on first use). */
@@ -275,12 +276,17 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const stretch = smoothstep(0.15, 0.5, mx_noise_float(p.mul(0.045).add(vec3(7.3, 1.1, -4.2))));
   const vein = smoothstep(0.975, 0.996, line).add(smoothstep(0.985, 0.998, fine).mul(smoothstep(0.85, 0.97, line)).mul(0.7)).mul(stretch);
   const pulse = sin(time.mul(1.1).add(p.x.mul(0.13)).add(p.z.mul(0.09))).mul(0.15).add(0.85);
+  // Now and then a ring of brighter light runs out through them (`VEIN_PULSE`).
+  const toRing = length(p.xz.sub(VEIN_PULSE.xy)).sub(VEIN_PULSE.z).div(PULSE.width);
+  // Where it passes, the veins widen and the faint ones round them light too, even where the rock has few.
+  const wave = toRing.mul(toRing).negate().exp().mul(VEIN_PULSE.w);
+  const woken = smoothstep(0.93, 0.995, line).add(smoothstep(0.95, 0.998, fine).mul(0.6)).mul(stretch.mul(0.6).add(0.4)).mul(wave).mul(1.6);
   // Salt crystals glinting in the headlamp (it is carried at the eye): tiny facets that catch the
   // light as the viewer moves, only close by.
   const facet = mx_worley_noise_float(p.mul(9));
   const twinkle = smoothstep(0.5, 0.85, mx_noise_float(p.mul(13).add(cameraPosition.mul(1.7))));
   const glint = smoothstep(0.16, 0.04, facet).mul(twinkle).mul(smoothstep(14, 2, length(positionView))).mul(natural.add(worked).clamp(0, 1)).mul(saltShare);
-  m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
+  m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).add(woken).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
   return m;
 });
 
@@ -310,6 +316,9 @@ const VEIN_CREEP = 0.008;
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);
+
+/** The pulse running through the veins now (src/gen/veinPulse.ts): its middle (x, z), its ring's radius (m), its strength (0: none). Set by `LevelView`. */
+export const VEIN_PULSE = uniform(new Vector4(0, 0, 0, 0));
 
 /**
  * The band's finish of its rock (`band.finish`), set by `LevelView`: worked walls cast in concrete
@@ -478,6 +487,86 @@ export const MURK_COAT = defineCoat('murkCoat', 0.18);
 /** The brine eels' skin (AssetGenerator spec creature_brine_eel): slimy. */
 export const EEL_COAT = defineCoat('eelCoat', 0.35);
 
+/**
+ * The procedural creatures' flesh (src/creatures/flesh.ts, docs/design/procedural-creatures.md):
+ * every species on this one kind, so a new species is never a new shader. The coat is painted into
+ * the vertex colours (pattern, belly, horn and shell, the folds' shade); `look` carries per vertex
+ * the roughness, the integument, the glow and how see-through the skin is. The shader adds the
+ * integument's fine grain on the rest shape (so it holds still on the moving body), faded out where
+ * it would be finer than a pixel: fur in strands along the body, overlapping scales, chitin's seams
+ * and sheen, wet slime, a hide's wrinkles, stone's cracks. Glowing spots pulse; see-through skin
+ * shows its glowing insides at the rim. A hit flashes it red for a moment (`userData.hurt`, per
+ * object, 0..1). Skinned: every creature's skeleton is padded to `CRITTER_BONES`, which the skinning
+ * shader is keyed by.
+ */
+export const CRITTER = defineKind('critter', ['position', 'normal', 'color', 'look'], () => {
+  const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.8, metalness: 0 });
+  const look = attribute<'vec4'>('look', 'vec4');
+  const kind = look.y.mul(8).floor();
+  const p = positionGeometry;
+  // Fine detail fades out where it would be finer than a pixel (no sparkle far off).
+  const fadeAt = (q: Node<'vec3'>) => smoothstep(0.6, 0.2, q.fwidth().length());
+  const fur = Fn(() => {
+    const q = p.mul(vec3(150, 150, 38));
+    return mx_noise_float(q).mul(0.6).add(mx_noise_float(p.mul(vec3(60, 60, 15)).add(3.1)).mul(0.4)).mul(fadeAt(q));
+  });
+  const scales = Fn(() => {
+    const q = p.mul(vec3(46, 46, 32));
+    const c = mx_worley_noise_vec2(q);
+    return smoothstep(0.0, 0.3, c.y.sub(c.x)).mul(fadeAt(q));
+  });
+  const seams = Fn(() => {
+    const q = p.mul(7).add(mx_noise_vec3(p.mul(3)).mul(0.08));
+    const s = q.z.fract();
+    return smoothstep(0.0, 0.07, s).mul(smoothstep(1.0, 0.93, s)).mul(fadeAt(q)).add(fadeAt(q).oneMinus());
+  });
+  const wrinkles = Fn(() => {
+    const q = p.mul(vec3(38, 38, 20));
+    return abs(mx_noise_float(q)).oneMinus().mul(fadeAt(q));
+  });
+  const detail = Fn(() => {
+    const height = float(0).toVar(), tint = float(1).toVar();
+    If(kind.equal(0), () => { const f = fur(); height.assign(f); tint.assign(f.mul(0.24).add(0.86)); })
+      .ElseIf(kind.equal(1), () => { const w = wrinkles(); height.assign(w.mul(0.6)); tint.assign(w.mul(0.12).add(0.92)); })
+      .ElseIf(kind.equal(2), () => { const s = scales(); height.assign(s); tint.assign(s.mul(0.25).add(0.8)); })
+      .ElseIf(kind.equal(3), () => { const s = seams(); height.assign(s.mul(0.8)); tint.assign(s.mul(0.4).add(0.6)); })
+      .ElseIf(kind.equal(4), () => { const n = mx_noise_float(p.mul(18)); height.assign(n.mul(0.3)); tint.assign(n.mul(0.15).add(0.95)); })
+      .Else(() => { const c = mx_worley_noise_vec2(p.mul(7)); const crack = smoothstep(0.0, 0.05, c.y.sub(c.x)); height.assign(crack); tint.assign(crack.mul(0.35).add(0.65)); });
+    return vec2(height, tint);
+  })();
+  const height = detail.x, tint = detail.y;
+  const hurt = uniform(0).onObjectUpdate(({ object }) => (object?.userData.hurt as number | undefined) ?? 0);
+  m.colorNode = vertexColor().mul(tint);
+  m.normalNode = bumped(height, 0.012);
+  m.roughnessNode = look.x;
+  // Glow pulses slowly, each spot in its own time; see-through skin lights at the rim.
+  const pulse = sin(time.mul(2.1).add(p.z.mul(9)).add(p.x.mul(5))).mul(0.25).add(0.75);
+  const rim = float(1).sub(abs(dot(normalView, positionView.normalize().negate()))).pow(2);
+  m.emissiveNode = vertexColor().mul(look.z.mul(pulse).mul(2.2).add(look.w.mul(rim).mul(0.9))).add(vec3(0.7, 0.04, 0.02).mul(hurt));
+  return m;
+});
+
+/** How many bones every procedural creature's skeleton has (padded): the skinning shader is keyed by the count. */
+export const CRITTER_BONES = 96;
+
+/**
+ * A procedural creature's eyes: wet balls, the iris and pupil drawn from the ball's own shape
+ * (its +z looks out), the iris colour per vertex. The pupil throws a little light back, so eyes
+ * shine in the dark when the headlamp finds them.
+ */
+export const CRITTER_EYE = defineKind('critterEye', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.06, metalness: 0 });
+  const e = positionGeometry.normalize();
+  const ang = e.z.clamp(-1, 1).acos();
+  const iris = smoothstep(1.05, 0.95, ang);
+  const rings = mx_noise_float(vec3(e.y.atan(e.x).mul(6), ang.mul(30), 1));
+  const pupil = smoothstep(0.38, 0.32, ang.div(0.6)).mul(smoothstep(-0.05, 0.05, e.z));
+  const col = mix(vec3(0.42, 0.38, 0.34), vertexColor().mul(rings.mul(0.5).add(0.7)), iris);
+  m.colorNode = mix(col, vec3(0.01, 0.01, 0.01), pupil);
+  m.emissiveNode = vertexColor().mul(pupil.mul(0.35).add(iris.mul(0.06)));
+  return m;
+}, { cast: false, receive: true });
+
 /** Where the headlamp is and which way it shines (world), for the dust in its beam: set every frame by `Dust`. */
 export const DUST_LAMP = { at: uniform(new Vector3()), dir: uniform(new Vector3(0, 0, -1)) };
 /** The dust box: motes fill a cube this many metres wide that travels with the camera. */
@@ -505,6 +594,28 @@ export const DUST = defineKind('dust', ['position', 'normal', 'color'], () => {
   const lit = varying(inBeam.mul(smoothstep(0.4, 1.2, d)).div(max(d.mul(d), 1).mul(0.1)).mul(seed.z), 'vDustLit');
   const soft = smoothstep(1, 0.2, length(varying(corner.xy, 'vDustCorner')));
   m.colorNode = vec3(1.0, 0.86, 0.66).mul(lit.mul(soft));
+  return m;
+}, { cast: false, receive: false });
+
+/** The wisps' colour (linear rgb), the level's glow (src/creatures/wisps.ts `glowOf`): set by `WispView`. */
+export const WISP_TINT = uniform(new Vector3(0.25, 0.6, 1.0));
+
+/**
+ * A wisp's light seen in the air (src/render/creatures/wispView.ts): a quad turned to the camera, a
+ * white-hot core in a soft halo of the level's glow, additive. `position` carries the quad's corner
+ * (x, y in -1..1); the mesh's scale carries its size (x, m) and brightness (y), so one material
+ * serves every wisp. Pulled a little towards the camera, so a halo by the rock is not cut by it.
+ * Same attributes as the solid kind.
+ */
+export const WISP = defineKind('wisp', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
+  const size = modelScale.x, view = cameraViewMatrix.mul(vec4(modelPosition, 1));
+  const toward = min(size.mul(0.6), view.z.negate().mul(0.5));
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(positionLocal.xy.mul(size)), view.z.add(toward), view.w));
+  const r = length(varying(positionLocal.xy, 'vWispCorner'));
+  const core = smoothstep(0.2, 0.0, r), halo = float(1).sub(r).clamp(0, 1).pow(2.2);
+  const far = smoothstep(60, 25, length(view.xyz));
+  m.colorNode = mix(WISP_TINT, vec3(1, 1, 1), core.mul(0.8)).mul(halo.mul(0.7).add(core.mul(1.6))).mul(modelScale.y).mul(far);
   return m;
 }, { cast: false, receive: false });
 

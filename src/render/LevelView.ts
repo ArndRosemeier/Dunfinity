@@ -10,7 +10,8 @@ import { airOf, type Air } from '../gen/air';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
 import { Dust } from './dust';
-import { ROCK_FINISH, ROCK_VEINS, SKY_LOOK, setRockRecipes } from './materials';
+import { ROCK_FINISH, ROCK_VEINS, SKY_LOOK, VEIN_PULSE, setRockRecipes } from './materials';
+import { pulseAt, pulseFrom, pulseRing } from '../gen/veinPulse';
 import { skyOf } from '../gen/glowworms';
 import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
@@ -40,7 +41,8 @@ export class LevelView {
   /** Where the headlamp is carried (null: on the camera). */
   carrier: Vector3 | null = null;
   private readonly ambient = new HemisphereLight(0x9aa6b4, 0x2a2218, 0.7);
-  private readonly lamps: LampLights;
+  /** The lamp pool; wisps borrow lights from it (`lamps.glows`). */
+  readonly lamps: LampLights;
   private readonly rock = new Group();
   private readonly things = new Group();
   private readonly dust: Dust;
@@ -48,6 +50,11 @@ export class LevelView {
   /** The living stalagmites near the viewer (src/gen/drips.ts). */
   readonly drips = new DripView();
   private lastTime = 0;
+  /** The pulse in the veins running now: when it started and where from. */
+  private pulse: { start: number; at: [number, number] } | null = null;
+  private readonly facing = new Vector3();
+  /** An age (s) to hold a pulse at, as if one were running (the Lab and stills). */
+  pulseHeld: number | null = null;
   private terrain_: Terrain | null = null;
   private props_: Props | null = null;
   private dark_ = false;
@@ -162,6 +169,9 @@ export class LevelView {
     this.spill.intensity = this.headlamp.intensity * HEADLAMP.spill;
   }
 
+  /** Show or hide the streamed rock and props (the Lab's creature studio draws on a plain floor). */
+  set worldShown(v: boolean) { this.rock.visible = v; this.things.visible = v; }
+
   /** True when the rock and props around the viewer are all on screen. */
   get settled(): boolean {
     return !!this.terrain_?.settled && !!this.props_?.settled;
@@ -200,9 +210,22 @@ export class LevelView {
     this.terrain.update(x, y, z);
     this.props.update(x, y, z, time);
     this.drips.draw(this.level_, x, z, time);
+    this.pulseVeins(x, z, time);
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;
     if (draw) this.renderer.render(this.scene, this.camera);
+  }
+
+  /** The pulse in the veins (src/gen/veinPulse.ts): where it starts is latched when it starts; its ring goes to the rock's shader. */
+  private pulseVeins(x: number, z: number, time: number): void {
+    const start = this.pulseHeld !== null ? -1 : this.level_.depth ? pulseAt(this.level_.seed, this.level_.depth, time) : null;
+    if (start === null) { this.pulse = null; VEIN_PULSE.value.w = 0; return; }
+    if (this.pulse?.start !== start) {
+      this.camera.getWorldDirection(this.facing);
+      this.pulse = { start, at: pulseFrom(this.level_, x, z, this.facing.x, this.facing.z) };
+    }
+    const [r, strength] = pulseRing(this.pulseHeld ?? time - start);
+    VEIN_PULSE.value.set(this.pulse.at[0], this.pulse.at[1], r, strength);
   }
 }
 
