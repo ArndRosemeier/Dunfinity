@@ -10,6 +10,7 @@ import { readSave, writeSave, type GrandchildData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
 import { ReadView } from '../app/readView';
+import { DiaryView } from '../app/diaryView';
 import { GRANDMA_KERF, Key } from '../lore/key';
 import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
@@ -276,6 +277,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(saltLineView.root);
   const tinView = new TinView(document.body);
   const readView = new ReadView(document.body);
+  const diaryView = new DiaryView(document.body);
   const mapView = new MapView(document.body);
   // The ability bar: a click uses a slot (a held one, the lid or tiptoeing, stays held until the next click).
   const abilityBar = new AbilityBar(document.body, (i) => {
@@ -533,6 +535,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
     if (controls.tap('KeyM')) mapView.toggle();
+    // Grandma's diary, from the tin: open anywhere, J or Escape to close.
+    if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
+    else if (controls.tap('KeyJ') && !tinView.open) diaryView.show((d) => tin.hasPage(d));
     if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
     if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
     if (controls.tap('Backquote')) debug.toggle();
@@ -687,6 +692,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
         readAt = now;
         readView.show(breakLines(nearMarks.script, nearMarks.text, 22).map((t) => letter(nearMarks.script, t)), nearMarks.script === 'kerf' ? '#8a6420' : '#2f4f6a', nearMarks.where,
           key.makeOut(nearMarks.script, nearMarks.text), learned && `Looking long enough, you are sure of one: ${learned.toUpperCase()}. You pencil it into the key in her tin.`);
+      } else if (nearNote && writing!.kind === 'page') {
+        const p = level.page!, gain = tin.page(level.depth);
+        readAt = now; say(`A page torn out of grandma's diary, in her young, fast hand:\n\n${p.page.date}. ${p.page.text}${gain ? '\n\nYou fold it back into her diary in the tin (J).' : ''}`, 20);
+        gained(gain, note[0], note[1], note[2], now);
+        if (diaryView.open) diaryView.show((d) => tin.hasPage(d));
       } else if (nearNote) {
         const found = writing!.kind !== 'letter' && cooked.find('salt-line');
         const runes = writing!.kind !== 'letter' && key.pencil('kerf', GRANDMA_KERF) > 0;
@@ -873,7 +883,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearMarks && !readView.open) lines.push('E: read the marks');
     else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
-    else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : 'E: read the note');
+    else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : writing!.kind === 'page' ? 'E: read the page under the stone' : 'E: read the note');
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. T: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');
     else if (!body.dead && !climb.active) {

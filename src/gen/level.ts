@@ -16,6 +16,7 @@ import { owns, SURFACE_STRIDE, type StyleId } from './style';
 import { rockRecipesOf, type RockRecipe } from './rockTypes';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
+import { diaryPage, type PageSpot } from './diaryPages';
 import { lairOf, type Lair } from './lair';
 import { CELLAR, CELLAR_SHAFT, CellarField } from './cellar';
 import { inscriptionsAt, type Inscription } from './inscriptions';
@@ -40,7 +41,7 @@ export interface SampledGrid extends Grid {
 
 /** Something to read, and where it lies. */
 export interface Writing {
-  readonly kind: 'note' | 'letter';
+  readonly kind: 'note' | 'letter' | 'page';
   readonly at: readonly [number, number, number];
 }
 
@@ -72,6 +73,7 @@ export class Level {
   private arrival_: [number, number, number] | null = null;
   private ascent_: Shaft | null | undefined;
   private camp_: GrandmasCamp | null | undefined;
+  private page_: PageSpot | null | undefined;
   private lair_: Lair | null | undefined;
 
   /** `style`: the whole level of that style (but where one arrives), instead of its band's mix; not in the cellar. */
@@ -97,11 +99,17 @@ export class Level {
     return this.camp_;
   }
 
-  /** Something to read on this level, where it lies: grandma's note at her camp, or the notary's letter in the cellar. */
+  /** A page torn out of grandma's diary, if one lies on this level (src/gen/diaryPages.ts). */
+  get page(): PageSpot | null {
+    if (this.page_ === undefined) this.page_ = diaryPage(this);
+    return this.page_;
+  }
+
+  /** Something to read on this level, where it lies: grandma's note at her camp, a page of her diary, or the notary's letter in the cellar. */
   get writing(): Writing | null {
     if (this.depth === 0) return { kind: 'letter', at: [CELLAR.letter.x, CELLAR.letter.y, CELLAR.letter.z] };
-    const c = this.camp;
-    return c && { kind: 'note', at: c.note };
+    const c = this.camp, p = this.page;
+    return c ? { kind: 'note', at: c.note } : p && { kind: 'page', at: [p.x, p.y + 0.08, p.z] };
   }
 
   /** Writing in the old scripts on this level (docs/design/lore.md): the ward round grandma's salt circle. */
