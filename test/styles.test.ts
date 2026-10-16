@@ -484,6 +484,31 @@ test('the elven vaults are none of them: tall naves that narrow to a pointed vau
   for (const id of Object.keys(st)) if (id !== 'elven' && st[id].n > 100) assert.ok(pointed(id) < pointed('elven') / 4, `${id}: a pointed vault over ${(pointed(id) * 100).toFixed(0)}%`);
 });
 
+test('the goblin warrens are none of them: low burrows with more burrows over them', () => {
+  // (The Old Halls draw them: a level all of them, against the Old Halls', Before People's and the Threshold's mixes.)
+  const st: Record<string, { n: number; stacked: number }> = {};
+  for (const l of [new Level(1, 25, 'goblin'), new Level(1, 25), new Level(1, 45), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 3000; k++) {
+      const x = ax + (hash3f(67, k, 25, 0) - 0.5) * 3000, z = az + (hash3f(67, k, 25, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, stacked: 0 });
+      s.n++;
+      // Stacked: the roof under 4.5 m up, and over it, past a metre of rock or more, air again within 10 m.
+      let y = c.floor + 1.5;
+      while (y < c.floor + 6 && l.sdf(x, y, z) > 0) y += 0.25;
+      if (y >= c.floor + 4.5) continue;
+      let y2 = y;
+      while (y2 < y + 10 && l.sdf(x, y2, z) <= 0) y2 += 0.25;
+      if (y2 < y + 10 && y2 - y >= 1) s.stacked++;
+    }
+  }
+  const stacked = (id: string) => st[id].stacked / st[id].n;
+  assert.ok(st.goblin.n > 500, `${st.goblin.n} open goblin columns`);
+  assert.ok(stacked('goblin') > 0.08, `burrows over burrows over ${(stacked('goblin') * 100).toFixed(1)}% of the goblin warrens`);
+  for (const id of Object.keys(st)) if (id !== 'goblin' && st[id].n > 100) assert.ok(stacked(id) < stacked('goblin') / 4, `${id}: stacked over ${(stacked(id) * 100).toFixed(1)}%`);
+});
+
 test('no style is cut through one rock alone: each names several, none more than 80% (Arnd: walls are mixed rock)', () => {
   for (const id of NAMED_STYLES) {
     const l = new Level(1, 25, id), st = l.field.styles.find((s) => s.id === id)!;
