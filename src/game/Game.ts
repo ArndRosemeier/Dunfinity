@@ -317,6 +317,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
   await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
