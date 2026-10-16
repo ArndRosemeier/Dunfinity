@@ -1,8 +1,8 @@
 /**
  * The doors on screen (src/world/doors.ts): each a panel hung from its hinge, turned to its yaw
- * every frame. Inner doors of painted panels, her green front door with its letterbox, and the
+ * every frame. Inner doors of painted panels, her green front door with its letterbox, the
  * cellar door: near-black, iron-banded, seven little locks down its edge and her salt signs on both
- * faces, faintly alight.
+ * faces, faintly alight; and the quarry sheds' ledged and braced plank doors.
  *
  * Meshes built once per kind (`doorParts`) and cloned per door; added with the Stage.
  */
@@ -16,9 +16,25 @@ import { GLOW, VERTEX_COLOR_SOLID } from '../materials';
 
 const CREAM: Rgb = [0.62, 0.58, 0.48], GREEN: Rgb = [0.13, 0.24, 0.17], BRASS: Rgb = [0.62, 0.48, 0.2];
 const BLACK: Rgb = [0.07, 0.055, 0.05], IRON: Rgb = [0.16, 0.16, 0.17], SALT: Rgb = [0.55, 0.75, 0.85];
+/** The sheds' tarred boards (the shack model's door). */
+const TAR: Rgb = [0.07, 0.05, 0.035];
+
+/** A shed's door (as AssetGenerator's prop_shack had it, shut): five tarred boards, two ledges and a brace outside (+z), strap hinges, a latch. */
+function plankLeaf(b: PropBuilder, w: number, h: number): void {
+  const t = DOOR.half * 0.6;
+  for (let k = 0; k < 5; k++) b.upright((w * (k + 0.5)) / 5, h / 2, 0, 0, w / 10 - 0.004, h / 2 - 0.01, t, TAR);
+  for (const y of [0.3, h - 0.3]) {
+    b.upright(w / 2, y, t + 0.015, 0, w / 2 - 0.03, 0.05, 0.015, TAR);
+    b.upright(0.12, y, t + 0.035, 0, 0.11, 0.02, 0.006, IRON); // the strap hinges
+  }
+  const brace = Math.atan2(h - 0.6, w - 0.1), r = Math.hypot(w - 0.1, h - 0.6) / 2;
+  b.box(w / 2, h / 2, t + 0.015, [Math.cos(brace) * r, Math.sin(brace) * r, 0], [-Math.sin(brace) * 0.045, Math.cos(brace) * 0.045, 0], [0, 0, 0.012], TAR);
+  for (const side of [-1, 1]) b.upright(w - 0.1, 1.0, side * (t + 0.02), 0, 0.02, 0.06, 0.01, IRON); // the latch
+}
 
 /** A door's leaf in its own frame: the hinge at the origin, its length along +x, its faces to ±z. */
 function leaf(b: PropBuilder, w: number, h: number, kind: DoorKind): void {
+  if (kind === 'shed') { plankLeaf(b, w, h); return; }
   const t = DOOR.half, paint = kind === 'front' ? GREEN : kind === 'cellar' ? BLACK : CREAM;
   b.upright(w / 2, h / 2, 0, 0, w / 2, h / 2, t, paint);
   for (const side of [-1, 1]) {
@@ -55,16 +71,22 @@ export class DoorView {
   readonly root = new Group();
   private shown: { door: Door; pivot: Object3D }[] = [];
 
-  /** Show these doors (a new level's; none below the town). */
+  /** Show these doors (a new level's), and no others. */
   hang(doors: readonly Door[]): void {
     for (const s of this.shown) this.root.remove(s.pivot);
-    this.shown = doors.map((door) => {
+    this.shown = [];
+    this.hangMore(doors);
+  }
+
+  /** Show these too (doors met on the way: the sheds'). */
+  hangMore(doors: readonly Door[]): void {
+    for (const door of doors) {
       const pivot = new Group();
       pivot.add(...parts(door.spec));
       pivot.position.set(door.spec.x, door.spec.y, door.spec.z);
       this.root.add(pivot);
-      return { door, pivot };
-    });
+      this.shown.push({ door, pivot });
+    }
   }
 
   /** Turn each to where its door has swung. */

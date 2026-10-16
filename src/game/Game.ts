@@ -58,6 +58,8 @@ import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
 import { Doors } from '../world/doors';
 import { DoorView } from '../render/props/doorView';
+import { PROPS_RADIUS } from '../render/props/Props';
+import { PROP_TILE } from '../gen/propGrid';
 import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, type Find } from '../loot/finds';
@@ -167,6 +169,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
+    doorsMet = '';
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
@@ -205,6 +208,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
   /** The doors that open and shut (grandma's house). */
   let doors = new Doors(level.doors);
+  /** The props tile the sheds' doors were last met from (the nobody's), so they are met once per tile walked into. */
+  let doorsMet = '';
+  /** Hang the doors of the sheds round the nobody, as far as the props show (new ones shut). */
+  const meetDoors = () => {
+    const tile = `${Math.floor(body.x / PROP_TILE)},${Math.floor(body.z / PROP_TILE)}`;
+    if (tile === doorsMet) return;
+    doorsMet = tile;
+    const r = PROPS_RADIUS, fresh = doors.meet(level.sheds.standingIn(body.x - r, body.z - r, body.x + r, body.z + r).map((s) => s.door));
+    if (!fresh.length) return;
+    doorView.hangMore(fresh);
+    doors.into(view.props.blockers);
+  };
+  /** The shed the nobody is in, if any. */
+  const shedOf = () => level.sheds.holding(body.x, body.z, body.y);
   finds = findsOf(level);
   // Built before the warm-up too: the Salt-Touched are humans, compiled with the nobody.
   const touchedView = await TouchedView.create(params.seed);
@@ -799,7 +816,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
     const kindling = campfire.kindling(now);
     if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
-      const why = campfire.whyNot(body, body.facing, fauna.after(body), now);
+      const why = shedOf() ? 'Not in a wooden shed. Shut the door and rest.' : campfire.whyNot(body, body.facing, fauna.after(body), now);
       if (why) say(why, 2.5); else { campfire.light(body, body.facing, now); sounds.play('fire_light'); }
     }
     const stirring = now - cookAt < COOK.dur || saltLine.pouring(now);
@@ -822,7 +839,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
       input.jump = false;
     } else {
+      meetDoors();
       doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
+      // Shut in a shed: nothing outside notices you, and you can rest.
+      const shed = shedOf(), shedDoor = shed && doors.of(shed.door);
+      body.hidden = !!shedDoor && Doors.shut(shedDoor);
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
       // At the top of a climb: pull up over the edge (played out, then the body stands on the ledge).
       if (body.ledge) {
@@ -900,7 +921,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body.tiptoe = cooked.tiptoe;
       body.spring = cooked.spring;
       campfire.soup = cooked.soup;
-      campfire.step(body, threat, now, dt);
+      campfire.step(body, threat, now, dt, body.hidden);
       if (homeTo !== null) {
         const t = now - homeAt;
         if (threat || body.dead || body.health < health) { homeTo = null; fade.style.opacity = '0'; say('Something is coming. You cannot think of the armchair now.', 3); }
@@ -969,6 +990,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     thrownView.arrange(thrown.missiles, now);
     saltLineView.draw(saltLine, level, now);
     nobody.shown = !cam.firstPerson;
+    cam.room = shedOf();
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     // The map: mark the floor round the nobody seen, now and then; draw it while open.
     if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
@@ -984,8 +1006,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
-    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
-    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(`${keyName('KeyC')}: light a fire and rest`);
+    else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : body.hidden ? 'in the miners\' shed, the door shut' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
+    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {
       const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
