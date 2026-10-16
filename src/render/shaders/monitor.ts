@@ -17,14 +17,15 @@ export class ShaderMonitor {
   readonly budgetMs = 100;
   readonly maxPerSecond = 5;
   phase: Phase = 'warmup';
-  /** Why builds happen right now, if on purpose (appended to what is recorded), e.g. the Stage's shadow warm-up. */
+  /** Why the render path builds right now, if on purpose (appended to what synchronous builds record), e.g. the Stage's shadow warm-up. */
   note = '';
   readonly events: ShaderEvent[] = [];
 
   constructor(private readonly now: () => number = () => performance.now()) {}
 
   record(kind: BuildKind, ms: number, what: string, t = this.now() - ms): void {
-    this.events.push({ t, kind, ms, what: this.note ? `${what} (${this.note})` : what, phase: this.phase });
+    // The note says why the render path builds: it marks synchronous builds only.
+    this.events.push({ t, kind, ms, what: this.note && kind === 'node-sync' ? `${what} (${this.note})` : what, phase: this.phase });
   }
 
   /** Time a synchronous piece of work as one event. */

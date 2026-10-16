@@ -32,7 +32,13 @@ function queueNodeBuilds(renderer: WebGPURenderer, cap: ShaderCap, monitor: Shad
   const getForRender = nodes?.getForRender;
   if (typeof getForRender !== 'function' || typeof nodes.getForRenderCacheKey !== 'function' || !nodes.nodeBuilderCache) return false;
   const needsBuild = (ro: Any): boolean => nodes.get(ro).nodeBuilderState === undefined && !nodes.nodeBuilderCache.has(nodes.getForRenderCacheKey(ro));
-  const label = (ro: Any): string => `${ro?.material?.name || ro?.material?.type || '?'}${ro?.object?.isInstancedMesh ? ' (instanced)' : ''}`;
+  /** The material, and for a pass's own material (a shadow's) the object drawn, by the names up its parents. */
+  const label = (ro: Any): string => {
+    const own = ro?.object?.material === ro?.material || (Array.isArray(ro?.object?.material) && ro.object.material.includes(ro.material));
+    const names: string[] = [];
+    for (let o = ro?.object; o && names.length < 3; o = o.parent) if (o.name) names.push(o.name);
+    return `${ro?.material?.name || ro?.material?.type || '?'}${ro?.object?.isInstancedMesh ? ' (instanced)' : ''}${own ? '' : ` of ${ro?.object?.type ?? '?'}${names.length ? ` ${names.join('<')}` : ''}`}`;
+  };
   let last: Promise<unknown> = Promise.resolve();
   nodes.getForRender = function (this: Any, ro: Any, useAsync = false) {
     if (!needsBuild(ro)) return getForRender.call(this, ro, useAsync);

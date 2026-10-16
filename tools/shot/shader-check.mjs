@@ -49,10 +49,10 @@ try {
       const m = proto.clone();
       m.material = proto.material.clone(); // test only: the game makes materials in materials.ts
       m.material[k] = v;
+      m.castShadow = false; // the variants test the cap on the material's own builds, not the shadow pass's
       return stage.add(m);
     }));
-    // The variants' own builds (the shadow warm-up's, built on purpose for new kinds of caster, count against the cap but are not theirs).
-    const starts = window.shaders.events.slice(before).filter((e) => (e.kind === 'node-async' || e.kind === 'node-sync') && !e.what.endsWith('(shadow warm-up)'));
+    const starts = window.shaders.events.slice(before).filter((e) => e.kind === 'node-async' || e.kind === 'node-sync');
     return { starts: starts.map((e) => ({ t: e.t, ms: e.ms, kind: e.kind })), violations: window.shaders.violations() };
   });
   const gaps = cap.starts.slice(1).map((e, i) => e.t - cap.starts[i].t);

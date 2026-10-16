@@ -12,8 +12,6 @@ export class ShaderCap {
   active = false;
   /** Builds waiting for room right now. */
   waiting = 0;
-  /** Held by whoever is building shaders on the render path on purpose (the Stage's shadow warm-up): nothing else starts meanwhile. */
-  held = false;
   private spent: number[] = [];
   private lastAt = -1e9;
   private frameTaken = false;
@@ -31,7 +29,7 @@ export class ShaderCap {
   room(): boolean {
     if (!this.active || this.maxPerSecond <= 0) return true;
     const t = this.now();
-    return !this.held && !this.frameTaken && t - this.lastAt >= 1000 / this.maxPerSecond && this.lastSecond(t) < this.maxPerSecond;
+    return !this.frameTaken && t - this.lastAt >= 1000 / this.maxPerSecond && this.lastSecond(t) < this.maxPerSecond;
   }
 
   /** Book one new shader starting now. */
