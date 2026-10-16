@@ -36,7 +36,7 @@ export const CRICKET = {
   far: 12,
   /** Landing on you: within this of your surface, it knocks you (damage). */
   knock: 0.5,
-  knockDamage: [4, 7] as const,
+  knockDamage: [3, 5] as const,
   /** A bite: reach beyond touching, damage, the wind-up (rear) before the snap, seconds between bites. */
   biteReach: 0.35,
   biteDamage: [3, 6] as const,

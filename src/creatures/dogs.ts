@@ -20,7 +20,7 @@ export const DOG = {
   /** Body radius and height at size 1, metres; health. */
   radius: 0.3,
   height: 0.75,
-  health: 26,
+  health: 20,
   /** Speeds, m/s: trotting about the den, and running (you walk 4.2 and sprint 7). */
   trot: 1.6,
   run: 6.2,
@@ -30,14 +30,19 @@ export const DOG = {
   /** The ring they circle you on, metres from you; how fast it turns round you, radians per second. */
   ring: 4.2,
   drift: 0.3,
-  /** A lunge: the crouch before it (the tell), the lunge's speed and longest time, the bite's reach beyond touching, damage, the spring back, and the pack's pause between lunges, s. */
+  /**
+   * A lunge: the crouch before it (the tell), the lunge's speed and longest time, the bite's reach
+   * beyond touching, damage, how long it hangs on after a bite (in reach of your knife), the spring
+   * back, and the pack's pause between lunges, s.
+   */
   crouch: 0.45,
   lunge: 8,
   lungeT: 0.45,
   reach: 0.45,
-  damage: [6, 10] as const,
+  damage: [5, 8] as const,
+  hold: 0.5,
   back: 0.6,
-  every: 1.4,
+  every: 2,
   /** Dens: cell size, chance per cell (band.dogs), none this close to the arrival, dogs per pack, how far they wander. */
   cell: 60,
   quiet: 30,
@@ -186,14 +191,16 @@ export class Dogs extends Population<Pack, Dog, number> {
           g.bit = true;
           bit = 1;
         }
-        if (g.bit || g.t >= D.lungeT) { g.mode = 'back'; g.t = 0; g.vx = -(dx / (d || 1)) * D.run * 0.6; g.vz = -(dz / (d || 1)) * D.run * 0.6; }
+        if (g.bit || g.t >= D.lungeT) { g.mode = 'back'; g.t = 0; g.vx = g.vz = 0; }
         break;
       case 'back':
-        // Springs back out of reach, still facing you, then back to its place.
+        // Hangs on a moment (a bite: in reach of your knife), then springs back out of reach, still facing you, then back to its place.
         g.yaw += angleDiff(g.yaw, toYou) * Math.min(1, dt * 10);
+        if (g.t < D.hold) g.vx = g.vz = 0;
+        else if (g.t - dt < D.hold) { g.vx = -(dx / (d || 1)) * D.run * 0.6; g.vz = -(dz / (d || 1)) * D.run * 0.6; }
         brake(g, 3, dt);
         g.gait += this.steer.slide(g, dt) / (0.16 * g.size);
-        if (g.t >= D.back) { g.mode = 'circle'; p.gap = D.every; }
+        if (g.t >= D.hold + D.back) { g.mode = 'circle'; p.gap = D.every; }
         break;
     }
     return bit;

@@ -92,7 +92,7 @@ export const QUARRY: Band = {
   rock: [0.46, 0.42, 0.35], layers: [0.05, 0.045, 0.035], dust: [0.08, 0.075, 0.065], natural: [0.82, 0.82, 0.85],
   veins: 0, tooled: 1, rocks: { limestone: 1, sandstone: 0.6, shale: 0.45 }, finish: { formwork: 0, wet: 0.15 },
   stone: [0.4, 0.365, 0.3], carvings: 0, hanging: 0, machines: 0,
-  touched: 0, crickets: 0.22, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0.3,
+  touched: 0, crickets: 0.12, dogs: 0, eels: 0, scavengers: 0, caverns: 0, ruins: 0, older: 0, uphill: 0, chalk: 0.3,
   lamplight: 1,
   styles: [['excavation', 0.7], ['collapse', 0.15], ['karst', 0.15]],
 };

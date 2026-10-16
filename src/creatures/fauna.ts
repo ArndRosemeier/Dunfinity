@@ -10,6 +10,7 @@ import type { Level } from '../gen/level';
 import type { Fighter } from '../combat/combat';
 import type { Blockers } from '../world/blockers';
 import type { SaltCircle } from '../gen/lair';
+import { thwarted } from './steer';
 import { Rats, type Rat } from './rats';
 import { SaltTouched, type Touched } from './touched';
 import { Crickets, type Cricket, type Lamp } from './crickets';
@@ -112,12 +113,15 @@ export class Fauna {
     return [this.rats, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.goblins, this.ghosts, this.tall, this.toadstools, this.puffcaps] as const;
   }
 
-  /** Whether something near is after `prey`. */
+  /**
+   * Whether something near is after `prey` and can come at it: not one that has got nowhere for a
+   * while (`thwarted`: you are up a ledge it cannot take), nor a cricket still up on its wall.
+   */
   after(prey: Fighter): boolean {
-    const near = (c: Foe) => !c.dead && Math.hypot(c.x - prey.x, c.z - prey.z) < THREAT;
+    const near = (c: Foe) => !c.dead && !thwarted(c) && Math.hypot(c.x - prey.x, c.z - prey.z) < THREAT;
     return this.rats.list.some((r) => (r.mode === 'chase' || r.mode === 'bite') && near(r))
       || [...this.touched.list, ...this.foreman.list].some((t) => t.angry && near(t))
-      || this.crickets.list.some((c) => c.angry && near(c))
+      || this.crickets.list.some((c) => c.angry && c.mode !== 'perch' && near(c))
       || this.dogs.list.some((g) => g.hunting && near(g))
       || this.eels.list.some((e) => e.mode !== 'cruise' && near(e))
       || this.toadstools.list.some((s) => s.up && near(s))
