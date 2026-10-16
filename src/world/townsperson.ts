@@ -15,7 +15,7 @@ export interface Manner {
 }
 
 export class Townsperson {
-  readonly y = TOWN.ground;
+  readonly y: number = TOWN.ground;
   readonly vx = 0;
   readonly vz = 0;
   readonly health = 1;
