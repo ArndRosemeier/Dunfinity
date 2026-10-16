@@ -20,6 +20,8 @@ export interface ReportShot {
   readonly strap?: string;
   /** What the still shows, for the painter (a 1966 press photograph; never any writing in it). */
   readonly shows?: string;
+  /** The presenter's voice (a sound id) and which of the caption's lines (`linesOf`) it says, from that line's start. */
+  readonly voice?: { readonly id: string; readonly line: number };
 }
 
 /** The programme's name and the evening it went out. */
@@ -29,17 +31,17 @@ export const PROGRAMME = { name: 'THE UNEXPLAINED', date: 'Saturday 10 September
 export const REPORT: readonly ReportShot[] = [
   { still: null, seconds: 6, caption: '' },
   {
-    still: 'presenter', seconds: 8, strap: 'Horst Weidner',
+    still: 'presenter', seconds: 13.5, strap: 'Horst Weidner', voice: { id: 'news_1', line: 0 },
     caption: 'Good evening. Tonight, a small salt-mining town that has asked us not to say its name, and what walked down its streets eight nights ago.',
     shows: 'a television presenter in his forties in a dark suit and thin tie, sitting at a plain studio desk with a desk microphone, looking into the camera, a dark studio behind him',
   },
   {
-    still: 'street', seconds: 9, strap: 'Lindenstraße, 3 September, 2 a.m.',
+    still: 'street', seconds: 9, voice: { id: 'news_2', line: 0 }, strap: 'Lindenstraße, 3 September, 2 a.m.',
     caption: 'A baker on his way to the ovens saw it under the last street lamp. "Taller than the lamp," he says. "Thin as a rake. It walked with its head bent, as if the sky was a ceiling."',
     shows: 'a narrow cobbled street of old stone houses at night, one street lamp, and far away at the end of the street, half in shadow, a very tall thin figure with its head bowed, much taller than the lamp post; motion blur, taken in a hurry',
   },
   {
-    still: 'dogs', seconds: 7,
+    still: 'dogs', seconds: 7, voice: { id: 'news_3', line: 0 },
     caption: 'Every dog in the town howled until it was light. Two of them ran into the river and would not come out.',
     shows: 'two farm dogs standing in a shallow river at dawn, up to their chests in the water, staring back at the bank, mist on the water',
   },
@@ -49,7 +51,7 @@ export const REPORT: readonly ReportShot[] = [
     shows: 'a low iron cellar grating in the wall of an old house at pavement level at night, a pale glow coming up through the bars and lighting the cobbles',
   },
   {
-    still: 'milk', seconds: 7,
+    still: 'milk', seconds: 7, voice: { id: 'news_4', line: 0 },
     caption: 'On Sunday morning the milk on three doorsteps had turned to salt. The milkman is changing his round.',
     shows: 'three glass milk bottles on a stone doorstep in morning light, each one filled with coarse white salt crystals instead of milk, crystals crusting over the caps',
   },
@@ -59,7 +61,7 @@ export const REPORT: readonly ReportShot[] = [
     shows: 'very long narrow bare footprints pressed into a thin layer of pale dust on cobbles beside a closed iron gate, a man\'s hand laid next to one for scale, flash photograph at night',
   },
   {
-    still: 'mine', seconds: 8, strap: 'The salt mine, closed since 1947',
+    still: 'mine', seconds: 8, voice: { id: 'news_5', line: 1 }, strap: 'The salt mine, closed since 1947',
     caption: 'The mine has been shut since 1947, when a whole shift went down and did not come up. The company\'s answer to our questions: no comment.',
     shows: 'the steel headframe of a small old salt mine against an overcast sky, a chain-link fence and a padlocked gate in front, weeds growing',
   },
@@ -74,7 +76,7 @@ export const REPORT: readonly ReportShot[] = [
     shows: 'a portly small-town mayor in a suit and a policeman in a 1960s German police uniform and peaked cap standing on the steps of a small town hall, the mayor shrugging',
   },
   {
-    still: 'presenter', seconds: 8, strap: 'Horst Weidner',
+    still: 'presenter', seconds: 9, strap: 'Horst Weidner', voice: { id: 'news_6', line: 0 },
     caption: 'And yet, eight days on, no dog in that town will walk down Lindenstraße. Good night.',
   },
 ];
@@ -128,4 +130,10 @@ export function onAir(time: number): OnAir {
     u -= len;
   }
   return { shot: -1, t: u, line: '' };
+}
+
+/** The voice (a sound id) that begins with the line on the air, if one does. */
+export function voiceOf(air: OnAir): string | null {
+  const v = REPORT[air.shot]?.voice;
+  return v && air.line && linesOf(REPORT[air.shot].caption)[v.line] === air.line ? v.id : null;
 }
