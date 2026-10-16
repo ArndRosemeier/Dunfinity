@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.194 — The TV presenter speaks
+
+- On the title screen's old television, the presenter of "The Unexplained" now reads his report aloud through a tinny 1960s loudspeaker, six lines in one voice.
+
 ## v0.193 — The title is an old television
 
 - The title screen is now a 1960s television in a dark living room, playing a late-night programme, "The Unexplained", from 10 September 1966: a sensational report on what walked through grandma's town eight nights before. Grainy black-and-white stills, the presenter, name straps and the words along the bottom.
