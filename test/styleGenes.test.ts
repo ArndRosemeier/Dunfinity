@@ -12,6 +12,8 @@ import { STANDARD, type Gene, type Traits } from '../src/gen/genes';
 import { Karst, KARST_GENES } from '../src/gen/karst';
 import { Rift, RIFT_GENES } from '../src/gen/rift';
 import { Collapse, COLLAPSE_GENES } from '../src/gen/collapse';
+import { Fungal, FUNGAL_GENES } from '../src/gen/fungal';
+import { Lava, LAVA_GENES } from '../src/gen/lava';
 import { Level } from '../src/gen/level';
 import { newColumn } from '../src/gen/quarry';
 import type { Style } from '../src/gen/style';
@@ -21,6 +23,8 @@ const GENED: [string, (t: Traits) => Style, Record<string, Gene>][] = [
   ['karst', (t) => new Karst(7, bandOf(45), t), KARST_GENES],
   ['rift', (t) => new Rift(7, bandOf(45), t), RIFT_GENES],
   ['collapse', (t) => new Collapse(7, bandOf(45), t), COLLAPSE_GENES],
+  ['fungal', (t) => new Fungal(7, bandOf(45), t), FUNGAL_GENES],
+  ['lava', (t) => new Lava(7, bandOf(45), t), LAVA_GENES],
 ];
 
 /** Every gene low, every gene high, and four seeded mixes of the ends. */

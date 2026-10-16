@@ -16,6 +16,7 @@
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
+import { STANDARD, gene, type Traits, type Tuned } from './genes';
 import { unworked, type Column, type Working } from './quarry';
 import { GrainLines, grainOf } from './grainLines';
 import { rockMix } from './rockTypes';
@@ -41,6 +42,19 @@ export const LAVA = {
   floor: [8, 300] as const,
   /** The chance a level's tubes are still hot. */
   hot: 0.5,
+} as const;
+
+/**
+ * The lava tubes' genes (src/gen/genes.ts): how a deep world's tubes stray from ours. Spacing scales
+ * how far apart they lie (their jitter and meander with it), radius how wide they flowed; branches,
+ * skylights and how often a level's flows are still hot are chances.
+ */
+export const LAVA_GENES = {
+  spacing: gene('lava.spacing', 1, [0.8, 1.3], [0.65, 1.8]),
+  radius: gene('lava.radius', 1, [0.8, 1.25], [0.6, 1.5]),
+  branches: gene('lava.branches', LAVA.branch.chance, [0.3, 0.7], [0, 1]),
+  skylights: gene('lava.skylights', LAVA.skylight.chance, [0.25, 0.65], [0, 0.9]),
+  hot: gene('lava.hot', LAVA.hot, [0.3, 0.7], [0, 1]),
 } as const;
 
 /** Rock further than this from a tube counts as this far, metres. */
@@ -72,20 +86,34 @@ export class Lava implements Style {
   private readonly hot: boolean;
   private readonly own = new WeakMap<Column, TubeColumn>();
 
-  constructor(readonly seed: number, readonly band: Band) {
+  /** LAVA as this level's genes read it. */
+  readonly L: Tuned<typeof LAVA>;
+
+  constructor(readonly seed: number, readonly band: Band, traits: Traits = STANDARD) {
+    const G = LAVA_GENES, sp = traits(G.spacing), r = traits(G.radius);
+    this.L = {
+      ...LAVA,
+      spacing: LAVA.spacing * sp,
+      jitter: LAVA.jitter * sp,
+      meander: [LAVA.meander[0] * sp, LAVA.meander[1] * sp],
+      radius: [LAVA.radius[0] * r, LAVA.radius[1] * r],
+      branch: { ...LAVA.branch, chance: traits(G.branches) },
+      skylight: { ...LAVA.skylight, chance: traits(G.skylights) },
+      hot: traits(G.hot),
+    };
     this.noise = new Noise(deriveSeed(seed, 'lava', 'shape'));
     this.cells = deriveSeed(seed, 'lava', 'cells');
-    this.lines = new GrainLines(this.noise, this.cells, grainOf(seed, 'lava'), LAVA.spacing, LAVA.jitter, LAVA.meander);
-    this.hot = hashToFloat(deriveSeed(seed, 'lava', 'hot')) < LAVA.hot;
+    this.lines = new GrainLines(this.noise, this.cells, grainOf(seed, 'lava'), this.L.spacing, this.L.jitter, this.L.meander);
+    this.hot = hashToFloat(deriveSeed(seed, 'lava', 'hot')) < this.L.hot;
   }
 
   /** Tube k's radius at u. */
   private radius(k: number, u: number): number {
-    return LAVA.radius[0] + LAVA.radius[1] * (0.5 + 0.5 * this.noise.n2(u / 120, k * 3.3 + 50));
+    return this.L.radius[0] + this.L.radius[1] * (0.5 + 0.5 * this.noise.n2(u / 120, k * 3.3 + 50));
   }
 
   column(x: number, z: number, col: Column): Column {
-    const L = LAVA, n = this.noise;
+    const L = this.L, n = this.noise;
     const u = this.lines.u(x, z), v = this.lines.v(x, z);
     let o = this.own.get(col);
     if (!o) { o = { across: [0, 0], r: [0, 0], bench: [0, 0], branch: 0, sky: 0 }; this.own.set(col, o); }
@@ -148,7 +176,7 @@ export class Lava implements Style {
   }
 
   at(col: Column, _x: number, y: number, _z: number): number {
-    const L = LAVA, o = this.own.get(col)!, h = y - col.floor, cap = col.ceiling - y;
+    const L = this.L, o = this.own.get(col)!, h = y - col.floor, cap = col.ceiling - y;
     let d = -FAR;
     for (let i = 0; i < 2; i++) {
       const r = o.r[i], a = o.across[i];
