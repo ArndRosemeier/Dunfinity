@@ -84,11 +84,12 @@ import { SpellView } from '../render/spells';
 import { SnapdragonView } from '../render/snapdragons';
 import { Snapdragons } from '../combat/snapdragon';
 import { SaltDrift } from '../render/loot/saltDrift';
-import { Thrown } from '../combat/thrown';
+import { THROW, Thrown } from '../combat/thrown';
+import { FLOUR, Flour } from '../combat/flour';
 import { GameSounds } from '../audio/gameSounds';
 import { ThrownView } from '../render/humans/thrownView';
 import { AbilityBar, type SlotState } from '../app/abilityBar';
-import { ABILITIES, FIXED_KEYS, KEY_ACTIONS, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
+import { ABILITIES, FIXED_KEYS, KEY_ACTIONS, MainBar, SLOT_KEYS, barOf, passivesOf, useOf, type Ability } from './abilities';
 import { TargetMark } from '../app/targetMark';
 import { Hud, keysOf } from '../app/hud';
 import { LetterView } from '../app/letterView';
@@ -118,6 +119,8 @@ const PIN = { arc: 0.75, low: -0.3, high: 2, damage: [2, 4] as const, stamina: 2
 const CAST = { dur: 0.5, glints: 8 };
 /** Grandma's Snapdragons (U): the stamina a seed costs (what the plant does and how often: the card's). */
 const SEED = { stamina: 2 };
+/** Grandma's Flour Bag (Y): the stamina a bag costs; her Matchstick (middle mouse): how far off its aim may be from where one looks for a cloud to flick it at, radians. */
+const FLOURING = { stamina: 2, arc: 0.6 };
 const POUND = { dur: 0.9, hit: 0.5, range: 1.15, arc: 1.1, low: -0.3, high: 1.3, knock: 8, aim: 2.6, aimArc: 1.2, stamina: 3 };
 /** Picking a find up: seconds it takes, when it is in hand; how far round the nobody finds are drawn. */
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
@@ -182,6 +185,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   tin.deepest = Math.max(tin.deepest, level.depth);
   /** The cards this grandchild has cooked (the next one starts with none). */
   let cooked = saved?.child ? Cooked.from(saved.child.cooked) : new Cooked();
+  /** This grandchild's main bar: the cards used through 1–8. */
+  let mainBar = MainBar.from(saved?.child?.bar, cooked);
   /** What this grandchild has practised (the next one starts at none). */
   let practice = saved?.child ? Practice.from(saved.child.practice) : new Practice();
   /** What this grandchild has seen of each level (the map, M). */
@@ -211,7 +216,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
-    thrown.missiles.length = 0; thrown.sown.length = 0; garden.plants.length = 0;
+    thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; flour.clouds.length = 0;
     look(l);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
@@ -253,7 +258,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const freshFamily = (): void => {
     taken.clear();
     tin = new Tin(); key = new Key();
-    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
+    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
     heir = 0; reached = 0; euros = 0; sales = 0; saltAtStart = 0;
     fallen.length = 0;
     body = nextGrandchild();
@@ -316,7 +321,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart,
+      cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart,
     };
     writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data });
   };
@@ -382,7 +387,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const thrown = new Thrown();
   const thrownView = new ThrownView();
   await view.stage.add(thrownView.root);
-  let throwAt = -9, released = true, tossing: 'knife' | 'candle' | 'seed' = 'knife';
+  let throwAt = -9, released = true, tossing: 'knife' | 'candle' | 'seed' | 'flour' | 'match' = 'knife';
+  /** Grandma's flour, hanging where her bags burst (Flour Bag), and when the last bag and the last match went. */
+  const flour = new Flour();
+  let flourAt = -Infinity, matchAt = -Infinity;
   /** Grandma's Snapdragons: the plants come up from seeds, and when the last seed was tossed. */
   const garden = new Snapdragons();
   const gardenView = new SnapdragonView();
@@ -398,9 +406,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const readView = new ReadView(document.body);
   const diaryView = new DiaryView(document.body);
   const mapView = new MapView(document.body);
-  // The ability bar: a click uses a slot (a held one, the lid or tiptoeing, stays held until the next click).
+  // The main bar: a click uses a slot (a held one, the lid, stays held until the next click).
   const abilityBar = new AbilityBar(document.body, (i) => {
-    const a = barOf(cooked)[i];
+    const a = barOf(mainBar)[i];
     if (!a) return;
     if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
     else controls.press(a.key);
@@ -440,6 +448,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const debug = new DebugMenu(document.body, {
     allAbilities: () => {
       cooked = Cooked.from(Object.fromEntries(CARDS.map((c) => [c.id, c.cost.length])));
+      for (const a of ABILITIES) mainBar.slotIn(a.card);
       kit = kitFromGear(GEAR_ORDER);
       return 'Every recipe card at its top rank, and all of Kemal\'s gear.';
     },
@@ -658,7 +667,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -669,6 +678,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     kinOn: (depth: number) => Rigged.kinOn(params.seed, depth),
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
+    /** Press a key (an action's own key, 'Mouse1'…) for the next frame, as the bar's click does. */
+    pressKey: (key: string) => controls.press(key),
     /** Bring the knife's handle down, as V would (grandma's Tenderising). */
     pound: () => stab(timer.getElapsed(), 'pound'),
     /** Wander about `steps` × 2 m on the floor from the nobody, marking it seen as walking there would (the map probe). */
@@ -789,8 +800,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const sendNextDown = (): void => {
     body = nextGrandchild();
     fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
-    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
-    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; garden.plants.length = 0;
+    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
+    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; flour.clouds.length = 0;
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
     cam.distance = before;
@@ -890,9 +901,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(`Music ${sounds.engine.settings.music ? 'on' : 'off'} (${keyName('KeyB')}).`, 2); }
     if (controls.tap('KeyO')) settingsView.toggle();
     if (controls.tap('Backquote')) debug.toggle();
-    // The bar's slots answer to 1–0, - and = too (not at Kemal's counter); a dead grandchild holds nothing.
-    const bar = barOf(cooked);
-    controls.alias(atCounter ? [] : bar.slice(0, SLOT_KEYS.length).map((a, i) => [SLOT_KEYS[i], a.key] as const));
+    // The bar's slots answer to 1–8 (not at Kemal's counter, nor with the tin open: there they buy, or put a card in a slot); a dead grandchild holds nothing.
+    const bar = barOf(mainBar);
+    controls.alias(atCounter || tinView.open ? [] : bar.flatMap((a, i) => (a ? [[SLOT_KEYS[i], a.key] as const] : [])));
     if (body.dead) for (const a of ABILITIES) controls.latch(a.key, false);
     /** Rummaging in the tin or the pack: no blows, no casting, no walking off. */
     const handsBusy = tinView.open || packView.open;
@@ -910,38 +921,45 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const stabDur = striking === 'pound' ? POUND.dur : STAB.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : STAB.hit * knife.time;
     const canStrike = !busy && !handsBusy && !body.rolling && now - stabAt > stabDur;
     if (controls.tap('Mouse0') && canStrike) stab(now);
-    // Grandma's Tenderising: V brings the knife's handle down overhead.
-    if (controls.tap('KeyV') && pound && canStrike) {
+    // Grandma's Tenderising (its slot on the bar) brings the knife's handle down overhead.
+    if (controls.tap(useOf('tenderising')) && pound && canStrike) {
       if (body.stamina < POUND.stamina) say('Too out of breath to put your back into it.', 2);
       else { body.stamina -= POUND.stamina; stab(now, 'pound'); }
     }
-    // Grandma's Second Helpings: the right mouse button throws a knife.
+    // Grandma's Second Helpings: its slot throws a knife.
     const every = cooked.helpings;
     const canThrow = !busy && !handsBusy && !body.rolling && released && now - throwAt > THROWING.dur;
-    if (controls.tap('Mouse2') && every !== null && canThrow && now - throwAt > every) { throwAt = now; released = false; tossing = 'knife'; }
-    // Grandma's Sunday Candle: G tosses a lit candle (as many burning at once as the card's rank).
-    if (controls.tap('KeyG') && canThrow && thrown.candles.length < cooked.candles) { throwAt = now; released = false; tossing = 'candle'; }
-    // Grandma's Snapdragons: U tosses a seed that comes up where it lands and bites whatever is near, you too.
+    if (controls.tap(useOf('helpings')) && every !== null && canThrow && now - throwAt > every) { throwAt = now; released = false; tossing = 'knife'; }
+    // Grandma's Sunday Candle: its slot tosses a lit candle (as many burning at once as the card's rank).
+    if (controls.tap(useOf('candle')) && canThrow && thrown.candles.length < cooked.candles) { throwAt = now; released = false; tossing = 'candle'; }
+    // Grandma's Snapdragons: its slot tosses a seed that comes up where it lands and bites whatever is near, you too.
     const snap = cooked.snapdragon;
-    if (controls.tap('KeyU') && snap && canThrow && now - seedAt > snap.between) {
+    if (controls.tap(useOf('snapdragon')) && snap && canThrow && now - seedAt > snap.between) {
       if (body.stamina < SEED.stamina) say('Too out of breath to throw it far enough.', 2);
       else { body.stamina -= SEED.stamina; seedAt = throwAt = now; released = false; tossing = 'seed'; }
     }
-    // Grandma's Duck card: Q rolls the way you are going (back, standing still).
+    // Grandma's Flour Bag throws a bag that bursts into a cloud; her Matchstick flicks a match at the nearest cloud.
+    const bag = cooked.flour, match = cooked.match;
+    if (controls.tap(useOf('flour-bag')) && bag && canThrow && now - flourAt > bag.every) {
+      if (body.stamina < FLOURING.stamina) say('Too out of breath to throw it hard enough.', 2);
+      else { body.stamina -= FLOURING.stamina; flourAt = throwAt = now; released = false; tossing = 'flour'; }
+    }
+    if (controls.tap(useOf('matchstick')) && match && canThrow && now - matchAt > match.every) { matchAt = throwAt = now; released = false; tossing = 'match'; }
+    // Grandma's Duck card rolls the way you are going (back, standing still).
     const duck = cooked.duck;
-    if (controls.tap('KeyQ') && duck && !busy && !handsBusy && !body.rolling) {
+    if (controls.tap(useOf('duck')) && duck && !busy && !handsBusy && !body.rolling) {
       const f = input.forward || input.right ? input.forward : -1, rt = input.right;
       const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
       if (body.roll(dx, dz, duck.stamina * practice.less('footwork'), duck.safe)) { rollAt = now; practised('footwork'); }
     }
-    // Grandma's Way Home: H, eyes shut, nothing after you; home to her armchair, or (rank 2, from her salt circle) back down.
-    if (controls.tap('KeyH') && cooked.wayHome && homeTo === null && !busy && !handsBusy) {
+    // Grandma's Way Home: eyes shut, nothing after you; home to her armchair, or (rank 2, from her salt circle) back down.
+    if (controls.tap(useOf('way-home')) && cooked.wayHome && homeTo === null && !busy && !handsBusy) {
       const back = level.depth === 0 && cooked.wayHome >= 2 && campfire.inHaven(body);
       const why = fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : level.depth === 0 && !back ? (cooked.wayHome >= 2 && reached > 0 ? 'Stand in her salt circle to think of where you were.' : 'You are home.') : back && reached === 0 ? 'You have not been down yet.' : '';
       if (why) say(why, 2.5);
       else { homeAt = now; homeMote = now; homeTo = back ? reached : 0; say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', WAY_HOME.dur); }
     }
-    // Grandma's salt-magic (Fire & Frost, Force): R a gout of flame, K the larder's cold round you, P a shove; at the Tab target, if any.
+    // Grandma's salt-magic (Fire & Frost, Force): a gout of flame, the larder's cold round you, a shove; at the Tab target, if any.
     const canCast = !busy && !handsBusy && !body.rolling && homeTo === null;
     const cast = (kind: typeof casting, stamina: number, out: string): boolean => {
       if (body.stamina < stamina) { say(out, 2); return false; }
@@ -950,20 +968,20 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       return true;
     };
     const flame = cooked.flame, larder = cooked.larder, pin = cooked.pin;
-    if (controls.tap('KeyR') && flame && canCast && now - flameAt > flame.every && cast('flame', FLAME.stamina, 'Too out of breath to blow.')) {
+    if (controls.tap(useOf('stove-flame')) && flame && canCast && now - flameAt > flame.every && cast('flame', FLAME.stamina, 'Too out of breath to blow.')) {
       flameAt = now;
       spells.flame(body.x - Math.sin(castYaw) * 0.4, body.y + 1.35, body.z - Math.cos(castYaw) * 0.4, castYaw, flame.reach, now);
       sounds.play('throw', null, 0.9, 0.6);
       const b = blowFrom(body, castYaw, { range: flame.reach, arc: FLAME.arc, low: FLAME.low, high: FLAME.high });
       for (const f of foes()) if (reach(b, f)) damage(f, blows.range(flame.damage[0], flame.damage[1]), body.x, body.z, FLAME.knock, 'fire');
     }
-    if (controls.tap('KeyK') && larder && canCast && now - larderAt > LARDER.every && cast('larder', LARDER.stamina, 'Too out of breath to let the cold out.')) {
+    if (controls.tap(useOf('cold-larder')) && larder && canCast && now - larderAt > LARDER.every && cast('larder', LARDER.stamina, 'Too out of breath to let the cold out.')) {
       larderAt = now;
       spells.frost(body.x, body.y, body.z, larder.r, now);
       sounds.play('throw', null, 0.6, 0.45);
       for (const f of foes()) if (!f.dead && Math.hypot(f.x - body.x, f.z - body.z) - f.radius < larder.r && Math.abs(f.y - body.y) < 3) f.chill = { left: larder.lasts, by: larder.slow };
     }
-    if (controls.tap('KeyP') && pin && canCast && now - pinAt > PIN.every && cast('pin', PIN.stamina, 'Too out of breath to roll it out.')) {
+    if (controls.tap(useOf('rolling-pin')) && pin && canCast && now - pinAt > PIN.every && cast('pin', PIN.stamina, 'Too out of breath to roll it out.')) {
       pinAt = now;
       spells.push(body.x, body.y, body.z, castYaw, pin.reach, now);
       sounds.play('pound', null, 0.8, 0.7);
@@ -977,9 +995,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       f.chill.left -= dt;
       if (glint && !f.dead) spells.glint(f.x, f.y, f.z, f.height, now);
     }
-    // Grandma's Salt Line: L, kneeling, pours a circle of salt round you.
+    // Grandma's Salt Line: kneeling, pours a circle of salt round you.
     const line = cooked.saltLine;
-    if (controls.tap('KeyL') && line && !busy && !handsBusy && !body.rolling && homeTo === null && !saltLine.pouring(now)) {
+    if (controls.tap(useOf('salt-line')) && line && !busy && !handsBusy && !body.rolling && homeTo === null && !saltLine.pouring(now)) {
       const why = saltLine.whyNot(level, body.x, body.z, line.r, body.grounded);
       if (why) say(why, 2.5);
       else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); }
@@ -1015,22 +1033,27 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         let why: string | null = null, redraw = false;
         if (controls.tap('KeyW')) { tinSel = order[(at + order.length - 1) % order.length]; redraw = true; }
         if (controls.tap('KeyS')) { tinSel = order[(at + 1) % order.length]; redraw = true; }
+        // 1–8: the chosen card (cooked, one used through the bar) into that slot.
+        SLOT_KEYS.forEach((k, i) => {
+          if (!controls.tap(k) || cooked.rank(tinSel) === 0) return;
+          redraw = mainBar.set(i, tinSel) || redraw;
+        });
         if (controls.tap('KeyE')) {
           why = cooked.cantCook(tinSel, tin, tin.deepest);
           if (!why) {
-            const r = cooked.cook(tinSel, tin), c = card(tinSel), fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
+            const r = cooked.cook(tinSel, tin), c = card(tinSel), at = r === 1 ? mainBar.slotIn(tinSel) : -1, fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
             cookAt = now;
             tinView.hide();
             tick('cook');
-            say(r === 1 ? `${c.title}, cooked.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
+            say(r === 1 ? `${c.title}, cooked${at >= 0 ? `, on your bar (${keyName(SLOT_KEYS[at])})` : ''}.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
           }
         }
-        if (tinView.open && (redraw || why)) tinView.show(cooked, tin, tinSel, why, practice);
+        if (tinView.open && (redraw || why)) tinView.show(cooked, tin, tinSel, why, practice, mainBar, keyName);
       }
     } else if (controls.tap('KeyT') && campfire.resting) {
       if (!cooked.has(tinSel)) tinSel = TinView.order(cooked)[0];
-      tinView.show(cooked, tin, tinSel, null, practice);
+      tinView.show(cooked, tin, tinSel, null, practice, mainBar, keyName);
     }
     // The pack (I), open anywhere: W/S choose a line, E uses it (a find left on the floor before you, a spare item put on, a worn one taken off).
     const packKeys = { up: keyName('KeyW'), down: keyName('KeyS'), use: keyName('KeyE'), close: keyName('KeyI') };
@@ -1104,11 +1127,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     }
     const stirring = now - cookAt < COOK.dur || saltLine.pouring(now);
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || handsBusy || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
-    // Grandma's Pot Lid: hold X to keep it up between you and whatever it is.
+    // Grandma's Pot Lid: hold its slot to keep it up between you and whatever it is.
     const lid = cooked.lid;
     body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard') };
     nobody.wear(!!cooked.lid, kit.items);
-    body.guarding = !!cooked.lid && controls.held('KeyX') && !busy && !handsBusy && !body.rolling && homeTo === null && now - stabAt > stabDur;
+    body.guarding = !!cooked.lid && controls.held(useOf('pot-lid')) && !busy && !handsBusy && !body.rolling && homeTo === null && now - stabAt > stabDur;
     if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
     if (climb.active) {
       climb.advance(dt, timer.getElapsed());
@@ -1146,12 +1169,23 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!released && now - throwAt >= THROWING.release) {
         released = true;
         const hx = body.x - Math.sin(aim) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(aim) * 0.3;
-        sounds.play('throw', null, 0.8, tossing === 'knife' ? 1.1 : 0.85);
-        if (tossing === 'knife') thrown.throw(hx, hy, hz, aim, foes());
-        else thrown.toss(hx, hy, hz, aim, tossing);
+        sounds.play(tossing === 'match' ? 'match_strike' : 'throw', null, 0.8, tossing === 'knife' ? 1.1 : tossing === 'match' ? 1 : 0.85);
+        if (tossing === 'knife' || tossing === 'flour') thrown.throw(hx, hy, hz, aim, foes(), tossing);
+        else if (tossing === 'match') {
+          const c = flour.ahead(body.x, body.z, aim, THROW.aim, FLOURING.arc);
+          thrown.throw(hx, hy, hz, aim, foes(), 'match', c ? { x: c.x, y: c.y + 1, z: c.z } : undefined);
+        } else thrown.toss(hx, hy, hz, aim, tossing);
       }
       thrown.power = practice.more('throwing');
-      const hit = thrown.fly(level, foes(), blows, dt);
+      // A match flown into a cloud of flour sets it off (and every cloud touching it): the nobody too, if in it.
+      const hit = thrown.fly(level, foes(), blows, dt, (m) => {
+        const c = match && flour.cloudAt(m.x, m.y, m.z);
+        if (!c || !match) return false;
+        const up = flour.goUp(c, [...foes(), body], match.damage, match.knock, blows);
+        for (const u of up.clouds) spells.blast(u.x, u.y, u.z, Flour.reach(u), now);
+        sounds.play('flour_blast', c);
+        return true;
+      });
       if (hit.length) practised('throwing', hit.length);
       // A seed come down comes up; the snapdragons bite the nearest in reach, the nobody among them.
       for (const s of thrown.sown.splice(0)) {
@@ -1160,6 +1194,21 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         spells.sprout(s.x, s.y, s.z, now);
         sounds.play('snap_sprout', s);
       }
+      // A bag of flour that burst hangs as a cloud; what is in one is blind (and its blows find no one), flour shaking off it.
+      for (const b of thrown.burst.splice(0)) {
+        if (!bag) continue;
+        const g = level.groundAt(b.x, b.z), y = Math.abs(g - b.y) < 3 ? g : b.y - 1;
+        const c = flour.burst(b.x, y, b.z, bag);
+        spells.bagBursts(c.x, c.y, c.z, c.r, now);
+        sounds.play('flour_burst', c);
+      }
+      flour.linger(dt, foes());
+      const puff = Math.floor(now * CAST.glints) !== Math.floor((now - dt) * CAST.glints);
+      if (puff) {
+        for (const c of flour.clouds) spells.hang(c.x, c.y, c.z, Flour.reach(c), Math.min(1, (c.hangs - c.t) / (c.hangs * FLOUR.thin)), now);
+        for (const f of foes()) if (!f.dead && (f.blind ?? 0) > 0) spells.dusted(f.x, f.y, f.z, f.height, now);
+      }
+      body.unseenFrom = (x, z) => flour.blinds(x, body.y, z, foes());
       for (const f of garden.step(dt, [...foes(), body], blows)) {
         const p = garden.plants.find((g) => g.target === f);
         spells.snap(f.x, f.y + f.height * 0.6, f.z, now);
@@ -1326,19 +1375,19 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (draft) lines.push(draft);
     }
     const flags = debug.invulnerable || debug.tireless ? `debug: ${[debug.invulnerable && 'invulnerable', debug.tireless && 'tireless'].filter(Boolean).join(', ')}` : '';
-    // The ability bar: how soon each slot is ready again, and what is on.
+    // The main bar: how soon each slot is ready again, and what is on.
     const slot = (a: Ability): SlotState => {
       const ready = (t0: number, dur: number) => Math.min(1, (now - t0) / dur);
       switch (a.card) {
         case 'tenderising': return { ready: striking === 'pound' ? ready(stabAt, POUND.dur) : 1, on: false, dim: body.stamina < POUND.stamina };
         case 'helpings': return { ready: ready(throwAt, Math.max(THROWING.dur, every ?? 0)), on: false, dim: false };
         case 'duck': return { ready: body.rolling ? ready(rollAt, MOVE.roll.dur) : 1, on: body.rolling, dim: body.stamina < (duck?.stamina ?? 0) };
-        case 'spring': return { ready: 1, on: !body.grounded && body.time - body.sprangAt < 1.5, dim: body.stamina < (cooked.spring?.cost ?? 0) };
         case 'stove-flame': return { ready: ready(flameAt, flame?.every ?? 1), on: false, dim: body.stamina < FLAME.stamina };
         case 'cold-larder': return { ready: ready(larderAt, LARDER.every), on: false, dim: body.stamina < LARDER.stamina };
         case 'rolling-pin': return { ready: ready(pinAt, PIN.every), on: false, dim: body.stamina < PIN.stamina };
         case 'pot-lid': return { ready: 1, on: body.guarding, dim: false };
-        case 'tiptoe': return { ready: 1, on: !!input.sneak, dim: false };
+        case 'flour-bag': return { ready: ready(flourAt, bag?.every ?? 1), on: flour.clouds.length > 0, dim: body.stamina < FLOURING.stamina };
+        case 'matchstick': return { ready: ready(matchAt, match?.every ?? 1), on: flour.clouds.length > 0, dim: false };
         case 'snapdragon': return { ready: ready(seedAt, snap?.between ?? 1), on: garden.plants.length > 0, dim: body.stamina < SEED.stamina };
         case 'candle': return { ready: 1, on: false, dim: thrown.candles.length >= cooked.candles, count: `${thrown.candles.length}/${cooked.candles}` };
         case 'salt-line': {
@@ -1350,7 +1399,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
-    abilityBar.paint(bar, bar.map(slot), passivesOf(cooked), body.dead || tinView.open);
+    abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead || tinView.open);
     stepsView.pin(steps, now);
     hudView.render({
       health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,

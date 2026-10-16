@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Bindings, keyLabel } from '../src/input/bindings';
-import { ABILITIES, FIXED_KEYS, KEY_ACTIONS } from '../src/game/abilities';
+import { FIXED_KEYS, KEY_ACTIONS, SLOT_KEYS } from '../src/game/abilities';
 import { GRAPHICS_DEFAULTS, SOUND_DEFAULTS, readGraphicsSettings, readKeySettings, readSoundSettings } from '../src/persist/settings';
 
 const ACTIONS = KEY_ACTIONS.map((a) => a.key);
@@ -25,15 +25,15 @@ test('every action has one key, every key one action: a taken key swaps', () => 
 test('fixed keys and unknown actions change nothing; moves come back from their data; clear undoes all', () => {
   const b = new Bindings(ACTIONS, FIXED_KEYS);
   assert.equal(b.canTake('Escape'), false);
-  b.rebind('KeyQ', 'Digit1');
+  b.rebind('KeyF', 'Backquote');
   b.rebind('NoSuchAction', 'KeyU');
   assert.deepEqual(b.data, {});
-  b.rebind('Mouse2', 'KeyU');
-  b.rebind('KeyQ', 'Mouse0');
+  b.rebind('KeyM', 'KeyU');
+  b.rebind('KeyF', 'Mouse0');
   const back = new Bindings(ACTIONS, FIXED_KEYS, JSON.parse(JSON.stringify(b.data)));
   for (const a of ACTIONS) assert.equal(back.keyOf(a), b.keyOf(a));
-  assert.equal(back.keyOf('Mouse0'), 'KeyQ', 'stab swapped onto Q');
-  back.rebind('KeyQ', 'KeyQ');
+  assert.equal(back.keyOf('Mouse0'), 'KeyF', 'stab swapped onto F');
+  back.rebind('KeyF', 'KeyF');
   back.rebind('Mouse0', 'Mouse0');
   back.clear();
   assert.deepEqual(back.data, {});
@@ -44,9 +44,9 @@ test('fixed keys and unknown actions change nothing; moves come back from their 
   assert.equal(new Set(keys).size, keys.length);
 });
 
-test('the settings list every ability once and no fixed key', () => {
+test('the settings list every bar slot once and no fixed key', () => {
   assert.equal(new Set(ACTIONS).size, ACTIONS.length);
-  for (const a of ABILITIES) assert.ok(ACTIONS.includes(a.key), a.card);
+  for (const k of SLOT_KEYS) assert.ok(ACTIONS.includes(k), k);
   for (const k of FIXED_KEYS) assert.ok(!ACTIONS.includes(k), k);
 });
 
