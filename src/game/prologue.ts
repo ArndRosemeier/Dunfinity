@@ -74,7 +74,8 @@ export const SHOTS: readonly Shot[] = [
     eye: [[1.6, 1.75, 0.25], [3.3, 1.45, 0.05]],
     at: [[8.6, 1.05, -0.2], [9.4, 1.0, 0]],
     stand: { x: S.x, z: S.z, yaw: S.yaw },
-    acts: [],
+    // A step aside towards her side table (the letter), out of the arch's way, short of the circle.
+    acts: [{ to: [5.3, 0.6] }],
     cut: false,
   },
 ];

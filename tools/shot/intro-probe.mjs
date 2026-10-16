@@ -6,7 +6,7 @@
 import { chromium } from 'playwright';
 import { preview } from 'vite';
 
-const out = process.argv[2] ?? '.', times = (process.argv[3] ?? '4,13,22,31,40').split(',').map(Number);
+const out = process.argv[2] ?? '.', times = (process.argv[3] ?? '4,13,22,31,40').split(',').filter((t) => t !== '-').map(Number);
 const server = await preview({ preview: { port: 5193, strictPort: false }, logLevel: 'silent' });
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || undefined,
@@ -28,7 +28,7 @@ for (const t of times) {
   await page.screenshot({ path: `${out}/prologue-${t}.png`, timeout: 300000 });
 }
 await page.keyboard.press('Escape');
-await page.waitForTimeout(2500);
+await page.waitForFunction(() => window.__game.prologue === null, null, { timeout: 600000 });
 await ready();
 await page.waitForTimeout(3000);
 await page.screenshot({ path: `${out}/steps-start.png`, timeout: 300000 });
@@ -36,8 +36,10 @@ await page.screenshot({ path: `${out}/steps-start.png`, timeout: 300000 });
 await page.evaluate(() => { const b = window.__game.body; b.x = 5.6; b.z = 0.6; });
 await page.waitForTimeout(1500);
 await page.keyboard.press('KeyE');
-await page.waitForTimeout(2500);
+await page.waitForFunction(() => JSON.stringify(window.__game.steps.data).includes('letter'), null, { timeout: 600000 });
+await page.waitForTimeout(3000);
 console.log('steps:', await page.evaluate(() => JSON.stringify(window.__game.steps.data)));
+console.log('card:', await page.evaluate(() => { const e = document.getElementById('steps'); const r = e.querySelector('.step'); return e.className + ' | ' + e.innerHTML.slice(0, 300) + ' | step opacity ' + (r && getComputedStyle(r).opacity); }));
 await page.screenshot({ path: `${out}/steps-letter.png`, timeout: 300000 });
 await browser.close();
 await server.close();

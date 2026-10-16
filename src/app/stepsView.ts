@@ -8,7 +8,7 @@ import { STEP_GROUPS, type FirstSteps, type StepId } from '../game/firstSteps';
 import { esc, panel } from './panel';
 
 const STYLE = `
-  #steps { position: fixed; right: 14px; top: 14px; z-index: 6; width: min(330px, calc(100vw - 28px)); pointer-events: none;
+  #steps { position: fixed; right: 14px; top: 52px; z-index: 6; width: min(330px, calc(100vw - 28px)); pointer-events: none;
     background: #e9dfc6ee; color: #2b2116; border: 1px solid #8a7656; border-radius: 3px; padding: 10px 14px 11px; font: 14px/1.35 Georgia, serif;
     box-shadow: 0 4px 18px #0009; transform: rotate(0.6deg); opacity: 0; transition: opacity 0.8s ease, transform 0.8s ease; display: none; }
   #steps.open { display: block; }

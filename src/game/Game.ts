@@ -557,9 +557,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
   };
   /** The prologue played out or skipped: the nobody by grandma's armchair, the camera behind, play begins. */
   const endPrologue = (): void => {
+    // Played to the end, the nobody stays where the last shot left it; skipped, by the armchair.
+    const played = prologue!.t >= prologue!.span(prologue!.shots.length - 1)[0];
     prologue = null;
     prologueView.hide();
-    body = arrive(null);
+    if (!played) body = arrive(null);
     body.facing = cam.yaw = CELLAR.start.yaw;
     cam.pitch = -0.2;
     acc = 0;

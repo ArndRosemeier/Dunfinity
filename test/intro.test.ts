@@ -53,6 +53,8 @@ test('the nobody walks each shot\'s way on the town\'s and the cellar\'s floor: 
     }
     assert.ok(walk.finished, `stuck at ${b.x.toFixed(1)}, ${b.z.toFixed(1)}`);
     assert.equal(opened, shot.acts.some((a) => 'open' in a));
+    const h = level.haven!;
+    assert.ok(Math.hypot(b.x - h.x, b.z - h.z) > h.r, 'a walk ends in her salt circle (it would tick that step)');
     // The camera stays in the air all the way.
     const p = new Prologue();
     for (let u = 0; u <= 1; u += 0.1) {
