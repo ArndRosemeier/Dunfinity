@@ -51,7 +51,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `toScreen(camera, x, y, z)` | `src/render/screen.ts` |
-| A third-person camera that stays out of the rock | `OrbitCamera` (pulls in along `level.trace`) | `src/render/camera/OrbitCamera.ts` |
+| A third-person camera that stays out of the rock and the props | `OrbitCamera` (pulls in along `level.trace`, and `Blockers.trace` through `cam.blockers`) | `src/render/camera/OrbitCamera.ts` |
 | Look at a level: scene, fixed lights, warm-up, streamed rock and props; switch to another level | `LevelView` (`LevelView.open`, `view.go(level)`) | `src/render/LevelView.ts` |
 | The player's figure | `Nobody` (Scale's human in rags, posed from the `Body`) | `src/render/humans/nobody.ts` |
 | A human: body, skeleton, materials, clothes, animation | `Humanoid` (`Humanoid.create(look, { wardrobe })`, `dress`, `update`) | `@futuremagic/humanoid/three` |
@@ -135,7 +135,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Move a body on the rock: walk, climb, swim, fall | `Body.step(level, input, dt, blockers)` and its metrics `MOVE` (the reachability check will use the same); which walls can be climbed: `level.climbable` (the field's `climbable`: all rock, not built walls); the top of a climb: `Body.ledge` (held until `overLedge()`, which the game calls once the pull-up has played) | `src/world/traverse/body.ts` |
 | Doors that open and shut (where they hang; swinging them, blocking while shut; drawing them); doors met on the way (the sheds') | `HOUSE_DOORS` / `DoorSpec`, `level.doors`; `Doors` (`near`, `toggle`, `step`, `into` the Blockers under `DOORS_KEY`, `meet` new ones, `of(spec)`, `Doors.shut`); `DoorView` (`hang`, `hangMore`, `draw`) | `src/gen/doorways.ts`, `src/world/doors.ts`, `src/render/props/doorView.ts` |
 | The quarrymen's site sheds: where they stand, their inside's layout (stove, bunk, table, shelf, the spots finds lie on), their doors; which shed holds a point; a point in a shed's frame | `level.sheds` (`Sheds`: `ofTile`, `standingIn`, `holding`), `SHED`, `SHED_SPOTS`, `inFrame`, `shedPoint`; drawn by `quarryProps`; shut in one, `Body.hidden` (nothing notices) and `Campfire.step(..., sheltered)` (rest); the camera kept inside by `OrbitCamera.room` | `src/gen/sheds.ts` |
-| Is a prop in the way? Push out of the props | `Blockers` (`pushOut`, `hits`); the generator lists each tile's boxes (`PropTile.blockers`), `Props` keeps them (`view.props.blockers`) | `src/world/blockers.ts` |
+| Is a prop in the way? Push out of the props; how far a ray gets past them | `Blockers` (`pushOut`, `hits`, `trace`); the generator lists each tile's boxes (`PropTile.blockers`), `Props` keeps them (`view.props.blockers`) | `src/world/blockers.ts` |
 | A persisted change to the world | `persist.mark(chunk, change)` (guarded: `localStorage` only in `src/persist/`) | `src/persist/` |
 | Keep the game between visits (the family's tin, heirs and finds taken; the living grandchild) | `readSave(seed)`, `writeSave(seed, data)`; each kept thing gives its `data` and takes it back with `from` (`Tin`, `Cooked`, `Practice`, `Explored`) | `src/persist/save.ts` |
 
