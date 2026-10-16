@@ -21,7 +21,7 @@ export interface Stratum {
 }
 
 /** Every style below the first strata can be made of (the excavation and the cellar aside). */
-const ALL: readonly StyleId[] = ['karst', 'rift', 'collapse', 'catacombs', 'dungeon', 'roots', 'fungal', 'lava', 'geode', 'basalt', 'flooded', 'dwarven', 'elven', 'goblin'];
+const ALL: readonly StyleId[] = ['karst', 'rift', 'collapse', 'catacombs', 'dungeon', 'roots', 'fungal', 'lava', 'geode', 'basalt', 'flooded', 'dwarven', 'elven', 'goblin', 'bones'];
 
 export const STRATA: readonly Stratum[] = [
   {
@@ -34,7 +34,7 @@ export const STRATA: readonly Stratum[] = [
   },
   {
     from: 41, name: 'Before People', picks: [3, 5], workings: 0.15,
-    palette: [['fungal', 2], ['geode', 1.8], ['lava', 1.8], ['roots', 1.5], ['karst', 1.5], ['rift', 1], ['collapse', 0.6], ['basalt', 1.5], ['flooded', 0.8]],
+    palette: [['fungal', 2], ['geode', 1.8], ['lava', 1.8], ['roots', 1.5], ['karst', 1.5], ['rift', 1], ['collapse', 0.6], ['basalt', 1.5], ['flooded', 0.8], ['bones', 1.2]],
   },
 ];
 
