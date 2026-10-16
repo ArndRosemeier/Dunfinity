@@ -7,7 +7,10 @@
  *
  * What she says: to a new grandchild, a word for the cousin who fell before them (or, to the first,
  * that she is still here); to one back up from below, the newest of her few lines the family's depth
- * has opened, once each per grandchild; otherwise nothing. Pure.
+ * has opened, once each per grandchild; otherwise nothing.
+ *
+ * Below, she comes only at a few set moments, once each for the whole family, for a few seconds
+ * (Arnd: "only in fitting moments and briefly"): `GLIMPSES`, met with `Grandma.glimpse`. Pure.
  */
 import { CELLAR } from '../gen/cellar';
 import { heirName, type Fallen } from '../gen/notary';
@@ -28,6 +31,33 @@ export const GRANDMA = {
   turn: 1.6,
 } as const;
 
+/** Her pace below: quicker to rise and gone sooner; she does not turn to you. */
+export const GLIMPSE = { notice: 0, reach: 0, turn: 0, rising: 0.8, talk: 3.5, fading: 2.5 } as const;
+
+/** A moment below she comes to: on level `depth`; `line`, what she says (none: silent). */
+export interface Glimpse {
+  readonly depth: number;
+  readonly line?: string;
+}
+
+/**
+ * Where she comes below: on the Tall One's level, the first time it looks at you, between you and it
+ * (her 1963 page: "It has not followed. I don't think it is allowed to."); on 18, far off, where she
+ * laid her first ring of salt (her page's spot), as you come in sight of it; on 40, by the two names
+ * cut in the rock, as you come to her page there, looking at his name, not at you.
+ */
+export const GLIMPSES = {
+  tall: { depth: 10 },
+  ring: { depth: 18 },
+  names: { depth: 40, line: '"I came, Papa."' },
+} as const satisfies Record<string, Glimpse>;
+
+/** On 18 she is seen this far off, metres: near enough to make out, not near enough to reach. */
+export const RING_SIGHT = [10, 22] as const;
+
+/** On 40 she comes as you come this near her page at the foot of the names, metres. */
+export const NAMES_NEAR = 4.5;
+
 /** What she knows: the family's deepest level, the fallen (the notary's list), the game's seed (their names). */
 export interface Kin {
   readonly deepest: number;
@@ -44,6 +74,7 @@ const BACK: readonly { from: number; line: string }[] = [
   { from: 10, line: '"I didn\'t break it." She is looking at the arch, not at you. "I want you to know that."' },
   { from: 11, line: '"You\'ve seen the town. Don\'t go into that house. I did."' },
   { from: 21, line: '"Chalk. He always had chalk in his pockets. Mother hated it."' },
+  { from: 40, line: '"You saw his name. And mine under it." She looks at you a long time. "That\'s far enough now. For all of us."' },
 ];
 
 /** "the Haddad girl": how she names a grandchild (the notary's "Ms. Haddad"). */
@@ -65,9 +96,11 @@ function mourn(f: Fallen, n: number, seed: number): string {
   return lines[(n - 1) % lines.length];
 }
 
+type Pace = typeof GRANDMA | typeof GLIMPSE;
+
 export class Grandma extends Townsperson {
-  /** On the cellar's floor, not the street's. */
-  override readonly y: number = 0;
+  /** On the cellar's floor, or wherever below she comes. */
+  override readonly y: number;
   /** 'away' (not there), or rising, speaking, fading since `since` (seconds, the game's clock). */
   mode: 'away' | 'rise' | 'speak' | 'fade' = 'away';
   since = 0;
@@ -81,9 +114,19 @@ export class Grandma extends Townsperson {
   private greeted = false;
   private readonly heard = new Set<number>();
 
-  constructor() {
-    // Facing the doorway the grandchildren come in by.
-    super(GRANDMA.x, GRANDMA.z, Math.atan2(-(CELLAR.door.x[1] - GRANDMA.x), GRANDMA.z), GRANDMA);
+  /** In her round room (the default: facing the doorway the grandchildren come in by), or below at (x, y, z) facing `yaw`. */
+  constructor(x: number = GRANDMA.x, y = 0, z: number = GRANDMA.z, yaw = Math.atan2(-(CELLAR.door.x[1] - GRANDMA.x), GRANDMA.z), private readonly pace: Pace = GRANDMA) {
+    super(x, z, yaw, pace);
+    this.y = y;
+  }
+
+  /** Her ghost below, for one of `GLIMPSES`: at (x, y, z) facing `yaw`, rising at `now`. */
+  static glimpse(g: Glimpse, x: number, y: number, z: number, yaw: number, now: number): Grandma {
+    const b = new Grandma(x, y, z, yaw, GLIMPSE);
+    b.said = g.line ?? '';
+    b.mode = 'rise';
+    b.since = now;
+    return b;
   }
 
   /** A grandchild `heir` has come into the cellar: the first time, or back up from below (her quiet counts from the next step). */
@@ -100,9 +143,9 @@ export class Grandma extends Townsperson {
   /** How much of her shows (0..1). */
   seen(now: number): number {
     const t = now - this.since;
-    if (this.mode === 'rise') return Math.min(1, t / GRANDMA.rising);
+    if (this.mode === 'rise') return Math.min(1, t / this.pace.rising);
     if (this.mode === 'speak') return 1;
-    if (this.mode === 'fade') return Math.max(0, 1 - t / GRANDMA.fading);
+    if (this.mode === 'fade') return Math.max(0, 1 - t / this.pace.fading);
     return 0;
   }
 
@@ -122,9 +165,9 @@ export class Grandma extends Townsperson {
   }
 
   /**
-   * Step by `dt` at `now` with the grandchild at (px, py, pz) in the cellar: she rises once they come
-   * near (if she has a word for them), turns to them, speaks, fades. Returns her line the moment she
-   * begins to speak, else null.
+   * Step by `dt` at `now` with the grandchild at (px, py, pz): in the cellar she rises once they come
+   * near (if she has a word for them), turns to them, speaks, fades; below, a glimpse rises, stays and
+   * fades. Returns her line the moment she begins to speak, else null.
    */
   keep(dt: number, now: number, px: number, py: number, pz: number, kin: Kin): string | null {
     if (this.arrivedAt < 0) this.arrivedAt = now;
@@ -134,12 +177,14 @@ export class Grandma extends Townsperson {
       this.waiting = false;
       const l = this.line(kin);
       if (l) { this.said = l; this.mode = 'rise'; this.since = now; this.yaw = Math.atan2(-(px - this.x), -(pz - this.z)); }
-    } else if (this.mode === 'rise' && t >= GRANDMA.rising) {
-      this.mode = 'speak'; this.since = this.talkAt = now; this.calls++;
+    } else if (this.mode === 'rise' && t >= this.pace.rising) {
+      this.mode = 'speak'; this.since = now;
+      if (!this.said) return null;
+      this.talkAt = now; this.calls++;
       return this.said;
-    } else if (this.mode === 'speak' && t >= GRANDMA.talk) {
+    } else if (this.mode === 'speak' && t >= this.pace.talk) {
       this.mode = 'fade'; this.since = now;
-    } else if (this.mode === 'fade' && t >= GRANDMA.fading) {
+    } else if (this.mode === 'fade' && t >= this.pace.fading) {
       this.mode = 'away';
     }
     return null;

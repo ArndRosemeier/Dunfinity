@@ -26,6 +26,7 @@ import { latin } from '../lore/scripts';
 import type { Mark } from '../lore/diary';
 import { markLine, type PageSpot } from './diaryPages';
 import { THRESHOLD_LINTELS } from '../lore/fragments';
+import { SkyBuilder, skyLights } from './glowworms';
 
 export { PROP_TILE } from './propGrid';
 
@@ -42,6 +43,8 @@ export interface PropTile {
   stones: PropMesh | null;
   /** The town's houses, walls and roofs: drawn as houses (plaster, tiles). */
   house: PropMesh | null;
+  /** Glow-worm skies on the roof (src/gen/glowworms.ts): drawn as their lights. */
+  sky: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
   lamps: Float32Array;
   /** What one cannot walk through: upright boxes, BLOCKER_STRIDE numbers each (src/world/blockers.ts). */
@@ -50,7 +53,7 @@ export interface PropTile {
   watchers: Float32Array;
   /** Writing in the old scripts on the tile's props (src/gen/inscriptions.ts), for the game to read. */
   inscriptions: Inscription[];
-  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number; chalk: number; dressed: number };
+  counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number; chalk: number; dressed: number; skies: number };
 }
 
 /** Sleeper spacing along a track, metres. */
@@ -122,11 +125,12 @@ class TileBuilder {
   private readonly flow = new PropBuilder();
   private readonly stones = new PropBuilder();
   private readonly house = new PropBuilder();
+  private readonly sky = new SkyBuilder();
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
   private readonly inscriptions: Inscription[] = [];
-  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0, chalk: 0, dressed: 0 };
+  private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0, chalk: 0, dressed: 0, skies: 0 };
   private readonly seed: number;
   private readonly x0: number;
   private readonly z0: number;
@@ -165,6 +169,7 @@ class TileBuilder {
     if (this.level.band.uphill > 0) this.uphill();
     for (const st of this.level.field.styles) if (st.props) st.props(this.dress(st));
     this.debris();
+    for (const sky of this.level.skies.near(this.x0 + PROP_TILE / 2, this.z0 + PROP_TILE / 2, PROP_TILE)) if (this.inTile(sky.x, sky.z)) { skyLights(this.level, sky, this.sky); this.counts.skies++; }
     return this.done();
   }
 
@@ -200,7 +205,7 @@ class TileBuilder {
   }
 
   private done(): PropTile {
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), house: this.house.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), inscriptions: this.inscriptions, counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), house: this.house.build(), sky: this.sky.mesh(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), inscriptions: this.inscriptions, counts: this.counts };
   }
 
   /** Stones and chippings over the floor of the tile (see DEBRIS). */
