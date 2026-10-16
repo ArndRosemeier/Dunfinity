@@ -72,6 +72,7 @@ import { AbilityBar, type SlotState } from '../app/abilityBar';
 import { ABILITIES, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
 import { TargetMark } from '../app/targetMark';
 import { keeps, nextTarget, yawTo } from './target';
+import type { LoadingScreen } from '../app/loadingScreen';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -101,14 +102,18 @@ const WAY_HOME = { dur: 4, fade: 1, motes: 0.5 };
 const BLOCK = { dur: 0.6, held: 0.25, hold: 0.4 };
 /** Cooking a card at the fire: seconds the nobody stirs. */
 const COOK = { dur: 2.4 };
+/** Arriving on a level: the screen stays black (and the world still) until its rock is on screen, at most `cap` seconds. */
+const ARRIVE = { cap: 30 };
 
-export async function startGame(host: HTMLElement): Promise<void> {
+export async function startGame(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
+  loading.step('Laying out the level', 0.03);
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
+  loading.step('Dressing the figures', 0.08);
   view.headlampPower = { survey: 14, dark: 3.5 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
   view.carrier = new Vector3(); // the headlamp is on the nobody's forehead
@@ -145,8 +150,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let exploredAt = 0;
   /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
+  /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
+  let arriving = false, arrivedAt = 0;
   const show = (l: Level) => {
     level = l;
+    arriving = true;
+    arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
@@ -230,6 +239,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
   nobody.pose(body, 0, 0);
+  loading.step('Warming up the shaders', 0.3);
   await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
@@ -382,12 +392,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const fade = document.createElement('div');
   fade.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none';
   host.appendChild(fade);
+  // While a level streams in behind the black: a quiet line, so a long wait does not look like a hang.
+  const fadeLine = document.createElement('div');
+  fadeLine.style.cssText = 'position:absolute;left:0;right:0;bottom:18%;text-align:center;color:#7d8790;font-size:12px;letter-spacing:0.04em;opacity:0;transition:opacity 0.4s';
+  fadeLine.textContent = 'The rock takes shape';
+  fade.appendChild(fadeLine);
   // Getting hurt shows, in first person too: the edges of the view flash red.
   const pain = document.createElement('div');
   pain.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,0,0,0.85) 100%)';
   host.appendChild(pain);
   /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. */
   const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
+  loading.step('Tuning the sounds', 0.6);
   await sounds.init();
   const timer = new Timer();
   let acc = 0;
@@ -517,9 +533,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
       return true;
     },
   };
+  // The first level streams in behind the loading screen, as any later one behind the black.
+  arriving = true;
+  arrivedAt = performance.now() / 1000;
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
+    if (arriving && (view.settled || performance.now() / 1000 - arrivedAt > ARRIVE.cap)) {
+      arriving = false;
+      if (!climb.active) fadeIn = 0.8; // a climb fades in by itself
+      if (loading.open) { loading.hide(); fadeIn = 0; fade.style.opacity = '0'; }
+    }
+    if (arriving && loading.open) loading.step('Carving the rock', 0.65 + 0.35 * view.streamed);
     // A death goes on the notary's list (once).
     if (body.dead && !mourned) { mourned = true; fallen.push({ heir, depth: level.depth, what: HURT[body.lastCause]?.[0] ?? 'a fall' }); }
     if (!body.dead) mourned = false;
@@ -729,6 +754,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
         if (fade.style.opacity !== '0') fadeIn = 0.8;
       }
       input.jump = false;
+    } else if (arriving) {
+      fade.style.opacity = '1';
+      input.jump = false;
     } else {
       doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
@@ -930,7 +958,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       dt, body, level, fauna, doors: doors.list, fire: campfire.burning(timer.getElapsed()) ? campfire.fire : null,
       resting: campfire.resting, ladder: climb.active, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
-    (globalThis as { __ready?: boolean }).__ready = view.settled;
+    fadeLine.style.opacity = arriving && !loading.open && Number(fade.style.opacity) > 0.9 ? '1' : '0';
+    (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone && !arriving;
     controls.endFrame();
   });
 }

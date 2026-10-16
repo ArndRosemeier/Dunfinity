@@ -10,9 +10,11 @@ import { FlyCamera } from './FlyCamera';
 import { parseViewParams } from '../app/params';
 import { strangeLabel } from '../gen/genome';
 import { lawsOf } from '../gen/laws';
+import type { LoadingScreen } from '../app/loadingScreen';
 
-export async function startLab(host: HTMLElement): Promise<void> {
+export async function startLab(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
+  loading.step('Laying out the level', 0.05);
   const level = new Level(params.seed, params.depth, params.style);
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   const { camera, stage } = view;
@@ -21,6 +23,7 @@ export async function startLab(host: HTMLElement): Promise<void> {
   const fly = new FlyCamera(camera, new Controls(canvas));
   if (params.look) [fly.yaw, fly.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
+  loading.step('Warming up the shaders', 0.15);
   await view.start();
   const { terrain, props } = view;
   terrain.colorMode = params.color;
@@ -51,7 +54,8 @@ export async function startLab(host: HTMLElement): Promise<void> {
       + `${stage.hudLine()}\n`
       + 'click: mouse look · WASD move · Space/C up/down · Shift fast · wheel speed · V colours · F dark';
     view.frame(p.x, p.y, p.z, timer.getElapsed());
-    (globalThis as { __ready?: boolean }).__ready = view.settled;
+    if (loading.open) { if (view.settled || timer.getElapsed() > 30) loading.hide(); else loading.step('Carving the rock', 0.4 + 0.6 * view.streamed); }
+    (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone;
   });
 }
 

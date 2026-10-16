@@ -142,6 +142,11 @@ export class LevelView {
     return !!this.terrain_?.settled && !!this.props_?.settled;
   }
 
+  /** How far the rock around the viewer has come, 0–1 (the loading screen's bar; props follow it closely). */
+  get streamed(): number {
+    return this.settled ? 1 : Math.min(0.99, this.terrain_?.progress ?? 0);
+  }
+
   /** Put the headlamp where it is carried (in the camera's frame); it shines where the camera looks. */
   private aimHeadlamp(): void {
     if (!this.carrier) this.headlamp.position.set(0, 0, 0);
