@@ -101,6 +101,8 @@ import { PrologueView } from '../app/prologueView';
 import { StepsView } from '../app/stepsView';
 import type { LoadingScreen } from '../app/loadingScreen';
 import { heard, tipOf, type DripLook } from '../gen/drips';
+import { ThinPlaces } from '../world/thinPlaces';
+import { ThinView } from '../render/thinView';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -164,6 +166,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
   let fauna: Fauna;
+  /** Glimpses of other worlds opening in the air (src/world/thinPlaces.ts). */
+  let thin: ThinPlaces;
   const saltLine = new SaltLine();
   /** Finds taken so far, per level: they stay taken for every grandchild (D13). */
   const taken = new Map<number, Set<number>>(saved?.taken.map(([d, ids]) => [d, new Set(ids)]) ?? []);
@@ -200,6 +204,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     arriving = true;
     arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
+    thin = new ThinPlaces(l);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
@@ -260,6 +265,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(level);
   };
   fauna = new Fauna(level);
+  thin = new ThinPlaces(level);
   /** The nobody's own fire to rest by (one at a time). */
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
   /** The doors that open and shut (grandma's house). */
@@ -371,6 +377,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const findView = new FindView();
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
+  const thinView = new ThinView();
+  await view.stage.add(thinView.mesh);
   await view.stage.add(drift.root);
   const spells = new SpellView(params.seed);
   await view.stage.add(spells.root);
@@ -658,7 +666,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -788,7 +796,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The next grandchild, in the cellar, with nothing but what the family keeps. */
   const sendNextDown = (): void => {
     body = nextGrandchild();
-    fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
+    fauna = new Fauna(level); thin = new ThinPlaces(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
     pack = new Pack(); kit = new Kit(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
     picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; garden.plants.length = 0;
     tinSel = TinView.order(cooked)[0];
@@ -826,6 +834,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family
     look(level);
     fauna = new Fauna(level);
+    thin = new ThinPlaces(level);
     cam.yaw = body.facing; cam.pitch = -0.25; cam.distance = 4;
     cam.follow(body.x, body.y + 1.6, body.z, 1);
     fade.style.opacity = '1'; // the game's level streams in behind the black (arriving, below)
@@ -1296,6 +1305,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
+    thin.advance(dt, body.x, body.y + 1.6, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
+    thinView.draw(thin.current);
     if (body.sprangAt !== sprangSeen) { sprangSeen = body.sprangAt; if (Number.isFinite(sprangSeen)) spells.puff(body.x, body.y, body.z, now); }
     spells.place(now);
     thrownView.arrange(thrown.missiles, now);
