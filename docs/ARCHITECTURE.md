@@ -45,6 +45,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
 | Dust in the air, seen in the headlamp's beam | `Dust` (one mesh of the `DUST` kind; `follow(lamp)` each frame) | `src/render/dust.ts` |
 | Light the level's burning lamps | `LampLights` (a fixed pool made before the warm-up; never add lights later; `power` from `band.lamplight`) | `src/render/props/lamps.ts` |
+| How much the graphics ask of the machine (pixels drawn, the headlamp's shadow map, rock detail far off), changed at once without a compile | `view.quality = 'low' \| 'medium' \| 'high'`, the presets `QUALITY` | `src/render/LevelView.ts`, `src/render/quality.ts` |
 | Compile shaders ahead of time | `stage.warmUp(extra)` / `stage.add()` only (guarded); `extra` is for objects whose materials are not kinds (humans) | `src/render/stage.ts` |
 | Did something compile on the render path? | `shaders.report()` in the console; `npm run check:shaders` | `src/render/shaders/monitor.ts` |
 | Where on screen is a world point? | `toScreen(camera, x, y, z)` | `src/render/screen.ts` |
@@ -206,7 +207,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Slow a creature (Cold Larder): all its movement through `Steer.slide` | `walker.chill = { left, by }` | `src/creatures/steer.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
 | Remember what a grandchild has seen of each level (exploration memory) | `Explored` (`see(level, x, y, z)`, `has(depth, i, j)`, `cells`, `data`/`from`), `EXPLORE` | `src/world/explored.ts` |
-| A DOM panel of the game (its stylesheet and element), and an element in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)` | `src/app/panel.ts` |
+| A DOM panel of the game (its stylesheet and element), an element in it, a button in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)`, `button(parent, text, click, cls)` | `src/app/panel.ts` |
+| The settings (O): volumes, keys, graphics quality | `SettingsView` (`toggle`, with the game's `SettingsHooks`); kept by `read…Settings`/`write…Settings` | `src/app/settingsView.ts`, `src/persist/settings.ts` |
 | Show the map of what was seen (M) | `MapView` (`toggle`, `draw(level, explored, x, y, z, yaw, fire, now)`); a style's floor colour there is `Style.mapFloor` (default `MAP_FLOOR`) | `src/app/mapView.ts` |
 | Draw the finds | `FindView` (pools per kind added once with the Stage; `draw(finds, time)`) | `src/render/loot/findView.ts` |
 | Stab with the knife | `STAB` and `stab()` in the game loop (soft aim at the nearest rat ahead) | `src/game/Game.ts` |
@@ -216,7 +218,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 
 | Question | The one way | Where |
 |---|---|---|
-| Play a sound: one-shot (placed or on the nobody), a positioned loop, ambience beds; volume, mute, music switch (kept through `src/persist/settings.ts`) | `SoundEngine` (`play(id, at, gain, pitch)`, `loop`, `ambience`, `set`); clips in `public/sounds/manifest.json` | `src/audio/audio.ts` |
+| Play a sound: one-shot (placed or on the nobody), a positioned loop, ambience beds; volume and each category's (effects, ambience, music), mute, music switch (kept through `src/persist/settings.ts`) | `SoundEngine` (`play(id, at, gain, pitch)`, `loop`, `ambience`, `set`); clips in `public/sounds/manifest.json` | `src/audio/audio.ts` |
 | Which sounds the world makes (footsteps, landings, hurt, creatures' modes, doors, the fire, the bell) and which ambience and music | `GameSounds.update(scene)` once a frame; the game's own events through `sounds.play(id, at)`; a creature kind's voice in `VOICES` | `src/audio/gameSounds.ts` |
 | Where one is, for sound (town, cellar, a band) | `GameSounds.place(level, pos)` | `src/audio/gameSounds.ts` |
 | Which music plays when | `MoodDirector` (pure; moods, episodes, danger hold), pieces per mood `MOOD_TRACKS`, played by `Music` / `TrackPlayer` | `src/audio/music/` |
@@ -228,7 +230,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
-| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys) | `Controls` | `src/input/controls.ts` |
+| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys); the player's own keys (`bind`), nothing while a menu is open (`paused`) | `Controls` | `src/input/controls.ts` |
+| Which key an action answers to (the player may move them; an action is named by its own default key, so the game keeps asking for 'KeyW'), and what a key is called on screen | `Bindings` (`keyOf`, `actionOf`, `rebind` swaps on a taken key, `clear`, `data`), `keyLabel`; the game's actions `KEY_ACTIONS` and `FIXED_KEYS` in `src/game/abilities.ts` | `src/input/bindings.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 
 ## Layers

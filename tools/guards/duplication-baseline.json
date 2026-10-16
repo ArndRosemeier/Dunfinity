@@ -68,7 +68,7 @@
     "reason": "creatures, quarry props and fire each ask the level whether a spot is dry (level.dry) for their own placement; one seam called from three places, surfaced when the finder's corpus grew"
   },
   {
-    "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts + dunfinity/render/creatures/rigged.ts",
+    "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/input/bindings.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts + dunfinity/render/creatures/rigged.ts",
     "reason": "Object.entries over a record, a language idiom (parsing a manifest, walking ambience levels, practice and recipe tables); nothing to share."
   },
   {
@@ -2444,7 +2444,7 @@
     "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
   },
   {
-    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/diaryView.ts + dunfinity/app/readView.ts + dunfinity/app/tinView.ts",
+    "key": "idiom: [.classList .contains .el] in dunfinity/app/debugMenu.ts + dunfinity/app/diaryView.ts + dunfinity/app/readView.ts + dunfinity/app/settingsView.ts + dunfinity/app/tinView.ts",
     "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
   },
   {
@@ -3438,5 +3438,13 @@
   {
     "key": "idiom: [.cells .lines .noise] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
     "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
+  },
+  {
+    "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/settingsView.ts#toggle",
+    "reason": "each DOM panel's open/close on its own key; the shared part is panel() and button() in src/app/panel.ts"
+  },
+  {
+    "key": "same name: dunfinity/input/bindings.ts#data + dunfinity/loot/practice.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
   }
 ]
