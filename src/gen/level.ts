@@ -12,7 +12,7 @@ import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
 import { shareOf } from './regions';
 import { owns, SURFACE_STRIDE, type StyleId } from './style';
-import { ROCK_PRESETS, ROCK_TYPES, type RockRecipe } from './rockTypes';
+import { rockRecipesOf, type RockRecipe } from './rockTypes';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
@@ -66,7 +66,7 @@ export class Level {
   /** The ways down to the next level (shafts). */
   readonly descents: Descents;
   /** The stone of each rock slot (src/gen/rockTypes.ts): what the weights of a `RockMix` mean on this level. */
-  readonly rockRecipes: readonly RockRecipe[] = ROCK_TYPES.map((t) => ROCK_PRESETS[t]);
+  readonly rockRecipes: readonly RockRecipe[];
   private readonly col = newColumn();
   private arrival_: [number, number, number] | null = null;
   private ascent_: Shaft | null | undefined;
@@ -76,6 +76,7 @@ export class Level {
   /** `style`: the whole level of that style (but where one arrives), instead of its band's mix; not in the cellar. */
   constructor(readonly seed: number, readonly depth: number, readonly style?: StyleId) {
     this.band = bandOf(depth);
+    this.rockRecipes = rockRecipesOf(seed, depth);
     // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
     const s = deriveSeed(seed, 'level', depth);
     const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
