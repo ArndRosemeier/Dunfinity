@@ -3,10 +3,11 @@
  * they sit, as garment shells the package fits to any body: the rags a grandchild goes down in,
  * what they put on of their kit (src/loot/items.ts), and Grandma's kitchen knife in the hand.
  */
-import type { EquipmentVisuals, ItemVisual, ShellLayer, ShellMaterial, WearableSpec } from '@futuremagic/humanoid';
+import type { BodyFit, EquipmentVisuals, ItemVisual, ShellLayer, ShellMaterial, WearableSpec } from '@futuremagic/humanoid';
 import type { Wardrobe } from '@futuremagic/humanoid/three';
 import { Group, type Mesh, type Object3D } from 'three/webgpu';
 import { PropBuilder } from '../../gen/propMesh';
+import { propModel } from '../../gen/models';
 import { meshFromData } from '../meshes';
 import { METAL, VERTEX_COLOR_SOLID } from '../materials';
 import { QUALITY, type Item, type ItemKind } from '../../loot/items';
@@ -40,8 +41,8 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
     case 'trousers': return shell([{ region: 'pelvis' }, { region: 'buttocks' }, { region: 'thigh.L' }, { region: 'thigh.R' }, { region: 'shin.L', to: 0.8 }, { region: 'shin.R', to: 0.8 }], 0.009, 1, cloth(v, 'plain'));
     /** Leather wrapped round the feet and ankles. */
     case 'footwraps': return shell([{ region: 'foot.L' }, { region: 'foot.R' }, { region: 'shin.L', from: 0.6 }, { region: 'shin.R', from: 0.6 }], 0.012, 2, cloth(v, 'leather', { roughness: 0.75 }));
-    /** Kemal's miner's helmet: a hard shell over the crown with a dark rim, the hair showing under it (hidden, the bare scalp below the shell's edge reads as bald). A modelled hard hat is the Props thread's to make. */
-    case 'miners-helmet': return shell([{ region: 'scalp' }], 0.03, 3, { ...cloth(v, 'plain', { roughness: 0.45, sheen: 0 }), metalness: 0.35 }, { trim: { width: 0.014, color: dark } });
+    /** Kemal's miner's helmet: the modelled hard hat (dented green enamel, brim, lamp; `wear_hard_hat`) on the head, the hair tucked under. */
+    case 'miners-helmet': return { layers: [{ kind: 'rigid', socket: 'head', build: hardHat }], hideHair: true };
     /** Work gloves: leather over the hands, a cuff over the wrist. */
     case 'work-gloves': return shell([{ region: 'hand.L' }, { region: 'hand.R' }, { region: 'forearm.L', from: 0.85 }, { region: 'forearm.R', from: 0.85 }], 0.006, 3, cloth(v, 'leather', { roughness: 0.7 }));
     default: return null;
@@ -130,6 +131,19 @@ function potLid(): Object3D {
     wood.cylinder(0, 0.025, 0, 0.022, 0.015, [0.2, 0.12, 0.06], 8);
   }, Math.PI / 2);
 }
+
+/**
+ * The miner's hard hat on the head socket (its frame is the body's: +z forward): the packed model
+ * (origin at the brim's centre underneath, lamp forward, made for a head of radius 0.1 m) scaled to
+ * this head and lifted from the socket at ear height to sit on the crown.
+ */
+function hardHat(fit: BodyFit): Object3D {
+  const k = fit.headRadius / HAT.radius;
+  return held((paint) => paint.stamp(propModel('wear_hard_hat'), 0, fit.headRadius * HAT.lift, HAT.forward * fit.headRadius, 0, { scale: k }));
+}
+
+/** The hard hat's fit: the head it was made for, how far above the socket its brim sits and how far forward (both in head radii). */
+const HAT = { radius: 0.1, lift: 0.3, forward: 0.05 } as const;
 
 /** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
 const KNIFE_TILT = 2.7;
