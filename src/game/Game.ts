@@ -640,6 +640,20 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     stab: () => stab(timer.getElapsed()),
     /** Bring the knife's handle down, as V would (grandma's Tenderising). */
     pound: () => stab(timer.getElapsed(), 'pound'),
+    /** Wander about `steps` × 2 m on the floor from the nobody, marking it seen as walking there would (the map probe). */
+    explore: (steps = 400, salt = 0) => {
+      const rng = new Rng(deriveSeed(params.seed, 'explore', salt));
+      let x = body.x, z = body.z, a = rng.range(0, Math.PI * 2);
+      for (let s = 0; s < steps; s++) {
+        a += rng.range(-0.5, 0.5);
+        for (let t = 0; t < 8; t++) {
+          const nx = x + Math.cos(a) * 2, nz = z + Math.sin(a) * 2, g = level.groundAt(nx, nz);
+          if (Math.abs(g - level.groundAt(x, z)) < 1.5 && level.sdf(nx, g + 1, nz) > 0.3) { x = nx; z = nz; break; }
+          a += rng.range(1, 2.5);
+        }
+        if (s % 3 === 0) explored.see(level, x, level.groundAt(x, z), z);
+      }
+    },
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
     descend: (up = false) => {
       const s = up ? level.ascent : level.descents.nearest(body.x, body.z, 5000);
@@ -826,7 +840,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Keep the game every few seconds (not mid-climb or mid-way home), and at once when the grandchild dies.
     if (!climb.active && homeTo === null && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
     const [mx, my] = controls.takeLook();
-    cam.look(mx, my, controls.takeWheel());
+    // With the map open the wheel brings it nearer or farther, not the camera.
+    const wheel = controls.takeWheel();
+    if (mapView.open && wheel) mapView.zoomBy(-Math.sign(wheel));
+    cam.look(mx, my, mapView.open ? 0 : wheel);
     input.forward = (controls.held('KeyW') ? 1 : 0) - (controls.held('KeyS') ? 1 : 0);
     input.right = (controls.held('KeyD') ? 1 : 0) - (controls.held('KeyA') ? 1 : 0);
     input.sprint = controls.held('ShiftLeft') || controls.held('ShiftRight');
@@ -834,7 +851,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (controls.tap('KeyM')) mapView.toggle();
+    if (controls.tap('KeyM') || (mapView.open && controls.tap('Escape'))) mapView.toggle(level.depth ? `Level ${level.depth} · ${level.band.name}` : level.band.name);
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
     else if (controls.tap('KeyJ') && !tinView.open) { diaryView.show((d) => tin.hasPage(d)); tick('diary'); }

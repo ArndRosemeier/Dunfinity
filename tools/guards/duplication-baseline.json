@@ -3514,5 +3514,21 @@
   {
     "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/humanPool.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/shroomView.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/loot/findView.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
   }
 ]
