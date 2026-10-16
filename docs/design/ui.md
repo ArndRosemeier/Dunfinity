@@ -16,7 +16,7 @@ Everything drawn in the DOM uses `src/app/theme.ts` and nothing else for colour 
 `growOn(frame, name)` grows salt over an element (`src/app/growth.ts`):
 
 - Thin veins along the frame, wandering mostly outwards, thinner towards the tip, with curls off them and glowing buds; moss gathered in a corner.
-- **Never over text**: the growth stays on the frame, a few pixels in over the border at most.
+- **Never over text**: the growth stays on the frame, at most a pixel in over the border, and it follows the frame's real size: when the content, a font or the window changes the frame, it is redrawn there (already grown, it creeps on).
 - **Very slow**: it grows in over a few seconds when a panel opens; then a tip creeps out and back over 45 to 100 seconds and a glint of light runs along a vein now and then.
 - **Cheap**: one small SVG per element, shaped once from a seed (the element's name), moved by CSS only.
 - **Deeper, thicker**: `setGrowth(growthAt(depth))` (the game calls it on each level) from a little in grandma's cellar to thick by level 40.

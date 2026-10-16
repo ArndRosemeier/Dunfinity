@@ -28,6 +28,11 @@ const STYLE = `
   :is(.open, .ui-grown) > .ui-growth .flow { animation: ui-flow var(--flow) linear calc(var(--at) + var(--grow)) infinite; }
   :is(.open, .ui-grown) > .ui-growth .bud { animation: ui-show 1.2s ease-out calc(var(--at) + var(--grow)) forwards, ui-breathe 7s ease-in-out calc(var(--at) + var(--grow) + 1.2s) infinite alternate; }
   :is(.open, .ui-grown) > .ui-growth .moss { animation: ui-show 4s ease-out var(--at) forwards; }
+  /* Redrawn while it shows (its element changed size): already grown, it only creeps on. */
+  :is(.open, .ui-grown) > .ui-growth.settled :is(.vein, .halo) { animation: ui-creep var(--creep) ease-in-out infinite alternate; }
+  :is(.open, .ui-grown) > .ui-growth.settled .flow { animation: ui-flow var(--flow) linear infinite; }
+  :is(.open, .ui-grown) > .ui-growth.settled .bud { opacity: 1; animation: ui-breathe 7s ease-in-out infinite alternate; }
+  :is(.open, .ui-grown) > .ui-growth.settled .moss { opacity: 1; animation: none; }
   @keyframes ui-grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
   @keyframes ui-creep { from { stroke-dashoffset: 0; } to { stroke-dashoffset: var(--back); } }
   @keyframes ui-flow { 0% { stroke-dashoffset: 1.6; opacity: 0; } 8% { opacity: .9; } 55% { opacity: .9; } 70%, 100% { stroke-dashoffset: -.2; opacity: 0; } }
@@ -42,7 +47,7 @@ const STYLE = `
 
 /** How thickly things grow, 0…1 (more with depth: `setGrowth`), and every element grown over. */
 let thickness = 0.25;
-const grown = new Set<{ redraw(): void }>();
+const grown = new Set<{ redraw(settled: boolean): void }>();
 let styled = false;
 
 /** How thickly the salt grows over the interface from now on, 0…1 (the game sets it from the depth); redraws every growth. */
@@ -50,7 +55,7 @@ export function setGrowth(amount: number): void {
   const t = Math.max(0, Math.min(1, amount));
   if (t === thickness) return;
   thickness = t;
-  for (const g of grown) g.redraw();
+  for (const g of grown) g.redraw(true);
 }
 
 /** How thickly the salt grows at `depth`: a little in grandma's cellar, more and more down to level 40. */
@@ -73,13 +78,15 @@ export interface GrowOptions {
 export function growOn(frame: HTMLElement, name: string, opts: GrowOptions = {}): Growth {
   if (!styled) { styled = true; addStyle(STYLE); }
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'ui-growth');
   svg.setAttribute('aria-hidden', 'true');
   frame.appendChild(svg);
-  let w0 = 0, h0 = 0;
+  let w0 = 0, h0 = 0, fresh = -Infinity;
   const g = {
-    redraw: () => {
+    /** Draw it for the frame's size now; `settled`: already grown in (it is showing), else it grows in when it shows. */
+    redraw: (settled: boolean) => {
       const w = frame.offsetWidth, h = frame.offsetHeight;
+      svg.setAttribute('class', settled ? 'ui-growth settled' : 'ui-growth');
+      if (!settled) fresh = performance.now();
       if (!w || !h) return;
       w0 = w;
       h0 = h;
@@ -88,16 +95,18 @@ export function growOn(frame: HTMLElement, name: string, opts: GrowOptions = {})
       svg.innerHTML = drawing(w, h, hashString(name), thickness * (opts.amount ?? 1), opts.moss ?? true);
     },
   };
-  const moved = (share: number) => Math.abs(frame.offsetWidth - w0) > w0 * share || Math.abs(frame.offsetHeight - h0) > h0 * share;
+  const moved = () => frame.offsetWidth !== w0 || frame.offsetHeight !== h0;
   const showing = () => frame.classList.contains('open') || frame.classList.contains('ui-grown');
   grown.add(g);
-  // A new drawing grows in afresh: while it shows, only a big change of size redraws it.
-  new ResizeObserver(() => { if (moved(showing() ? 0.25 : 0)) g.redraw(); }).observe(frame);
-  g.redraw();
-  return { fit: () => { if (moved(0)) g.redraw(); } };
+  // It always follows the frame's real size (new content, a font loading, the window): redrawn
+  // while it shows, it stays grown and creeps on rather than growing in again (unless it has only
+  // just begun to: content filled in right after opening).
+  new ResizeObserver(() => { if (moved()) g.redraw(showing() && performance.now() - fresh > 1000); }).observe(frame);
+  g.redraw(false);
+  return { fit: () => g.redraw(false) };
 }
 
-/** A growth on an element: `fit()` redraws it if the element changed size (call it just before it shows). */
+/** A growth on an element: `fit()` redraws it for the element's size, to grow in afresh (call it just before it shows). */
 export interface Growth {
   fit(): void;
 }
@@ -146,9 +155,9 @@ function drawing(w: number, h: number, seed: number, amount: number, moss: boole
   };
   for (let v = 0; v < veins; v++) {
     const start = rng.int(0, n - 1), len = Math.round(n * rng.range(0.12, 0.22 + 0.25 * amount));
-    // A wander off the frame: mostly outwards, a little in over the border (never as far as the text).
+    // A wander off the frame: outwards, at most just onto the border (never in over what it holds).
     const waves = [0, 1, 2].map(() => ({ f: rng.range(0.02, 0.09), p: rng.range(0, Math.PI * 2), a: rng.range(0.6, 2.2) }));
-    const off = (i: number) => 1.5 + waves.reduce((s, k) => s + Math.sin(i * GROWTH.step * k.f + k.p) * k.a, 0);
+    const off = (i: number) => Math.max(-1, 1.5 + waves.reduce((s, k) => s + Math.sin(i * GROWTH.step * k.f + k.p) * k.a, 0));
     const dir = rng.float() < 0.5 ? 1 : -1;
     const at = rng.range(0, 1.5), grow = rng.range(2.5, 5);
     shade = rng.range(0.6, 1);
@@ -175,8 +184,8 @@ function drawing(w: number, h: number, seed: number, amount: number, moss: boole
       const i = rng.int(2, Math.max(3, len - 2)), e = edge[(((start + dir * i) % n) + n) % n], o = off(i);
       const x0 = e.x + e.nx * o, y0 = e.y + e.ny * o, turn = rng.float() < 0.5 ? 1 : -1;
       const size = rng.range(4, 9), spin = rng.range(1.1, 1.8) * Math.PI * 2;
-      // Leave along the frame and out, then wind in.
-      const a0 = Math.atan2(e.ny, e.nx) - turn * rng.range(0.4, 1.1);
+      // Leave outwards, a little along the frame, then wind in (the coil stays outside the border).
+      const a0 = Math.atan2(e.ny, e.nx) - turn * rng.range(0.2, 0.6);
       let d = `M${fmt(x0)} ${fmt(y0)}`, cx = x0 + Math.cos(a0) * size, cy = y0 + Math.sin(a0) * size, x = x0, y = y0;
       const steps = 22;
       for (let s = 1; s <= steps; s++) {
