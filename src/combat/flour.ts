@@ -60,7 +60,7 @@ export class Flour {
   }
 
   /** The cloud (x, y, z) is in, if any. */
-  at(x: number, y: number, z: number): Cloud | null {
+  cloudAt(x: number, y: number, z: number): Cloud | null {
     return this.clouds.find((c) => Flour.holds(c, x, y, z)) ?? null;
   }
 
@@ -76,13 +76,13 @@ export class Flour {
 
   /** Whether a blow struck from (x, z) is struck blind: from inside a cloud, or by someone standing there who is blind. */
   blinds(x: number, y: number, z: number, fighters: Iterable<Blindable>): boolean {
-    if (this.at(x, y + 0.5, z)) return true;
+    if (this.cloudAt(x, y + 0.5, z)) return true;
     for (const f of fighters) if (!f.dead && (f.blind ?? 0) > 0 && Math.hypot(f.x - x, f.z - z) <= f.radius + 0.05) return true;
     return false;
   }
 
   /** Step by dt: the clouds hang and thin away; whoever is in one is blind (and stays so a while after); blindness wears off. */
-  step(dt: number, fighters: Iterable<Blindable>): void {
+  linger(dt: number, fighters: Iterable<Blindable>): void {
     for (let i = this.clouds.length - 1; i >= 0; i--) if ((this.clouds[i].t += dt) > this.clouds[i].hangs) this.clouds.splice(i, 1);
     for (const f of fighters) {
       if (f.blind !== undefined && f.blind > 0) f.blind = Math.max(0, f.blind - dt);

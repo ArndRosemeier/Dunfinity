@@ -140,7 +140,7 @@ export class SpellView {
   }
 
   /** Flour Bag: the bag bursting at (x, y, z) into a cloud `r` metres round, at `now`. */
-  burst(x: number, y: number, z: number, r: number, now: number): void {
+  bagBursts(x: number, y: number, z: number, r: number, now: number): void {
     for (let i = 0; i < 40; i++) {
       const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(0.4, 1) * (r / SPELLS.flour.life);
       this.pools.flour.emit(x, y + 0.6, z, Math.cos(a) * v, this.rng.range(-0.2, 1), Math.sin(a) * v, now + i * 0.004, SPELLS.flour.life * this.rng.range(0.7, 1.1));

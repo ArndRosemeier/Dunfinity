@@ -19,22 +19,22 @@ function dummy(x: number, z: number, radius = 0.3): Blindable & { health: number
 test('a cloud blinds what is in it, and it stays blind a while after; the cloud thins away', () => {
   const f = new Flour(), inside = dummy(1, 0), out = dummy(bag.r + 2, 0);
   f.burst(0, 0, 0, bag);
-  for (let t = 0; t < FLOUR.spread + 0.1; t += DT) f.step(DT, [inside, out]);
+  for (let t = 0; t < FLOUR.spread + 0.1; t += DT) f.linger(DT, [inside, out]);
   assert.ok((inside.blind ?? 0) > 0, 'in the cloud: blind');
   assert.equal(out.blind ?? 0, 0, 'out of it: not');
   inside.x = 20;
-  for (let t = 0; t < bag.blind - 0.2; t += DT) f.step(DT, [inside]);
+  for (let t = 0; t < bag.blind - 0.2; t += DT) f.linger(DT, [inside]);
   assert.ok((inside.blind ?? 0) > 0, 'still blind just after getting out');
-  for (let t = 0; t < 0.4; t += DT) f.step(DT, [inside]);
+  for (let t = 0; t < 0.4; t += DT) f.linger(DT, [inside]);
   assert.equal(inside.blind, 0, 'then it sees again');
-  for (let t = 0; t < bag.hangs; t += DT) f.step(DT, []);
+  for (let t = 0; t < bag.hangs; t += DT) f.linger(DT, []);
   assert.equal(f.clouds.length, 0, 'the cloud is gone');
 });
 
 test('a blow struck from inside a cloud, or by someone blind, finds no one', () => {
   const f = new Flour(), body = new Body(10, 0, 0), blind = dummy(15, 0);
   f.burst(0, 0, 0, bag);
-  for (let t = 0; t < FLOUR.spread; t += DT) f.step(DT, []);
+  for (let t = 0; t < FLOUR.spread; t += DT) f.linger(DT, []);
   body.unseenFrom = (x, z) => f.blinds(x, body.y, z, [blind]);
   const hp = body.health;
   damage(body, 10, 0.5, 0, 3, 'rat');
@@ -51,7 +51,7 @@ test('a cloud going up hurts all in it, the thrower too, sets off the clouds it 
   const first = f.burst(0, 0, 0, bag);
   f.burst(bag.r * 1.8, 0, 0, bag);
   f.burst(-30, 0, 0, bag);
-  for (let t = 0; t < FLOUR.spread; t += DT) f.step(DT, []);
+  for (let t = 0; t < FLOUR.spread; t += DT) f.linger(DT, []);
   const up = f.goUp(first, [a, b, nobody, far], match.damage, match.knock, rng);
   assert.equal(up.clouds.length, 2, 'the touching cloud went up with it');
   assert.equal(f.clouds.length, 1, 'the far cloud hangs on');
@@ -73,7 +73,7 @@ test('a bag bursts on the creature it hits; a match flown into a cloud is caught
   const f = new Flour(), c = f.burst(rat.x, rat.y, rat.z, bag);
   let caught = false;
   t.throw(x, y + 1.4, z, 0, [], 'match', { x: c.x, y: c.y + 1, z: c.z });
-  for (let s = 0; s < 120 && !caught; s++) t.fly(level, [], new Rng(1), DT, (m) => (caught = !!f.at(m.x, m.y, m.z)));
+  for (let s = 0; s < 120 && !caught; s++) t.fly(level, [], new Rng(1), DT, (m) => (caught = !!f.cloudAt(m.x, m.y, m.z)));
   assert.ok(caught, 'the match reached the cloud');
   assert.equal(t.missiles.length, 0, 'and is gone');
 });

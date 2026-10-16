@@ -3538,5 +3538,17 @@
   {
     "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/tinView.ts + dunfinity/game/Game.ts",
     "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
+  },
+  {
+    "key": "clone: dunfinity/loot/recipes.ts#match + dunfinity/loot/recipes.ts#snapdragon",
+    "reason": "two of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
+  },
+  {
+    "key": "clone: dunfinity/render/creatures/figures.ts#constructor + dunfinity/render/humans/thrownView.ts#pool",
+    "reason": "each fills a fixed pool of hidden figures added once to its root; FigurePool's are creature Figures with poses, ThrownView's plain groups for missiles"
+  },
+  {
+    "key": "clone: dunfinity/render/humans/thrownView.ts#bag + dunfinity/render/humans/thrownView.ts#match + dunfinity/render/humans/thrownView.ts#seed",
+    "reason": "each builds one small thrown thing from meshOf parts (a solid part and a glowing one); the shared part is meshOf"
   }
 ]

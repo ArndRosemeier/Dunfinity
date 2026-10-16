@@ -96,9 +96,9 @@ export class ThrownView {
     this.pool(this.matches, MATCHES, match, SCALE);
   }
 
-  private pool(list: Group[], n: number, make: () => Group, scale: number): void {
+  private pool(list: Group[], n: number, shape: () => Group, scale: number): void {
     for (let k = 0; k < n; k++) {
-      const g = make();
+      const g = shape();
       g.scale.setScalar(scale);
       g.visible = false;
       list.push(g);
@@ -107,7 +107,7 @@ export class ThrownView {
   }
 
   /** Pose the newest of `kind` on `list`'s figures (the rest hidden). */
-  private show(list: readonly Group[], missiles: readonly Missile[], kind: Missile['kind']): void {
+  private dress(list: readonly Group[], missiles: readonly Missile[], kind: Missile['kind']): void {
     const of = missiles.filter((m) => m.kind === kind);
     list.forEach((p, k) => {
       const n = of[of.length - 1 - k];
@@ -119,10 +119,10 @@ export class ThrownView {
   /** Place what is thrown (the newest first, as many as the pools hold) at `time`. */
   arrange(missiles: readonly Missile[], time: number): void {
     const candles = missiles.filter((m) => m.kind === 'candle');
-    this.show(this.seeds, missiles, 'seed');
-    this.show(this.knives, missiles, 'knife');
-    this.show(this.bags, missiles, 'flour');
-    this.show(this.matches, missiles, 'match');
+    this.dress(this.seeds, missiles, 'seed');
+    this.dress(this.knives, missiles, 'knife');
+    this.dress(this.bags, missiles, 'flour');
+    this.dress(this.matches, missiles, 'match');
     this.candles.forEach((c, k) => {
       const n = candles[candles.length - 1 - k];
       c.root.visible = !!n;

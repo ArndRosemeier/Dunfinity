@@ -654,7 +654,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
     /** Press a key (an action's own key, 'Mouse1'…) for the next frame, as the bar's click does. */
-    press: (key: string) => controls.press(key),
+    pressKey: (key: string) => controls.press(key),
     /** Bring the knife's handle down, as V would (grandma's Tenderising). */
     pound: () => stab(timer.getElapsed(), 'pound'),
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
@@ -1132,7 +1132,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       thrown.power = practice.more('throwing');
       // A match flown into a cloud of flour sets it off (and every cloud touching it): the nobody too, if in it.
       const hit = thrown.fly(level, foes(), blows, dt, (m) => {
-        const c = match && flour.at(m.x, m.y, m.z);
+        const c = match && flour.cloudAt(m.x, m.y, m.z);
         if (!c || !match) return false;
         const up = flour.goUp(c, [...foes(), body], match.damage, match.knock, blows);
         for (const u of up.clouds) spells.blast(u.x, u.y, u.z, Flour.reach(u), now);
@@ -1153,10 +1153,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         if (!bag) continue;
         const g = level.groundAt(b.x, b.z), y = Math.abs(g - b.y) < 3 ? g : b.y - 1;
         const c = flour.burst(b.x, y, b.z, bag);
-        spells.burst(c.x, c.y, c.z, c.r, now);
+        spells.bagBursts(c.x, c.y, c.z, c.r, now);
         sounds.play('land', c, 1, 0.55);
       }
-      flour.step(dt, foes());
+      flour.linger(dt, foes());
       const puff = Math.floor(now * CAST.glints) !== Math.floor((now - dt) * CAST.glints);
       if (puff) {
         for (const c of flour.clouds) spells.hang(c.x, c.y, c.z, Flour.reach(c), Math.min(1, (c.hangs - c.t) / (c.hangs * FLOUR.thin)), now);

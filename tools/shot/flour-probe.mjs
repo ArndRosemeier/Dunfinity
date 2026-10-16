@@ -42,8 +42,8 @@ const steps = [
 ];
 let n = 0;
 for (const [what, ms] of steps) {
-  if (what === 'bag') await page.evaluate(() => window.__game.press('KeyY'));
-  if (what === 'match') await page.evaluate(() => window.__game.press('Mouse1'));
+  if (what === 'bag') await page.evaluate(() => window.__game.pressKey('KeyY'));
+  if (what === 'match') await page.evaluate(() => window.__game.pressKey('Mouse1'));
   if (what === 'back') await page.evaluate(() => { const g = window.__game, b = g.body, c = g.flour.clouds[0]; if (!c) return; const dx = b.x - c.x, dz = b.z - c.z, d = Math.hypot(dx, dz) || 1; b.x = c.x + (dx / d) * (c.r + 4); b.z = c.z + (dz / d) * (c.r + 4); });
   if (ms) await page.waitForTimeout(ms);
   console.log(what, JSON.stringify(await state()));
