@@ -280,7 +280,7 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const facet = mx_worley_noise_float(p.mul(9));
   const twinkle = smoothstep(0.5, 0.85, mx_noise_float(p.mul(13).add(cameraPosition.mul(1.7))));
   const glint = smoothstep(0.16, 0.04, facet).mul(twinkle).mul(smoothstep(14, 2, length(positionView))).mul(natural.add(worked).clamp(0, 1)).mul(saltShare);
-  m.emissiveNode = vec3(0.25, 0.6, 1.0).mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
+  m.emissiveNode = VEIN_BLUE.mul(vein.mul(pulse).mul(near).mul(ROCK_VEINS).mul(2.4)).add(vec3(0.85, 0.9, 1.0).mul(glint.mul(2.2))).add(veinGlow.div(kindSum).mul(near));
   return m;
 });
 
@@ -301,6 +301,9 @@ export function setRockRecipes(recipes: readonly RockRecipe[]): void {
   (ROCK_RECIPES.array as Vector4[]).forEach((v, k) => v.fromArray(packed, k * 4));
 }
 setRockRecipes(ROCK_TYPES.map((t) => ROCK_PRESETS[t]));
+
+/** The glowing veins' blue (the rock's, and the light the drips carry). */
+const VEIN_BLUE = vec3(0.25, 0.6, 1.0);
 
 /** How fast the glowing veins creep (noise units a second: 0.008 moves a line about 5 cm a second). */
 const VEIN_CREEP = 0.008;
@@ -512,7 +515,7 @@ export const DRIP_SLOTS = 6;
  * time s, wetness 0–1, unused), (stalactite length, stalactite radius, unused, unused).
  */
 export const DRIP_STATE = uniformArray(Array.from({ length: DRIP_SLOTS * 3 }, () => new Vector4()), 'vec4');
-/** The dripstone's colour (linear rgb): the level's (calcite, or salt), set by `DripView`. */
+/** The dripstone's colour (linear rgb): the level's stone (its limestone, or its salt), set by `DripView`. */
 export const DRIP_STONE = uniform(new Vector3(0.5, 0.43, 0.33));
 /** The drops' timing (src/gen/drips.ts `DRIP`), set once by `DripView`: (drops, gap s, swell s, gravity). */
 export const DRIP_TIMING = uniform(new Vector4(3, 1.5, 0.9, 9.81));
@@ -555,15 +558,14 @@ export const DRIP = defineKind('drip', ['position', 'normal', 'color'], () => {
   const knobs = mx_fractal_noise_float(at.mul(vec3(6, 3, 6)), 2, 2.0, 0.5);
   const mottle = mx_noise_float(at.mul(11).add(3.1));
   const n = transformNormalToView(normalize(varying(isStalag.select(stalagN, isDrop.select(n0, hangN)), 'vDripNormal')));
-  m.normalNode = isDropF.select(n, bumped(rings.mul(0.006).add(knobs.mul(0.02)), 1, n));
+  m.normalNode = isDropF.select(n, bumped(rings.mul(0.001).add(knobs.mul(0.004)), 1, n));
   // The glint where a drop lands: since the last landing (the drops land a gap apart).
   const since = mod(t.sub(swell).sub(fallT), gap);
   const landing = since.mul(-7).exp().mul(drip);
   const stone = DRIP_STONE.mul(rings.mul(0.16).add(0.84).add(mottle.mul(0.1)).add(knobs.mul(0.12))).mul(mix(float(1), float(0.6), wet));
   m.colorNode = isDropF.select(vec3(0.5, 0.6, 0.66), stone);
   m.roughnessNode = isDropF.select(float(0.04), mix(float(0.88), float(0.38), wet));
-  const blue = vec3(0.25, 0.6, 1.0);
   const tipGlow = part.lessThan(0.5).select(smoothstep(0.75, 1.0, h).mul(drip.mul(0.1).add(landing.mul(0.6))), float(0));
-  m.emissiveNode = blue.mul(isDropF.select(drip.mul(0.55), tipGlow));
+  m.emissiveNode = VEIN_BLUE.mul(isDropF.select(drip.mul(0.55), tipGlow));
   return m;
 });

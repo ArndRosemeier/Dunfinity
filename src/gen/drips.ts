@@ -117,12 +117,12 @@ export function landed(site: DripSite, look: DripLook, t0: number, t1: number): 
   return n;
 }
 
-/** What one hears of `site` between times `t0` and `t1` (s, the same clock as `dripLook`): drops landing, and whether it began to sink. */
-export function heard(site: DripSite, t0: number, t1: number, look: DripLook): { drops: number; settled: boolean } {
+/** Drops one hears land at `site` between times `t0` and `t1` (s, the same clock as `dripLook`; `look` is left at t1). */
+export function heard(site: DripSite, t0: number, t1: number, look: DripLook): number {
   dripLook(site, t1, look);
-  const c0 = look.t - (t1 - t0), sinkAt = DRIP.grow + DRIP.stand;
-  if (c0 < 0 || t1 - t0 > DRIP.gap) return { drops: 0, settled: false }; // a new cycle, or a long gap: nothing to catch up
-  return { drops: look.drip > 0 ? landed(site, look, c0, look.t) : 0, settled: c0 < sinkAt && look.t >= sinkAt };
+  const c0 = look.t - (t1 - t0);
+  if (c0 < 0 || t1 - t0 > DRIP.gap) return 0; // a new cycle, or a long gap: nothing to catch up
+  return look.drip > 0 ? landed(site, look, c0, look.t) : 0;
 }
 
 export class Drips {

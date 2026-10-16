@@ -54,14 +54,10 @@ test('the cycle: it drips and grows, stands, sinks into the floor, rests, and st
 
 test('drops land a gap apart while it drips, and none while it rests', () => {
   const s = sitesOf(1, 3)[0], l = look();
-  let drops = 0, settled = 0;
-  for (let t = 0; t < DRIP_CYCLE; t += 1 / 60) {
-    const h = heard(s, t - s.offset, t + 1 / 60 - s.offset, l);
-    drops += h.drops; settled += h.settled ? 1 : 0;
-  }
+  let drops = 0;
+  for (let t = 0; t < DRIP_CYCLE; t += 1 / 60) drops += heard(s, t - s.offset, t + 1 / 60 - s.offset, l);
   const want = DRIP.grow / DRIP.gap;
   assert.ok(Math.abs(drops - want) < 6, `${drops} drops in a cycle, about ${want}`);
-  assert.equal(settled, 1, 'one creak as it starts to sink');
   dripLook(s, DRIP.grow / 2 - s.offset, l);
   assert.equal(landed(s, l, 10, 10 + DRIP.drops * DRIP.gap * 4), DRIP.drops * 4, 'every drop lands once a round');
 });

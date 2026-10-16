@@ -10,12 +10,13 @@ import { meshFromData } from '../meshes';
 import { DRIP as DRIP_KIND, DRIP_SLOTS, DRIP_STATE, DRIP_STONE, DRIP_TIMING } from '../materials';
 import { DRIP, dripLook, type DripLook, type DripSite } from '../../gen/drips';
 import type { Level } from '../../gen/level';
+import { ROCK_TYPES } from '../../gen/rockTypes';
 
 /** Rings up a stalagmite and round it; the stalactite's; the drops' ball. */
 const RINGS = 18, AROUND = 16, HANG_RINGS = 6, BALL = [5, 8] as const;
 
-/** Dripstone (linear rgb): calcite, and salt where the rock is salt. */
-const CALCITE = [0.5, 0.43, 0.33] as const, SALT = [0.6, 0.6, 0.6] as const;
+/** Dripstone is paler than the rock it comes from by this much. */
+const PALER = 1.3;
 
 export class DripView {
   readonly root = new Group();
@@ -46,8 +47,9 @@ export class DripView {
   draw(level: Level, x: number, z: number, time: number): void {
     if (level !== this.level) {
       this.level = level;
-      const c = (level.band.rocks.salt ?? 0) > 0.3 ? SALT : CALCITE;
-      DRIP_STONE.value.set(c[0], c[1], c[2]);
+      // The level's own stone (its recipes drift in deep strata): its limestone, or its salt where the rock is salt.
+      const r = level.rockRecipes[ROCK_TYPES.indexOf((level.band.rocks.salt ?? 0) > 0.3 ? 'salt' : 'limestone')].base, rock = level.band.rock;
+      DRIP_STONE.value.set(r[0] * rock[0] * PALER, r[1] * rock[1] * PALER, r[2] * rock[2] * PALER);
     }
     level.drips.near(x, z, DRIP.seen, this.sites);
     this.sites.sort((a, b) => (a.x - x) ** 2 + (a.z - z) ** 2 - ((b.x - x) ** 2 + (b.z - z) ** 2));
