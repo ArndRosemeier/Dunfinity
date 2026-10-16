@@ -12,6 +12,7 @@ import { StyledField } from './styledField';
 import { onlyMix, stylesOf } from './styles';
 import { shareOf } from './regions';
 import { owns, SURFACE_STRIDE, type StyleId } from './style';
+import { ROCK_PRESETS, ROCK_TYPES, type RockRecipe } from './rockTypes';
 import { Descents, findAscent, ladderTop, type Shaft } from './descents';
 import { grandmasCamp, type GrandmasCamp } from './grandmasCamp';
 import { lairOf, type Lair } from './lair';
@@ -64,6 +65,8 @@ export class Level {
   readonly band: Band;
   /** The ways down to the next level (shafts). */
   readonly descents: Descents;
+  /** The stone of each rock slot (src/gen/rockTypes.ts): what the weights of a `RockMix` mean on this level. */
+  readonly rockRecipes: readonly RockRecipe[] = ROCK_TYPES.map((t) => ROCK_PRESETS[t]);
   private readonly col = newColumn();
   private arrival_: [number, number, number] | null = null;
   private ascent_: Shaft | null | undefined;
