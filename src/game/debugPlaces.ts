@@ -88,7 +88,7 @@ export function placesOn(level: Level, fauna: Fauna, x: number, z: number): Plac
   const dens: [string, { nearestDen(x: number, z: number, rings?: number): { x: number; z: number } | null }][] = [
     ['A rat nest', fauna.rats], ['Salt-Touched at work', fauna.touched], ['Cave crickets', fauna.crickets],
     ['A Lumen slime colony', fauna.lumen], ['A Murk slime colony', fauna.murk], ['A feral dog pack', fauna.dogs],
-    ['Brine eels', fauna.eels], ['A scavenger camp', fauna.scavengers], ['A goblin den', fauna.goblins], ['Toadstools', fauna.toadstools], ['Puffcaps', fauna.puffcaps],
+    ['Brine eels', fauna.eels], ['A scavenger camp', fauna.scavengers], ['A goblin den', fauna.goblins], ['A ghost', fauna.ghosts], ['Toadstools', fauna.toadstools], ['Puffcaps', fauna.puffcaps],
   ];
   for (const [name, pop] of dens) {
     const d = pop.nearestDen(x, z, DEN_RINGS);
