@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.198 — Creature maker in the debug menu
+
+- The debug menu (`) has a creature maker. Pick a role, a body plan, a skin, a seed and a strangeness, or press Randomize for a new one.
+- Under "Its genome", every value a procedural creature is grown from is a slider: torso length and girth, legs, neck, head, snout, eyes, horns, tail, spikes, shell, arms, hue, pattern, glow and see-through skin.
+- Spawn puts the creature down a few of its lengths in front of you, facing you and standing still so you can look at it. With one out, letting go of a slider remakes it in place. Remove takes it away.
+
 ## v0.197 — Footsteps without the whoosh
 
 - Walking no longer makes a continuous whooshing hiss: the stone and water footstep clips were long stretches of amplified scuffing noise that blurred together. They are now single steps cut at their impact with a fast decay (0.2 s on stone, 0.35 s in water), from new louder takes with clear, separate steps.
