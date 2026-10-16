@@ -66,7 +66,7 @@ export class TitleScreen {
   }
 
   /** Show the name and the menu (once the first shot is on screen); the salt grows in over the buttons. */
-  show(): void {
+  reveal(): void {
     if (this.root.classList.contains('shown')) return;
     this.root.classList.add('shown');
     for (const b of this.root.querySelectorAll('.menu > .ui-btn')) b.classList.add('ui-grown');

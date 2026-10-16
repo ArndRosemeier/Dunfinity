@@ -86,7 +86,7 @@ export function playTitle(host: HTMLElement, cast: TitleCast): Promise<TitleChoi
     view.renderer.setAnimationLoop(() => {
       timer.update();
       const dt = Math.min(0.1, timer.getDelta()), now = timer.getElapsed(), t = now - since;
-      if (phase === 'load' && (view.settled || t > TIMING.load)) { phase = 'in'; since = now; screen.show(); screen.line = ''; cast.shown(); }
+      if (phase === 'load' && (view.settled || t > TIMING.load)) { phase = 'in'; since = now; screen.reveal(); screen.line = ''; cast.shown(); }
       else if (phase === 'in' && t > TIMING.in) { phase = 'hold'; since = now; }
       else if (phase === 'hold' && t > TIMING.hold && cast.pinned === null) { phase = 'out'; since = now; }
       else if (phase === 'out' && t > TIMING.out) begin(now);

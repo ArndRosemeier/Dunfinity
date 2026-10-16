@@ -150,15 +150,11 @@ export class Fauna {
     return lines;
   }
 
-  /** A boss's health bar (the Foreman's, the Tall One's) while it is after `prey`, else ''. */
-  bossLine(prey: Fighter): string {
+  /** The boss after `prey` (the Foreman, the Tall One), for its health bar: its name and the share of health it has left; else null. */
+  boss(prey: Fighter): { name: string; left: number } | null {
     const f = this.foreman.list[0], t = this.tall.list[0];
-    const bar = (name: string, health: number, of: number) => {
-      const n = Math.round((health / of) * 30);
-      return `${name}  ${'█'.repeat(n)}${'░'.repeat(30 - n)}`;
-    };
-    if (f && !f.dead && f.angry && Math.hypot(f.x - prey.x, f.z - prey.z) <= FOREMAN.forget) return bar('THE FOREMAN', f.health, FOREMAN.health);
-    if (t && !t.dead && t.hunting) return bar('THE TALL ONE', t.health, TALL.health);
-    return '';
+    if (f && !f.dead && f.angry && Math.hypot(f.x - prey.x, f.z - prey.z) <= FOREMAN.forget) return { name: 'The Foreman', left: f.health / FOREMAN.health };
+    if (t && !t.dead && t.hunting) return { name: 'The Tall One', left: t.health / TALL.health };
+    return null;
   }
 }

@@ -1,6 +1,6 @@
 /**
- * URL options for the game and the Level Lab (`?lab`): `?seed=<text or number>&depth=<level>&pos=x,y,z&look=yaw,pitch&color=<mode>&dark&light&gl&style=<id>`
- * (look in degrees; color: rock, working or lod; dark: the Lab starts in headlamp darkness; light: the game starts lit; gl: force the WebGL 2 backend; style: every level of that one style but where one arrives, for trying a style out, src/gen/styles.ts).
+ * URL options for the game and the Level Lab (`?lab`): `?seed=<text or number>&depth=<level>&pos=x,y,z&look=yaw,pitch&color=<mode>&dark&light&gl&style=<id>&races[=<race>]`
+ * (look in degrees; color: rock, working or lod; dark: the Lab starts in headlamp darkness; light: the game starts lit; gl: force the WebGL 2 backend; style: every level of that one style but where one arrives, for trying a style out, src/gen/styles.ts; races: the Lab stands every race in a row before the view, or with a race id a man and a woman of it close up at eye height, src/render/humans/lineup.ts).
  */
 import { hashString } from '@futuremagic/core';
 import { COLOR_MODES, type ColorMode } from '../gen/level';
@@ -21,6 +21,8 @@ export interface ViewParams {
   forceWebGL: boolean;
   /** Every level of this style (but where one arrives), or undefined for the bands' mixes. */
   style?: StyleId;
+  /** Lab: every race side by side before the view ('' all of them, else that race close up), or null. */
+  races: string | null;
 }
 
 export function parseViewParams(search: string): ViewParams {
@@ -36,7 +38,7 @@ export function parseViewParams(search: string): ViewParams {
   const color = c && COLOR_MODES.includes(c) ? c : 'rock';
   const st = q.get('style') as StyleId | null;
   const style = st && NAMED_STYLES.includes(st) ? st : undefined;
-  return { seed, depth, pos, look, color, dark: q.has('dark'), light: q.has('light'), forceWebGL: q.has('gl'), style };
+  return { seed, depth, pos, look, color, dark: q.has('dark'), light: q.has('light'), forceWebGL: q.has('gl'), style, races: q.get('races') };
 }
 
 /**

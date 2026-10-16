@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.147 — The introduction: a prologue and first steps
+
+- A new game opens with a short prologue played in the game itself, behind black bars: the town at night, your figure walking up the street to grandma's house and opening her front door, then her cellar with the armchair, the salt circle and the broken arch. Captions tell who she was and why the house is yours. Click (or Space) for the next caption, Escape to skip.
+- Then a small paper card at the top right lists your first steps. In the cellar they come one at a time: read the notary's letter, stand in her salt circle, cook a card from her tin, look into her diary, and go down the old shaft. On level 1 they come all at once: stab something, climb a rock face, pick something up, rest by a fire, and find the way down. Each line is struck through as you do it, and when the list is done the card says goodbye.
+- The list is kept with the family's save. A new family sees it again, later grandchildren don't, and `?intro` plays it all on any load.
+
+## v0.146 — Every race in the Lab
+
+- The Level Lab can stand every race side by side for looking them over: `?lab&races` puts a man and a woman of each of Norgo's ten races in two rows before the view.
+- `?lab&races=<race>` (human, elf, dwarf, orc, halfling, goblin, sylvan, drakeborn, umbral, giantkin) shows one race close up: its man and woman side by side, with the view at their eye height.
+
+## v0.145 — A HUD that belongs to the game
+
+- Health and stamina are bars in a small panel top left, with what just hurt you under them. Grandma's salt, her purse and your pack sit top right, and a boss's name and bar sit at the top.
+- Arriving on a level shows its name large in the middle of the screen for a few seconds. Notices and salt gained appear below it, and what E (or another key) would do now appears above the ability bar with the key drawn as a keycap.
+- The keys are a card at the bottom left while you are in the cellar. It goes once you have been below.
+- The notary's letter, grandma's note and the diary pages under stones are read on paper, the pages with grandma's handwriting as painted. E, Escape or walking away puts them down.
+- Escape with the mouse already free (or the Menu button) opens a pause menu: the game stands still, with the way to the settings and the keys as you have bound them.
+- The death screen's sheet takes the same paper, type and button as the rest.
+
 ## v0.144 — A loading screen, and a clear message when the browser cannot draw
 
 - The game opens on a black screen with its name, a bar and what it is doing (laying out the level, dressing the figures, warming up the shaders, carving the rock), from the very first moment until the first level is on screen.

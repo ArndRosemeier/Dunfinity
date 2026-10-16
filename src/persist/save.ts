@@ -11,6 +11,7 @@ import type { TinData } from '../loot/tin';
 import type { Find } from '../loot/finds';
 import type { Fallen } from '../gen/notary';
 import type { KeyData } from '../lore/key';
+import type { FirstStepsData } from '../game/firstSteps';
 
 export interface GrandchildData {
   readonly depth: number;
@@ -44,6 +45,8 @@ export interface SaveData {
   readonly euros?: number;
   /** Grandma's key to the old scripts, with every grandchild's pencil marks (src/lore/key.ts). */
   readonly key?: KeyData;
+  /** The first steps done (src/game/firstSteps.ts), or true when the list is over. A save without it is a family from before the list: over. */
+  readonly steps?: FirstStepsData;
 }
 
 const key = (seed: number) => `dunfinity:save:${seed}`;

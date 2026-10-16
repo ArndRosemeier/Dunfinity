@@ -2440,6 +2440,14 @@
     "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
   },
   {
+    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/hardware.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and Kemal's gear each know their own fields"
+  },
+  {
+    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/tin.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and the Tin each know their own fields"
+  },
+  {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   },
@@ -3432,10 +3440,6 @@
     "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
   },
   {
-    "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/targetMark.ts#constructor",
-    "reason": "two HUD pieces each make their panel and a couple of children with `panel` and `child`; the shared part is already those two seams."
-  },
-  {
     "key": "idiom: [.at .descents] in dunfinity/creatures/touched.ts + dunfinity/gen/sheds.ts + dunfinity/loot/finds.ts",
     "reason": "each asks the one seam whether a spot is by a way down (level.descents.at) before putting something there: a camp, a shed, a find"
   },
@@ -3452,15 +3456,55 @@
     "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
   },
   {
-    "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
-    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer, report __ready; the shared part is LevelView.frame"
+    "key": "idiom: [.cos .sin .x .z Math] in dunfinity/creatures/population.ts + dunfinity/creatures/tallOne.ts + dunfinity/gen/inscriptions.ts + dunfinity/gen/roots.ts",
+    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
   },
   {
-    "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
-    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer, report __ready; the shared part is LevelView.frame"
+    "key": "idiom: [.cos .sin .x .z Math] in dunfinity/creatures/population.ts + dunfinity/gen/fungal.ts + dunfinity/gen/geode.ts + dunfinity/loot/finds.ts",
+    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
   },
   {
     "key": "idiom: [.dots] in dunfinity/gen/inscriptions.ts + dunfinity/lore/scripts.ts + dunfinity/lore/svg.ts",
-    "reason": "a Lettering's dots read where it is drawn (the inscription mesh, the SVG) and made (scripts); the field is the seam. Surfaced when the title's files shifted the idiom weights"
+    "reason": "the idiom finder regrouped these when the HUD files were added; each is an angle turned into an offset (cos/sin of x, z) or a script's dots, written in place in its own frame, with no shared helper worth its call"
+  },
+  {
+    "key": "same name: dunfinity/gen/geode.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
+    "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
+    "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/slimeView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/tallOneView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
+    "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/lineup.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
+  },
+  {
+    "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
+    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
+    "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
   }
 ]
