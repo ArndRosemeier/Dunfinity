@@ -1,6 +1,6 @@
 /**
  * Everything that lives on a level, together: the rats, the Salt-Touched, the cave crickets, the
- * two slime factions, the feral dogs, the brine eels, the scavengers, the goblins of the warrens, the toadstools and puffcaps of the fungal grotto, on level 5 the Foreman and his crew, and on level 10 the Tall One. Made in one go for a level (or a
+ * two slime factions, the feral dogs, the brine eels, the scavengers, the goblins of the warrens, the ghosts of the dwarves and elves in their halls, the toadstools and puffcaps of the fungal grotto, on level 5 the Foreman and his crew, and on level 10 the Tall One. Made in one go for a level (or a
  * new grandchild), stepped in one go, and asked in one place whom a blow can hit and whether
  * something is after you.
  *
@@ -20,6 +20,7 @@ import { Dogs, type Dog } from './dogs';
 import { Eels, type Eel } from './eels';
 import { Scavengers, type Scavenger } from './scavengers';
 import { Goblins, type Goblin } from './goblins';
+import { Ghosts } from './ghosts';
 import { TALL, TallOnes, type TallOne } from './tallOne';
 import { Puffcaps, Toadstools, type Puffcap, type Toadstool } from './shrooms';
 
@@ -39,6 +40,8 @@ export class Fauna {
   readonly eels: Eels;
   readonly scavengers: Scavengers;
   readonly goblins: Goblins;
+  /** The old races' ghosts: not foes (no blade touches them). */
+  readonly ghosts: Ghosts;
   readonly tall: TallOnes;
   readonly toadstools: Toadstools;
   readonly puffcaps: Puffcaps;
@@ -54,6 +57,7 @@ export class Fauna {
     this.eels = new Eels(level);
     this.scavengers = new Scavengers(level);
     this.goblins = new Goblins(level);
+    this.ghosts = new Ghosts(level);
     this.tall = new TallOnes(level);
     this.toadstools = new Toadstools(level);
     this.puffcaps = new Puffcaps(level);
@@ -63,7 +67,7 @@ export class Fauna {
 
   /** The props in the way: they all walk round them. */
   set blockers(b: Blockers | null) {
-    this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = this.goblins.blockers = this.tall.blockers = this.toadstools.blockers = b;
+    this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = this.goblins.blockers = this.ghosts.blockers = this.tall.blockers = this.toadstools.blockers = b;
   }
 
   /** The salt poured on the level (grandma's Salt Line): those that heed it will not step in. */
@@ -87,6 +91,7 @@ export class Fauna {
     this.eels.advance(dt, prey);
     this.puffcaps.advance(dt, prey);
     this.goblins.advance(dt, prey);
+    this.ghosts.advance(dt, prey);
     return struck;
   }
 
@@ -105,7 +110,7 @@ export class Fauna {
   }
 
   private get all() {
-    return [this.rats, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.goblins, this.tall, this.toadstools, this.puffcaps] as const;
+    return [this.rats, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.goblins, this.ghosts, this.tall, this.toadstools, this.puffcaps] as const;
   }
 
   /**

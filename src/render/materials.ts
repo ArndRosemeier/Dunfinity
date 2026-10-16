@@ -9,7 +9,7 @@
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
-import { Fn, If, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -267,9 +267,11 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   // Thin lines alias into glitter far off: they fade out with distance (the fog hides the rest).
   const near = smoothstep(55, 20, length(positionView));
   // Veins of infused salt (the Salt Works): thin glowing blue lines where a noise crosses zero,
-  // branching finer near the main ones, only in some stretches of rock, pulsing slowly.
-  const line = float(1).sub(abs(mx_noise_float(p.mul(0.16).add(vec3(mottle.mul(0.7))))));
-  const fine = float(1).sub(abs(mx_noise_float(p.mul(0.55).add(13.1))));
+  // branching finer near the main ones, only in some stretches of rock, pulsing slowly. They creep:
+  // the noise drifts through the rock a few centimetres a second, so a line wanders, splits and fades.
+  const creep = vec3(0.3, 1, -0.4).mul(time.mul(VEIN_CREEP));
+  const line = float(1).sub(abs(mx_noise_float(p.mul(0.16).add(vec3(mottle.mul(0.7))).add(creep))));
+  const fine = float(1).sub(abs(mx_noise_float(p.mul(0.55).add(13.1).add(creep.mul(2)))));
   const stretch = smoothstep(0.15, 0.5, mx_noise_float(p.mul(0.045).add(vec3(7.3, 1.1, -4.2))));
   const vein = smoothstep(0.975, 0.996, line).add(smoothstep(0.985, 0.998, fine).mul(smoothstep(0.85, 0.97, line)).mul(0.7)).mul(stretch);
   const pulse = sin(time.mul(1.1).add(p.x.mul(0.13)).add(p.z.mul(0.09))).mul(0.15).add(0.85);
@@ -299,6 +301,9 @@ export function setRockRecipes(recipes: readonly RockRecipe[]): void {
   (ROCK_RECIPES.array as Vector4[]).forEach((v, k) => v.fromArray(packed, k * 4));
 }
 setRockRecipes(ROCK_TYPES.map((t) => ROCK_PRESETS[t]));
+
+/** How fast the glowing veins creep (noise units a second: 0.004 moves a line about 2.5 cm a second). */
+const VEIN_CREEP = 0.004;
 
 /** How strongly the rock shows veins of glowing infused salt (the level's band: 0 in the Quarry). Set by `LevelView`. */
 export const ROCK_VEINS = uniform(0);
@@ -406,9 +411,25 @@ export interface CoatMaps {
   readonly normal: Texture;
 }
 
-/** A coat kind: lit, from its own two maps (filled in when the creature's glb loads: src/render/creatures/rigged.ts). */
+/**
+ * A coat as a deeper stratum's kin wear it (src/creatures/kin.ts): its hue turned (radians), its
+ * saturation and lightness scaled, and a pattern of stripes or spots darkened into it (`pattern` 0:
+ * none), `grain` to the metre on the creature's rest shape, so it holds still on the moving body.
+ * Uniforms: one stratum's kin is set when its level is shown, and never a new shader.
+ */
+export interface CoatLook {
+  readonly hue: { value: number };
+  readonly sat: { value: number };
+  readonly val: { value: number };
+  readonly pattern: { value: number };
+  readonly stripes: { value: number };
+  readonly grain: { value: number };
+}
+
+/** A coat kind: lit, from its own two maps (filled in when the creature's glb loads: src/render/creatures/rigged.ts), worn as its `look` says. */
 export interface CoatKind extends MaterialKind {
   readonly maps: CoatMaps;
+  readonly look: CoatLook;
 }
 
 /**
@@ -421,13 +442,21 @@ function defineCoat(name: string, roughness = 0.85): CoatKind {
   maps.colour.colorSpace = SRGBColorSpace;
   maps.normal.colorSpace = NoColorSpace;
   for (const t of [maps.colour, maps.normal]) t.flipY = false; // glTF's uvs
+  const look = { hue: uniform(0), sat: uniform(1), val: uniform(1), pattern: uniform(0), stripes: uniform(0), grain: uniform(5) };
   const kind = defineKind(name, ['position', 'normal', 'uv'], () => {
     const m = new MeshStandardNodeMaterial({ roughness, metalness: 0 });
-    m.colorNode = texture(maps.colour);
+    const p = positionGeometry.mul(look.grain);
+    const wobble = mx_noise_float(p.mul(0.7));
+    // Stripes across the body (its length is the rest shape's z) or spots: 1 where the coat darkens.
+    const stripe = smoothstep(0.2, 0.7, sin(p.z.mul(2.2).add(wobble.mul(2.5))));
+    const spot = smoothstep(0.15, 0.4, mx_noise_float(p.mul(1.3)));
+    const mark = mix(spot, stripe, look.stripes).mul(look.pattern);
+    const coat = saturation(hue(texture(maps.colour).rgb, look.hue), look.sat).mul(look.val);
+    m.colorNode = coat.mul(float(1).sub(mark.mul(0.75)));
     m.normalNode = normalMap(texture(maps.normal));
     return m;
   });
-  return Object.assign(kind, { maps });
+  return Object.assign(kind, { maps, look });
 }
 
 /** The feral dogs' coat (AssetGenerator spec creature_feral_dog). */

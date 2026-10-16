@@ -6,7 +6,8 @@
  * crowbars as soon as they see you. A badly hurt scavenger runs for it.
  *
  * Pure: floor walking with src/creatures/steer.ts, the crowbar through src/creatures/pick.ts.
- * Camps are fixed by the seed; the dead stay dead on this visit.
+ * Camps are fixed by the seed; the dead stay dead on this visit. Below level 10 they are the
+ * peoples of the buried worlds (src/creatures/folk.ts), not ours.
  */
 import { angleDiff, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
@@ -15,6 +16,7 @@ import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { rockDistance } from '../gen/quarry';
 import { closeIn, pickSwing } from './pick';
+import { folkAt } from './folk';
 
 export const SCAVENGER = {
   radius: 0.3,
@@ -82,11 +84,21 @@ export interface Camp extends Den {
   angry: boolean;
   /** One of them has warned you off (once per visit to the camp). */
   warned: boolean;
+  /** Whose people they are: -1 ours (humans), else which of the game's peoples of the deep (src/creatures/folk.ts). */
+  readonly folk: -1 | 0 | 1;
+}
+
+/** Which of the view's bodies a scavenger of camp `key` (its k-th) wears: 0–2 ours, then three for each people of the deep. */
+export function lookOf(folk: -1 | 0 | 1, key: number, k: number): number {
+  return folk < 0 ? (key + k) % 3 : 4 + folk * 3 + (k % 3);
 }
 
 /** What a wary camp calls out to warn you off, and what robbers call as they come for you. */
 const WARN = ['"Keep away from our fire."', '"That\'s close enough. Go round."', '"Nothing here for you. Move on."'];
 const ROB = ['"Your pack. Put it down."', '"Look, one of the grandchildren. Get it."', '"Nice and slow now. Give us the pack."'];
+/** The same from the peoples of the deep: words almost like ours, an older tongue (lore.md §3: each world a copy of the one below). */
+const WARN_DEEP = ['Words almost like yours, too old to catch. The meaning is plain: keep away from the fire.', '"Go... round." They point the crowbar the way you came.', 'One of them spits a word at you, and stands between you and the fire.'];
+const ROB_DEEP = ['"Pak. Down." They come for you with crowbars.', 'A word you nearly know, and the crowbars come up: they want your pack.', '"Grand... child." They grin and come for you.'];
 
 export class Scavengers extends Population<Camp, Scavenger> {
   /** Salt does not stop them (src/world/saltLine.ts). */
@@ -95,9 +107,13 @@ export class Scavengers extends Population<Camp, Scavenger> {
   said = '';
   calls = 0;
 
+  /** Whose people live on this level. */
+  private readonly folk: -1 | 0 | 1;
+
   constructor(level: Level) {
     super(level, 'scavengers', SCAVENGER, { arrive: 0.5, still: 0.07, step: 0.5, drop: 1.2, accel: 7, turn: 7, face: 8 });
     this.apart = 1;
+    this.folk = folkAt(level.seed, level.depth);
   }
 
   protected denIn(key: number, i: number, j: number): Camp | null {
@@ -115,7 +131,7 @@ export class Scavengers extends Population<Camp, Scavenger> {
         ok = this.level.dry(sx, sz, 0.05) && Math.abs(this.level.groundAt(sx, sz) - y) < 0.3;
       }
       if (!ok) continue;
-      return { key, x, z, y, count: this.countIn(i, j, SCAVENGER.count), robbers: this.rng0(i, j, 42) < SCAVENGER.robbers, turn, angry: false, warned: false };
+      return { key, x, z, y, count: this.countIn(i, j, SCAVENGER.count), robbers: this.rng0(i, j, 42) < SCAVENGER.robbers, turn, angry: false, warned: false, folk: this.folk };
     }
     return null;
   }
@@ -129,7 +145,7 @@ export class Scavengers extends Population<Camp, Scavenger> {
     const born: Scavenger[] = [];
     for (let k = 0; k < c.count; k++) {
       const id = c.key * 4 + k;
-      if (!killed(id)) born.push(new Scavenger(id, c, k, (c.key + k) % 3));
+      if (!killed(id)) born.push(new Scavenger(id, c, k, lookOf(c.folk, c.key, k)));
     }
     return born;
   }
@@ -158,7 +174,7 @@ export class Scavengers extends Population<Camp, Scavenger> {
     const watching = !s.hostile && seen && d < S.warn;
     if ((watching || (after && c.robbers)) && !c.warned) {
       c.warned = true;
-      const lines = c.robbers ? ROB : WARN;
+      const lines = c.folk < 0 ? (c.robbers ? ROB : WARN) : c.robbers ? ROB_DEEP : WARN_DEEP;
       this.said = lines[Math.floor(hash3f(this.seed, c.key, this.calls, 43) * lines.length)];
       this.calls++;
     }
