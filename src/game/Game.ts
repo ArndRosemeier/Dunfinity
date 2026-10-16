@@ -421,7 +421,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!a) return;
     if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
     else controls.press(a.key);
-  }, keyName);
+  }, (i, id) => tinView.ask({ kind: 'slot', i, id }), keyName);
   /** At Kemal's counter (last frame): 1, 2, 3 buy there, not use the bar. */
   let atCounter = false;
   /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
@@ -1046,25 +1046,41 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       euros = r.euros;
       say(r.line, 6);
     });
-    // Grandma's tin, open by the fire: choose a card, cook it.
+    // Grandma's tin, open by the fire: choose a card, cook it, arrange the bar; by key or with the mouse (the mouse is let go while it is open).
     if (tinView.open) {
-      if (controls.tap('KeyT') || controls.tap('Escape') || !campfire.resting || body.dead) tinView.hide();
-      else {
+      const acts = tinView.take();
+      if (controls.tap('KeyT') || controls.tap('Escape') || acts.some((a) => a.kind === 'close') || !campfire.resting || body.dead) {
+        tinView.hide();
+        if (!body.dead) canvas.requestPointerLock?.();
+      } else {
         const order = TinView.order(cooked), at = order.indexOf(tinSel);
-        let why: string | null = null, redraw = false;
+        let why: string | null = null, redraw = false, cookNow = controls.tap('KeyE');
         if (controls.tap('KeyW')) { tinSel = order[(at + order.length - 1) % order.length]; redraw = true; }
         if (controls.tap('KeyS')) { tinSel = order[(at + 1) % order.length]; redraw = true; }
+        if (controls.tap('KeyA')) { tinSel = TinView.chapterStep(cooked, tinSel, -1); redraw = true; }
+        if (controls.tap('KeyD')) { tinSel = TinView.chapterStep(cooked, tinSel, 1); redraw = true; }
         // 1–8: the chosen card (cooked, one used through the bar) into that slot.
         SLOT_KEYS.forEach((k, i) => {
           if (!controls.tap(k) || cooked.rank(tinSel) === 0) return;
           redraw = mainBar.set(i, tinSel) || redraw;
         });
-        if (controls.tap('KeyE')) {
+        for (const a of acts) {
+          if (a.kind === 'choose' && cooked.has(a.id)) { tinSel = a.id; redraw = true; }
+          else if (a.kind === 'cook') cookNow = true;
+          // A card dropped on a slot goes in it (one dragged from another slot swaps with it); a slot's card dropped in the tin comes off the bar.
+          else if (a.kind === 'slot') {
+            if (a.id === null) mainBar.clear(a.i);
+            else if (cooked.rank(a.id) > 0) mainBar.set(a.i, a.id);
+            redraw = true;
+          }
+        }
+        if (cookNow) {
           why = cooked.cantCook(tinSel, tin, tin.deepest);
           if (!why) {
             const r = cooked.cook(tinSel, tin), c = card(tinSel), at = r === 1 ? mainBar.slotIn(tinSel) : -1, fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
             cookAt = now;
             tinView.hide();
+            canvas.requestPointerLock?.();
             tick('cook');
             say(r === 1 ? `${c.title}, cooked${at >= 0 ? `, on your bar (${keyName(SLOT_KEYS[at])})` : ''}.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
@@ -1074,7 +1090,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
     } else if (controls.tap('KeyT') && campfire.resting) {
       if (!cooked.has(tinSel)) tinSel = TinView.order(cooked)[0];
+      tinView.take();
       tinView.show(cooked, tin, tinSel, null, practice, mainBar, keyName);
+      document.exitPointerLock?.();
     }
     // The pack (I), open anywhere: W/S choose a line, E uses it (a find left on the floor before you, a spare item put on, a worn one taken off).
     const packKeys = { up: keyName('KeyW'), down: keyName('KeyS'), use: keyName('KeyE'), close: keyName('KeyI') };
@@ -1433,7 +1451,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
-    abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead || tinView.open);
+    abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead, tinView.open);
     stepsView.pin(steps, now);
     hudView.render({
       health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,

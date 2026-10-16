@@ -67,13 +67,18 @@ export class MainBar {
     return free;
   }
 
-  /** Put `id` in slot `i` (off the slot it was in; the card that was in `i` goes back in the tin). False if `id` is not a bar card. */
+  /** Put `id` in slot `i`: moved there from the slot it was in, the card that was in `i` taking that slot (swapped), or going back in the tin if `id` was not on the bar. False if `id` is not a bar card. */
   set(i: number, id: CardId): boolean {
     if (!abilityOf(id) || i < 0 || i >= BAR) return false;
     const was = this.slots.indexOf(id);
-    if (was >= 0) this.slots[was] = null;
+    if (was >= 0) this.slots[was] = this.slots[i];
     this.slots[i] = id;
     return true;
+  }
+
+  /** Take the card in slot `i` off the bar (back in the tin). */
+  clear(i: number): void {
+    if (i >= 0 && i < BAR) this.slots[i] = null;
   }
 
   /** The slot `id` is in, or -1. */
