@@ -54,7 +54,7 @@ import { GhostView } from '../render/creatures/ghostView';
 import { NeighbourView } from '../render/humans/neighbourView';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { Stranger, STRANGER_KEY } from '../world/stranger';
-import { Grandma, GRANDMA } from '../world/grandma';
+import { Grandma, GRANDMA, GLIMPSES, NAMES_NEAR, RING_SIGHT } from '../world/grandma';
 import { TallOneView } from '../render/creatures/tallOneView';
 import { Hearth, hearthParts } from '../render/props/hearth';
 import { Campfire, FIRE } from '../world/fire';
@@ -194,6 +194,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const show = (l: Level) => {
     // Back up from below into her cellar: grandma may have a word.
     if (l.depth === 0 && level.depth > 0) grandma.arrive(heir);
+    below = null;
     level = l;
     setGrowth(growthAt(l.depth));
     arriving = true;
@@ -292,6 +293,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const grandmaView = await NeighbourView.grandma();
   /** Grandma's ghost, keeping the circle in the round room. */
   const grandma = new Grandma();
+  /** Her ghost below, at one of her few moments there (src/world/grandma.ts GLIMPSES), while it lasts. */
+  let below: Grandma | null = null;
   const strangerView = await NeighbourView.stranger(params.seed);
   const stranger = new Stranger();
   /** The stranger at Ilse's is in the town once the family has been below level 10. */
@@ -1247,10 +1250,28 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
     strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
     // Not while the level streams in behind the black, nor through the prologue.
-    const word = level.depth === 0 && !body.dead && !arriving && !loading.open && !prologue ? grandma.keep(dt, now, body.x, body.y, body.z, { deepest: tin.deepest, fallen, seed: params.seed }) : null;
+    // On 18, far off where she laid her first ring, as one comes in sight of it (once for the family).
+    const ring = level.depth === GLIMPSES.ring.depth && !below ? level.page : null, off = ring ? Math.hypot(ring.x - body.x, ring.z - body.z) : 0;
+    if (ring && off > RING_SIGHT[0] && off < RING_SIGHT[1] && Math.abs(ring.y - body.y) < 4 && tin.firstTime('grandma:ring')) below = Grandma.glimpse(GLIMPSES.ring, ring.x, ring.y, ring.z, ring.yaw, now);
+    // On 40, by the two names cut in the rock, as one comes to her page: beside you, looking at his name.
+    const names = level.depth === GLIMPSES.names.depth && !below ? level.page : null;
+    if (names?.face && Math.hypot(names.x - body.x, names.z - body.z) < NAMES_NEAR && Math.abs(names.y - body.y) < 1.5 && tin.firstTime('grandma:names')) {
+      const { nx, nz } = names.face;
+      below = Grandma.glimpse(GLIMPSES.names, names.x + nx * 0.9 - nz * 0.8, names.y, names.z + nz * 0.9 + nx * 0.8, names.yaw, now);
+    }
+    const kin = { deepest: tin.deepest, fallen, seed: params.seed };
+    const her = level.depth === 0 ? grandma : below;
+    const word = her && !body.dead && !arriving && !loading.open && !prologue ? her.keep(dt, now, body.x, body.y, body.z, kin) : null;
     if (word) say(`Grandma: ${word}`, GRANDMA.talk + 1);
-    grandmaView.people.draw(level.depth === 0 && grandma.mode !== 'away' ? [grandma] : [], body.x, body.z, dt, now);
+    if (below?.mode === 'away') below = null;
+    grandmaView.people.draw(her && her.mode !== 'away' ? [her] : [], body.x, body.z, dt, now);
     if (fauna.tall.stares > stares) say('The Tall One looks at you, and the cold of it goes right through you.', 3);
+    // The first time it looks at anyone of the family, she stands between it and you, a moment.
+    const tall = fauna.tall.stares > stares && !below ? fauna.tall.list.find((t) => !t.dead) : undefined;
+    if (tall && tin.firstTime('grandma:tall')) {
+      const dx = tall.x - body.x, dz = tall.z - body.z, d = Math.hypot(dx, dz) || 1, k = Math.min(2.5, d / 2);
+      below = Grandma.glimpse(GLIMPSES.tall, body.x + (dx / d) * k, body.y, body.z + (dz / d) * k, Math.atan2(-dx, -dz), now);
+    }
     stares = fauna.tall.stares;
     const fire = campfire.fire, lit = campfire.kindling(now);
     hearth.root.visible = !!fire;
