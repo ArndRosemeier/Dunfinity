@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.149 — The salt stays on the panels' edges
+
+- The salt growing on a menu or panel now follows the panel's real size. Before, it kept the size the panel had when it opened, so after a settings tab, a font or new text made the panel taller, a vein ran through the middle of it.
+- A panel redrawn while open keeps its salt grown; it does not grow in again.
+- The veins and their curls stay outside the border instead of wandering a few pixels in.
+
 ## v0.148 — A live title screen
 
 - The game now opens on a title screen: DUNFINITY over the game itself, going down. The nobody stands on one level after another, each deeper than the last (grandma's street at night, the Quarry, the Salt Works and the Foreman's hall, the Tall One's lair, then the strange strata far below), knife in hand, while what lives there moves about and the camera drifts round behind them.
