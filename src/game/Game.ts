@@ -543,11 +543,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
     },
   };
   /** A first step done: ticked off with a pencil. */
-  const tick = (id: StepId): void => { if (steps.tick(id)) sounds.play('pickup', null, 0.5, 1.4); };
+  const tick = (id: StepId): void => { if (steps.tick(id)) sounds.play('pencil_tick', null, 0.8); };
   const stepsView = new StepsView(document.body);
   /** The prologue playing (null: none), the shot the nobody was put into last, and its walk. */
   let prologue: Prologue | null = null, prologueShot = -1, walk = new Walk([]);
-  const prologueView = new PrologueView(document.body, () => prologue?.next());
+  const prologueView = new PrologueView(document.body, () => { prologue?.next(); sounds.play('paper', null, 0.5); });
   /** Start the introduction: the prologue, then the first steps from the top (a new family). */
   const beginIntro = (): void => {
     prologue = new Prologue();
@@ -571,7 +571,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const p = prologue!;
     controls.takeLook(); controls.takeWheel();
     if (controls.tap('Escape')) p.skip();
-    else if (controls.tap('Space') || controls.tap('Enter')) p.next();
+    else if (controls.tap('Space') || controls.tap('Enter')) { p.next(); sounds.play('paper', null, 0.5); }
     // Time stands while the place is still streaming in (behind the black).
     if (view.settled) p.advance(dt);
     if (p.done) { endPrologue(); return; }
@@ -582,6 +582,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body = new Body(st.x, level.groundAt(st.x, st.z) + 0.05, st.z);
       body.facing = st.yaw;
       walk = new Walk(shot.acts);
+      // A page turns with each shot; the cold from the broken arch comes with the last.
+      if (f.shot > 0) sounds.play(f.shot === p.shots.length - 1 ? 'draft' : 'paper', null, 0.6);
     }
     const stride = walk.stride(body.x, body.z, now);
     const door = stride.open && doors.list.find((d) => d.spec.kind === stride.open);
