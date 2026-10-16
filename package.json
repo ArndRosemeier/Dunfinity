@@ -18,6 +18,9 @@
     "props": "node tools/props/pack.mjs"
   },
   "dependencies": {
+    "@fontsource/alegreya": "5.3.0",
+    "@fontsource/alegreya-sans": "5.3.0",
+    "@fontsource/im-fell-english": "5.3.0",
     "@futuremagic/core": "file:vendor/assetgenerator/packages/core",
     "@futuremagic/humanoid": "file:vendor/assetgenerator/packages/humanoid",
     "three": "^0.186.1"

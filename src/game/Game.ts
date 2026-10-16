@@ -67,6 +67,7 @@ import { positionReport, readPosition } from './report';
 import { VERSION } from '../app/whatsNew';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
+import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
 import { SpellView } from '../render/spells';
 import { SaltDrift } from '../render/loot/saltDrift';
@@ -108,6 +109,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
+  setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   view.headlampPower = { survey: 14, dark: 3.5 };
   view.dark = !params.light; // the game is dark; ?light for the survey view
@@ -147,6 +149,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   const show = (l: Level) => {
     level = l;
+    setGrowth(growthAt(l.depth));
     fauna = new Fauna(l);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
