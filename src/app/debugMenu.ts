@@ -4,7 +4,7 @@
  * it lets go of the mouse while open (click the game to look round again).
  */
 import { bandOf } from '../gen/bands';
-import { child, panel } from './panel';
+import { child, onClick, panel } from './panel';
 
 /** What the menu asks the game to do. */
 export interface DebugActions {
@@ -65,7 +65,7 @@ export class DebugMenu {
     const heading = (text: string) => child(this.el, 'h3', 'ui-label', text);
     const button = (parent: HTMLElement, text: string, click: () => void): HTMLButtonElement => {
       const b = child(parent, 'button', 'ui-btn small', text);
-      b.addEventListener('click', (e) => { e.stopPropagation(); click(); b.blur(); });
+      onClick(b, click, true);
       return b;
     };
     const toggle = (text: string, set: (on: boolean) => void) => {
@@ -134,7 +134,7 @@ export class DebugMenu {
     this.list.replaceChildren();
     this.act.places().forEach((p, i) => {
       const b = child(this.list, 'button', 'ui-btn small', p.name);
-      b.addEventListener('click', (e) => { e.stopPropagation(); this.act.toPlace(i); b.blur(); });
+      onClick(b, () => this.act.toPlace(i), true);
     });
   }
 

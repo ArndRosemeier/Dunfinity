@@ -5,7 +5,7 @@
 import changelog from '../../CHANGELOG.md?raw';
 import { noteHtml, parseChangelog } from './changelog';
 import { growOn } from './growth';
-import { addStyle, child } from './panel';
+import { addStyle, child, onClick } from './panel';
 
 /** The version this build is (the newest in CHANGELOG.md). */
 export const VERSION = parseChangelog(changelog)[0]?.version ?? 'v?';
@@ -40,7 +40,7 @@ export function mountWhatsNew(host: HTMLElement): void {
     panel.classList.toggle('open', open);
     if (open && document.pointerLockElement) document.exitPointerLock();
   };
-  button.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+  onClick(button, () => toggle());
   window.addEventListener('keydown', (e) => { if (e.code === 'Escape') toggle(false); });
   host.append(button, panel);
 }

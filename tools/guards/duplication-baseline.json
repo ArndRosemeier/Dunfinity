@@ -3430,9 +3430,5 @@
   {
     "key": "idiom: [.cells .lines .noise] in dunfinity/gen/bones.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
     "reason": "the line styles (rift, lava, bone hollows) each make their own GrainLines (src/gen/grainLines.ts) from their own noise and cells: one seam, called the same way"
-  },
-  {
-    "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/targetMark.ts#constructor",
-    "reason": "two HUD pieces each make their panel and a couple of children with `panel` and `child`; the shared part is already those two seams."
   }
 ]
