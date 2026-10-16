@@ -80,6 +80,11 @@ export class Tin {
     return this.add(SALT.page, 'A page of her diary, back in the book. Grandma was here.');
   }
 
+  /** Whether this is the first time anyone of the family meets `what` (one of grandma's glimpses below): true once, ever. */
+  firstTime(what: string): boolean {
+    return this.nth(`first:${what}`) === 1;
+  }
+
   /** Whether the page that lay on level `depth` is back in the book. */
   hasPage(depth: number): boolean {
     return this.times.has(`page:${depth}`);
