@@ -247,6 +247,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys); the player's own keys (`bind`), nothing while a menu is open (`paused`) | `Controls` | `src/input/controls.ts` |
 | Which key an action answers to (the player may move them; an action is named by its own default key, so the game keeps asking for 'KeyW'), and what a key is called on screen | `Bindings` (`keyOf`, `actionOf`, `rebind` swaps on a taken key, `clear`, `data`), `keyLabel`; the game's actions `KEY_ACTIONS` and `FIXED_KEYS` in `src/game/abilities.ts` | `src/input/bindings.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
+| Look the races over: every race in a row (`?lab&races`), or one race close up at eye height (`?lab&races=<race>`) | `Lineup` (a `HumanPool`: `create(seed, only?)`, `stand`) | `src/render/humans/lineup.ts` |
 
 ## Layers
 
