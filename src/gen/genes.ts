@@ -31,6 +31,9 @@ export function pushChance(s: number): number {
   return s < 1 ? 0 : Math.min(PUSH_MOST, 0.15 + (s - 1) * 0.15);
 }
 
+/** A style's table of numbers (`as const`) as it is once its genes are read: the same shape, any numbers. */
+export type Tuned<T> = T extends number ? number : T extends object ? { readonly [K in keyof T]: Tuned<T[K]> } : T;
+
 /** How a level reads its genes: a style made with one asks it for each of its knobs. */
 export type Traits = (g: Gene) => number;
 

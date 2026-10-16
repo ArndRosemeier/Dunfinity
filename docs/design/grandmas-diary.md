@@ -1,6 +1,6 @@
 # Grandma's diary
 
-Status: **draft 1, 2026-10-16. Built in the "Backstory and ancient scripts" thread.** Part of [lore.md](lore.md); fits the story spine in [town-and-first-strata.md](town-and-first-strata.md) §1, the tin in [recipe-box.md](recipe-box.md), and the key (lore.md §4.4).
+Status: **draft 2, 2026-10-16. Built in the "Backstory and ancient scripts" thread.** Part of [lore.md](lore.md); fits the story spine in [town-and-first-strata.md](town-and-first-strata.md) §1, the tin in [recipe-box.md](recipe-box.md), and the key (lore.md §4.4).
 
 Arnd's ask (2026-10-16): *make granny's diary and think about how to integrate it.*
 
@@ -28,7 +28,10 @@ Her name is **Margarete Hollmann, "Grete"** (my pick; nothing in game names her 
 | The rubbing | The level-9 camp note and rubbing stay as they are; the diary's 1963 stub points at it ("the camp page: left with my thermos") |
 | The notary's letter | Gets one more line from her: *"Her diary is in the tin, what's left of it."* |
 
-Not built (later): pages that teach a rune (Kerf at 25, Thread at 30), her name at 40 as an inscription, her father's chalk marks as props.
+Built in draft 2:
+- **Her hand.** Every page is a photographed notebook page in her handwriting, painted by Muse (`tools/lore/diaryPages.ts`, pictures in `public/diary/`), shown in the open diary with its text under it. Every picture was read against its text; long pages took a few takes (the model likes to write a word twice where a line wraps).
+- **Rune pages.** Level 25 gives seven more Kerf runes (R, W, I, L, U, G, M; "R and W might be the other way round"), level 30 five Thread letters (K, T, S, N, O). Reading the page pencils them into the key.
+- **His chalk and their names, on the rock.** The pages at 21, 33 and 40 lie at the foot of a face, and the face carries the marks in our capitals, following the rough rock: chalk *J.H. 1949* (21); chalk *J.H. 1953. STILL GOING DOWN* and *GRETEL GO HOME*, the second lower, at her eye height (33); *JOSEF HOLLMANN 1955* cut deep, *GRETE HOLLMANN 1966* scratched under it (40). Where a level has no face fit to write on, the page lies without them.
 
 ## 3. The text
 
@@ -49,8 +52,8 @@ Not built (later): pages that teach a rune (Kerf at 25, Thread at 30), her name 
 | 14 | 3 March 1964 | Gravestones in the old town, in words I can read: *Here lies Agnes, who kept the door.* The door is a sealed arch with a ring of marks round it, like letters hanging from a washing line. The things down here walk round the ring and never through it. I copied it, every stroke. |
 | 18 | 26 July 1964 | Tried it. A ring of the blue salt in the shape of the marks, round my camp. Something stood outside it all night, breathing. In the morning there were tracks right round it and none inside. Agnes, thank you. |
 | 21 | 9 January 1965 | Halls cut square out of black stone, big enough to hold the church. Gold lines in the walls, and writing, all straight strokes. And on a pillar, in chalk: *J.H. 1949*. Two years after they stopped looking. Two years. |
-| 25 | 22 May 1965 | Papa was learning the runes. Under one line of them he had chalked letters, one under each: T, H, E. I've got more of them now. The rest I'll get from the walls. |
-| 30 | 15 October 1965 | Another kind of hall, all arches, grown more than cut, writing up the ribs in the same hanging marks as Agnes's door. The square people say the tall ones come up to take back what was taken. The arch people say they're only going home. Papa believed the first. I don't know what I believe. |
+| 25 | 22 May 1965 | Papa was learning the runes. Under one line of them he had chalked letters, one under each: T, H, E. I've got more of them now: R, W, I, L, U, G, M. R and W might be the other way round. The rest I'll get from the walls. |
+| 30 | 15 October 1965 | Another kind of hall, all arches, grown more than cut, writing up the ribs in the same hanging marks as Agnes's door. The square people say the tall ones come up to take back what was taken. The arch people say they're only going home. Papa believed the first. I don't know what I believe. Some of the hanging marks I can read now: the hook is K, the dot is T, the curl is S, the sweep is N, the ring above is O. |
 | 33 | 6 February 1966 | *J.H. 1953. Still going down. Gretel, go home.* He knew I'd come. He knew and he wrote it anyway, at the height of my eyes, not his. |
 | 37 | 11 June 1966 | Every stair down here goes up. Every one, in every hall, too big for people. Things are coming up from the bottom, slowly, a stair at a time. And everything down here is a copy of something up there, or the other way round. |
 | 40 | 2 September 1966 | Found his name cut deep into a column: JOSEF HOLLMANN 1955. I scratched mine under it. This is as far as I go. Something is on the stair behind me. It has been for three days. I'm going home the fast way, and it's coming. |
@@ -78,7 +81,8 @@ Not built (later): pages that teach a rune (Kerf at 25, Thread at 30), her name 
 1. `src/lore/diary.ts`: the pages as data (date, depth, hand, text). `src/gen/diaryPages.ts`: where a level's page lies (pure, from the seed, like the camp).
 2. `level.writing` gets the page as a third kind; the prop pass lays the folded paper under a stone; E reads it.
 3. The tin keeps which pages are found (`Tin.page(depth)`, salt once); `DiaryView` (J) shows the book.
-4. Later: rune pages teach letters; her name at 40; her father's chalk.
+4. Rune pages teach letters (`DiaryPage.key`); the marks on the rock (`DiaryPage.marks`, `faceBeside`, `markLine`, `latin`); the pages painted in her hand.
 
 ## Changelog
 - 2026-10-16 draft 1: the diary, its text, how it plays.
+- 2026-10-16 draft 2: rune pages, his chalk and both names on the rock, the pages in her hand.

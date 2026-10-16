@@ -14,7 +14,7 @@
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
-import { STANDARD, gene, type Traits } from './genes';
+import { STANDARD, gene, type Traits, type Tuned } from './genes';
 import { unworked, type Column, type Working } from './quarry';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
@@ -55,19 +55,6 @@ const FAR = 60;
 /** How far a passage from another style looks for a chamber to end in, metres, at scale 1. */
 const PORTAL = 60;
 
-/** The karst's numbers once its genes are read: KARST's, its sizes scaled. */
-interface KarstShape {
-  cell: number;
-  chance: number;
-  radius: readonly [number, number];
-  dome: readonly [number, number];
-  floor: number;
-  tube: { straight: number; diagonal: number; half: readonly [number, number] };
-  roof: number;
-  warp: readonly [number, number];
-  /** How far floors blend into each other, as a part of 5 m: the cave's scale. */
-  blend: number;
-}
 
 /** What a karst column is to the code that asks about workings: one natural cavern, no pillar grid. */
 const CAVE: Working = { id: 0x6b617273, angle: 0, spacing: 1e9, pillar: 0, floor: 0, height: 12, collapse: 0, cavern: true, cx: 0, cz: 0 };
@@ -91,7 +78,7 @@ export class Karst implements Style {
   private readonly cellSeed: number;
   private readonly chambers = new Map<number, Chamber | null>();
   /** Its numbers, its genes read (KARST at the standard). */
-  readonly K: KarstShape;
+  readonly K: Tuned<typeof KARST> & { readonly blend: number };
   private readonly far: number;
   private readonly portalReach: number;
   private readonly rougher: number;

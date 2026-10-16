@@ -7,12 +7,24 @@
  *
  * Pure data.
  */
+import type { Script } from './key';
+
+/** Writing in our letters on the rock where a page lies: her father's chalk, their names. `high`: metres over the floor; `hand`: chalked, cut deep, or scratched with a knife. */
+export interface Mark {
+  readonly text: string;
+  readonly hand: 'chalk' | 'cut' | 'scratch';
+  readonly high: number;
+}
 
 export interface DiaryPage {
   /** The level it lies on (torn out), or null (kept in the book). */
   readonly depth: number | null;
   readonly date: string;
   readonly text: string;
+  /** Letters of an old script she worked out, which go into the key in the tin when the page is read. */
+  readonly key?: { readonly script: Script; readonly letters: readonly string[] };
+  /** Writing on the rock beside the page. */
+  readonly marks?: readonly Mark[];
 }
 
 /** Inside the cover. */
@@ -30,12 +42,17 @@ export const PAGES: readonly DiaryPage[] = [
   { depth: 11, date: '17 September 1963', text: 'Under the caves there is a town. A whole town, buried, with a river bed and a street that bends where ours bends. A house where ours stands. In its cellar, an arch, bricked up. Someone did this before me. Someone was me before me.' },
   { depth: 14, date: '3 March 1964', text: 'Gravestones in the old town, in words I can read: Here lies Agnes, who kept the door. The door is a sealed arch with a ring of marks round it, like letters hanging from a washing line. The things down here walk round the ring and never through it. I copied it, every stroke.' },
   { depth: 18, date: '26 July 1964', text: 'Tried it. A ring of the blue salt in the shape of the marks, round my camp. Something stood outside it all night, breathing. In the morning there were tracks right round it and none inside. Agnes, thank you.' },
-  { depth: 21, date: '9 January 1965', text: 'Halls cut square out of black stone, big enough to hold the church. Gold lines in the walls, and writing, all straight strokes. And on a pillar, in chalk: J.H. 1949. Two years after they stopped looking. Two years.' },
-  { depth: 25, date: '22 May 1965', text: 'Papa was learning the runes. Under one line of them he had chalked letters, one under each: T, H, E. I\'ve got more of them now. The rest I\'ll get from the walls.' },
-  { depth: 30, date: '15 October 1965', text: 'Another kind of hall, all arches, grown more than cut, writing up the ribs in the same hanging marks as Agnes\'s door. The square people say the tall ones come up to take back what was taken. The arch people say they\'re only going home. Papa believed the first. I don\'t know what I believe.' },
-  { depth: 33, date: '6 February 1966', text: 'J.H. 1953. Still going down. Gretel, go home. He knew I\'d come. He knew and he wrote it anyway, at the height of my eyes, not his.' },
+  { depth: 21, date: '9 January 1965', text: 'Halls cut square out of black stone, big enough to hold the church. Gold lines in the walls, and writing, all straight strokes. And on a pillar, in chalk: J.H. 1949. Two years after they stopped looking. Two years.',
+    marks: [{ text: 'J.H. 1949', hand: 'chalk', high: 1.75 }] },
+  { depth: 25, date: '22 May 1965', text: 'Papa was learning the runes. Under one line of them he had chalked letters, one under each: T, H, E. I\'ve got more of them now: R, W, I, L, U, G, M. R and W might be the other way round. The rest I\'ll get from the walls.',
+    key: { script: 'kerf', letters: ['r', 'w', 'i', 'l', 'u', 'g', 'm'] } },
+  { depth: 30, date: '15 October 1965', text: 'Another kind of hall, all arches, grown more than cut, writing up the ribs in the same hanging marks as Agnes\'s door. The square people say the tall ones come up to take back what was taken. The arch people say they\'re only going home. Papa believed the first. I don\'t know what I believe. Some of the hanging marks I can read now: the hook is K, the dot is T, the curl is S, the sweep is N, the ring above is O.',
+    key: { script: 'thread', letters: ['k', 't', 's', 'n', 'o'] } },
+  { depth: 33, date: '6 February 1966', text: 'J.H. 1953. Still going down. Gretel, go home. He knew I\'d come. He knew and he wrote it anyway, at the height of my eyes, not his.',
+    marks: [{ text: 'J.H. 1953. STILL GOING DOWN', hand: 'chalk', high: 1.65 }, { text: 'GRETEL GO HOME', hand: 'chalk', high: 1.45 }] },
   { depth: 37, date: '11 June 1966', text: 'Every stair down here goes up. Every one, in every hall, too big for people. Things are coming up from the bottom, slowly, a stair at a time. And everything down here is a copy of something up there, or the other way round.' },
-  { depth: 40, date: '2 September 1966', text: 'Found his name cut deep into a column: JOSEF HOLLMANN 1955. I scratched mine under it. This is as far as I go. Something is on the stair behind me. It has been for three days. I\'m going home the fast way, and it\'s coming.' },
+  { depth: 40, date: '2 September 1966', text: 'Found his name cut deep into a column: JOSEF HOLLMANN 1955. I scratched mine under it. This is as far as I go. Something is on the stair behind me. It has been for three days. I\'m going home the fast way, and it\'s coming.',
+    marks: [{ text: 'JOSEF HOLLMANN 1955', hand: 'cut', high: 1.85 }, { text: 'GRETE HOLLMANN 1966', hand: 'scratch', high: 1.55 }] },
   { depth: null, date: '4 September 1966', text: 'Bricked up the arch tonight, with the blue salt in the mortar, and laid the circle. It stood on the bottom step and watched me do it. It\'s still there. It will be there in the morning. I\'ll be here too.' },
   { depth: null, date: '5 September 1966', text: 'Tore the pages out and took them back down, each to where I wrote it. If someone has to go after me, let them learn it the way I did: a bit at a time, only as deep as they\'ve got. That way they will turn back sooner.' },
   { depth: null, date: '1 March 1971', text: 'Started writing the cards. If one of them has to go, they\'ll go well fed and clever, or not at all.' },
@@ -43,6 +60,11 @@ export const PAGES: readonly DiaryPage[] = [
   { depth: null, date: '3 January 2019', text: 'The circle wants new salt every winter now, and I\'m seventy-nine. One of them will have to do it. I\'ve left it as long as I could.' },
   { depth: null, date: '2026', text: 'To whoever has the tin. I\'m sorry. Start with the first card. Mind the arch. Don\'t go further than you have to. And if you find Papa, tell him I came.' },
 ];
+
+/** A page's name for files (its handwritten picture, public/diary/<id>.webp): its date, lower case, dashed. */
+export function pageId(p: DiaryPage): string {
+  return p.date.toLowerCase().replace(/\s+/g, '-');
+}
 
 /** The torn-out page that lies on level `depth`, if one does. */
 export function pageOn(depth: number): DiaryPage | null {

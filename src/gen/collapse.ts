@@ -14,7 +14,8 @@
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
-import { unworked, type Column, type Working } from './quarry';
+import { STANDARD, gene, type Traits, type Tuned } from './genes';
+import { newColumn, unworked, type Column, type Working } from './quarry';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { blendShare, newNear, voronoiNear, type Near } from './voronoi';
@@ -24,8 +25,9 @@ export const COLLAPSE = {
   /** Chambers: Voronoi cells this big, metres, their feature points straying this much (0..1). */
   size: 240,
   jitter: 0.7,
-  /** Half the thickness of the rock between chambers (base, and how much it wanders). */
+  /** Half the thickness of the rock between chambers (base, and how much it wanders over `wander` metres). */
   wall: [8, 12] as const,
+  wander: 80,
   /** A chamber's dome (min, extra) and its floor's spread, metres; floors and domes blend over `blend` metres at a border. */
   dome: [34, 40] as const,
   floor: 8,
@@ -36,6 +38,20 @@ export const COLLAPSE = {
   scar: { cell: 34, chance: 0.5, inner: 18, half: [5, 7] as const, rise: [6, 10] as const, pile: [5, 7] as const, spread: 40 },
   /** Blocks: one per cell this big with this chance (more on the piles), each a box of these half sides (min, extra), sunk this share of its height; this share stands on end. None within `clear` metres of a chamber's middle (where passages end). */
   block: { cell: 10, chance: [0.2, 0.6] as const, half: [1.2, 2.8] as const, height: [0.8, 2] as const, sink: 0.45, monolith: 0.07, clear: 10 },
+} as const;
+
+/**
+ * The collapse's genes (src/gen/genes.ts): how a deep world's fallen chambers stray from ours. Size
+ * scales the chambers' plan (their walls and floors with them); the dome how high they stand; scars
+ * and blocks how much came down. Floors and domes blend over no less than our distance times the
+ * larger of size and dome, so neither grows steeper.
+ */
+export const COLLAPSE_GENES = {
+  size: gene('collapse.size', 1, [0.8, 1.25], [0.55, 1.6]),
+  dome: gene('collapse.dome', 1, [0.75, 1.3], [0.45, 1.7]),
+  scars: gene('collapse.scars', COLLAPSE.scar.chance, [0.3, 0.65], [0.05, 0.9]),
+  blocks: gene('collapse.blocks', 1, [0.6, 1.4], [0.2, 2]),
+  monoliths: gene('collapse.monoliths', COLLAPSE.block.monolith, [0.03, 0.12], [0, 0.3]),
 } as const;
 
 /** What a collapse column is to the code that asks about workings: natural rock, no pillar grid. */
@@ -102,11 +118,27 @@ export class Collapse implements Style {
   private readonly cells: number;
   private readonly near: Near = newNear();
   private readonly colPlan = newPlan();
+  private readonly portalCol = newColumn();
   private readonly scarCache = new Map<number, Scar | null>();
   private readonly blockCache = new Map<number, Block | null>();
   private readonly own = new WeakMap<Column, FallenColumn>();
 
-  constructor(readonly seed: number, readonly band: Band) {
+  /** COLLAPSE as this level's genes read it. */
+  readonly C: Tuned<typeof COLLAPSE>;
+
+  constructor(readonly seed: number, readonly band: Band, traits: Traits = STANDARD) {
+    const G = COLLAPSE_GENES, size = traits(G.size), dome = traits(G.dome), blocks = traits(G.blocks);
+    this.C = {
+      ...COLLAPSE,
+      size: COLLAPSE.size * size,
+      wall: [COLLAPSE.wall[0] * size, COLLAPSE.wall[1] * size],
+      wander: COLLAPSE.wander * size,
+      dome: [COLLAPSE.dome[0] * dome, COLLAPSE.dome[1] * dome],
+      floor: COLLAPSE.floor * size,
+      blend: COLLAPSE.blend * Math.max(size, dome),
+      scar: { ...COLLAPSE.scar, chance: traits(G.scars) },
+      block: { ...COLLAPSE.block, chance: [COLLAPSE.block.chance[0] * blocks, COLLAPSE.block.chance[1] * blocks], monolith: traits(G.monoliths) },
+    };
     this.noise = new Noise(deriveSeed(seed, 'collapse', 'shape'));
     this.rough = new Noise(deriveSeed(seed, 'collapse', 'rough'));
     this.cells = deriveSeed(seed, 'collapse', 'cells');
@@ -114,7 +146,7 @@ export class Collapse implements Style {
 
   /** The chambers' plan at (x, z), into `p` (the chamber's middle, metres, into `mid` if given). */
   private chambers(x: number, z: number, p: Plan = newPlan(), mid?: number[]): Plan {
-    const C = COLLAPSE, n = this.near;
+    const C = this.C, n = this.near;
     voronoiNear(this.cells, x / C.size, z / C.size, C.size, C.jitter, C.blend, n);
     const floorOf = (id: number) => (hashToFloat(hash2i(id, 1, 5)) - 0.5) * C.floor;
     const domeOf = (id: number) => C.dome[0] + C.dome[1] * hashToFloat(hash2i(id, 2, 5));
@@ -124,7 +156,7 @@ export class Collapse implements Style {
       wsum += k; floor += k * floorOf(n.ids[i]); dome += k * domeOf(n.ids[i]);
     }
     // Half the rock between chambers: where the noise thins it below nothing, it is broken through.
-    const wall = C.wall[0] + C.wall[1] * this.noise.n2(x / 80 + 1.3, z / 80 - 6.2);
+    const wall = C.wall[0] + C.wall[1] * this.noise.n2(x / C.wander + 1.3, z / C.wander - 6.2);
     if (mid) { mid[0] = n.px * C.size; mid[1] = n.pz * C.size; }
     p.inside = n.border - wall;
     p.floor = floor / wsum;
@@ -134,7 +166,7 @@ export class Collapse implements Style {
 
   /** The scar of cell (i, j), if it has one. */
   private scar(i: number, j: number): Scar | null {
-    const S = COLLAPSE.scar, key = hash2i(this.cells ^ 0x5ca5, i, j);
+    const S = this.C.scar, key = hash2i(this.cells ^ 0x5ca5, i, j);
     let s = this.scarCache.get(key);
     if (s === undefined) {
       s = null;
@@ -154,7 +186,7 @@ export class Collapse implements Style {
 
   /** How high the breakdown is heaped at (x, z), metres. */
   private piles(x: number, z: number): number {
-    const S = COLLAPSE.scar, i0 = Math.floor(x / S.cell), j0 = Math.floor(z / S.cell);
+    const S = this.C.scar, i0 = Math.floor(x / S.cell), j0 = Math.floor(z / S.cell);
     let h = 0;
     for (let j = j0 - 2; j <= j0 + 2; j++) for (let i = i0 - 2; i <= i0 + 2; i++) {
       const s = this.scar(i, j);
@@ -170,13 +202,13 @@ export class Collapse implements Style {
 
   /** The block of cell (i, j), if it has one. */
   private block(i: number, j: number): Block | null {
-    const B = COLLAPSE.block, key = hash2i(this.cells ^ 0xb10c, i, j);
+    const B = this.C.block, key = hash2i(this.cells ^ 0xb10c, i, j);
     let b = this.blockCache.get(key);
     if (b === undefined) {
       b = null;
       const f = (m: number) => hashToFloat(hash2i(key, m, 4));
       const x = (i + 0.2 + 0.6 * f(1)) * B.cell, z = (j + 0.2 + 0.6 * f(2)) * B.cell;
-      const pile = this.piles(x, z), chance = B.chance[0] + B.chance[1] * Math.min(1, pile / (COLLAPSE.scar.pile[0] + COLLAPSE.scar.pile[1]));
+      const pile = this.piles(x, z), chance = B.chance[0] + B.chance[1] * Math.min(1, pile / (this.C.scar.pile[0] + this.C.scar.pile[1]));
       if (f(0) < chance) {
         const mid = [0, 0], p = this.chambers(x, z, newPlan(), mid);
         const middle = Math.hypot(x - mid[0], z - mid[1]);
@@ -196,7 +228,7 @@ export class Collapse implements Style {
   }
 
   column(x: number, z: number, col: Column): Column {
-    const C = COLLAPSE, p = this.chambers(x, z, this.colPlan);
+    const C = this.C, p = this.chambers(x, z, this.colPlan);
     const inside = p.inside, floor = this.groundOf(x, z, p), base = p.floor;
     let o = this.own.get(col);
     if (!o) { o = { scars: [], scarD: [], blocks: [] }; this.own.set(col, o); }
@@ -270,7 +302,8 @@ export class Collapse implements Style {
     const dx = mid[0] - x, dz = mid[1] - z, len = Math.hypot(dx, dz);
     for (let t = 0; t < len; t += 4) {
       const px = x + (dx * t) / len, pz = z + (dz * t) / len;
-      if (this.chambers(px, pz, p).inside >= PORTAL) return [px, pz];
+      // (Past the wall, and clear of fallen blocks: more of them come down in some deep worlds.)
+      if (this.chambers(px, pz, p).inside >= PORTAL && this.at(this.column(px, pz, this.portalCol), px, this.portalCol.floor + 1.5, pz) > 1) return [px, pz];
     }
     return [mid[0], mid[1]];
   }
