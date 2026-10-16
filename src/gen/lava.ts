@@ -22,6 +22,7 @@ import { GrainLines, grainOf } from './grainLines';
 import { rockMix } from './rockTypes';
 import type { Style, StyleId } from './style';
 import { propModel } from './models';
+import { roundRoof } from './shapes';
 import { roofOver, scatter, type Dress } from './styleProps';
 
 export const LAVA = {
@@ -134,7 +135,7 @@ export class Lava implements Style {
       o.across[i] = i ? db : da; o.r[i] = r;
       // A bench where the noise says so: its edge from the middle (at r or more: none).
       o.bench[i] = r * (L.bench.reach + 0.7 * smoothstep(-0.2, 0.4, n.n2(u / 250, k * 5.1 - 20)));
-      roof = Math.max(roof, this.roof(r * L.middle, r, o.across[i]));
+      roof = Math.max(roof, roundRoof(r * L.middle, r, o.across[i]));
       // Skylights along this tube.
       const S = L.skylight, ci = Math.floor(u / S.cell);
       for (let c = ci - 1; c <= ci + 1; c++) {
@@ -159,20 +160,11 @@ export class Lava implements Style {
       o.branch = Math.max(o.branch, Math.min(B.radius - Math.hypot(u - ua - eu * t, v - va - ev * t), v - this.lines.line(lo, u) + 1, this.lines.line(lo + 1, u) - v + 1));
     }
     o.branch = Math.max(o.branch, -FAR);
-    roof = Math.max(roof, this.roof(B.radius * L.middle, B.radius, B.radius - o.branch));
+    roof = Math.max(roof, roundRoof(B.radius * L.middle, B.radius, B.radius - o.branch));
     col.ceiling = col.floor + roof;
     col.wall = Math.max(o.r[0] - o.across[0], o.r[1] - o.across[1], o.branch, o.sky);
     unworked(col, TUBE, 1000, 1);
     return col;
-  }
-
-  /**
-   * The envelope's roof over the floor for a tube of radius r whose middle stands `mid` over the
-   * floor, `a` metres across from its middle: over the round roof everywhere, no steeper than 0.75.
-   */
-  private roof(mid: number, r: number, a: number): number {
-    const t = Math.min(a, r);
-    return mid + r - (0.375 * t * t) / r - 0.75 * Math.max(0, a - r);
   }
 
   at(col: Column, _x: number, y: number, _z: number): number {
