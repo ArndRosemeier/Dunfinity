@@ -29,7 +29,7 @@ const CSS = `
   #title .caption.on { opacity: 0.85; }
   #title.gone { transition: opacity 0.6s; opacity: 0; }
   /* The game's own HUD waits under the title (vitals, help, the ability bar, its Menu and Settings buttons). */
-  body:has(#title) :is(#hud, #bar, #menu-button, #settings-open) { visibility: hidden; }
+  body:has(#title) :is(#game-hud, #hud, #bar, #menu-button, #settings-open) { visibility: hidden; }
 `;
 
 export class TitleScreen {

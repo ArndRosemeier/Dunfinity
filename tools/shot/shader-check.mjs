@@ -51,7 +51,8 @@ try {
       m.material[k] = v;
       return stage.add(m);
     }));
-    const starts = window.shaders.events.slice(before).filter((e) => e.kind === 'node-async' || e.kind === 'node-sync');
+    // The variants' own builds (the shadow warm-up's, built on purpose for new kinds of caster, count against the cap but are not theirs).
+    const starts = window.shaders.events.slice(before).filter((e) => (e.kind === 'node-async' || e.kind === 'node-sync') && !e.what.endsWith('(shadow warm-up)'));
     return { starts: starts.map((e) => ({ t: e.t, ms: e.ms, kind: e.kind })), violations: window.shaders.violations() };
   });
   const gaps = cap.starts.slice(1).map((e, i) => e.t - cap.starts[i].t);
@@ -72,17 +73,21 @@ try {
   });
   console.log(`game: ${played.built} shaders built after warm-up`);
   if (played.built) problems.push(`game: ${played.built} shaders built after warm-up (something drawn differs from what was warmed: a light moved to another parent, shadow flags set per mesh, ...)`);
-  problems.push(...played.violations);
+  problems.push(...played.violations.map((v) => `game: ${v}`));
 
   await game.close();
   const title = await browser.newPage({ viewport: { width: 960, height: 600 } });
+  if (process.env.THROTTLE) await (await title.context().newCDPSession(title)).send('Emulation.setCPUThrottlingRate', { rate: Number(process.env.THROTTLE) });
   title.on('pageerror', (e) => problems.push(`title page error: ${e.message}`));
   await title.goto(server.resolvedUrls.local[0] + '?title&seed=1&gl&fresh', { timeout: 120000 });
   const woke = Date.now();
   await title.waitForSelector('#title .menu > button:not([disabled])', { state: 'attached', timeout: 900000 });
-  const warm = await title.evaluate(() => ({ at: window.shaders.events.length, sync: window.shaders.events.filter((e) => e.kind === 'node-sync' && e.phase === 'run').length }));
+  const warm = await title.evaluate(() => {
+    const sync = window.shaders.events.filter((e) => e.kind === 'node-sync' && e.phase === 'run' && !e.what.endsWith('(shadow warm-up)')); // the Stage's shadow warm-up builds on the render path on purpose, under the cap
+    return { at: window.shaders.events.length, sync: sync.length, what: sync.map((e) => `${e.what} at ${e.t.toFixed(0)} ms`) };
+  });
   console.log(`title: menu awake after ${((Date.now() - woke) / 1000).toFixed(0)} s, ${warm.sync} synchronous builds while warming`);
-  if (warm.sync) problems.push(`title: ${warm.sync} shaders built synchronously on the render path while the title warmed`);
+  if (warm.sync) problems.push(`title: ${warm.sync} shaders built synchronously on the render path while the title warmed: ${warm.what.join(', ')}`);
   await title.evaluate(() => document.querySelector('#title .menu > button').click());
   await title.waitForFunction(() => !document.querySelector('#title') && window.__ready === true, null, { timeout: 600000 });
   const after = await title.evaluate(async (at) => {
@@ -92,7 +97,7 @@ try {
   }, warm.at);
   console.log(`title: ${after.built} shaders built after the menu woke`);
   if (after.built) problems.push(`title: ${after.built} shaders built after the menu woke (something play draws was not warmed under the title)`);
-  problems.push(...after.violations);
+  problems.push(...after.violations.map((v) => `title: ${v}`));
 } catch (e) {
   problems.push(String(e?.stack || e));
 } finally {

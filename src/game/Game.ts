@@ -320,10 +320,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   loading.step('Warming up the shaders', 0.3);
   const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root];
   // Under the title screen only the nobody warms up now; everyone else warms while it plays.
-  await view.start(titled ? [nobody.root] : [nobody.root, ...figures], titled ? figures : []);
+  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, strangerView.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root];
+  await view.start(titled ? [nobody.root] : [nobody.root, ...figures], titled ? [...figures, ...roots] : []);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
-  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, strangerView.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root];
   /** Every figure in the scene and warm (each enters once compiled). */
   const castWarm = view.warmed.then(() => Promise.all(roots.map((r) => view.stage.add(r)))).then(() => {}); // in after their shadows are built, never before
   if (!titled) await castWarm;

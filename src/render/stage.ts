@@ -7,7 +7,7 @@
  *     queued build under the cap) and only then puts it into the scene. Nothing ever draws with a
  *     shader that is not ready, so nothing compiles on the render path.
  */
-import { BufferGeometry, Float32BufferAttribute, Group, Mesh, type Camera, type Object3D, type Scene, type WebGPURenderer } from 'three/webgpu';
+import { BufferGeometry, Float32BufferAttribute, Group, Mesh, type Camera, type InstancedMesh, type Object3D, type Scene, type WebGPURenderer } from 'three/webgpu';
 import { allKinds, type MaterialKind } from './materials';
 import { surfaceAttributes } from './meshes';
 import { SURFACE_STRIDE } from '../gen/style';
@@ -32,13 +32,14 @@ function frames(n: number): Promise<void> {
 
 /**
  * What the shadow pass's shader for a caster depends on (it draws every caster with one material, so
- * not on the caster's own): skinned or instanced, its attributes and morphs, its material's side and
- * cut-outs. Casters alike share a shader; one of each is drawn.
+ * not on the caster's own, apart from its type and any moved vertices): skinned or instanced, its
+ * attributes and morphs, its material's side, cut-outs, type and position node. Casters alike share
+ * a shader; one of each is drawn.
  */
 function casterKey(m: Mesh): string {
-  const g = m.geometry, mat = (Array.isArray(m.material) ? m.material[0] : m.material) as { side?: number; alphaTest?: number; alphaMap?: unknown; positionNode?: unknown };
+  const g = m.geometry, mat = (Array.isArray(m.material) ? m.material[0] : m.material) as { type?: string; side?: number; alphaTest?: number; alphaMap?: unknown; positionNode?: { id?: number } | null };
   return [(m as { isSkinnedMesh?: boolean }).isSkinnedMesh, (m as { isInstancedMesh?: boolean }).isInstancedMesh, Object.keys(g.attributes).sort().join(','),
-    Object.keys(g.morphAttributes).join(','), mat.side, (mat.alphaTest ?? 0) > 0, !!mat.alphaMap, !!mat.positionNode].join('|');
+    Object.keys(g.morphAttributes).join(','), mat.side, (mat.alphaTest ?? 0) > 0, !!mat.alphaMap, mat.type, mat.positionNode?.id ?? ''].join('|');
 }
 
 export class Stage {
@@ -87,6 +88,7 @@ export class Stage {
    * frames, so those build now, behind the loading screen, and not in play.
    */
   private async warmShadows(group: Group, extra: readonly Object3D[]): Promise<void> {
+    for (const o of [group, ...extra]) o.traverse((c) => { if ((c as Mesh).isMesh && (c as Mesh).castShadow) this.casters.add(casterKey(c as Mesh)); });
     const parents = extra.map((o) => o.parent);
     for (const o of extra) {
       group.add(o);
@@ -106,40 +108,68 @@ export class Stage {
   }
 
   /**
-   * Warm `objs` while the game is already drawing (behind the title screen) instead of in the
-   * warm-up: each is compiled under the cap like anything added, then its shadow-pass shaders are
-   * built by drawing each caster into `shadow` (the headlamp's shadow camera) only, on a layer the camera does
-   * not see, one new kind of caster at a time and a cap slot apart. Something has to keep rendering
-   * meanwhile. Resolves when all are warm.
+   * The camera of the light that casts shadows (the headlamp's). Set, everything prepared after the
+   * warm-up also gets its shadow-pass shaders built ahead (`warmShadowsOf`).
    */
-  async warmLater(objs: readonly Object3D[], shadow: Camera): Promise<void> {
+  set shadowCamera(cam: Camera) {
+    cam.layers.enable(WARM_LAYER);
+    this.shadowCam = cam;
+  }
+  private shadowCam: Camera | null = null;
+  /** The kinds of shadow caster whose shadow-pass shaders are built (`casterKey`). */
+  private readonly casters = new Set<string>();
+
+  /**
+   * Warm `objs` while the game is already drawing (behind the title screen) instead of in the
+   * warm-up: one after another, each compiled under the cap and its shadows built like anything
+   * prepared. Pass the roots of what will be added. Resolves when all are warm.
+   */
+  async warmLater(objs: readonly Object3D[]): Promise<void> {
     for (const o of objs) await this.prepare(o);
-    shadow.layers.enable(WARM_LAYER);
-    const group = new Group();
-    this.scene.add(group);
-    const seen = new Set<string>();
-    for (const o of objs) {
-      const parent = o.parent;
-      if (!parent) group.add(o);
-      const meshes: Mesh[] = [];
-      o.traverse((c) => { if ((c as Mesh).isMesh) meshes.push(c as Mesh); });
-      const masks = meshes.map((m) => m.layers.mask), culled = meshes.map((m) => m.frustumCulled);
-      for (const m of meshes) m.layers.disableAll();
-      for (const m of meshes) {
-        if (!m.castShadow) continue; // the shadow pass draws casters only
-        const key = casterKey(m);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        await this.cap.slot(); // the build it starts counts against the cap like any other
-        m.layers.set(WARM_LAYER);
-        m.frustumCulled = false;
-        await frames(SHADOW_FRAMES);
-        m.layers.disableAll();
-      }
-      meshes.forEach((m, i) => { m.layers.mask = masks[i]; m.frustumCulled = culled[i]; });
-      if (!parent) group.remove(o);
+  }
+
+  /**
+   * The shadow pass draws casters with shaders of its own, which compileAsync does not build, and
+   * builds them on the render path. So before `obj` (not in the scene yet) goes in, each new kind of
+   * caster in it is drawn for a few frames into the shadow camera only (a layer the camera does not
+   * see), holding the cap so nothing else starts near that build.
+   */
+  private async warmShadowsOf(obj: Object3D): Promise<void> {
+    if (!this.shadowCam || !this.cap.active || obj.parent) return;
+    const meshes: Mesh[] = [], fresh: Mesh[] = [];
+    obj.traverse((c) => { if ((c as Mesh).isMesh) meshes.push(c as Mesh); });
+    for (const m of meshes) {
+      if (!m.castShadow) continue; // the shadow pass draws casters only
+      const key = casterKey(m);
+      if (this.casters.has(key)) continue;
+      this.casters.add(key);
+      fresh.push(m);
     }
-    this.scene.remove(group);
+    if (!fresh.length) return;
+    const masks = meshes.map((m) => m.layers.mask), culled = meshes.map((m) => m.frustumCulled);
+    for (const m of meshes) m.layers.disableAll();
+    this.scene.add(obj);
+    for (const m of fresh) {
+      await this.cap.slot();
+      this.cap.held = true;
+      this.monitor.note = 'shadow warm-up';
+      // Shown even if hidden or empty now (a pool with nobody in it yet): it will be drawn later.
+      const hidden: Object3D[] = [];
+      for (let p: Object3D | null = m; p && p !== this.scene; p = p.parent) if (!p.visible) { hidden.push(p); p.visible = true; }
+      const inst = (m as InstancedMesh).isInstancedMesh ? m as InstancedMesh : null, count = inst?.count ?? 0;
+      if (inst && !count) inst.count = 1;
+      m.layers.set(WARM_LAYER);
+      m.frustumCulled = false;
+      await frames(SHADOW_FRAMES);
+      m.layers.disableAll();
+      if (inst) inst.count = count;
+      for (const p of hidden) p.visible = false;
+      this.monitor.note = '';
+      this.cap.held = false;
+      this.cap.take(); // booked again: the next build waits its spacing after this one
+    }
+    this.scene.remove(obj);
+    meshes.forEach((m, i) => { m.layers.mask = masks[i]; m.frustumCulled = culled[i]; });
   }
 
   /** Put `obj` into the scene once everything it draws with is compiled. */
@@ -162,7 +192,7 @@ export class Stage {
     obj.traverse((o) => { if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); } });
     return this.renderer.compileAsync(obj, this.camera, this.scene).finally(() => {
       for (const o of culled) o.frustumCulled = true;
-    });
+    }).then(() => this.warmShadowsOf(obj));
   }
 
   remove(obj: Object3D): void {

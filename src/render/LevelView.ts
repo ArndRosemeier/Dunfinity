@@ -99,7 +99,8 @@ export class LevelView {
   async start(extra: readonly Object3D[] = [], later: readonly Object3D[] = []): Promise<void> {
     this.aimHeadlamp(); // the warm-up draws the shadow pass too: the lamp must shine where the camera looks
     await this.stage.warmUp(extra);
-    this.warmed = later.length ? this.stage.warmLater(later, this.headlamp.shadow.camera) : Promise.resolve();
+    this.stage.shadowCamera = this.headlamp.shadow.camera;
+    this.warmed = later.length ? this.stage.warmLater(later) : Promise.resolve();
     this.scene.add(this.rock, this.things);
     await this.stage.add(this.dust.mesh);
     await this.stage.add(this.watchers.root);
