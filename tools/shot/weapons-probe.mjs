@@ -1,8 +1,8 @@
 /**
- * Watch the nobody swing each weapon headless: `node tools/shot/weapons-probe.mjs "<query>" <out-prefix>`
- * (build first; set CHROMIUM_PATH in the cloud and use ?gl). For each weapon it puts it in the hand,
- * slows the clock, swings (the left button, the pointer faked captured), stops the clock near the
- * top of the swing and saves a screenshot from above and behind.
+ * Look at the nobody swinging each weapon headless: `node tools/shot/weapons-probe.mjs "<query>" <out-prefix>`
+ * (build first; set CHROMIUM_PATH in the cloud and use ?gl). For each weapon it puts it in the hand and
+ * holds the nobody's pose at two moments of its swing (the wind-up and the blow; the swing is held
+ * by giving the figure that action every frame, not by clicking), seen from the side.
  */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
@@ -13,36 +13,26 @@ const page = await browser.newPage({ viewport: { width: 900, height: 640 } });
 page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
 await page.goto(server.resolvedUrls.local[0] + q);
 await page.waitForFunction(() => window.__ready === true, null, { timeout: 900000 });
+// Each weapon: the action and length of its swing (src/combat/combat.ts MOVES), and the shares of it to hold.
+const SWINGS = { 'kitchen-knife': ['swing_1h', 0.42, [0.25, 0.45]], hatchet: ['swing_1h', 0.72, [0.32, 0.55]], pick: ['mine', 1.05, [0.42, 0.62]], crowbar: ['swing_1h', 0.6, [0.28, 0.52]] };
 await page.evaluate(() => {
-  Object.defineProperty(document, 'pointerLockElement', { get: () => window.__lock ?? null, configurable: true });
+  const n = window.__game.nobody, pose = n.pose.bind(n);
+  n.pose = (b, dt, time, action, combat, move) => {
+    const a = window.__act;
+    return a ? pose(b, dt, time, { id: a.id, t0: time - a.at, dur: a.dur }, true, move) : pose(b, dt, time, action, combat, move);
+  };
 });
-/** Press the left button on every canvas, each in turn faked as the one holding the pointer. */
-const swing = () => page.evaluate(() => {
-  for (const c of document.querySelectorAll('canvas')) { window.__lock = c; c.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true })); }
-  window.dispatchEvent(new MouseEvent('mouseup', { button: 0 }));
-});
-const SLOW = 0.05;
-// Seconds of game clock into the swing for each shot: near the top, and at the blow.
-const AT = { 'kitchen-knife': [0.12], hatchet: [0.26], pick: [0.45], crowbar: [0.18] };
-for (const [kind, ats] of Object.entries(AT)) {
+for (const [kind, [id, dur, ats]] of Object.entries(SWINGS)) {
+  await page.evaluate((kind) => {
+    const g = window.__game;
+    if (kind === 'kitchen-knife') g.kit.off('main'); else g.kit.put({ kind, quality: 'sound' });
+    g.cam.distance = 3; g.cam.pitch = -0.2; g.cam.yaw = g.body.facing + Math.PI / 2;
+  }, kind);
   for (const [n, at] of ats.entries()) {
-    await page.evaluate(([kind, slow]) => {
-      const g = window.__game;
-      if (kind === 'kitchen-knife') g.kit.off('main'); else g.kit.put({ kind, quality: 'sound' });
-      g.timescale = 1;
-      g.cam.distance = 3.4; g.cam.pitch = -0.55;
-      return slow;
-    }, [kind, SLOW]);
-    await page.waitForTimeout(4000); // dressed, and the last swing over
-    await page.evaluate((slow) => { window.__game.timescale = slow; }, SLOW);
-    const t0 = Date.now();
-    await swing();
-    const wait = (at / SLOW) * 1000 - (Date.now() - t0);
-    if (wait > 0) await page.waitForTimeout(wait);
-    await page.evaluate(() => { window.__game.timescale = 0; });
-    await page.waitForTimeout(3000);
+    await page.evaluate(([id, dur, at]) => { window.__act = { id, dur, at: at * dur }; }, [id, dur, at]);
+    await page.waitForTimeout(5000);
     await page.screenshot({ path: `${prefix}-${kind}-${n}.png`, timeout: 600000 });
-    console.log(kind, n, 'hand', await page.evaluate(() => window.__game.kit.hand.kind));
+    console.log(kind, n, await page.evaluate(() => window.__game.nobody.human.animator.lastAction?.id));
   }
 }
 await browser.close(); await server.close();
