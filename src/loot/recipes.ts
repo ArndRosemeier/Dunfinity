@@ -14,8 +14,9 @@
  */
 import type { Tin } from './tin';
 import type { Sowing } from '../combat/snapdragon';
+import type { Dusting } from '../combat/flour';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'salt-line';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'flour-bag' | 'matchstick' | 'salt-line';
 
 export interface Card {
   readonly id: CardId;
@@ -157,6 +158,22 @@ export const CARDS: readonly Card[] = [
     does: ['U: toss a seed that comes up in 1.6 s and for 12 s bites the nearest living thing within 2.2 m, you too (5–8 damage, about every 1.1 s); costs 2 stamina; every 15 s', 'bites within 3 m (7–11 damage, about every 0.9 s) for 15 s; every 13 s'],
   },
   {
+    id: 'flour-bag', title: 'Flour Bag', chapter: 'Baking',
+    need: 'a bag of the good flour, the fine one for cakes, with a pinch of salt shaken in. Not the wholemeal, that is for eating.',
+    method: 'Throw it hard at whatever it is, so the bag splits. In the cloud they cannot see their own feet, and they cannot see you either. Do not breathe in, and do not tell me where the flour went.',
+    ranks: ['The two-kilo bag. From the shoulder.'],
+    cost: [4, 8],
+    does: ['Y: throw a bag of flour (at a creature up to 16 m off) that bursts into a cloud 3 m round for 6 s; anything in it loses you, stumbles about and cannot land a blow on you, until 2.5 s after it gets out; costs 2 stamina; every 6 s', 'a cloud 4.5 m round for 9 s, blind 3.5 s after'],
+  },
+  {
+    id: 'matchstick', title: 'Matchstick', chapter: 'Baking',
+    need: 'one long match, the kind for the oven. A cloud of flour, still hanging. Nerve.',
+    method: 'The mill in my mother\'s village went up in 1925, and not one sack had caught fire: it was the dust in the air. Flick the match into the cloud and get out of it first. I mean it: out of it FIRST.',
+    ranks: ['Two matches, struck together. Your grandfather\'s trick. He lost his eyebrows anyway.'],
+    cost: [4, 8],
+    does: ['middle mouse: flick a match at the nearest flour cloud up to 16 m ahead; it goes up all at once, 18–28 damage to everything in it, you too, and a shove out of it; a match that finds no cloud does 2–4; every 3 s', 'the cloud goes up for 24–36 damage and shoves twice as hard'],
+  },
+  {
     id: 'salt-line', title: 'Salt Line', chapter: 'Lost Cards', lost: true,
     need: 'the good salt, a steady hand, and nerve.',
     method: 'Pour it round you in one go, no gaps. They won\'t cross it. Mostly. (Smudged:) Except the tall one. Must find out about the tall one.',
@@ -169,7 +186,7 @@ export const CARDS: readonly Card[] = [
 /** The chapters in the tin's order (recipe-box.md §6). Every one is open from the start; its stronger cards open with depth (`Card.opens`). */
 export const CHAPTERS: readonly string[] = [
   'Kitchen Work', 'Throwing', 'Footwork', 'Climbing & Water', 'Light', 'Grandma\'s Remedies',
-  'Heavy Things', 'Quiet', 'Way Home', 'Guard', 'Fire & Frost', 'Force', 'The Garden',
+  'Heavy Things', 'Quiet', 'Way Home', 'Guard', 'Fire & Frost', 'Force', 'The Garden', 'Baking',
   'Lost Cards',
 ];
 
@@ -322,6 +339,16 @@ export class Cooked {
   /** Grandma's Snapdragons (U), if cooked: what a plant does (src/combat/snapdragon.ts), and the seconds between seeds. */
   get snapdragon(): (Sowing & { between: number }) | null {
     return this.at('snapdragon', [{ lasts: 12, reach: 2.2, damage: [5, 8] as const, every: 1.1, between: 15 }, { lasts: 15, reach: 3, damage: [7, 11] as const, every: 0.9, between: 13 }]);
+  }
+
+  /** Grandma's Flour Bag (Y), if cooked: the cloud's radius, metres, how long it hangs, how long what was in it stays blind, and the seconds between bags (src/combat/flour.ts). */
+  get flour(): (Dusting & { every: number }) | null {
+    return this.at('flour-bag', [{ r: 3, hangs: 6, blind: 2.5, every: 6 }, { r: 4.5, hangs: 9, blind: 3.5, every: 6 }]);
+  }
+
+  /** Grandma's Matchstick (middle mouse), if cooked: what a flour cloud going up does, and the seconds between matches. */
+  get match(): { damage: readonly [number, number]; knock: number; every: number } | null {
+    return this.at('matchstick', [{ damage: [18, 28] as const, knock: 9, every: 3 }, { damage: [24, 36] as const, knock: 18, every: 3 }]);
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */

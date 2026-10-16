@@ -27,6 +27,7 @@ export const HURT: Readonly<Record<string, readonly [string, string]>> = {
   scavenger: ['a scavenger strikes', 'A scavenger had what you carried, in the end.'],
   goblin: ['a goblin jabs', 'The goblins picked you over.'],
   snapdragon: ['your snapdragon bites', 'Your own snapdragon got you. She did say to step back.'],
+  flour: ['the flour goes up', 'You went up with the flour. She did say to get out of it first.'],
   'tall-one': ['the Tall One reaches', 'The Tall One reached you outside the salt.'],
   fall: ['a hard landing', 'You fell to your death.'],
 };

@@ -13,6 +13,9 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   side = 1;
   /** Chilled (grandma's Cold Larder): seconds left, and the share of its pace it keeps (src/creatures/steer.ts). */
   chill?: { left: number; by: number };
+  /** Blind (grandma's Flour Bag): seconds left, and the way it stumbles meanwhile (src/creatures/steer.ts). */
+  blind?: number;
+  stumble?: number;
   health: number;
   /** Seconds since it was last hurt, and since it died. */
   hurtT = 9;

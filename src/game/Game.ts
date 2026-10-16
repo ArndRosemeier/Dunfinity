@@ -82,7 +82,8 @@ import { SpellView } from '../render/spells';
 import { SnapdragonView } from '../render/snapdragons';
 import { Snapdragons } from '../combat/snapdragon';
 import { SaltDrift } from '../render/loot/saltDrift';
-import { Thrown } from '../combat/thrown';
+import { THROW, Thrown } from '../combat/thrown';
+import { FLOUR, Flour } from '../combat/flour';
 import { GameSounds } from '../audio/gameSounds';
 import { ThrownView } from '../render/humans/thrownView';
 import { AbilityBar, type SlotState } from '../app/abilityBar';
@@ -113,6 +114,8 @@ const PIN = { arc: 0.75, low: -0.3, high: 2, damage: [2, 4] as const, stamina: 2
 const CAST = { dur: 0.5, glints: 8 };
 /** Grandma's Snapdragons (U): the stamina a seed costs (what the plant does and how often: the card's). */
 const SEED = { stamina: 2 };
+/** Grandma's Flour Bag (Y): the stamina a bag costs; her Matchstick (middle mouse): how far off its aim may be from where one looks for a cloud to flick it at, radians. */
+const FLOURING = { stamina: 2, arc: 0.6 };
 const POUND = { dur: 0.9, hit: 0.5, range: 1.15, arc: 1.1, low: -0.3, high: 1.3, knock: 8, aim: 2.6, aimArc: 1.2, stamina: 3 };
 /** Picking a find up: seconds it takes, when it is in hand; how far round the nobody finds are drawn. */
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
@@ -201,7 +204,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
-    thrown.missiles.length = 0; thrown.sown.length = 0; garden.plants.length = 0;
+    thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; flour.clouds.length = 0;
     look(l);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
@@ -365,7 +368,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const thrown = new Thrown();
   const thrownView = new ThrownView();
   await view.stage.add(thrownView.root);
-  let throwAt = -9, released = true, tossing: 'knife' | 'candle' | 'seed' = 'knife';
+  let throwAt = -9, released = true, tossing: 'knife' | 'candle' | 'seed' | 'flour' | 'match' = 'knife';
+  /** Grandma's flour, hanging where her bags burst (Flour Bag), and when the last bag and the last match went. */
+  const flour = new Flour();
+  let flourAt = -Infinity, matchAt = -Infinity;
   /** Grandma's Snapdragons: the plants come up from seeds, and when the last seed was tossed. */
   const garden = new Snapdragons();
   const gardenView = new SnapdragonView();
@@ -638,7 +644,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, garden, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, garden, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Pick up the find in reach, as E would. */
@@ -647,6 +653,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     kinOn: (depth: number) => Rigged.kinOn(params.seed, depth),
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
+    /** Press a key (an action's own key, 'Mouse1'…) for the next frame, as the bar's click does. */
+    press: (key: string) => controls.press(key),
     /** Bring the knife's handle down, as V would (grandma's Tenderising). */
     pound: () => stab(timer.getElapsed(), 'pound'),
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
@@ -754,7 +762,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     body = nextGrandchild();
     fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
     pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
-    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; garden.plants.length = 0;
+    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; flour.clouds.length = 0;
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
     cam.distance = before;
@@ -888,6 +896,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (body.stamina < SEED.stamina) say('Too out of breath to throw it far enough.', 2);
       else { body.stamina -= SEED.stamina; seedAt = throwAt = now; released = false; tossing = 'seed'; }
     }
+    // Grandma's Flour Bag: Y throws a bag that bursts into a cloud; her Matchstick: the middle mouse button flicks a match at the nearest cloud.
+    const bag = cooked.flour, match = cooked.match;
+    if (controls.tap('KeyY') && bag && canThrow && now - flourAt > bag.every) {
+      if (body.stamina < FLOURING.stamina) say('Too out of breath to throw it hard enough.', 2);
+      else { body.stamina -= FLOURING.stamina; flourAt = throwAt = now; released = false; tossing = 'flour'; }
+    }
+    if (controls.tap('Mouse1') && match && canThrow && now - matchAt > match.every) { matchAt = throwAt = now; released = false; tossing = 'match'; }
     // Grandma's Duck card: Q rolls the way you are going (back, standing still).
     const duck = cooked.duck;
     if (controls.tap('KeyQ') && duck && !busy && !handsBusy && !body.rolling) {
@@ -1108,11 +1123,23 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         released = true;
         const hx = body.x - Math.sin(aim) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(aim) * 0.3;
         sounds.play('throw', null, 0.8, tossing === 'knife' ? 1.1 : 0.85);
-        if (tossing === 'knife') thrown.throw(hx, hy, hz, aim, foes());
-        else thrown.toss(hx, hy, hz, aim, tossing);
+        if (tossing === 'knife' || tossing === 'flour') thrown.throw(hx, hy, hz, aim, foes(), tossing);
+        else if (tossing === 'match') {
+          const c = flour.ahead(body.x, body.z, aim, THROW.aim, FLOURING.arc);
+          thrown.throw(hx, hy, hz, aim, foes(), 'match', c ? { x: c.x, y: c.y + 1, z: c.z } : undefined);
+        } else thrown.toss(hx, hy, hz, aim, tossing);
       }
       thrown.power = practice.more('throwing');
-      const hit = thrown.fly(level, foes(), blows, dt);
+      // A match flown into a cloud of flour sets it off (and every cloud touching it): the nobody too, if in it.
+      const hit = thrown.fly(level, foes(), blows, dt, (m) => {
+        const c = match && flour.at(m.x, m.y, m.z);
+        if (!c || !match) return false;
+        const up = flour.goUp(c, [...foes(), body], match.damage, match.knock, blows);
+        for (const u of up.clouds) spells.blast(u.x, u.y, u.z, Flour.reach(u), now);
+        sounds.play('pound', c, 1.4, 0.5);
+        sounds.play('fire_light', c, 1.2, 0.7);
+        return true;
+      });
       if (hit.length) practised('throwing', hit.length);
       // A seed come down comes up; the snapdragons bite the nearest in reach, the nobody among them.
       for (const s of thrown.sown.splice(0)) {
@@ -1121,6 +1148,21 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         spells.sprout(s.x, s.y, s.z, now);
         sounds.play('land', s, 0.9, 0.7);
       }
+      // A bag of flour that burst hangs as a cloud; what is in one is blind (and its blows find no one), flour shaking off it.
+      for (const b of thrown.burst.splice(0)) {
+        if (!bag) continue;
+        const g = level.groundAt(b.x, b.z), y = Math.abs(g - b.y) < 3 ? g : b.y - 1;
+        const c = flour.burst(b.x, y, b.z, bag);
+        spells.burst(c.x, c.y, c.z, c.r, now);
+        sounds.play('land', c, 1, 0.55);
+      }
+      flour.step(dt, foes());
+      const puff = Math.floor(now * CAST.glints) !== Math.floor((now - dt) * CAST.glints);
+      if (puff) {
+        for (const c of flour.clouds) spells.hang(c.x, c.y, c.z, Flour.reach(c), Math.min(1, (c.hangs - c.t) / (c.hangs * FLOUR.thin)), now);
+        for (const f of foes()) if (!f.dead && (f.blind ?? 0) > 0) spells.dusted(f.x, f.y, f.z, f.height, now);
+      }
+      body.unseenFrom = (x, z) => flour.blinds(x, body.y, z, foes());
       for (const f of garden.step(dt, [...foes(), body], blows)) {
         const p = garden.plants.find((g) => g.target === f);
         spells.snap(f.x, f.y + f.height * 0.6, f.z, now);
@@ -1278,6 +1320,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         case 'rolling-pin': return { ready: ready(pinAt, PIN.every), on: false, dim: body.stamina < PIN.stamina };
         case 'pot-lid': return { ready: 1, on: body.guarding, dim: false };
         case 'tiptoe': return { ready: 1, on: !!input.sneak, dim: false };
+        case 'flour-bag': return { ready: ready(flourAt, bag?.every ?? 1), on: flour.clouds.length > 0, dim: body.stamina < FLOURING.stamina };
+        case 'matchstick': return { ready: ready(matchAt, match?.every ?? 1), on: flour.clouds.length > 0, dim: false };
         case 'snapdragon': return { ready: ready(seedAt, snap?.between ?? 1), on: garden.plants.length > 0, dim: body.stamina < SEED.stamina };
         case 'candle': return { ready: 1, on: false, dim: thrown.candles.length >= cooked.candles, count: `${thrown.candles.length}/${cooked.candles}` };
         case 'salt-line': {

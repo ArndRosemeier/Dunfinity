@@ -29,6 +29,8 @@ export const ABILITIES: readonly Ability[] = [
   { card: 'rolling-pin', key: 'KeyP', short: 'Rolling pin' },
   { card: 'candle', key: 'KeyG', short: 'Candle' },
   { card: 'snapdragon', key: 'KeyU', short: 'Snapdragon' },
+  { card: 'flour-bag', key: 'KeyY', short: 'Flour bag' },
+  { card: 'matchstick', key: 'Mouse1', short: 'Match' },
   { card: 'salt-line', key: 'KeyL', short: 'Salt line' },
   { card: 'way-home', key: 'KeyH', short: 'Way home' },
 ];
