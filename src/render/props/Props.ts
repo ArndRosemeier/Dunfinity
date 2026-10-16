@@ -16,7 +16,7 @@ import { Blockers } from '../../world/blockers';
 import type { Inscription } from '../../gen/inscriptions';
 
 /** Props show within this distance of the viewer, metres. */
-const RADIUS = 200;
+export const PROPS_RADIUS = 200;
 
 interface Tile {
   tx: number;
@@ -50,12 +50,12 @@ export class Props {
 
   /** Call every frame with the viewer position and the time in seconds. */
   update(x: number, y: number, z: number, time: number): void {
-    const r = Math.ceil(RADIUS / PROP_TILE);
+    const r = Math.ceil(PROPS_RADIUS / PROP_TILE);
     const cx = Math.floor(x / PROP_TILE), cz = Math.floor(z / PROP_TILE);
     const wanted: [number, number, number][] = [];
     for (let tz = cz - r; tz <= cz + r; tz++) for (let tx = cx - r; tx <= cx + r; tx++) {
       const d = Math.hypot((tx + 0.5) * PROP_TILE - x, (tz + 0.5) * PROP_TILE - z);
-      if (d < RADIUS + PROP_TILE * 0.71) wanted.push([d, tx, tz]);
+      if (d < PROPS_RADIUS + PROP_TILE * 0.71) wanted.push([d, tx, tz]);
     }
     wanted.sort((a, b) => a[0] - b[0]);
     for (const [, tx, tz] of wanted) {
@@ -65,7 +65,7 @@ export class Props {
     }
     // Drop tiles well outside the radius (the margin keeps a tile from flapping at the edge).
     for (const [id, t] of this.tiles) {
-      if (Math.hypot((t.tx + 0.5) * PROP_TILE - x, (t.tz + 0.5) * PROP_TILE - z) > RADIUS + PROP_TILE * 1.5) this.drop(id, t);
+      if (Math.hypot((t.tx + 0.5) * PROP_TILE - x, (t.tz + 0.5) * PROP_TILE - z) > PROPS_RADIUS + PROP_TILE * 1.5) this.drop(id, t);
     }
     this.lampLists.length = 0;
     this.watcherLists.length = 0;

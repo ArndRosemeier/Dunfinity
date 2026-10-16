@@ -1,12 +1,13 @@
 /**
  * The doors of grandma's house (depth 0): where each hangs, how wide, which way it swings. Pure
- * data; src/world/doors.ts opens and shuts them, src/render/props/doorView.ts draws them.
+ * data; src/world/doors.ts opens and shuts them, src/render/props/doorView.ts draws them. The
+ * quarry sheds' doors are the same kind of thing, hung by src/gen/sheds.ts.
  */
 import { CELLAR } from './cellar';
 import { TOWN } from './town';
 
-/** What a door is: an inner door, her front door, or the cellar's (the strange one). */
-export type DoorKind = 'inner' | 'front' | 'cellar';
+/** What a door is: an inner door, her front door, the cellar's (the strange one), or a quarry shed's. */
+export type DoorKind = 'inner' | 'front' | 'cellar' | 'shed';
 
 export interface DoorSpec {
   /** The hinge, at the foot of the door. */
@@ -21,6 +22,8 @@ export interface DoorSpec {
   readonly kind: DoorKind;
   /** What the HUD calls it. */
   readonly name: string;
+  /** What one sees the first time it is opened, if anything. */
+  readonly says?: string;
 }
 
 const F = CELLAR.house.floor, S = CELLAR.stairs, D = TOWN.door;
