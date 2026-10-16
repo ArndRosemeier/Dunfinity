@@ -153,3 +153,27 @@ test('at the top of a climb the body holds the edge, then is pulled over to stan
   assert.equal(b.mode, 'walk');
   assert.ok(b.grounded && Math.abs(b.y - start.top) < 0.6, `stands at ${b.y.toFixed(2)} on a top at ${start.top.toFixed(2)}`);
 });
+
+test('Spring in Your Step: a sprung jump goes about twice as high, rank 2 once more in mid-air, and lands unhurt', () => {
+  const apex = (spring: Body['spring'], again: boolean) => {
+    const b = standing(), y0 = b.y;
+    b.spring = spring;
+    let top = y0;
+    const inp: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: true };
+    for (let i = 0; i < 4 / STEP; i++) {
+      // Jump again at the top of the first jump.
+      if (again && b.vy < 0 && !b.grounded && b.time - b.sprangAt > 0.2 && b.time - b.sprangAt < 0.7) inp.jump = true;
+      b.step(level, inp, STEP);
+      top = Math.max(top, b.y);
+      for (const h of [MOVE.radius, MOVE.height / 2]) assert.ok(level.sdf(b.x, b.y + h, b.z) > MOVE.radius - 0.1, 'never in rock');
+    }
+    assert.ok(b.grounded, 'back on the floor');
+    assert.equal(b.health, MOVE.maxHealth, 'landed unhurt');
+    return top - y0;
+  };
+  const plain = apex(null, false), sprung = apex({ jump: 8.5, air: 0, cost: 1 }, false), twice = apex({ jump: 8.5, air: 1, cost: 1 }, true);
+  assert.ok(sprung > plain * 1.7, `${sprung.toFixed(2)} m vs ${plain.toFixed(2)} m`);
+  assert.ok(sprung > 1.8, `${sprung.toFixed(2)} m`);
+  assert.ok(twice > sprung + 1, `${twice.toFixed(2)} m with a jump in mid-air vs ${sprung.toFixed(2)} m`);
+  assert.equal(apex({ jump: 8.5, air: 0, cost: 1 }, true).toFixed(2), sprung.toFixed(2), 'rank 1: no jump in mid-air');
+});

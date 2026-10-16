@@ -36,6 +36,8 @@ export interface PropTile {
   flow: PropMesh | null;
   /** Loose stones on the floor: drawn as rock. */
   stones: PropMesh | null;
+  /** The town's houses, walls and roofs: drawn as houses (plaster, tiles). */
+  house: PropMesh | null;
   /** Burning lamps, x, y, z each: where the level's lights go. */
   lamps: Float32Array;
   /** What one cannot walk through: upright boxes, BLOCKER_STRIDE numbers each (src/world/blockers.ts). */
@@ -115,6 +117,7 @@ class TileBuilder {
   private readonly water = new PropBuilder();
   private readonly flow = new PropBuilder();
   private readonly stones = new PropBuilder();
+  private readonly house = new PropBuilder();
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
@@ -163,7 +166,7 @@ class TileBuilder {
   private cellar(): PropTile {
     for (const sh of this.level.descents.within(this.x0, this.z0, this.x0 + PROP_TILE, this.z0 + PROP_TILE)) this.shaft(sh);
     furnishCellar({
-      solid: this.solid, glow: this.glow,
+      solid: this.solid, glow: this.glow, house: this.house,
       inTile: (x, z) => this.inTile(x, z),
       light: (x, y, z) => this.light(x, y, z),
       block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
@@ -191,7 +194,7 @@ class TileBuilder {
   }
 
   private done(): PropTile {
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), inscriptions: this.inscriptions, counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), house: this.house.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), inscriptions: this.inscriptions, counts: this.counts };
   }
 
   /** Stones and chippings over the floor of the tile (see DEBRIS). */

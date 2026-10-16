@@ -8,7 +8,7 @@
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, type Material, type Node } from 'three/webgpu';
-import { abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, normalize, normalView, normalMap, normalWorld, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -192,7 +192,45 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const hNatural = mottle.mul(0.3).add(cells.x.mul(0.45)).add(lumps.mul(0.12)).sub(seam.mul(0.12)).sub(tool.mul(0.12)).sub(crack.mul(0.25)).mul(float(1).sub(shutter.mul(0.7))).sub(ring.mul(0.04).mul(saltShare).mul(worked)).add(lumps.mul(0.18).mul(saltShare));
   const hMasonry = edge.oneMinus().mul(0.12).sub(joint.mul(0.2)).add(mottle.mul(0.1)).add(lumps.mul(0.06)).add(grain.mul(0.03));
   const hFlow = mottle.mul(0.25).add(drip.mul(0.18).mul(steep)).add(rim.mul(0.1)).add(sin(p.y.mul(38).add(drip.mul(9))).mul(0.006).mul(smoothstep(0.5, 0.2, p.y.mul(38).fwidth())));
-  const height = mix(mix(hNatural, hMasonry, masonry), hFlow, flow).sub(boardLine.mul(0.05).add(tie.mul(0.15)).mul(shutter));
+  // What covers the rock (per vertex, `cover`: src/gen/style.ts `Cover`): moss, bark.
+  const cov = attribute<'vec2'>('cover', 'vec2');
+  // Moss: on floors, ledges and the tops of things, as lush as the style says, thick in patches and
+  // broken at its edges, a few tufts up the walls; cushions a hand across, a fine fuzz of fronds.
+  const mossEdge = blotch; // (the rock's own noises, reused: no new ones for the cover but where it needs its own scale)
+  const tuft = smoothstep(0.2, 0.5, mottle);
+  const mossBed = cov.x.mul(smoothstep(0.1, 0.7, normalWorld.y).add(tuft.mul(steep).mul(0.45)));
+  const moss = smoothstep(0.3, 0.55, mossBed.add(mossEdge.mul(0.3)));
+  const fuzzAt = p.mul(36);
+  // (Its own noises only where there is moss, its bark's only on a root: bare rock pays nothing for them. Their
+  // fades by distance are taken out here, where every pixel runs: derivatives inside a branch are undefined.)
+  const mossNoise = Fn(() => {
+    const n = vec2(0, 0.5).toVar();
+    If(moss.greaterThan(0.001), () => { n.assign(vec2(mx_noise_float(fuzzAt), mx_worley_noise_float(p.mul(2.4).add(1.7)))); });
+    return n;
+  })();
+  const fuzz = mossNoise.x.mul(smoothstep(1.0, 0.3, fuzzAt.x.fwidth()));
+  const cushion = mossNoise.y;
+  const mossHue = mix(vec3(0.05, 0.11, 0.025), vec3(0.17, 0.3, 0.06), fuzz.mul(0.5).add(0.5)).mul(float(1.2).sub(cushion.mul(0.6)))
+    .add(vec3(0.14, 0.12, 0.0).mul(smoothstep(0.3, 0.7, mottle))); // yellower, drier stretches
+  // Bark (a root): fibrous ridges and deep furrows running along the root, the long way being the
+  // axis its surface faces least; grey-green lichen in places.
+  const an = abs(normalWorld), least = min(min(an.x, an.y), an.z);
+  const along = vec3(smoothstep(0.0, 0.4, an.x.sub(least)), smoothstep(0.0, 0.4, an.y.sub(least)), smoothstep(0.0, 0.4, an.z.sub(least))).mul(0.8).add(0.2);
+  const barkAt = p.mul(along).mul(4.5);
+  const bark = smoothstep(0.3, 0.7, cov.y);
+  const barkNoise = Fn(() => {
+    const n = vec2(0, 0).toVar();
+    If(bark.greaterThan(0.001), () => { n.assign(vec2(mx_noise_float(barkAt.add(vec3(mottle.mul(0.6)))), mx_noise_float(barkAt.mul(3)))); });
+    return n;
+  })();
+  const barkFade = barkAt.fwidth().length();
+  const ridge = float(1).sub(abs(barkNoise.x)).pow(2).sub(0.5).mul(smoothstep(0.6, 0.2, barkFade)).add(0.5);
+  const barkFine = barkNoise.y.mul(smoothstep(0.2, 0.067, barkFade));
+  const lichen = smoothstep(0.25, 0.55, blotch);
+  const barkHue = mix(vec3(0.13, 0.09, 0.06), vec3(0.32, 0.24, 0.16), ridge).mul(barkFine.mul(0.15).add(1)).mul(mix(vec3(1, 1, 1), vec3(1.25, 1.35, 1.1), lichen.mul(0.6)));
+  const height = mix(mix(mix(hNatural, hMasonry, masonry), hFlow, flow).sub(boardLine.mul(0.05).add(tie.mul(0.15)).mul(shutter)),
+    ridge.mul(0.1).add(barkFine.mul(0.015)), bark)
+    .add(cushion.oneMinus().mul(0.25).add(fuzz.mul(0.03)).mul(moss));
   m.normalNode = bumped(height, 0.35);
 
   // Colour: broad warmer and cooler stretches of stone, darker in the hollows, the seams and cracks
@@ -216,10 +254,11 @@ export const ROCK = defineKind('rock', ['position', 'normal', 'color', 'surface'
   const cream = mix(vec3(1, 1, 1), mix(vec3(1.08, 1.0, 0.86), vec3(1.12, 0.9, 0.7), flowBand.mul(steep)), flow);
   const blockHue = mix(vec3(1, 1, 1), mix(vec3(1.05, 1.0, 0.92), vec3(0.94, 0.98, 1.04), block), masonry);
   const salt = mix(vec3(1, 1, 1), saltHue, saltShare.mul(natural));
-  m.colorNode = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(rockKind).mul(salt).mul(hue).mul(region).mul(rust).mul(cream).mul(blockHue);
+  const stone = vertexColor().mul(shade).mul(mix(float(1), texture, float(1).sub(flow.mul(0.6)))).mul(stain).mul(rockKind).mul(salt).mul(hue).mul(region).mul(rust).mul(cream).mul(blockHue);
+  m.colorNode = mix(mix(stone, barkHue, bark), mossHue, moss);
   // Wet sheen: some stretches of rock run with water and shine in the lamps; flowstone is always damp.
   const wetMask = smoothstep(0.1, 0.5, mx_noise_float(p.mul(vec3(0.3, 0.05, 0.3)).add(-9.4))).mul(ROCK_FINISH.wet).add(flow.mul(0.6)).add(damp.mul(ROCK_FINISH.wet)).clamp(0, 1);
-  m.roughnessNode = float(0.9).add(grain.mul(0.06)).sub(wetMask.mul(0.55));
+  m.roughnessNode = float(0.9).add(grain.mul(0.06)).sub(wetMask.mul(0.55)).add(moss.mul(0.1)).clamp(0.05, 1);
 
   // Thin lines alias into glitter far off: they fade out with distance (the fog hides the rest).
   const near = smoothstep(55, 20, length(positionView));
@@ -266,6 +305,35 @@ function bumped(height: Node<'float'>, scale: number) {
   const grad = det.sign().mul(dH.x.mul(r1).add(dH.y.mul(r2)));
   return det.abs().mul(n).sub(grad).normalize();
 }
+
+/**
+ * A house of the town (src/gen/townProps.ts): its walls in render, painted the vertex colour, blotchy,
+ * streaked by rain, grimy in patches and cracked; what faces up (its roof) in rows of overlapping tiles,
+ * clay or slate as the colour says, each tile its own shade. A light shader of its own: the rock's is
+ * far too heavy for props (the town's shells drawn with it stall a software renderer).
+ */
+export const HOUSE = defineKind('house', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
+  const p = positionWorld, roof = smoothstep(0.3, 0.45, normalWorld.y);
+  const u = abs(normalWorld.x).greaterThan(abs(normalWorld.z)).select(p.z, p.x);
+  // Render: blotches a hand across, a fine sandy grain, rain streaks, grime, a few hairline cracks.
+  const blotch = mx_fractal_noise_float(p.mul(2.3).add(4.4), 2, 2.0, 0.5);
+  const grainAt = p.mul(14), grain = mx_noise_float(grainAt).mul(smoothstep(1.0, 0.3, grainAt.fwidth().length()));
+  const streak = smoothstep(0.15, 0.65, mx_noise_float(p.mul(vec3(0.7, 0.07, 0.7)).add(13.7)));
+  const grime = smoothstep(0.0, 0.6, mx_noise_float(p.mul(vec3(0.5, 0.15, 0.5)).add(3.3)));
+  const crack = thinLine(abs(mx_noise_float(p.mul(0.9).add(7.1))), float(0.012)).mul(smoothstep(0.35, 0.6, mx_noise_float(p.mul(0.35).add(2.2))));
+  const render = vertexColor().mul(blotch.mul(0.1).add(grain.mul(0.06)).add(1)).mul(float(1).sub(streak.mul(0.22)).sub(crack.mul(0.5)))
+    .mul(mix(vec3(1, 1, 1), vec3(0.72, 0.68, 0.6), grime));
+  // Tiles: rows up the slope, each row half a tile along from the last, a shadow under each row's edge.
+  const row = p.y.div(0.13), along = u.div(0.22).add(row.floor().mul(0.5));
+  const edge = smoothstep(0.75, 1.0, row.fract()), gap = thinLine(min(along.fract(), float(1).sub(along.fract())).mul(0.22), float(0.006));
+  const fade = smoothstep(0.35, 0.12, row.fwidth());
+  const tile = vertexColor().mul(mx_cell_noise_float(vec3(along.floor(), row.floor(), 5.5)).mul(0.4).add(0.8)).mul(float(1).sub(edge.mul(0.45).add(gap.mul(0.5)).mul(fade)));
+  m.colorNode = mix(render, tile, roof);
+  m.normalNode = bumped(mix(blotch.mul(0.04).add(grain.mul(0.01)).sub(crack.mul(0.08)), float(1).sub(edge.mul(fade)).mul(0.1), roof), 0.35);
+  m.roughnessNode = float(0.92).sub(roof.mul(0.25));
+  return m;
+});
 
 /** Unlit, vertex-coloured: things that give light (lamp flames, lit windows). Same attributes as the solid kind. */
 export const GLOW = defineKind('glow', ['position', 'normal', 'color'], () => {

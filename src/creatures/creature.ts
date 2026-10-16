@@ -11,6 +11,8 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   vz = 0;
   /** Which way it last went round something in its way (+1 / -1): it keeps to it, not dithering. */
   side = 1;
+  /** Chilled (grandma's Cold Larder): seconds left, and the share of its pace it keeps (src/creatures/steer.ts). */
+  chill?: { left: number; by: number };
   health: number;
   /** Seconds since it was last hurt, and since it died. */
   hurtT = 9;

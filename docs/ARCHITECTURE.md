@@ -37,6 +37,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Which meshes cast and receive the headlamp's shadow | the material kind's `shadow` flags, set by `meshFromData` (never per mesh) | `src/render/materials.ts` |
 | How strongly the rock's veins glow, and the band's finish of its rock (concrete shuttering, wet sheen) | `ROCK_VEINS.value`, `ROCK_FINISH`, set by `LevelView` from `level.band.veins` / `level.band.finish` | `src/render/materials.ts` |
 | Which rock a place is cut through (limestone, sandstone, shale, granite, salt, basalt, marble, slate, in patches and beds) | `Style.rocks` (a `RockMix` from `rockMix({...})`), else `band.rocks`; blended by `StyledField.rocks`, meshed with the surface (`SURFACE_STRIDE`, `surfaceAttributes`) | `src/gen/rockTypes.ts` |
+| What covers the rock (moss on floors and ledges, bark on roots) | `Style.cover` (a `Cover`, else `BARE`); blended by `StyledField.cover`, the last 2 of the surface record (`SURFACE_STRIDE`, split by `surfaceAttributes`); the rock shader draws it, no new material | `src/gen/style.ts`, `src/render/materials.ts` |
+| A town house's look (plastered walls, tiled roofs) | the `HOUSE` material kind: props built into `Furnish.house` (`PropTile.house`); the roof is what faces up. Props never use `ROCK` for big surfaces: it is far too heavy per draw | `src/render/materials.ts`, `src/gen/townProps.ts` |
 | How a style's rock is worked at a point (pick marks, masonry and its course height, flowstone), for the rock shader | `Style.surface` (a `Surface`; natural rock if left out), blended by `StyledField.surface`, meshed as the `surface` attribute (`level.surfaces`) | `src/gen/style.ts`, `src/gen/styledField.ts` |
 | An antialiased thin line in a shader (joints, cracks, board marks) | `thinLine(dist, width)` | `src/render/materials.ts` |
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
@@ -66,6 +68,9 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Making a level's styles from its mix; a new style's one registry entry; a level all of one style for trying it out (`?style=<id>`) | `stylesOf(mix, excavation, seed, band)`, `onlyMix`, `NAMED_STYLES`; `new Level(seed, depth, style?)` and `level.key` (a `LevelKey`, what workers make the same level from) | `src/gen/styles.ts`, `src/gen/level.ts` |
 | Which style owns a point, and how much of each style is there (the region map; a level's `Mix` of styles and weights is on its band) | `Regions` (`styleAt`, `regionAt`, `sharesAt`); a style's own share is `style.share(x, z)`; a level's mix is `mixOf(seed, depth)` (`src/gen/bands.ts`), a style's share of a whole mix `shareOf(mix, id)` | `src/gen/regions.ts` |
 | Below level 10: which stratum a depth is in, and the styles a world draws for it | `stratumOf(depth)`, `genome(seed, stratum)`, `STRATA` (read through `mixOf` and `bandOf`) | `src/gen/genome.ts` |
+| How strange a level is: how far from our world, separate from difficulty (the trend with depth, its stratum's lean, how far a deviation may go, how many laws hold) | `strangeness(seed, depth)` (a `Strangeness`), `STRANGE_CAP`, `strangeLabel` for a HUD; plan: `docs/design/generative-depth.md` | `src/gen/genome.ts` |
+| A generator's knob that may stray from our world's standard with strangeness (a style's dome height, a rock's hue, a creature's legs): its standard, safe and strange ranges, and its value on a level (a stratum strays coherently) | `gene(name, standard, safe, strange)`, `express(gene, seed, depth)` | `src/gen/genes.ts` |
+| Screenshots of one seed at many depths side by side, labelled with band and strangeness | `npm run strip -- <seed> <depths,...> out.png` | `tools/shot/strip.mjs` |
 | Whether a style's own things (pillars, props, dens, ways down) may stand at a point (E5) | `owns(style, x, z)` (share ≥ `SHARE_OWN`; there the field is exactly the style's) | `src/gen/style.ts` |
 | Distance to a box from a point's offsets beyond its half-sizes (a style's rooms, blocks, niches, pillars) | `boxDist2(qx, qz)`, `boxDist3(qx, qy, qz)` | `src/gen/shapes.ts` |
 | Jittered Voronoi cells with a smooth blend at their borders (the workings, the style regions) | `voronoiNear(seed, x, z, size, jitter, blend, out)`, `blendShare` | `src/gen/voronoi.ts` |
@@ -186,6 +191,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Show the ability bar (a slot per ability: number, key, how soon it is ready; a click uses it) | `AbilityBar` (`paint(bar, states, passives, hide)`) | `src/app/abilityBar.ts` |
 | Tab targeting: which foe Tab picks next, when it is let go, the yaw to it | `nextTarget`, `candidates`, `keeps`, `yawTo`, `TARGET` | `src/game/target.ts` |
 | Mark the Tab target on screen (chevron and health) | `TargetMark` (`paint(camera, x, y, z, left)`) | `src/app/targetMark.ts` |
+| Show grandma's salt-magic cast (flame, the larder's cold and frost glinting on what it caught, the rolling pin's shove) | `SpellView` (`flame`, `frost`, `glint`, `push`, `place(now)`) | `src/render/spells.ts` |
+| Slow a creature (Cold Larder): all its movement through `Steer.slide` | `walker.chill = { left, by }` | `src/creatures/steer.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
 | Remember what a grandchild has seen of each level (exploration memory) | `Explored` (`see(level, x, y, z)`, `has(depth, i, j)`, `cells`, `data`/`from`), `EXPLORE` | `src/world/explored.ts` |
 | A DOM panel of the game (its stylesheet and element), and an element in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)` | `src/app/panel.ts` |
@@ -210,7 +217,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
-| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's 1–8) | `Controls` | `src/input/controls.ts` |
+| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys) | `Controls` | `src/input/controls.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 
 ## Layers

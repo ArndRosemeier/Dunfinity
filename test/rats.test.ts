@@ -66,3 +66,22 @@ test('rats keep away from a Sunday candle, even when they are after you, and bit
   assert.ok(lit.near < dark.near * 0.3, `${lit.near} rat-steps close by the candle vs ${dark.near} without`);
   assert.ok(lit.taken < dark.taken, `${lit.taken} vs ${dark.taken}`);
 });
+
+test('chilled rats (grandma\'s Cold Larder) move slower while it lasts', () => {
+  const walked = (chill: boolean) => {
+    const r = new Rats(level), me = standAtNest(r);
+    for (let k = 0; k < 120; k++) { r.advance(1 / 60, me); me.vx = me.vz = 0; }
+    me.x += 6; // step off, so they come after you
+    if (chill) for (const rat of r.list) rat.chill = { left: 99, by: 0.4 };
+    let d = 0;
+    for (let k = 0; k < 30; k++) {
+      const at = r.list.map((x) => [x.x, x.z]);
+      r.advance(1 / 60, me); me.vx = me.vz = 0;
+      r.list.forEach((x, i) => { if (at[i]) d += Math.hypot(x.x - at[i][0], x.z - at[i][1]); });
+    }
+    return d;
+  };
+  const free = walked(false), cold = walked(true);
+  assert.ok(free > 1, `they came (${free.toFixed(1)} m)`);
+  assert.ok(cold < free * 0.7, `${cold.toFixed(1)} m chilled vs ${free.toFixed(1)} m`);
+});
