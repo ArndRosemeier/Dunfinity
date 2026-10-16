@@ -9,7 +9,7 @@
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
-import { Fn, If, abs, attribute, modelWorldMatrix, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -601,5 +601,66 @@ export const GLOWWORM = defineKind('glowworm', ['position', 'normal', 'color'], 
   const core = smoothstep(0.35, 0.0, r).mul(smoothstep(0.65, 0.9, varying(info.x, 'vSkyStar')));
   const halo = float(1).sub(r).clamp(0, 1).pow(2);
   m.colorNode = mix(SKY_LOOK.tint, vec3(1, 1, 1), core).mul(halo.add(core)).mul(bright).mul(2.6);
+  return m;
+}, { cast: false, receive: false });
+
+/**
+ * The thin place open now (src/world/thinPlaces.ts), set by `ThinView`: (openness 0–1, its age s,
+ * its hall's bay m, its hall's height m), and the glimpsed world's stone, light and haze (linear rgb).
+ */
+export const THIN_STATE = {
+  open: uniform(new Vector4(0, 0, 3, 5)),
+  stone: uniform(new Vector3(0.4, 0.38, 0.35)),
+  light: uniform(new Vector3(0.3, 0.32, 0.36)),
+  haze: uniform(new Vector3(0.5, 0.35, 0.2)),
+  /** Its floor under the quad's middle (m, in the quad's frame). */
+  floor: uniform(-1.9),
+};
+
+/**
+ * A thin place: a window in the air into a hall of another world, faked behind one quad (interior
+ * mapping): the view ray, in the quad's own frame, is run into a long hall behind it (a flagged
+ * floor, walls of pillars in bays, a ribbed roof, a glowing doorway at the far end), lit and hazed
+ * in that world's colours. Its edge ripples and glows the veins' blue while it opens and closes.
+ * `position` is the quad's corner (x, y in -1..1, the mesh scaled to its half size). Same
+ * attributes as the solid kind.
+ */
+export const THIN = defineKind('thin', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, fog: false });
+  const open = THIN_STATE.open.x, age = THIN_STATE.open.y, bay = THIN_STATE.open.z, high = THIN_STATE.open.w;
+  // The ray in the quad's frame (metres: the mesh is scaled to its size, so undo it).
+  const scale = modelScale, uv = positionLocal.xy;
+  const o = vec3(uv.mul(scale.xy), 0), cam = modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz.mul(scale);
+  const shimmer = mx_noise_vec3(vec3(uv.mul(2.5), age.mul(0.7))).xy.mul(float(1).sub(open).mul(0.25).add(0.02));
+  const d = normalize(o.sub(cam).add(vec3(shimmer, 0)));
+  // The hall: its floor level with ours (`THIN_STATE.open`'s floor under the middle), its roof `high` over it, 8 m wide, 32 m long.
+  const floorY = THIN_STATE.floor, roofY = floorY.add(high), halfW = float(4), back = float(-32);
+  const big = float(1e5);
+  const tFloor = d.y.lessThan(0).select(floorY.sub(o.y).div(d.y), big), tRoof = d.y.greaterThan(0).select(roofY.sub(o.y).div(d.y), big);
+  const tWall = halfW.mul(d.x.sign()).sub(o.x).div(d.x), tBack = back.sub(o.z).div(min(d.z, -1e-4));
+  const t = min(min(tFloor, tRoof), min(tWall, tBack)), h = o.add(d.mul(t));
+  const isFloor = tFloor.lessThanEqual(t.add(1e-3)), isRoof = tRoof.lessThanEqual(t.add(1e-3)), isBack = tBack.lessThanEqual(t.add(1e-3));
+  // Floor: flagstones. Walls: a pillar at each bay, arches between. Roof: a rib at each bay. Back: a doorway full of haze.
+  const flag = thinLine(min(h.x.fract(), h.z.mul(0.8).fract()).mul(1.2), float(0.03));
+  const inBay = h.z.div(bay).fract(), pillar = smoothstep(0.18, 0.12, abs(inBay.sub(0.5)).sub(0.32).abs());
+  const archTop = roofY.sub(abs(inBay.sub(0.5)).mul(bay).pow(2).mul(0.25)).sub(0.4);
+  const wall = mix(float(0.45), float(1), pillar).mul(h.y.greaterThan(archTop).select(float(0.6), float(1)));
+  const rib = smoothstep(0.08, 0.0, abs(inBay.sub(0.5)).sub(0.45).abs());
+  const doorTop = floorY.add(high.mul(0.6)), door = smoothstep(1.0, 0.85, abs(h.x)).mul(smoothstep(0.1, -0.1, h.y.sub(doorTop.sub(h.x.mul(h.x).mul(0.6)))));
+  const shade = isBack.select(float(0.5), isFloor.select(float(0.7).sub(flag.mul(0.3)), isRoof.select(float(0.35).add(rib.mul(0.3)), wall)));
+  // Lit from the doorway's glow down the hall and a little from that world's sky; then its haze with distance.
+  // Corners darker (the walls meet the floor and the roof), so the hall reads as a room.
+  const corner = smoothstep(0.0, 1.4, min(halfW.sub(abs(h.x)), min(h.y.sub(floorY), roofY.sub(h.y))));
+  const glow = float(1).div(h.z.sub(back).abs().mul(0.12).add(1));
+  const lit = THIN_STATE.stone.mul(shade).mul(corner.mul(0.6).add(0.4)).mul(THIN_STATE.light.mul(1.6).add(THIN_STATE.haze.mul(glow.mul(2.5))));
+  const hazed = mix(lit, THIN_STATE.haze, float(1).sub(t.mul(-0.03).exp()).mul(0.6));
+  const inside = isBack.select(mix(hazed, THIN_STATE.haze.mul(1.8), door), hazed);
+  // Its edge: a ragged ellipse that ripples, a rim of the veins' blue; only as open as it is.
+  const r = length(uv), ragged = mx_noise_float(vec3(uv.mul(3), age.mul(0.5))).mul(0.12);
+  const edge = r.add(ragged).add(float(1).sub(open).mul(1.1));
+  const mask = smoothstep(1.0, 0.8, edge);
+  const rim = smoothstep(0.08, 0.0, abs(edge.sub(0.95))).mul(open.mul(0.6).add(0.4)).mul(smoothstep(0.0, 0.3, open));
+  m.colorNode = inside.mul(mask).add(VEIN_BLUE.mul(rim.mul(1.5)));
+  m.opacityNode = max(mask.mul(0.92), rim).mul(open.greaterThan(0.001).select(float(1), float(0)));
   return m;
 }, { cast: false, receive: false });
