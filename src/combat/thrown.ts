@@ -135,7 +135,7 @@ export class Thrown {
           if (k.kind === 'flour') { gone = true; break; }
           k.landed = 0;
           // A candle stands up where it comes down (just above the floor, not in it); a seed goes in there.
-          if (k.kind !== 'knife') k.y = level.groundAt(k.x, k.z);
+          if (k.kind !== 'knife') k.y = level.groundAt(k.x, k.z, k.y + 0.5);
           if (k.kind === 'seed') { this.sown.push(k); this.missiles.splice(i, 1); }
         }
       }

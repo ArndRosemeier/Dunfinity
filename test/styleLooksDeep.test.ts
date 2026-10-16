@@ -296,6 +296,27 @@ test('the glyph-cut halls are none of them: straight-walled slots a few metres w
   for (const id of Object.keys(st)) if (id !== 'glyph' && st[id].n > 50) assert.ok(slot(id) < slot('glyph') / 4, `${id}: straight slots under ${(slot(id) * 100).toFixed(1)}%`);
 });
 
+test('the floating islands are none of them: air under the floor, a void with islands hanging in it', () => {
+  // (The Deep draws them, 61 on: a level all of them, against a deep mix and the Threshold's.)
+  const st: Record<string, { n: number; void: number }> = {};
+  for (const l of [new Level(1, 75, 'floating'), new Level(1, 75), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 4000; k++) {
+      const x = ax + (hash3f(83, k, 75, 0) - 0.5) * 3000, z = az + (hash3f(83, k, 75, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, void: 0 });
+      s.n++;
+      // Open air 25 m under the floor, and more under that.
+      const f = c.floor;
+      if (l.sdf(x, f - 25, z) > 0.5 && l.sdf(x, f - 40, z) > 0.5) s.void++;
+    }
+  }
+  const share = (id: string) => st[id].void / st[id].n;
+  console.log(Object.entries(st).map(([id, s]) => `${id} ${s.n} ${(share(id) * 100).toFixed(1)}%`).join(', '));
+  assert.ok(share('floating') > 0.08, `a void under ${(share('floating') * 100).toFixed(1)}% of the floating level`);
+  for (const id of Object.keys(st)) if (id !== 'floating' && st[id].n > 50) assert.ok(share(id) < share('floating') / 8, `${id}: a void under ${(share(id) * 100).toFixed(1)}%`);
+});
+
 test('every Kerf rune cut in the glyph-cut halls reaches a ruled line, so every stroke can be walked to', () => {
   for (const [r, segs] of Object.entries(KERF)) {
     // Join strokes that touch or cross; the rune is reachable when every stroke is joined to one on y = 0 or y = 2.
