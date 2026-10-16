@@ -79,6 +79,8 @@ import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
 import { SpellView } from '../render/spells';
 import { SaltDrift } from '../render/loot/saltDrift';
+import { WispView } from '../render/creatures/wispView';
+import { Wisps } from '../creatures/wisps';
 import { Thrown } from '../combat/thrown';
 import { GameSounds } from '../audio/gameSounds';
 import { ThrownView } from '../render/humans/thrownView';
@@ -154,6 +156,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     return new Body(x, pos ? pos[1] : level.groundAt(x, z) + 0.2, z);
   };
   let fauna: Fauna;
+  /** The lights rising out of the glowing rock (src/creatures/wisps.ts). */
+  let wisps: Wisps;
   const saltLine = new SaltLine();
   /** Finds taken so far, per level: they stay taken for every grandchild (D13). */
   const taken = new Map<number, Set<number>>(saved?.taken.map(([d, ids]) => [d, new Set(ids)]) ?? []);
@@ -185,6 +189,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     arriving = true;
     arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
+    wisps = new Wisps(l);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
@@ -244,6 +249,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(level);
   };
   fauna = new Fauna(level);
+  wisps = new Wisps(level);
   /** The nobody's own fire to rest by (one at a time). */
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
   /** The doors that open and shut (grandma's house). */
@@ -349,6 +355,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
   await view.stage.add(drift.root);
+  const wispView = new WispView(view.lamps);
+  await view.stage.add(wispView.root);
   const spells = new SpellView(params.seed);
   await view.stage.add(spells.root);
   /** Grandma's salt-magic: when each was last cast, and the last cast (its pose, and which way it went). */
@@ -624,7 +632,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Pick up the find in reach, as E would. */
@@ -776,6 +784,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family
     look(level);
     fauna = new Fauna(level);
+    wisps = new Wisps(level);
     cam.yaw = body.facing; cam.pitch = -0.25; cam.distance = 4;
     cam.follow(body.x, body.y + 1.6, body.z, 1);
     fade.style.opacity = '1'; // the game's level streams in behind the black (arriving, below)
@@ -1176,6 +1185,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
+    wisps.advance(dt, body.x, body.y + 1.5, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
+    for (const w of wisps.risen.splice(0)) sounds.play('wisp_rise', w, 0.5);
+    for (const w of wisps.popped.splice(0)) sounds.play('wisp_pop', w, 0.7);
+    wispView.draw(wisps);
     if (body.sprangAt !== sprangSeen) { sprangSeen = body.sprangAt; if (Number.isFinite(sprangSeen)) spells.puff(body.x, body.y, body.z, now); }
     spells.place(now);
     thrownView.arrange(thrown.missiles, now);

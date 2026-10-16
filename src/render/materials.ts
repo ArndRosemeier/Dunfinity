@@ -9,7 +9,7 @@
  */
 import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
-import { Fn, If, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, modelPosition, modelScale, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -502,5 +502,27 @@ export const DUST = defineKind('dust', ['position', 'normal', 'color'], () => {
   const lit = varying(inBeam.mul(smoothstep(0.4, 1.2, d)).div(max(d.mul(d), 1).mul(0.1)).mul(seed.z), 'vDustLit');
   const soft = smoothstep(1, 0.2, length(varying(corner.xy, 'vDustCorner')));
   m.colorNode = vec3(1.0, 0.86, 0.66).mul(lit.mul(soft));
+  return m;
+}, { cast: false, receive: false });
+
+/** The wisps' colour (linear rgb), the level's glow (src/creatures/wisps.ts `glowOf`): set by `WispView`. */
+export const WISP_TINT = uniform(new Vector3(0.25, 0.6, 1.0));
+
+/**
+ * A wisp's light seen in the air (src/render/creatures/wispView.ts): a quad turned to the camera, a
+ * white-hot core in a soft halo of the level's glow, additive. `position` carries the quad's corner
+ * (x, y in -1..1); the mesh's scale carries its size (x, m) and brightness (y), so one material
+ * serves every wisp. Pulled a little towards the camera, so a halo by the rock is not cut by it.
+ * Same attributes as the solid kind.
+ */
+export const WISP = defineKind('wisp', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
+  const size = modelScale.x, view = cameraViewMatrix.mul(vec4(modelPosition, 1));
+  const toward = min(size.mul(0.6), view.z.negate().mul(0.5));
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(positionLocal.xy.mul(size)), view.z.add(toward), view.w));
+  const r = length(varying(positionLocal.xy, 'vWispCorner'));
+  const core = smoothstep(0.2, 0.0, r), halo = float(1).sub(r).clamp(0, 1).pow(2.2);
+  const far = smoothstep(60, 25, length(view.xyz));
+  m.colorNode = mix(WISP_TINT, vec3(1, 1, 1), core.mul(0.8)).mul(halo.mul(0.7).add(core.mul(1.6))).mul(modelScale.y).mul(far);
   return m;
 }, { cast: false, receive: false });

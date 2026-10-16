@@ -38,7 +38,8 @@ export class LevelView {
   /** Where the headlamp is carried (null: on the camera). */
   carrier: Vector3 | null = null;
   private readonly ambient = new HemisphereLight(0x9aa6b4, 0x2a2218, 0.7);
-  private readonly lamps: LampLights;
+  /** The lamp pool; wisps borrow lights from it (`lamps.glows`). */
+  readonly lamps: LampLights;
   private readonly rock = new Group();
   private readonly things = new Group();
   private readonly dust: Dust;

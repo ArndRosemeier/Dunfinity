@@ -104,7 +104,7 @@
     "reason": "each style colours and shapes with its own seeded Noise and its band's rock colour (this.noise, this.band); the shared parts are already one seam each (Noise, Band)"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts",
     "reason": "each view places its own figures; Object3D.position.set is the three.js call, not a copy"
   },
   {
@@ -3506,5 +3506,49 @@
   {
     "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.add .root .visible] in dunfinity/render/creatures/wispView.ts + dunfinity/render/loot/saltDrift.ts + dunfinity/render/props/watchers.ts",
+    "reason": "fixed pools of hidden meshes built once into a root for the Stage: three.js calls, each view shows its own"
+  },
+  {
+    "key": "idiom: [.vx .vy .vz .x .y .z] in dunfinity/combat/thrown.ts + dunfinity/creatures/spores.ts + dunfinity/creatures/wisps.ts",
+    "reason": "things moving through the air keep a position and a velocity; each moves by its own rule (flight, a lob, a drift along the rock)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/creatures/wisps.ts#advance",
+    "reason": "the sims' one verb: a step of dt; a wisp is no Population (no dens, never hit, no death), and a climb plays a different thing"
+  },
+  {
+    "key": "same name: dunfinity/creatures/wisps.ts#advance + dunfinity/render/humans/ladderClimb.ts#advance",
+    "reason": "the sims' one verb: a step of dt; a wisp is no Population (no dens, never hit, no death), and a climb plays a different thing"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/creatures/wispView.ts#draw",
+    "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/creatures/wispView.ts#draw",
+    "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/creatures/wispView.ts#draw",
+    "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/creatures/wispView.ts#draw",
+    "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/loot/findView.ts#draw",
+    "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/props/saltLine.ts#draw",
+    "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "the views' one verb: each draws its own things once a frame (FigurePool, HumanPool and the prop views each draw something else)"
   }
 ]
