@@ -133,6 +133,7 @@ function standIn(kind: MaterialKind): Mesh {
   if (kind.attributes.includes('color')) g.setAttribute('color', new Float32BufferAttribute([1, 1, 1, 1, 1, 1, 1, 1, 1], 3));
   if (kind.attributes.includes('surface')) surfaceAttributes(g, new Float32Array(3 * SURFACE_STRIDE));
   if (kind.attributes.includes('uv')) g.setAttribute('uv', new Float32BufferAttribute([0, 0, 1, 0, 0, 1], 2));
+  if (kind.attributes.includes('look')) g.setAttribute('look', new Float32BufferAttribute(new Array(12).fill(0.5), 4));
   const m = new Mesh(g, kind.make());
   m.castShadow = kind.shadow.cast;
   m.receiveShadow = kind.shadow.receive;
