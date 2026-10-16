@@ -1119,12 +1119,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         if (!snap) continue;
         garden.sow(s.x, s.y, s.z, Math.atan2(-s.vx, -s.vz), snap);
         spells.sprout(s.x, s.y, s.z, now);
-        sounds.play('land', s, 0.9, 0.7);
+        sounds.play('snap_sprout', s);
       }
       for (const f of garden.step(dt, [...foes(), body], blows)) {
         const p = garden.plants.find((g) => g.target === f);
         spells.snap(f.x, f.y + f.height * 0.6, f.z, now);
-        sounds.play('rat_bite', p ?? null, 1, 0.6);
+        sounds.play('snap_bite', p ?? null, 1, 0.85);
       }
       const candles = thrown.candles;
       fauna.glare = candles;
