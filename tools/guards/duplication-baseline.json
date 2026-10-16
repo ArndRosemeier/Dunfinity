@@ -68,6 +68,18 @@
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
   },
   {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/catacombs.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts + dunfinity/gen/rift.ts",
+    "reason": "per-style column data read back from its WeakMap<Column, Own> (the Style contract's one way of keeping private column data); surfaced when new gen files (genes.ts) shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/dungeon.ts + dunfinity/gen/flooded.ts + dunfinity/gen/geode.ts",
+    "reason": "per-style column data read back from its WeakMap<Column, Own> (the Style contract's one way of keeping private column data); surfaced when new gen files (genes.ts) shifted the idiom finder's corpus"
+  },
+  {
+    "key": "idiom: [.get .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts",
+    "reason": "per-style column data read back from its WeakMap<Column, Own> (the Style contract's one way of keeping private column data); surfaced when new gen files (genes.ts) shifted the idiom finder's corpus"
+  },
+  {
     "key": "idiom: [.ceiling .floor .get .own] in dunfinity/gen/dungeon.ts + dunfinity/gen/geode.ts + dunfinity/gen/lava.ts",
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back in at/color, with the style's own grain rotation; the Style contract's one way of keeping private column data"
   },
