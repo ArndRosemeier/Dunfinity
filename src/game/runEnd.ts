@@ -6,7 +6,7 @@
  */
 import { CARDS, type Cooked } from '../loot/recipes';
 import { SKILLS, type Practice, type Skill } from '../loot/practice';
-import { GEAR, type Gear } from '../loot/hardware';
+import { itemName, type Kit } from '../loot/items';
 import type { Pack } from '../loot/finds';
 import type { Tin } from '../loot/tin';
 import type { KeyData } from '../lore/key';
@@ -53,7 +53,7 @@ export interface RunState {
   readonly pack: Pack;
   readonly cooked: Cooked;
   readonly practice: Practice;
-  readonly gear: Gear;
+  readonly kit: Kit;
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -72,10 +72,13 @@ export function runEnd(s: RunState): RunEnd {
   ].filter(Boolean);
   const cards = CARDS.filter((c) => s.cooked.rank(c.id) > 0).map((c) => `${c.title}${s.cooked.rank(c.id) > 1 ? ` (rank ${s.cooked.rank(c.id)})` : ''}`);
   const skills = (Object.keys(SKILLS) as Skill[]).filter((k) => s.practice.tier(k) > 0).map((k) => `${SKILLS[k].name} ${s.practice.tier(k)}`);
+  // (Not a plain kitchen knife: the block in her kitchen has an endless supply of them, D11.)
+  const worn = s.kit.items.filter((i) => i.kind !== 'kitchen-knife' || i.quality !== 'sound');
   const lost = [
     cards.length ? `What they had cooked: ${cards.join(', ')}.` : '',
     skills.length ? `What they had practised: ${skills.join(', ')}.` : '',
-    s.gear.owned.size ? `What they had bought: ${[...s.gear.owned].map((k) => GEAR[k].name).join(', ')}.` : '',
+    worn.length ? `What they wore and held: ${worn.map(itemName).join(', ')}.` : '',
+    s.pack.spare.length ? `Spare in their pack: ${s.pack.spare.map(itemName).join(', ')}.` : '',
     s.pack.items.length ? `Their pack: ${plural(s.pack.items.length, 'find')}, about €${s.pack.worth} at Ilse's.` : '',
   ].filter(Boolean);
   if (!lost.length) lost.push('Nothing much. They had only just started.');
