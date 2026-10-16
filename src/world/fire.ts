@@ -89,11 +89,12 @@ export class Campfire {
 
   /**
    * One step: `r` rests (and heals) if it stands still by the burning fire with nothing after it,
-   * or in the level's haven (grandma's salt circle: nothing comes in there).
+   * in the level's haven (grandma's salt circle: nothing comes in there), or `sheltered` (shut in a
+   * quarry shed) with nothing after it.
    */
-  step(r: Rester, hunted: boolean, now: number, dt: number): void {
+  step(r: Rester, hunted: boolean, now: number, dt: number, sheltered = false): void {
     if (this.fire && now - this.fire.at > FIRE.kindle + FIRE.burn) this.fire = null;
-    this.resting = r.health > 0 && Math.hypot(r.vx, r.vz) < 0.3 && (this.inHaven(r) || (this.burning(now) && !hunted && this.by(r)));
+    this.resting = r.health > 0 && Math.hypot(r.vx, r.vz) < 0.3 && (this.inHaven(r) || (!hunted && (sheltered || (this.burning(now) && this.by(r)))));
     this.mending = this.resting && (r.health < this.maxHealth || r.stamina < this.maxStamina);
     if (!this.resting) return;
     r.health = Math.min(this.maxHealth, r.health + FIRE.heal * this.soup * dt);

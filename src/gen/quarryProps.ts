@@ -11,6 +11,8 @@
 import { owns, type Style } from './style';
 import type { Dress } from './styleProps';
 import { deriveSeed, hash3i, hashToFloat } from '@futuremagic/core';
+import { PROP_TILE, gridBounds, hasRail, propRoll, propSeed, workingsIn } from './propGrid';
+import { SHED, shedPoint, type Shed } from './sheds';
 import type { Level } from './level';
 import { rockDistance, type Working } from './quarry';
 import { ASCENT, RUNG, ladderOf, type Ladder, type Shaft } from './descents';
@@ -25,8 +27,7 @@ import type { Mark } from '../lore/diary';
 import { markLine, type PageSpot } from './diaryPages';
 import { THRESHOLD_LINTELS } from '../lore/fragments';
 
-/** Tile size, metres. */
-export const PROP_TILE = 64;
+export { PROP_TILE } from './propGrid';
 
 export interface PropTile {
   /** Wood, iron, glass: lit like the rock. */
@@ -131,7 +132,7 @@ class TileBuilder {
   private readonly z0: number;
 
   constructor(private readonly level: Level, tx: number, tz: number) {
-    this.seed = deriveSeed(level.seed, 'props', level.depth);
+    this.seed = propSeed(level);
     this.x0 = tx * PROP_TILE;
     this.z0 = tz * PROP_TILE;
   }
@@ -145,16 +146,16 @@ class TileBuilder {
       if (w.collapse > 0 || w.cavern) continue; // nobody works a collapsed working any more (or a cavern: nobody cut it)
       const [umin, umax, vmin, vmax] = this.gridBounds(w);
       const s = w.spacing;
-      for (let k = Math.floor(umin / s); k <= Math.ceil(umax / s); k++) if (this.hasRail(w, 0, k)) this.track(w, 0, k, vmin, vmax);
-      for (let k = Math.floor(vmin / s); k <= Math.ceil(vmax / s); k++) if (this.hasRail(w, 1, k)) this.track(w, 1, k, umin, umax);
+      for (let k = Math.floor(umin / s); k <= Math.ceil(umax / s); k++) if (hasRail(this.seed, w, 0, k)) this.track(w, 0, k, vmin, vmax);
+      for (let k = Math.floor(vmin / s); k <= Math.ceil(vmax / s); k++) if (hasRail(this.seed, w, 1, k)) this.track(w, 1, k, umin, umax);
       for (let iu = Math.floor(umin / s) - 1; iu <= Math.ceil(umax / s); iu++) {
         for (let iv = Math.floor(vmin / s) - 1; iv <= Math.ceil(vmax / s); iv++) {
           this.pillarLamp(w, iu, iv);
           this.chalk(w, iu, iv);
-          this.shack(w, iu, iv);
         }
       }
     }
+    for (const shed of this.level.sheds.ofTile(this.x0 / PROP_TILE, this.z0 / PROP_TILE)) this.shed(shed);
     const camp = this.level.camp;
     if (camp && this.inTile(camp.x, camp.z)) this.grandmasCamp(camp);
     const page = this.level.page;
@@ -208,7 +209,7 @@ class TileBuilder {
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const r = (k: number) => hashToFloat(hash3i(s, this.x0 / DEBRIS.cell + i, this.z0 / DEBRIS.cell + j, k));
       const x = this.x0 + (i + r(1)) * DEBRIS.cell, z = this.z0 + (j + r(2)) * DEBRIS.cell;
-      if (this.byCamp(x, z)) continue;
+      if (this.byCamp(x, z) || this.level.sheds.holding(x, z, undefined, -0.5)) continue; // (nor in a shed: the miners swept it)
       const col = this.level.columnAt(x, z);
       const foot = Math.max(0, 1 - rockDistance(col) / DEBRIS.footWidth);
       const chance = DEBRIS.base + DEBRIS.rubble * col.rubble + DEBRIS.collapse * col.collapse + DEBRIS.foot * foot;
@@ -330,22 +331,12 @@ class TileBuilder {
 
   /** The workings that reach into this tile. */
   private workings(): Working[] {
-    const found = new Map<number, Working>();
-    for (let j = 0; j <= 8; j++) for (let i = 0; i <= 8; i++) {
-      const w = this.level.workingAt(this.x0 + (i * PROP_TILE) / 8, this.z0 + (j * PROP_TILE) / 8);
-      found.set(w.id, w);
-    }
-    return [...found.values()];
+    return workingsIn(this.level, this.x0, this.z0, PROP_TILE);
   }
 
   /** The tile's extent in w's grid coordinates: [umin, umax, vmin, vmax]. */
   private gridBounds(w: Working): [number, number, number, number] {
-    const b: [number, number, number, number] = [Infinity, -Infinity, Infinity, -Infinity];
-    for (const [x, z] of [[this.x0, this.z0], [this.x0 + PROP_TILE, this.z0], [this.x0, this.z0 + PROP_TILE], [this.x0 + PROP_TILE, this.z0 + PROP_TILE]]) {
-      const [u, v] = this.level.field.excavation.toGrid(w, x, z);
-      b[0] = Math.min(b[0], u); b[1] = Math.max(b[1], u); b[2] = Math.min(b[2], v); b[3] = Math.max(b[3], v);
-    }
-    return b;
+    return gridBounds(this.level, w, this.x0, this.z0, PROP_TILE);
   }
 
   /** The band's stone colour (loose stones, cut blocks, carvings), times k. */
@@ -356,13 +347,11 @@ class TileBuilder {
 
   /** A per-decision random number for working w. */
   private roll(w: Working, a: number, b: number, c: number): number {
-    return hashToFloat(hash3i(this.seed ^ w.id, a, b, c));
+    return propRoll(this.seed, w, a, b, c);
   }
 
   /** Whether aisle k (dir 0: u = k·s, running along v; dir 1: v = k·s, running along u) has a track. */
-  private hasRail(w: Working, dir: number, k: number): boolean {
-    return this.roll(w, dir, k, 0) < 0.14;
-  }
+
 
   /** World position of point t along aisle k, and the aisle's world direction. */
   private aisle(w: Working, dir: number, k: number, t: number): [number, number, number, number] {
@@ -622,7 +611,7 @@ class TileBuilder {
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const r = (k: number) => hashToFloat(hash3i(s, this.x0 / LEFT.cell + i, this.z0 / LEFT.cell + j, k));
       const x = this.x0 + (i + 0.15 + 0.7 * r(1)) * LEFT.cell, z = this.z0 + (j + 0.15 + 0.7 * r(2)) * LEFT.cell;
-      if (this.byCamp(x, z)) continue;
+      if (this.byCamp(x, z) || this.level.sheds.holding(x, z, undefined, -2)) continue;
       const col = this.level.columnAt(x, z);
       if (col.collapse > 0 || col.rubble > 0.05 || col.border < 3 || this.level.descents.at(x, z, 4) || !this.level.dry(x, z, 0.1)) continue;
       // How far to the rock beside (a pillar or a wall; the floor and roof do not count).
@@ -1048,37 +1037,86 @@ class TileBuilder {
     this.counts.derricks++;
   }
 
-  /** A site shack at aisle crossing (iu·s, iv·s), where no track runs. */
-  private shack(w: Working, iu: number, iv: number): void {
-    const s = w.spacing;
-    if (s - w.pillar < 7.5 || this.hasRail(w, 0, iu) || this.hasRail(w, 1, iv) || this.roll(w, 50, iu, iv) > 0.07) return;
-    const field = this.level.field.excavation;
-    const [x, z] = field.fromGrid(w, iu * s, iv * s);
-    if (!this.inTile(x, z) || this.level.descents.at(x, z, 6)) return;
-    // Square to the pillar grid (its +v is yaw = angle), the door to any of the four aisles.
-    const yaw = w.angle + Math.floor(this.roll(w, 51, iu, iv) * 4) * (Math.PI / 2);
-    const at = local(x, z, yaw);
-    let g = Infinity;
-    for (const [sd, fw] of [[0, 0], [-2.5, -2], [2.5, -2], [-2.5, 2], [2.5, 2]]) {
-      const [cx, cz] = at(sd, fw);
-      const col = this.level.columnAt(cx, cz);
-      if (col.working.id !== w.id || col.pillarD < 0.5 || col.border < 6 || col.rubble > 0.03) return;
-      g = Math.min(g, this.level.groundAt(cx, cz));
-      if (g < this.level.waterAt(cx, cz) + 0.2) return;
+  /**
+   * A site shed (src/gen/sheds.ts says where): the shack, its walls in the way but the doorway open
+   * (the game hangs the door), and inside what the miners left: the stove under its pipe, a bunk
+   * under the window, a table and stool, a shelf with tins, the calendar. A burning lamp hangs over
+   * the table in a lit one. Crates stand against its side.
+   */
+  private shed(sh: Shed): void {
+    const { x, y: g, z, yaw, tint, lit, working: w, iu, iv } = sh, spot = (sd: number, fw: number) => shedPoint(sh, sd, fw);
+    this.solid.stamp(propModel('prop_shack_open'), x, g, z, yaw, { tint: [tint, tint, tint] });
+    const [hx, hz] = SHED.half, y0 = g - 0.5, y1 = g + 2.7;
+    const wall = (s0: number, f0: number, s1: number, f1: number) => {
+      const [ax, az] = spot(s0, f0), [bx, bz] = spot(s1, f1);
+      this.blockLine(ax, az, bx, bz, SHED.wall, y0, y1);
+    };
+    wall(-hx, -hz, hx, -hz); wall(-hx, -hz, -hx, hz); wall(hx, -hz, hx, hz);
+    wall(-hx, hz, SHED.door[0], hz); wall(SHED.door[1], hz, hx, hz);
+    // A thing inside: a box (side, fwd) of half sizes (hs, hf), from `bottom` to `top` over the floor.
+    const fit = (sd: number, fw: number, hs: number, hf: number, bottom: number, top: number, c: Rgb, into = this.solid) => {
+      const [bx, bz] = spot(sd, fw);
+      into.upright(bx, g + (bottom + top) / 2, bz, yaw, hs, (top - bottom) / 2, hf, c);
+    };
+    const thing = (t: { readonly at: readonly [number, number]; readonly half: readonly [number, number]; readonly top: number }) => {
+      const [bx, bz] = spot(t.at[0], t.at[1]);
+      this.block(bx, bz, yaw, t.half[0], t.half[1], g - 0.2, g + t.top);
+    };
+    const legs = (t: { readonly at: readonly [number, number]; readonly half: readonly [number, number] }, top: number, c: Rgb) => {
+      for (const ls of [-1, 1]) for (const lf of [-1, 1]) fit(t.at[0] + ls * (t.half[0] - 0.05), t.at[1] + lf * (t.half[1] - 0.05), 0.03, 0.03, 0, top, c);
+    };
+    // The stove: a black iron box on short legs, its pipe up into the roof's, its fire door to the room.
+    const st = SHED.stove, [ss, sf] = st.at;
+    fit(ss, sf, st.half[0], st.half[1], 0.12, st.top, IRON);
+    fit(ss, sf, st.half[0] + 0.03, st.half[1] + 0.03, st.top - 0.03, st.top, [IRON[0] * 1.6, IRON[1] * 1.6, IRON[2] * 1.6]);
+    legs(st, 0.12, IRON);
+    fit(ss + st.half[0] + 0.005, sf, 0.01, 0.12, 0.2, 0.42, lit ? [FLAME[0] * 0.5, FLAME[1] * 0.3, FLAME[2] * 0.15] : RUST, lit ? this.glow : this.solid);
+    const [px, pz] = spot(ss, sf);
+    this.solid.tube(px, g + st.top, pz, px, g + SHED.height - 0.25, pz, 0.07, IRON, 8);
+    thing(st);
+    // The bunk: a plank frame, a canvas mattress, an army blanket folded at its foot.
+    const bk = SHED.bunk, [bs, bf] = bk.at;
+    fit(bs, bf, bk.half[0], bk.half[1], bk.top - 0.12, bk.top - 0.06, WOOD);
+    legs(bk, bk.top - 0.06, WOOD);
+    fit(bs, bf, bk.half[0] - 0.03, bk.half[1] - 0.03, bk.top - 0.06, bk.top, CANVAS);
+    fit(bs, bf + bk.half[1] - 0.25, bk.half[0] - 0.02, 0.18, bk.top, bk.top + 0.08, ARMY);
+    thing(bk);
+    // The table and its stool, two tin cups; the shelf over it with tins; the calendar on the wall.
+    const tb = SHED.table, [ts, tf] = tb.at;
+    fit(ts, tf, tb.half[0], tb.half[1], tb.top - 0.04, tb.top, WOOD);
+    legs(tb, tb.top - 0.04, WOOD);
+    thing(tb);
+    fit(ts, tf + 0.62, 0.17, 0.17, 0.42, 0.46, WOOD);
+    for (const ls of [-1, 1]) for (const lf of [-1, 1]) fit(ts + ls * 0.12, tf + 0.62 + lf * 0.12, 0.02, 0.02, 0, 0.42, WOOD);
+    for (const [cs, cf] of [[ts + 0.38, tf + 0.12], [ts + 0.22, tf + 0.18]]) {
+      const [cx, cz] = spot(cs, cf);
+      this.solid.cylinder(cx, g + tb.top + 0.05, cz, 0.04, 0.05, [0.32, 0.31, 0.28], 8);
     }
-    if (this.level.sdf(x, g + 3.6, z) < 1.2) return;
-    const tint = 0.8 + 0.4 * this.roll(w, 52, iu, iv);
-    this.solid.stamp(propModel('prop_shack'), x, g, z, yaw, { tint: [tint, tint, tint] });
-    this.block(x, z, yaw, 2.3, 1.7, g - 0.5, g + 2.7);
-    const lit = this.roll(w, 53, iu, iv) < 0.6;
-    const [wx, wz] = at(2.21, 0);
+    const sl = SHED.shelf, [ls_, lf_] = sl.at;
+    fit(ls_, lf_, sl.half[0], sl.half[1], sl.top - 0.03, sl.top, WOOD);
+    for (const k of [-1, 1]) fit(ls_ + k * (sl.half[0] - 0.08), lf_, 0.02, sl.half[1], sl.top - 0.22, sl.top - 0.03, WOOD);
+    for (let k = 0; k < 3; k++) {
+      if (this.roll(w, 63 + k, iu, iv) < 0.35) continue;
+      const [cx, cz] = spot(ls_ + 0.12 + k * 0.14, lf_ + 0.01);
+      this.solid.cylinder(cx, g + sl.top + 0.06, cz, 0.04, 0.06, [0.25 + 0.1 * k, 0.18, 0.1], 8);
+    }
+    const [kx, kz] = spot(0.95, -hz + 0.1);
+    this.solid.upright(kx, g + 1.45, kz, yaw, 0.16, 0.22, 0.004, [0.62, 0.6, 0.52]);
+    this.solid.upright(kx, g + 1.62, kz, yaw, 0.16, 0.05, 0.006, [0.4, 0.06, 0.04]);
+    // The windows: lit from inside, or dark glass.
+    const [wx, wz] = spot(2.21, 0);
     (lit ? this.glow : this.solid).upright(wx, g + 1.55, wz, yaw, 0.02, 0.28, 0.4, lit ? [FLAME[0] * 0.7, FLAME[1] * 0.6, FLAME[2] * 0.5] : GLASS);
-    const [lx, lz] = at(-0.6, 1.75);
+    const [lx, lz] = spot(-0.6, 1.75);
     this.lamp(lx, g + 2.25, lz, lit);
+    if (lit) {
+      const [ix, iz] = spot(ts, tf + 0.1);
+      this.solid.tube(ix, g + SHED.height, iz, ix, g + 2.1, iz, 0.006, IRON, 4);
+      this.lamp(ix, g + 2.05, iz, true);
+    }
     for (let c = 0; c < 3; c++) {
       if (this.roll(w, 54 + c, iu, iv) < 0.4) continue;
       const size = 0.28 + 0.2 * this.roll(w, 57 + c, iu, iv), crate = propModel('prop_crate'), scale = size / crate.max[0];
-      const [cx, cz] = at(-2.2 - 0.4 - size - c * 0.1, -1.2 + c * 1.1);
+      const [cx, cz] = spot(-2.2 - 0.4 - size - c * 0.1, -1.2 + c * 1.1);
       if (this.level.sdf(cx, this.level.groundAt(cx, cz) + 0.5, cz) < 0.6 || !this.level.dry(cx, cz, 0.05)) continue;
       const cy = this.level.groundAt(cx, cz), cyaw = yaw + this.roll(w, 60 + c, iu, iv);
       this.solid.stamp(crate, cx, cy, cz, cyaw, { scale });

@@ -3434,5 +3434,13 @@
   {
     "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/targetMark.ts#constructor",
     "reason": "two HUD pieces each make their panel and a couple of children with `panel` and `child`; the shared part is already those two seams."
+  },
+  {
+    "key": "idiom: [.at .descents] in dunfinity/creatures/touched.ts + dunfinity/gen/sheds.ts + dunfinity/loot/finds.ts",
+    "reason": "each asks the one seam whether a spot is by a way down (level.descents.at) before putting something there: a camp, a shed, a find"
+  },
+  {
+    "key": "idiom: [.id .working] in dunfinity/gen/descents.ts + dunfinity/gen/quarryProps.ts + dunfinity/gen/sheds.ts",
+    "reason": "each checks that a column belongs to the working it is placing on (col.working.id), the Column's own field"
   }
 ]
