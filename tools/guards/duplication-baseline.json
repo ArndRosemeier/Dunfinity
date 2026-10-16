@@ -2444,8 +2444,12 @@
     "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
   },
   {
-    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/hardware.ts#data",
-    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and Kemal's gear each know their own fields"
+    "key": "same name: dunfinity/input/bindings.ts#data + dunfinity/loot/items.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
+    "key": "same name: dunfinity/loot/items.ts#data + dunfinity/loot/practice.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
   },
   {
     "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/tin.ts#data",
@@ -3452,8 +3456,8 @@
     "reason": "each checks that a column belongs to the working it is placing on (col.working.id), the Column's own field"
   },
   {
-    "key": "same name: dunfinity/app/diaryView.ts#show + dunfinity/app/packView.ts#show",
-    "reason": "each Modal's show builds its own panel's html (the diary's pages, the pack's finds) and hands it to Modal.showHtml, the one seam"
+    "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/tinView.ts#show",
+    "reason": "each Modal's show builds its own panel's html (the tin's cards, the pack's kit and finds) and hands it to Modal.showHtml, the one seam"
   },
   {
     "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/settingsView.ts#toggle",
