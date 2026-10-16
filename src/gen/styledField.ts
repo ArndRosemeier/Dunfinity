@@ -80,6 +80,7 @@ export class StyledField {
           for (let j = 0; j < sh.n; j++) if (sh.styles[j] === i) return sh.w[j];
           return 0;
         };
+        s.edge = (x, z) => this.regions.sharesAt(x, z, probe).edge;
       });
     }
   }

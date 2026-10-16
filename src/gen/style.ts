@@ -12,7 +12,7 @@ import type { Column } from './quarry';
 import type { Dress } from './styleProps';
 import type { RockMix } from './rockTypes';
 
-export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt' | 'flooded' | 'dwarven' | 'elven' | 'goblin' | 'bones' | 'organic' | 'glyph';
+export type StyleId = 'excavation' | 'cellar' | 'karst' | 'rift' | 'collapse' | 'catacombs' | 'dungeon' | 'roots' | 'fungal' | 'lava' | 'geode' | 'basalt' | 'flooded' | 'dwarven' | 'elven' | 'goblin' | 'bones' | 'organic' | 'glyph' | 'floating';
 
 export interface Style {
   readonly id: StyleId;
@@ -45,6 +45,19 @@ export interface Style {
    * least SHARE_OWN (E2, E5). Styles without such things need not listen.
    */
   share?: (x: number, z: number) => number;
+  /**
+   * Told by the field how far (x, z) is from the nearest region of another style, in blend distance
+   * (`Shares.edge`; Infinity on a level of one style, or none near): for a style whose own shapes
+   * must keep clear of its edges (the floating islands' drops). Others need not listen.
+   */
+  edge?: (x: number, z: number) => number;
+  /**
+   * For a style with open void under its ground (the floating islands): how far under its column's
+   * floor the void goes, metres. Its ground is found by marching down from above (`Level.groundAt`),
+   * and a body that falls well below the floor has fallen out (`Level.fellOut`). Left out: the
+   * ground is at the column's floor, as everywhere else.
+   */
+  readonly drop?: number;
   /** How its floor shows on the map (M): the shade of a level floor, 0–1 RGB. Worked stone if left out (`MAP_FLOOR`). */
   readonly mapFloor?: readonly [number, number, number];
   /**

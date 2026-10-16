@@ -21,7 +21,7 @@ export interface Stratum {
 }
 
 /** Every style below the first strata can be made of (the excavation and the cellar aside). */
-const ALL: readonly StyleId[] = ['karst', 'rift', 'collapse', 'catacombs', 'dungeon', 'roots', 'fungal', 'lava', 'geode', 'basalt', 'flooded', 'dwarven', 'elven', 'goblin', 'bones', 'organic', 'glyph'];
+const ALL: readonly StyleId[] = ['karst', 'rift', 'collapse', 'catacombs', 'dungeon', 'roots', 'fungal', 'lava', 'geode', 'basalt', 'flooded', 'dwarven', 'elven', 'goblin', 'bones', 'organic', 'glyph', 'floating'];
 
 export const STRATA: readonly Stratum[] = [
   {

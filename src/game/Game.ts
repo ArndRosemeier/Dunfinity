@@ -116,6 +116,8 @@ import { Singing, type Sung } from '../world/singing';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
+/** What a fall into a floating level's void costs, health (`level.fellOut`; never the last point). */
+const VOID_FALL = 25;
 /** How close to where one gets on a ladder the nobody must stand to climb it, metres. */
 const LADDER_REACH = 1.6;
 /** How much of the ladder is climbed on each level when going from one to the other, metres. */
@@ -469,7 +471,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The debug menu (`): every ability, invulnerable, tireless, any level, anything worth checking out. */
   let debugPlaces: Place[] = [];
   /** Put the nobody down at (x, y, z) facing `yaw` on the level shown, as they were (health, stamina), fading in. */
+  /** Where the body last stood on the ground (for a fall into a floating level's void, `level.fellOut`). */
+  let stood: [number, number, number] | null = null;
   const putDown = (x: number, y: number, z: number, yaw: number): void => {
+    stood = null;
     const hp = body.health, st = body.stamina;
     body = new Body(x, y + 0.2, z);
     body.health = hp; body.stamina = st;
@@ -1034,7 +1039,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!quarry) say('Nothing near enough to set it at.', 2);
       else if (cast('stoop', ROOTING.stamina, 'Too out of breath to push it in.')) {
         radishAt = now; castYaw = yawTo(quarry, body.x, body.z);
-        const r = radish.set(body.x - Math.sin(castYaw) * 0.5, level.groundAt(body.x, body.z), body.z - Math.cos(castYaw) * 0.5, quarry, rooting);
+        const r = radish.set(body.x - Math.sin(castYaw) * 0.5, level.groundAt(body.x, body.z, body.y + 1), body.z - Math.cos(castYaw) * 0.5, quarry, rooting);
         spells.breaks(r.x, r.y, r.z, now);
         sounds.play('snap_sprout', r, 0.7, 0.8);
       }
@@ -1047,7 +1052,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       else if (cast('stoop', 0, '')) {
         tin.salt -= petting.pinches;
         petAt = now; castYaw = body.facing;
-        const x = body.x - Math.sin(castYaw) * 1.1, z = body.z - Math.cos(castYaw) * 1.1, g = level.groundAt(x, z), y = Math.abs(g - body.y) < 1 ? g : body.y;
+        const x = body.x - Math.sin(castYaw) * 1.1, z = body.z - Math.cos(castYaw) * 1.1, g = level.groundAt(x, z, body.y + 1), y = Math.abs(g - body.y) < 1 ? g : body.y;
         const p = pets.summon(petting.kind, x, y, z, castYaw + Math.PI);
         spells.saltRises(p.x, p.y, p.z, PET.form, now);
         sounds.play('flour_burst', p, 0.6, 0.5);
@@ -1237,6 +1242,15 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const shed = shedOf(), shedDoor = shed && doors.of(shed.door);
       body.hidden = !!shedDoor && Doors.shut(shedDoor);
       for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
+      // Off the edge of a floating island and down into the void: back where it last stood, hurt by the fall but never killed by it.
+      const fell = level.fellOut(body.x, body.y, body.z);
+      if (body.grounded && !fell) stood = [body.x, body.y, body.z];
+      else if (fell) {
+        const [sx, sy, sz] = stood ?? level.arrival, hp = Math.max(1, body.health - VOID_FALL);
+        putDown(sx, sy, sz, body.facing);
+        body.hurt(body.health - hp, 'fall');
+        say('You fell into the dark, and climbed back out, bruised.', 3);
+      }
       // At the top of a climb: pull up over the edge (played out, then the body stands on the ledge).
       if (body.ledge) {
         climb.play([{ kind: 'ledge', ledge: body.ledge, feet: body.y }], body.x, body.y, body.z, body.facing);
@@ -1280,7 +1294,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       // A bag of flour that burst hangs as a cloud; what is in one is blind (and its blows find no one), flour shaking off it.
       for (const b of thrown.burst.splice(0)) {
         if (!bag) continue;
-        const g = level.groundAt(b.x, b.z), y = Math.abs(g - b.y) < 3 ? g : b.y - 1;
+        const g = level.groundAt(b.x, b.z, b.y + 0.5), y = Math.abs(g - b.y) < 3 ? g : b.y - 1;
         const c = flour.burst(b.x, y, b.z, bag);
         spells.bagBursts(c.x, c.y, c.z, c.r, now);
         sounds.play('flour_burst', c);
