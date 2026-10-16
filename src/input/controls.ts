@@ -1,6 +1,9 @@
+import type { Bindings } from './bindings';
+
 /**
  * Keyboard and mouse for the canvas: held keys, mouse look while the pointer is captured (click to
  * capture), mouse buttons (as 'Mouse0', 'Mouse2' keys) and the wheel. The Lab's fly camera and the game read input through this.
+ * Keys come in as the actions they stand for (`bind`: the player's own keys), and none while `paused` (a menu is open).
  */
 export class Controls {
   private readonly keys = new Set<string>();
@@ -13,21 +16,58 @@ export class Controls {
   /** Other keys that count as a key (the ability bar's number keys), and keys held on without a hand on them (a bar slot clicked). */
   private aliases = new Map<string, string[]>();
   private readonly latched = new Set<string>();
+  private bindings: Bindings | null = null;
+  private paused_ = false;
 
   constructor(private readonly el: HTMLElement) {
-    el.addEventListener('click', () => el.requestPointerLock?.());
-    window.addEventListener('keydown', (e) => { if (e.code === 'Tab') e.preventDefault(); if (!e.repeat) this.pressed.add(e.code); this.keys.add(e.code); });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
-    window.addEventListener('blur', () => { this.keys.clear(); this.latched.clear(); });
+    el.addEventListener('click', () => { if (!this.paused_) el.requestPointerLock?.(); });
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Tab') e.preventDefault();
+      const code = this.action(e.code);
+      if (code === null) return;
+      if (!e.repeat) this.pressed.add(code);
+      this.keys.add(code);
+    });
+    window.addEventListener('keyup', (e) => { const code = this.action(e.code); if (code !== null) this.keys.delete(code); });
+    window.addEventListener('blur', () => this.letGo());
     document.addEventListener('mousemove', (e) => {
-      if (document.pointerLockElement !== this.el) return;
+      if (document.pointerLockElement !== this.el || this.paused_) return;
       this.dx += e.movementX;
       this.dy += e.movementY;
     });
     // Mouse buttons count as keys 'Mouse0' (left), 'Mouse2' (right) while the pointer is captured.
-    el.addEventListener('mousedown', (e) => { if (document.pointerLockElement === this.el) { this.pressed.add(`Mouse${e.button}`); this.keys.add(`Mouse${e.button}`); } });
-    window.addEventListener('mouseup', (e) => this.keys.delete(`Mouse${e.button}`));
-    el.addEventListener('wheel', (e) => { this.wheel += Math.sign(e.deltaY); }, { passive: true });
+    el.addEventListener('mousedown', (e) => {
+      const code = this.action(`Mouse${e.button}`);
+      if (document.pointerLockElement === this.el && code !== null) { this.pressed.add(code); this.keys.add(code); }
+    });
+    window.addEventListener('mouseup', (e) => { const code = this.action(`Mouse${e.button}`); if (code !== null) this.keys.delete(code); });
+    el.addEventListener('wheel', (e) => { if (!this.paused_) this.wheel += Math.sign(e.deltaY); }, { passive: true });
+  }
+
+  /** Read keys as the actions `b` puts on them (null: every key is itself). */
+  bind(b: Bindings | null): void {
+    this.bindings = b;
+    this.letGo();
+  }
+
+  /** While paused (a menu open) no key, button, look or wheel reaches the game. */
+  get paused(): boolean { return this.paused_; }
+  set paused(on: boolean) {
+    this.paused_ = on;
+    this.letGo();
+    this.dx = this.dy = this.wheel = 0;
+  }
+
+  /** The action a key or button stands for now (null: none, or paused). */
+  private action(code: string): string | null {
+    if (this.paused_) return null;
+    return this.bindings ? this.bindings.actionOf(code) : code;
+  }
+
+  private letGo(): void {
+    this.keys.clear();
+    this.latched.clear();
+    this.pressed.clear();
   }
 
   /** Is the key (a KeyboardEvent.code) held (or one of its aliases, or latched)? */
