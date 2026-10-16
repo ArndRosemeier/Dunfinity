@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.137 — Glowing veins creep
+
+- The blue veins of infused salt now creep slowly through the rock, a few centimetres a second: a line wanders, splits and fades over a minute or two, slow enough to notice only when you stop and look.
+
 ## v0.136 — Kin: the deep's copies of our animals
 
 - From level 11 down, every stratum has its own drafts of our rats, crickets, slimes, eels and dogs, all of one stratum's alike: a coat of another colour, darker or paler, striped or spotted, a longer or squatter body, a bigger head, a longer tail, huge ears or feelers.
