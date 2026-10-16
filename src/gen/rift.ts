@@ -15,6 +15,7 @@
  */
 import { Noise, deriveSeed, hash2i, hashToFloat, smoothstep } from '@futuremagic/core';
 import type { Band } from './bands';
+import { STANDARD, gene, type Traits, type Tuned } from './genes';
 import { unworked, type Column, type Working } from './quarry';
 import { GrainLines, grainOf } from './grainLines';
 import { rockMix } from './rockTypes';
@@ -42,6 +43,21 @@ export const RIFT = {
   stone: { cell: 45, chance: 0.4, under: [4, 18] as const },
   /** The floor: rolling by this much over this distance, and a nearer swell, metres. */
   floor: [10, 320, 2.5, 70] as const,
+} as const;
+
+/**
+ * The rift's genes (src/gen/genes.ts): how a world's rift strays from ours. `spacing` how far apart
+ * the faults lie (and how far they stray and wander); `width` how wide the canyons are; `height` how
+ * tall; `lean` how far their walls lean in and out (over as much more height, so no wall steepens);
+ * `ledges` and `stones` the share of ledge cells and of wedged boulders.
+ */
+export const RIFT_GENES = {
+  spacing: gene('rift.spacing', 1, [0.8, 1.3], [0.6, 1.8]),
+  width: gene('rift.width', 1, [0.8, 1.3], [0.6, 2.2]),
+  height: gene('rift.height', 1, [0.8, 1.25], [0.5, 1.6]),
+  lean: gene('rift.lean', 1, [0.7, 1.4], [0.3, 2]),
+  ledges: gene('rift.ledges', RIFT.ledge.chance, [0.4, 0.75], [0, 1]),
+  stones: gene('rift.stones', RIFT.stone.chance, [0.25, 0.55], [0, 0.9]),
 } as const;
 
 /** A ledge counts for no more than the canyon beside it this far off in height, metres (no more than the least gap between ledges). */
@@ -78,23 +94,37 @@ export class Rift implements Style {
   private readonly cells: number;
   private readonly lines: GrainLines;
   private readonly own = new WeakMap<Column, RiftColumn>();
+  /** Its numbers, its genes read (RIFT at the standard). */
+  readonly R: Tuned<typeof RIFT>;
 
-  constructor(readonly seed: number, readonly band: Band) {
+  constructor(readonly seed: number, readonly band: Band, traits: Traits = STANDARD) {
+    const G = RIFT_GENES, sp = traits(G.spacing), w = traits(G.width), ht = traits(G.height), lean = traits(G.lean);
+    this.R = {
+      ...RIFT,
+      spacing: RIFT.spacing * sp,
+      jitter: RIFT.jitter * sp,
+      meander: [RIFT.meander[0] * sp, RIFT.meander[1] * sp],
+      half: [RIFT.half[0] * w, RIFT.half[1] * w],
+      height: [RIFT.height[0] * ht, RIFT.height[1] * ht],
+      lean: [RIFT.lean[0] * lean, RIFT.lean[1] * lean],
+      ledge: { ...RIFT.ledge, chance: traits(G.ledges) },
+      stone: { ...RIFT.stone, chance: traits(G.stones), under: [RIFT.stone.under[0], RIFT.stone.under[1] * ht] },
+    };
     this.noise = new Noise(deriveSeed(seed, 'rift', 'shape'));
     this.rough = new Noise(deriveSeed(seed, 'rift', 'rough'));
     this.cells = deriveSeed(seed, 'rift', 'cells');
-    const R = RIFT;
+    const R = this.R;
     this.lines = new GrainLines(this.noise, this.cells, grainOf(seed, 'rift'), R.spacing, R.jitter, R.meander);
   }
 
   /** The envelope's floor at (x, z). */
   private floorAt(x: number, z: number): number {
-    const F = RIFT.floor, n = this.noise;
+    const F = this.R.floor, n = this.noise;
     return n.n2(x / F[1] + 3.1, z / F[1] - 7.7) * F[0] + n.n2(x / F[3] - 2.3, z / F[3] + 9.1) * F[2];
   }
 
   column(x: number, z: number, col: Column): Column {
-    const R = RIFT, n = this.noise;
+    const R = this.R, n = this.noise;
     const u = this.lines.u(x, z), v = this.lines.v(x, z);
     let o = this.own.get(col);
     if (!o) { o = { u: 0, k: [0, 0], dv: [0, 0], w0: [0, 0], phi: [0, 0], cross: 0 }; this.own.set(col, o); }
@@ -134,12 +164,12 @@ export class Rift implements Style {
 
   /** A fault's half width h metres over the floor, in a canyon `height` tall. */
   private half(w0: number, phi: number, h: number, height: number): number {
-    const R = RIFT;
+    const R = this.R;
     return w0 + R.lean[0] * (Math.sin(h / R.lean[1] + phi) - Math.sin(phi)) - R.top[1] * Math.max(0, h - (height - R.top[0]));
   }
 
   at(col: Column, x: number, y: number, z: number): number {
-    const L = RIFT.ledge, R = RIFT, o = this.own.get(col)!;
+    const R = this.R, L = R.ledge, o = this.own.get(col)!;
     const h = y - col.floor, height = col.ceiling - col.floor;
     const cap = Math.min(h, col.ceiling - y);
     let d = -Infinity;
@@ -175,7 +205,7 @@ export class Rift implements Style {
    * -LEDGE_GATE, so the ledges of the cells not looked at, further off than that, never count).
    */
   private ledgeGate(k: number, j: number, u: number): number {
-    const L = RIFT.ledge, ci = Math.floor(u / L.cell);
+    const L = this.R.ledge, ci = Math.floor(u / L.cell);
     let g = -LEDGE_GATE;
     for (let c = ci - 1; c <= ci + 1; c++) {
       const h = hash2i(this.cells ^ 0x7a1, k * 64 + j, c);
@@ -188,7 +218,7 @@ export class Rift implements Style {
 
   /** Distance to the nearest wedged boulder of the column's faults (Infinity: none near). */
   private stones(o: RiftColumn, floor: number, height: number, x: number, y: number, z: number): number {
-    const S = RIFT.stone, ci = Math.floor(o.u / S.cell);
+    const S = this.R.stone, ci = Math.floor(o.u / S.cell);
     const u = o.u, v = this.lines.v(x, z);
     let d = Infinity;
     for (let i = 0; i < 2; i++) {
@@ -199,7 +229,7 @@ export class Rift implements Style {
         const f = (m: number) => hashToFloat(hash2i(hs, m, 9));
         const us = (c + 0.2 + 0.6 * f(1)) * S.cell, vs = this.lines.line(k, us);
         // Wedged: as wide as the canyon where it hangs, so it touches both walls.
-        const w0 = RIFT.half[0] + RIFT.half[1] * (0.5 + 0.5 * this.noise.n2(us / 60, k * 3.7 + 100));
+        const w0 = this.R.half[0] + this.R.half[1] * (0.5 + 0.5 * this.noise.n2(us / 60, k * 3.7 + 100));
         const phi = k * 1.7 + this.noise.n2(us / 90, k * 5.3 - 40) * 1.5;
         const under = S.under[0] + S.under[1] * f(2);
         const r = Math.max(1.2, this.half(w0, phi, under + w0, height) + 0.6);
