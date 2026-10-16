@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.187 — Singing crystals
+
+- In a geode, now and then the crystals sing: a short phrase of a few notes, one crystal at a time, always in tune with itself. Longer crystals sing lower.
+- Each crystal glows in its geode's colour while it rings, a shimmer running up to its tip, fading as the note dies away.
+
 ## v0.186 — Glyph-cut halls
 
 - A second alien style for the deep (61 on): lines of giant Kerf runes cut into the rock, each rune 20 m wide and 40 m long, every stroke a straight-walled trench a house tall under a flat roof.
