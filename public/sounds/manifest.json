@@ -123,6 +123,16 @@
   "loop": false,
   "gain": 0.5
  },
+ "drip": {
+  "files": [
+   "drip_1.ogg",
+   "drip_2.ogg",
+   "drip_3.ogg",
+   "drip_4.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
  "eel_strike": {
   "files": [
    "eel_strike_1.ogg",
