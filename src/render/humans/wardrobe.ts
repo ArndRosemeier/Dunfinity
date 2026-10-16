@@ -223,6 +223,10 @@ function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = 
   return eq;
 }
 
+/** Whether any of `items` worn hides the hair (a helmet). */
+export const hidesHair = (items: readonly Item[]): boolean =>
+  items.some((it) => !!WORN[it.kind] && !!resolve(it.kind, visual(0, [0, 0, 0], [0, 0, 0], 0))?.hideHair);
+
 /** A grandchild's rags and grandma's knife; `lid`: and her pot lid (the Pot Lid card); `items`: what of their kit they have on. */
 export const rags = (seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals => dressIn(RAGS, seed, lid, items);
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
