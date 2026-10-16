@@ -19,6 +19,8 @@ import type { SaltCircle } from './lair';
 import { furnishCellar } from './cellarProps';
 import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
 import { propModel, type Model } from './models';
+import { acrossFace, inscribe, type Inscription } from './inscriptions';
+import { THRESHOLD_LINTELS } from '../lore/fragments';
 
 /** Tile size, metres. */
 export const PROP_TILE = 64;
@@ -42,6 +44,8 @@ export interface PropTile {
   blockers: Float32Array;
   /** Statues whose figure the view draws (and turns): x, top of the plinth, z, yaw, pose, each. */
   watchers: Float32Array;
+  /** Writing in the old scripts on the tile's props (src/gen/inscriptions.ts), for the game to read. */
+  inscriptions: Inscription[];
   counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number; chalk: number; dressed: number };
 }
 
@@ -117,6 +121,7 @@ class TileBuilder {
   private readonly lamps: number[] = [];
   private readonly blocks: number[] = [];
   private readonly watchers: number[] = [];
+  private readonly inscriptions: Inscription[] = [];
   private readonly counts = { sleepers: 0, carts: 0, lamps: 0, lit: 0, shacks: 0, wet: 0, shafts: 0, stones: 0, leftovers: 0, derricks: 0, statues: 0, watchers: 0, chapels: 0, hanging: 0, machines: 0, ruins: 0, uphill: 0, chalk: 0, dressed: 0 };
   private readonly seed: number;
   private readonly x0: number;
@@ -178,6 +183,7 @@ class TileBuilder {
       block: (x, z, yaw, hx, hz, y0, y1) => this.block(x, z, yaw, hx, hz, y0, y1),
       light: (x, y, z) => this.light(x, y, z),
       placed: () => { this.counts.dressed++; },
+      write: (ins, width, depth, colour) => this.write(ins, width, depth, colour),
     };
   }
 
@@ -188,7 +194,7 @@ class TileBuilder {
   }
 
   private done(): PropTile {
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), house: this.house.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), house: this.house.build(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), inscriptions: this.inscriptions, counts: this.counts };
   }
 
   /** Stones and chippings over the floor of the tile (see DEBRIS). */
@@ -931,6 +937,8 @@ class TileBuilder {
       }
       const [lx, lz] = at(0, 0.75), top = base + high + 0.3;
       this.stones.upright(lx, top + 0.3, lz, yaw, 2.6, 0.3, 0.55, old(0.95));
+      // Cut into the lintel's face, in Kerf runes: the dwarves' warning (src/lore/fragments.ts).
+      this.lintel(x + ox * (0.7 + 1.3), top + 0.3, z + oz * (0.7 + 1.3), ox, oz, 2.4, THRESHOLD_LINTELS[Math.floor(r(62) * THRESHOLD_LINTELS.length)]);
       const [ax, az] = at(-2.7, 0.7), [bx, bz] = at(2.7, 0.7), [mx, mz] = at(0, 0.7);
       this.stones.beam(ax, top + 0.75, az, mx, top + 2.1, mz, 0.4, 0.3, old(0.9));
       this.stones.beam(bx, top + 0.75, bz, mx, top + 2.1, mz, 0.4, 0.3, old(0.9));
@@ -950,6 +958,18 @@ class TileBuilder {
       }
     }
     this.counts.ruins++;
+  }
+
+  /** A line of Kerf runes cut across a face whose middle is (x, y, z), looking out along (ox, oz), at most `half` metres either side. */
+  private lintel(x: number, y: number, z: number, ox: number, oz: number, half: number, text: string): void {
+    const ins = acrossFace(`lintel:${this.level.depth}:${Math.round(x)}:${Math.round(z)}`, 'kerf', text, LINTEL.where, x, y, z, ox, oz, half, LINTEL.scale);
+    this.write(ins, LINTEL.cut * ins.place.scale, 0.015, CUT);
+  }
+
+  /** Lay `ins` on the tile's props and list it for the game to read. */
+  private write(ins: Inscription, width: number, depth: number, colour: Rgb): void {
+    inscribe(this.solid, ins, width, depth, colour);
+    this.inscriptions.push(ins);
   }
 
   /** An old electric lamp hanging on its chain from the roof over (x, z), its bulb `HANG.low`–`HANG.high` above the floor; most still burn. */
@@ -1098,6 +1118,10 @@ export function carveMiner(b: PropBuilder, px: number, top: number, pz: number, 
 const LEFT = { cell: 6, chance: 0.22, derricks: 0.006 };
 /** A doorway into darkness. */
 const VOID: Rgb = [0.008, 0.008, 0.01];
+/** The dark of a chisel cut in old stone. */
+const CUT: Rgb = [0.035, 0.03, 0.027];
+/** Runes on a lintel: at most this many metres to a unit (a rune is two units tall), cut this share of a unit wide; what one sees on reading them. */
+const LINTEL = { scale: 0.2, cut: 0.16, where: 'Cut across the lintel, worn almost smooth: straight strokes on upright staves, none of them level. Runes.' };
 /** Grandma's camp (her tent is CANVAS): the bedroll, ash and charred sticks, her thermos, the note. */
 /** Grandma's salt circles: the white crust and the crystals' glow. */
 const SALT_CRUST: Rgb = [0.62, 0.64, 0.66], SALT_GLOW: Rgb = [0.45, 0.7, 1.0];

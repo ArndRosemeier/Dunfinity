@@ -10,7 +10,8 @@
  */
 import { hash3i, hashToFloat } from '@futuremagic/core';
 import type { Level } from './level';
-import type { PropBuilder } from './propMesh';
+import type { Inscription } from './inscriptions';
+import type { PropBuilder, Rgb } from './propMesh';
 
 /** What the tile builder lends a style to dress its ground with. */
 export interface Dress {
@@ -31,6 +32,8 @@ export interface Dress {
   light(x: number, y: number, z: number): void;
   /** Counts a thing placed. */
   placed(): void;
+  /** Writing in an old script (src/gen/inscriptions.ts): laid as strokes `width` metres wide standing `depth` proud, and listed for the game to read. */
+  write(ins: Inscription, width: number, depth: number, colour: Rgb): void;
 }
 
 /**
