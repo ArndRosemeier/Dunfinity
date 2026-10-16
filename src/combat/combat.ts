@@ -5,6 +5,12 @@
  * Pure: the game, the creatures and tests use it.
  */
 
+/**
+ * A stab with the kitchen knife: seconds it takes, when it lands, its reach (beyond the nobody's
+ * centre), sweep and heights, damage and knockback; and how far it turns the nobody to a rat.
+ */
+export const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
+
 /** Someone a blow can land on. */
 export interface Fighter {
   x: number;

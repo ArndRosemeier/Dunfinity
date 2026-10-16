@@ -153,10 +153,16 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     return l.dry(x, z, 0.05) && l.sdf(x, y + head, z) >= room && !l.descents.at(x, z, 4) ? y : null;
   }
 
-  /** A seeded spot `near`–`far` metres round a den on the floor at `y` (keeping to the den's floor). */
+  /**
+   * A seeded spot `near`–`far` metres round a den on the floor at `y`, on the den's own floor and
+   * clear of the rock (a spot over a ledge or under a step is drawn again; none: the den itself).
+   */
   protected around(den: D & { readonly y: number }, rng: Rng, near: number, far: number): [number, number, number] {
-    const a = rng.range(0, Math.PI * 2), d = rng.range(near, far), x = den.x + Math.cos(a) * d, z = den.z + Math.sin(a) * d, y = this.level.groundAt(x, z);
-    return [x, Math.abs(y - den.y) < 1 ? y : den.y, z];
+    for (let k = 0; k < 6; k++) {
+      const a = rng.range(0, Math.PI * 2), d = rng.range(near, far), x = den.x + Math.cos(a) * d, z = den.z + Math.sin(a) * d, y = this.level.groundAt(x, z);
+      if (Math.abs(y - den.y) < 1 && this.level.sdf(x, y + 0.3, z) > 0.15) return [x, y, z];
+    }
+    return [den.x, den.y, den.z];
   }
 
   /**

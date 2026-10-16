@@ -472,10 +472,6 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population, Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/rats.ts#act + dunfinity/creatures/touched.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): where its dens are (denIn), what wakes in one (hatch), how one acts (act); the shared driving is folded there"
-  },
-  {
     "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/shrooms.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
