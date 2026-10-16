@@ -36,7 +36,7 @@ So even in the worst case, shaders take at most half of any stretch of time, and
   2. **Cap:** eight new shader variants requested at once are built one at a time, ≥ 200 ms apart, ≤ 5 per second, each under 100 ms.
   3. **Game:** after its warm-up, the first seconds of play build zero shaders.
 
-CI runs the Lab half (1, 2) and the game half (3) as parallel jobs (`-- lab`, `-- game`). A PR that changes nothing the browser loads skips both, and one that leaves the Stage and the shader hooks alone skips the cap test (`--no-cap`); main always runs everything.
+It is not part of CI (too slow in SwiftShader): run it on demand, every so often and after render changes, with Actions → **Shaders** → Run workflow (any branch), and fix what it finds. That workflow runs the Lab half (1, 2) and the game half (3) side by side (`-- lab`, `-- game`). Locally, `--no-cap` leaves out 2, the slowest part, when the Stage and the shader hooks are untouched.
 
 The check runs on the WebGL 2 backend with SwiftShader (no GPU in CI). Headless WebGPU in Chromium 1194 fails inside three r186 (`createView` swizzle), so the WebGPU path is checked by hand in a real browser for now: open the Lab and look at the HUD line.
 
