@@ -22,6 +22,8 @@ export interface GrandchildData {
   /** The deepest level this grandchild reached. */
   readonly reached: number;
   readonly cooked: Partial<Record<string, number>>;
+  /** Their main bar: the card in each slot (src/game/abilities.ts `MainBar`; none in an older save). */
+  readonly bar?: readonly (string | null)[];
   readonly practice: Partial<Record<string, number>>;
   readonly pack: readonly Find[];
   /** What they bought at Kemal's (src/loot/hardware.ts). */
