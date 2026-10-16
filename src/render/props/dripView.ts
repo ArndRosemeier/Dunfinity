@@ -4,9 +4,8 @@
  * Each frame the nearest sites take the slots, and their look goes to the shader (`DRIP_STATE`):
  * nothing is rebuilt as they grow, nothing compiles.
  */
-import { Group, type Mesh } from 'three/webgpu';
 import { Rng, hash2i } from '@futuremagic/core';
-import { meshFromData } from '../meshes';
+import { SlotPool } from './slotPool';
 import { DRIP as DRIP_KIND, DRIP_SLOTS, DRIP_STATE, DRIP_STONE, DRIP_TIMING } from '../materials';
 import { DRIP, dripLook, type DripLook, type DripSite } from '../../gen/drips';
 import type { Level } from '../../gen/level';
@@ -19,29 +18,19 @@ const RINGS = 18, AROUND = 16, HANG_RINGS = 6, BALL = [5, 8] as const;
 const PALER = 1.3;
 
 export class DripView {
-  readonly root = new Group();
-  private readonly slots: Mesh[] = [];
-  private readonly sites: DripSite[] = [];
+  private readonly pool = new SlotPool<DripSite>(DRIP_SLOTS, 'drip', DRIP_KIND, slotShapes);
+  readonly root = this.pool.root;
   private readonly look: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   private level: Level | null = null;
   /** A time to hold every site at instead of the clock (the Lab and stills: to see one moment of the cycle). */
   held: number | null = null;
 
   constructor() {
-    for (let i = 0; i < DRIP_SLOTS; i++) {
-      const m = meshFromData(slotShapes(i), DRIP_KIND);
-      m.name = 'drip';
-      m.frustumCulled = false; // the shader shapes it far beyond its unit geometry
-      m.visible = false;
-      m.matrixAutoUpdate = true;
-      this.root.add(m);
-      this.slots.push(m);
-    }
     DRIP_TIMING.value.set(DRIP.drops, DRIP.gap, DRIP.swell, DRIP.gravity);
   }
 
   /** The sites drawn now, nearest first (for their sounds). */
-  get shown(): readonly DripSite[] { return this.sites; }
+  get shown(): readonly DripSite[] { return this.pool.sites; }
 
   /** Once a frame: give the slots to the sites nearest (x, z) and set their look at `time` (s). */
   draw(level: Level, x: number, z: number, time: number): void {
@@ -51,12 +40,10 @@ export class DripView {
       const r = level.rockRecipes[ROCK_TYPES.indexOf((level.band.rocks.salt ?? 0) > 0.3 ? 'salt' : 'limestone')].base, rock = level.band.rock;
       DRIP_STONE.value.set(r[0] * rock[0] * PALER, r[1] * rock[1] * PALER, r[2] * rock[2] * PALER);
     }
-    level.drips.near(x, z, DRIP.seen, this.sites);
-    this.sites.sort((a, b) => (a.x - x) ** 2 + (a.z - z) ** 2 - ((b.x - x) ** 2 + (b.z - z) ** 2));
-    if (this.sites.length > DRIP_SLOTS) this.sites.length = DRIP_SLOTS;
+    const sites = this.pool.fill(level.drips, x, z, DRIP.seen);
     const state = DRIP_STATE.array as { set(x: number, y: number, z: number, w: number): unknown }[];
     for (let i = 0; i < DRIP_SLOTS; i++) {
-      const m = this.slots[i], s = this.sites[i];
+      const m = this.pool.slots[i], s = sites[i];
       m.visible = !!s;
       if (!s) continue;
       const l = dripLook(s, this.held ?? time, this.look);

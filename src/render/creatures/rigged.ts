@@ -33,6 +33,7 @@ export class Rigged {
   /** Dress every creature as its kin on the level of `depth` (set when a level is shown): its coat's look, and the proportions its figures take. */
   static kinOn(seed: number, depth: number): void {
     for (const r of Rigged.loaded) {
+      if (r.coat?.salt) continue; // a salt pet is its own animal on every level
       const k = r.kin = kinOf(seed, depth, r.species);
       if (!r.coat) continue;
       const l = r.coat.look;

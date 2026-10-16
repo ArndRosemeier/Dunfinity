@@ -1,14 +1,16 @@
 /**
  * Dunfinity's wardrobe for the humanoid package (its `Wardrobe` hook): which clothes exist and how
  * they sit, as garment shells the package fits to any body: the rags a grandchild goes down in,
- * and Grandma's kitchen knife in the hand.
+ * what they put on of their kit (src/loot/items.ts), and Grandma's kitchen knife in the hand.
  */
-import type { EquipmentVisuals, ItemVisual, ShellLayer, ShellMaterial, WearableSpec } from '@futuremagic/humanoid';
+import type { BodyFit, EquipmentVisuals, ItemVisual, ShellLayer, ShellMaterial, WearableSpec } from '@futuremagic/humanoid';
 import type { Wardrobe } from '@futuremagic/humanoid/three';
 import { Group, type Mesh, type Object3D } from 'three/webgpu';
 import { PropBuilder } from '../../gen/propMesh';
+import { propModel } from '../../gen/models';
 import { meshFromData } from '../meshes';
 import { METAL, VERTEX_COLOR_SOLID } from '../materials';
+import { QUALITY, type Item, type ItemKind } from '../../loot/items';
 
 type Rgb = [number, number, number];
 
@@ -39,9 +41,19 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
     case 'trousers': return shell([{ region: 'pelvis' }, { region: 'buttocks' }, { region: 'thigh.L' }, { region: 'thigh.R' }, { region: 'shin.L', to: 0.8 }, { region: 'shin.R', to: 0.8 }], 0.009, 1, cloth(v, 'plain'));
     /** Leather wrapped round the feet and ankles. */
     case 'footwraps': return shell([{ region: 'foot.L' }, { region: 'foot.R' }, { region: 'shin.L', from: 0.6 }, { region: 'shin.R', from: 0.6 }], 0.012, 2, cloth(v, 'leather', { roughness: 0.75 }));
+    /** Kemal's miner's helmet: the modelled hard hat (dented green enamel, brim, lamp; `wear_hard_hat`) on the head, the hair tucked under. */
+    case 'miners-helmet': return { layers: [{ kind: 'rigid', socket: 'head', build: hardHat }], hideHair: true };
+    /** Work gloves: leather over the hands, a cuff over the wrist. */
+    case 'work-gloves': return shell([{ region: 'hand.L' }, { region: 'hand.R' }, { region: 'forearm.L', from: 0.85 }, { region: 'forearm.R', from: 0.85 }], 0.006, 3, cloth(v, 'leather', { roughness: 0.7 }));
     default: return null;
   }
 }
+
+/** What each worn item looks like on the body: its slot, colours and how worn it is when sound. Items not here are not seen (held ones are). */
+const WORN: Partial<Record<ItemKind, readonly ['head' | 'hands', Rgb, Rgb, number]>> = {
+  'miners-helmet': ['head', [0.24, 0.28, 0.22], [0.1, 0.1, 0.09], 0.55],
+  'work-gloves': ['hands', [0.42, 0.3, 0.17], [0.28, 0.2, 0.11], 0.4],
+};
 
 /**
  * A held thing in grip space, from its parts: wood (or anything plain) and metal, built by `build`
@@ -80,31 +92,23 @@ export function kitchenKnife(): Object3D {
 }
 
 /**
- * A miner's pick, in grip space: held like a hammer, near the end of the ash handle (up +y from the
- * fist), the iron head across the top with a point at each end.
+ * A modelled tool held in the fist (the hatchet, pick and crowbar from AssetGenerator's Blender
+ * props: origin at the butt of the handle, the handle up +y), stamped so the fist closes a hand's
+ * breadth above the butt.
  */
-function minersPick(): Object3D {
-  return held((wood, iron) => {
-    wood.upright(0, 0.28, 0, 0, 0.017, 0.38, 0.022, [0.3, 0.22, 0.14]);
-    iron.upright(0, 0.64, 0, 0, 0.05, 0.03, 0.028, [0.2, 0.19, 0.18]); // the eye round the handle
-    for (const s of [-1, 1]) {
-      iron.beam(0, 0.64, 0, s * 0.2, 0.62, 0, 0.022, 0.024, [0.22, 0.21, 0.2]);
-      iron.beam(s * 0.2, 0.62, 0, s * 0.31, 0.585, 0, 0.012, 0.012, [0.3, 0.29, 0.28]);
-    }
-  });
+function tool(name: 'held_hatchet' | 'held_pick' | 'held_crowbar'): Object3D {
+  return held((paint) => paint.stamp(propModel(name), 0, -GRIP_UP, 0, 0));
 }
 
-/**
- * A crowbar, in grip space: a bent iron bar held near its straight end, the claw hooked over at
- * the top (up +y from the fist).
- */
-function crowbar(): Object3D {
-  return held((_, iron) => {
-    iron.tube(0, -0.08, 0, 0, 0.5, 0, 0.014, [0.24, 0.16, 0.12]);
-    iron.tube(0, 0.5, 0, 0.035, 0.58, 0, 0.014, [0.24, 0.16, 0.12]);
-    iron.tube(0.035, 0.58, 0, 0.1, 0.6, 0, 0.012, [0.3, 0.29, 0.28]); // the claw, worn bright
-  });
-}
+/** How far above the butt of a modelled tool's handle the fist holds it, metres. */
+const GRIP_UP = 0.07;
+
+/** What each held item is built from (its defId, as the Salt-Touched's pick and the scavengers' crowbars use too), and its shape (for the grip). */
+const TOOLS: Readonly<Record<string, readonly ['held_hatchet' | 'held_pick' | 'held_crowbar', string]>> = {
+  hatchet: ['held_hatchet', 'axe-hatchet'],
+  pick: ['held_pick', 'pick'],
+  crowbar: ['held_crowbar', 'crowbar'],
+};
 
 /**
  * Grandma's pot lid, as a shield (grip space as the humanoid straps a shield to the forearm: its
@@ -120,6 +124,19 @@ function potLid(): Object3D {
   }, Math.PI / 2);
 }
 
+/**
+ * The miner's hard hat on the head socket (its frame is the body's: +z forward): the packed model
+ * (origin at the brim's centre underneath, lamp forward, made for a head of radius 0.1 m) scaled to
+ * this head and lifted from the socket at ear height to sit on the crown.
+ */
+function hardHat(fit: BodyFit): Object3D {
+  const k = fit.headRadius / HAT.radius;
+  return held((paint) => paint.stamp(propModel('wear_hard_hat'), 0, fit.headRadius * HAT.lift, HAT.forward * fit.headRadius, 0, { scale: k }));
+}
+
+/** The hard hat's fit: the head it was made for, how far above the socket its brim sits and how far forward (both in head radii). */
+const HAT = { radius: 0.1, lift: 0.3, forward: 0.05 } as const;
+
 /** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
 const KNIFE_TILT = 2.7;
 
@@ -128,8 +145,7 @@ export const WARDROBE: Wardrobe = {
   itemDef: (defId) => (defId === 'knife' ? { visual: { shape: 'knife' }, category: 'weapon' } : defId === 'potlid' ? { visual: { shape: 'shield-potlid' }, category: 'shield' } : { visual: { shape: defId } }),
   buildItem: (defId) => {
     if (defId === 'knife') return kitchenKnife();
-    if (defId === 'pick') return minersPick();
-    if (defId === 'crowbar') return crowbar();
+    if (TOOLS[defId]) return tool(TOOLS[defId][0]);
     if (defId === 'potlid') return potLid();
     throw new Error(`no held item "${defId}"`);
   },
@@ -195,19 +211,31 @@ const SHROUD: Outfit = {
   hand: null,
 };
 
-function dressIn(o: Outfit, seed: number, lid = false): EquipmentVisuals {
+function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals {
   const eq: EquipmentVisuals = {};
+  for (const it of items) {
+    const look = WORN[it.kind];
+    if (!look) continue;
+    const [slot, a, b, wear] = look;
+    eq[slot] = { defId: it.kind, visual: visual(seed + 7, a, b, Math.min(1, wear / QUALITY[it.quality].factor)) };
+  }
   o.clothes.forEach(([slot, defId, a, b, wear], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear) }; });
-  if (o.hand) {
+  const weapon = items.find((it) => TOOLS[it.kind]);
+  if (weapon) eq.mainhand = { defId: weapon.kind, visual: { ...visual(seed + 3, [0.3, 0.29, 0.28], [0.3, 0.22, 0.14], Math.min(1, 0.5 / QUALITY[weapon.quality].factor)), shape: TOOLS[weapon.kind][1], material: 'metal' } };
+  else if (o.hand) {
     const [defId, a, b, wear] = o.hand;
-    eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: defId, material: 'metal' } };
+    eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: TOOLS[defId]?.[1] ?? defId, material: 'metal' } };
   }
   if (lid) eq.offhand = { defId: 'potlid', visual: { ...visual(seed + 4, [0.16, 0.24, 0.38], [0.05, 0.05, 0.06], 0.4), shape: 'shield-potlid', material: 'metal' } };
   return eq;
 }
 
-/** A grandchild's rags and grandma's knife; `lid`: and her pot lid (the Pot Lid card). */
-export const rags = (seed: number, lid = false): EquipmentVisuals => dressIn(RAGS, seed, lid);
+/** Whether any of `items` worn hides the hair (a helmet). */
+export const hidesHair = (items: readonly Item[]): boolean =>
+  items.some((it) => !!WORN[it.kind] && !!resolve(it.kind, visual(0, [0, 0, 0], [0, 0, 0], 0))?.hideHair);
+
+/** A grandchild's rags and grandma's knife; `lid`: and her pot lid (the Pot Lid card); `items`: what of their kit they have on. */
+export const rags = (seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals => dressIn(RAGS, seed, lid, items);
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
 export const goblinsClothes = (seed: number, look: number): EquipmentVisuals => dressIn(GOBLINS[look % GOBLINS.length], seed);

@@ -3,7 +3,8 @@
  * fire, Cold Larder's cold spreading over the floor (and frost glinting on what it caught), and
  * Rolling Pin's shove going out ahead, and the puff of salt under a sprung jump (Spring in Your
  * Step), and the green of grandma's Snapdragons: the floor bursting where one comes up, sap where
- * it bites. Every cast is seen, not only its numbers (Arnd's rule).
+ * it bites; grandma's flour hanging in a cloud (and dusting what it blinded), and the cloud going
+ * up when a match finds it; salt swirling up into a salt pet and slumping back; the earth a horseradish throws up tunnelling and bursting out. Every cast is seen, not only its numbers (Arnd's rule).
  *
  * Fixed pools of glowing sparks per colour, built once and added with the Stage before play.
  */
@@ -19,9 +20,15 @@ export const SPELLS = {
   frost: { colors: [[0.75, 1.3, 2.2], [1.6, 1.9, 2.3], [0.5, 0.9, 1.8]], life: 0.7, size: 0.08 },
   force: { colors: [[1.6, 1.5, 1.3], [1.3, 1.3, 1.4], [1.9, 1.7, 1.3]], life: 0.3, size: 0.09 },
   sap: { colors: [[0.45, 1.6, 0.35], [0.3, 1.3, 0.9], [1.1, 1.7, 0.3]], life: 0.6, size: 0.07 },
+  /** Flour: big soft puffs, dim (lit by the lamp more than glowing), many of them, long-lived. */
+  flour: { colors: [[0.55, 0.53, 0.48], [0.62, 0.6, 0.55], [0.48, 0.46, 0.42]], life: 1.6, size: 0.32, pool: 220 },
+  /** A flour cloud going up: a big hot ball. */
+  blast: { colors: [[3, 1.5, 0.35], [2.6, 0.8, 0.15], [3.2, 2.2, 0.8]], life: 0.7, size: 0.3, pool: 120 },
+  /** Earth thrown up by a horseradish tunnelling: dark crumbs, dim, with a fleck of salt now and then. */
+  soil: { colors: [[0.22, 0.15, 0.09], [0.3, 0.21, 0.12], [0.16, 0.11, 0.07], [0.5, 0.85, 1.1]], life: 0.6, size: 0.06, pool: 160 },
 } as const;
 
-type Kind = 'fire' | 'frost' | 'force' | 'sap';
+type Kind = 'fire' | 'frost' | 'force' | 'sap' | 'flour' | 'blast' | 'soil';
 
 interface Spark {
   readonly mesh: Mesh;
@@ -39,7 +46,7 @@ class Pool {
   constructor(root: Group, kind: Kind) {
     const k = SPELLS[kind];
     const protos = k.colors.map((c) => meshOf((b) => { b.ellipsoid(0, 0, 0, k.size, k.size, k.size, [c[0], c[1], c[2]], 6); }, GLOW));
-    for (let i = 0; i < SPELLS.pool; i++) {
+    for (let i = 0; i < ('pool' in k ? k.pool : SPELLS.pool); i++) {
       const mesh = protos[i % protos.length].clone();
       mesh.visible = false;
       root.add(mesh);
@@ -74,7 +81,7 @@ export class SpellView {
 
   constructor(seed: number) {
     this.rng = new Rng(deriveSeed(seed, 'spells'));
-    this.pools = { fire: new Pool(this.root, 'fire'), frost: new Pool(this.root, 'frost'), force: new Pool(this.root, 'force'), sap: new Pool(this.root, 'sap') };
+    this.pools = { fire: new Pool(this.root, 'fire'), frost: new Pool(this.root, 'frost'), force: new Pool(this.root, 'force'), sap: new Pool(this.root, 'sap'), flour: new Pool(this.root, 'flour'), blast: new Pool(this.root, 'blast'), soil: new Pool(this.root, 'soil') };
   }
 
   /** Stove Flame from the hand at (x, y, z) along `yaw`, `reach` metres, at `now`. */
@@ -131,6 +138,73 @@ export class SpellView {
     for (let i = 0; i < 12; i++) {
       const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(1, 2.4);
       this.pools.sap.emit(x, y, z, Math.cos(a) * v, this.rng.range(-0.3, 1.5), Math.sin(a) * v, now, SPELLS.sap.life * 0.6);
+    }
+  }
+
+  /** Salt Pet: salt poured into a heap at (x, y, z) and swirling up into the animal over `dur` seconds, at `now`. */
+  saltRises(x: number, y: number, z: number, dur: number, now: number): void {
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 6, r = this.rng.range(0.15, 0.5), t = (i / 40) * dur;
+      this.pools.frost.emit(x + Math.cos(a) * r, y + 0.05, z + Math.sin(a) * r, -Math.cos(a) * 0.3, this.rng.range(0.6, 1.4), -Math.sin(a) * 0.3, now + t, SPELLS.frost.life * 1.2);
+    }
+  }
+
+  /** Salt Pet: a dead one slumping back into salt at (x, y, z), at `now`. */
+  saltFalls(x: number, y: number, z: number, now: number): void {
+    for (let i = 0; i < 32; i++) {
+      const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(0.3, 1.2);
+      this.pools.frost.emit(x, y + this.rng.range(0.1, 0.5), z, Math.cos(a) * v, this.rng.range(-0.2, 0.5), Math.sin(a) * v, now + i * 0.01, SPELLS.frost.life * 1.4);
+    }
+  }
+
+  /** Horseradish: earth thrown up behind a root tunnelling at (x, y, z) along `yaw`, at `now` (a few crumbs; called now and then). */
+  furrow(x: number, y: number, z: number, yaw: number, now: number): void {
+    for (let i = 0; i < 6; i++) {
+      const a = yaw + Math.PI + this.rng.range(-1.1, 1.1), v = this.rng.range(0.5, 1.4);
+      this.pools.soil.emit(x, y + 0.05, z, -Math.sin(a) * v, this.rng.range(1.2, 2.6), -Math.cos(a) * v, now + i * 0.01, SPELLS.soil.life * this.rng.range(0.7, 1.2));
+    }
+  }
+
+  /** Horseradish: the floor bursting at (x, y, z) where a root comes up (or dives), at `now`. */
+  breaks(x: number, y: number, z: number, now: number): void {
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2 + this.rng.range(-0.12, 0.12), v = this.rng.range(0.8, 2);
+      this.pools.soil.emit(x, y + 0.05, z, Math.cos(a) * v, this.rng.range(1.5, 3.4), Math.sin(a) * v, now + i * 0.004, SPELLS.soil.life * this.rng.range(0.9, 1.4));
+    }
+  }
+
+  /** Flour Bag: the bag bursting at (x, y, z) into a cloud `r` metres round, at `now`. */
+  bagBursts(x: number, y: number, z: number, r: number, now: number): void {
+    for (let i = 0; i < 40; i++) {
+      const a = this.rng.range(0, Math.PI * 2), v = this.rng.range(0.4, 1) * (r / SPELLS.flour.life);
+      this.pools.flour.emit(x, y + 0.6, z, Math.cos(a) * v, this.rng.range(-0.2, 1), Math.sin(a) * v, now + i * 0.004, SPELLS.flour.life * this.rng.range(0.7, 1.1));
+    }
+  }
+
+  /** A flour cloud hanging at (x, y, z), `r` metres round (`thin`: 1 thick, towards 0 as it thins away): a few puffs more, at `now`. */
+  hang(x: number, y: number, z: number, r: number, thin: number, now: number): void {
+    const n = Math.round(4 * r * thin);
+    for (let i = 0; i < n; i++) {
+      const a = this.rng.range(0, Math.PI * 2), d = Math.sqrt(this.rng.float()) * r * 0.9;
+      this.pools.flour.emit(x + Math.cos(a) * d, y + this.rng.range(0.1, 2.2), z + Math.sin(a) * d, this.rng.range(-0.15, 0.15), this.rng.range(-0.05, 0.12), this.rng.range(-0.15, 0.15), now, SPELLS.flour.life * this.rng.range(0.8, 1.3));
+    }
+  }
+
+  /** Flour on something blinded at (x, y, z), `h` metres tall: it shakes off as it stumbles. */
+  dusted(x: number, y: number, z: number, h: number, now: number): void {
+    const a = this.rng.range(0, Math.PI * 2);
+    this.pools.flour.emit(x + Math.cos(a) * 0.2, y + this.rng.range(0.2, h + 0.1), z + Math.sin(a) * 0.2, Math.cos(a) * 0.3, -0.2, Math.sin(a) * 0.3, now, SPELLS.flour.life * 0.5);
+  }
+
+  /** A flour cloud at (x, y, z), `r` metres round, going up at `now`: a ball of flame through it all at once, flung out. */
+  blast(x: number, y: number, z: number, r: number, now: number): void {
+    for (let i = 0; i < 90; i++) {
+      const a = this.rng.range(0, Math.PI * 2), d = Math.sqrt(this.rng.float()) * r * 0.8, v = this.rng.range(1.5, 3.5);
+      this.pools.blast.emit(x + Math.cos(a) * d, y + this.rng.range(0.1, 2), z + Math.sin(a) * d, Math.cos(a) * v, this.rng.range(0.5, 3), Math.sin(a) * v, now + (d / r) * 0.12, SPELLS.blast.life * this.rng.range(0.7, 1.2));
+    }
+    for (let i = 0; i < 30; i++) {
+      const a = (i / 30) * Math.PI * 2, v = (r * 1.4) / SPELLS.fire.life;
+      this.pools.fire.emit(x, y + 0.5, z, Math.cos(a) * v, this.rng.range(0, 1), Math.sin(a) * v, now, SPELLS.fire.life);
     }
   }
 

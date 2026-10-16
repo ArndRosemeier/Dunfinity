@@ -1,5 +1,136 @@
 # Changelog
 
+## v0.183 — Creature look pass
+
+- Insects and spiders among the procedural creatures now have a body in parts: a swollen abdomen behind, a narrow waist, and a smaller thorax in front that carries the legs. Before, they were one capsule.
+- Thin legs swell along each segment and narrow into the joints, instead of being plain tubes.
+- A creature's outline catches a faint blue from the cave's salt veins, so one standing off in the dark still reads as a shape.
+
+## v0.182 — Grandma's Salt Pet
+
+- New chapter in grandma's tin: Company, with the Salt Pet card. Its bar slot makes you kneel and pour pinches of the tin's salt, which stand up as an animal made of salt: a salt rat at rank 1 (2 pinches, 45 health, bites 6–9) or a salt dog at rank 2 (3 pinches, 90 health, bites 11–16). One at a time, every 20 s.
+- It keeps at your heel and stands still there. It goes for whatever comes at you, or your Tab target, and comes back once that is dead or far off.
+- What it bites turns on it, so it can die. It mends like you do, once it hasn't been hurt for a while.
+- When it dies it falls over and slumps back into salt. If you leave it far behind (up a ladder, onto a ledge it can't reach), it falls to salt and stands up again at your side. It comes along from level to level, but not into a saved game.
+- It wears the rat's and the dog's own models and clips in a coat of crusted salt, with the rock's blue veins glowing slowly through it and salt glinting off it.
+- Every creature now fights back against whatever bit it, not only against you.
+
+## v0.181 — Salt blooms
+
+- Here and there on the floor, mostly where the rock is salt, a bloom of salt crystals spreads out from a point while you watch, crackling softly. Each little cube glows the veins' blue as it forms, then turns to plain glittering salt.
+- After a while the bloom crumbles away to nothing with a lower crackle, and later it blooms again.
+- The debug menu can take you to the nearest one.
+
+## v0.180 — Weapons with their own swing
+
+- Kemal now sells a hatchet, a crowbar and a miner's pick (keys 4, 5 and 6 at his counter). Each swings its own way: the hatchet chops overhead, slower and harder than the knife; the crowbar swats wide and knocks things well back; the pick comes down two-handed, slowest and hardest, with the longest reach.
+- They are held in the hand as the new modelled tools, and the Salt-Touched's picks and the scavengers' crowbars use the same models now.
+- Grandma's knife is never lost: with a weapon in hand it waits in the belt, and putting the weapon away in the pack (I) takes the knife back out. Her knife cards work with whatever is in the hand, and the whetstone still hones the knife.
+
+## v0.179 — Procedural hunters
+
+- The level's own procedural species now include hunters, lurkers, swarmers and brutes, from level 1. Each is grown to a fair fight for its level, so a level-1 hunter is a small thing and a deep brute a big one.
+- They stalk you and take turns: at most two of a pack strike at once. Every blow has a wind-up before the lunge or the slam, and after it they spring back. A lurker lies still until you are nearly on it.
+- Badly hurt, a hunter runs. Its pack comes for you if you hurt one of them.
+- Big and low-bodied animals no longer get stuck where they are born.
+
+## v0.178 — A pulse in the veins
+
+- Now and then the glowing blue veins in the rock draw a breath: a ring of brighter light starts a little behind you, runs through the veins past you and on, always towards the nearest way down, and fades.
+- It happens only where the rock has glowing veins, about once every minute and a half.
+
+## v0.177 — Peaceful animals in the levels
+
+- Every level now has a few herds of its own animals, grown by the creature generator: grazers, scuttlers, watchers, drifters and giants. They are rare on levels 1 to 10 and more common deeper.
+- They graze, wander, watch you from a distance and keep out of your way. None of them comes after you.
+- Attack one and it fights back, or runs if the fight is hopeless. Its strength is its size, so leave the giants alone.
+
+## v0.176 — Light wisps out of the glowing rock
+
+- Now and then a small light pulls itself out of the glowing salt veins, drifts slowly along the rock and lights it up around it, swells, and pops in a bright flash. They are harmless: there for wonder, not to fight.
+- They come where the rock glows (the Salt Works most, the Threshold and glowing strata now and then, rarely where the seams only glow faintly, never in the cellar), never more than three at a time.
+
+## v0.175 — Grandma's tin, reworked, with drag and drop onto the bar
+
+- The tin now stands above the main bar instead of over it, and the bar stays shown while the tin is open.
+- Grandma's dividers run down the left, one per chapter, each with how many of its cards you have cooked. A click (or A/D) jumps to that chapter.
+- Every card is laid out as a little recipe card in one scrolling sheet, under its chapter's heading. Each shows a big coloured capital, its ranks as grains of salt, what the next rank costs, and the bar key it is on. Any number of cards fits.
+- The chosen card is shown in full on the right, with a Cook button that shows the cost.
+- Drag a cooked card onto a bar slot to put it there. Drag one slot onto another to swap them. Drag a slot's card back up into the tin to take it off the bar. Pressing 1–8 still works.
+- The mouse is free while the tin is open, and is captured again when it closes.
+
+## v0.174 — Grandma's Horseradish
+
+- New card in The Garden: Horseradish. Its bar slot sets a root at your feet that tunnels under the floor at 9 m/s to your Tab target (or the foe nearest where you look), comes up under it and bites, then shrivels.
+- Rank 1 bites once (16–24), rank 2 twice, rank 3 three times (18–26 each). It costs 2 stamina, and you can set one every 10 s (9 s at rank 3).
+- If its quarry gets away between bites, it dives and tunnels after it. If the quarry dies, it goes after the nearest other foe. It never bites you.
+- While it tunnels, only its ruff of leaves shows, over a hump of earth with crumbs flying. Then a pale knobbly root bursts out of the floor and snaps with split, fibrous jaws.
+
+## v0.173 — Procedural creatures, first look
+
+- A creature generator: ten body plans (four-legged, two-legged, insects, spiders, crabs, centipedes, snakes, slugs, walking stars, drifting bells), each with its own skeleton, and parts that vary inside it: heads, jaws, horns, eyes, feelers, eye stalks, lures, claws, tails, plates and shells.
+- Peaceful roles (scuttlers, grazers, drifters, watchers, giants) as well as hunters; the deeper, the stranger, with a little strangeness from the first level.
+- They move by themselves: gaits by leg count, feet planted on the ground, tails and feelers that trail, heads that watch you, and actions that wind up before they strike.
+- For now they live only in the Level Lab (`?lab&critters`, or `?lab&critters=<depth>` for that level's creatures).
+- Many of them are colourful: warning colours, complements, jewel tones, pastels; and now and then a peaceful giant some ten metres long.
+
+## v0.172 — Thin places
+
+- Now and then, a little way ahead of you in open air, the air ripples and opens like a window, and for a few seconds you look into a hall of another of the stacked worlds below: its stone, its light, its haze, faint and silent. Then it closes again.
+- The stranger a level, the more often it happens. Never at home, never a way through.
+- As it opens you hear a faint, far-off choir.
+
+## v0.171 — An eight-slot main bar
+
+- Grandma's cards no longer have keys of their own. They go on a main bar of eight slots, used with 1–8 (each slot can be moved to another key in the settings) or a click.
+- A card you cook goes into the first free slot. With more than eight, swap them at the fire: open the tin, choose a card, press the slot's number.
+- Cards that work by themselves take no slot, and neither do Spring in Your Step (Space just jumps higher) and Tiptoe (Z sneaks).
+- The right and middle mouse buttons are free now: the thrown knife and the match sit on the bar like everything else.
+
+## v0.170 — Grandma's flour and matches
+
+- A new chapter in grandma's tin, Baking, with two cards that work together.
+- Flour Bag (Y): throw a bag of flour at a creature up to 16 m off. It bursts into a cloud 3 m round that hangs for 6 seconds. Anything in it loses you, stumbles about and cannot land a blow on you, until a moment after it gets out. Flour shakes off what it blinded.
+- Matchstick (middle mouse): flick a lit match at the nearest flour cloud ahead. The cloud goes up all at once, 18–28 damage to everything in it, and shoves them out. Clouds touching it go up too. So does whoever stands in it, you included.
+- Cooked again: a bigger cloud that hangs longer and blinds for longer; a fiercer blast that shoves twice as hard.
+
+## v0.169 — Checks that take minutes, not a quarter of an hour
+
+- The shader check no longer runs on every change: it is started on demand (Actions → Shaders → Run workflow), every so often and after render changes.
+- The tests run on three machines side by side, and the slowest test file is split in three, so a change is checked in about two minutes.
+
+## v0.168 — The map grows over with salt
+
+- The map (M) is redrawn: the floor you have seen has soft edges, is shaded by height and has faint contour lines, and the edge of what you have not seen fades into the dark instead of stopping in hard squares.
+- The rock walls you have seen glow like grandma's salt veins, with little veinlets and buds running off into the stone and some moss by the walls. Light runs slowly along them now and then (still when less motion is asked for).
+- Your lamp shows as a warm pool and a beam the way you look; the ways down are dark wells ringed in salt, the way up a golden ladder, your fire a flickering glow.
+- A compass, a 10 m scale bar, and zoom: + and − (or the mouse wheel while the map is open). Escape closes it too. The map's frame grows salt like the other panels.
+
+## v0.167 — Faster checks on every change
+
+- CI runs the tests and the two halves of the shader check (the Lab, the game) as three jobs side by side instead of one after another.
+- A pull request that changes nothing the browser loads (only docs, change notes, tests or tools) skips the shader check; main always runs it.
+- The slow cap test inside it runs only when the shader scheduling code changes (and always on main).
+- A new push to a pull request cancels that pull request's older run.
+- Two stale lines left in the duplication baseline are gone, so main's checks are green again.
+
+## v0.166 — Your kit on the body
+
+- Kemal's miner's helmet, a dented green enamel hard hat with its lamp, sits on the grandchild's head with the hair tucked under it, and his work gloves are on their hands.
+- A worn piece looks more worn than a fine one.
+
+## v0.165 — What you wear and hold
+
+- The pack (I) now shows what you wear and hold, slot by slot: head, body, hands, legs, feet, main hand, off hand and a trinket.
+- Choose a line with W and S, then press E to take a piece off into your pack, put on a spare one, or leave a find on the floor.
+- Kemal's gloves and helmet are things you wear now, and his whetstone hones grandma's knife to fine.
+- The pack's 8 places hold finds and spare things together.
+
+## v0.164 — Sounds for the deep wonders, the flour bag and the match
+
+- Singing crystals hum in five notes that sound well together, a distant choir swells when a thin place opens, and salt blooms crackle faintly as they grow.
+- The flour bag bursts with a soft thump, the flour cloud goes up with a deep fiery whoomph, and the matchstick scratches and flares.
+
 ## v0.163 — Held tool models
 
 - Blender-made hatchet, miner's pick and crowbar models (`held_hatchet`, `held_pick`, `held_crowbar`) are now in the model pack, ready for the inventory's weapons.

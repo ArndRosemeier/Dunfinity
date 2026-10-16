@@ -4,8 +4,34 @@ on:
     branches: [main]
   pull_request:
 
+# A new push to a PR cancels that PR's older run; runs on main are never cancelled.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# The typecheck and build, and the unit tests and guards split over three runners side by side
+# (node's --test-shard, by file).
+# The shader check is not here: it runs on demand (shaders.yml).
 jobs:
-  check:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `npm test` with a shard (npm passes no flags through to node before its file globs).
+      - run: node --import tsx --test --test-shard=${{ matrix.shard }}/3 "test/**/*.test.ts" "tools/**/*.test.mjs"
+
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +42,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm run check:shaders
