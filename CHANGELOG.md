@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.129 — Rift genes
+
+- The rift now reads six genes for its level: how far apart its faults lie, how wide and how tall its canyons are, how far their walls lean, and how many ledges and wedged boulders they have. Deep strata may push them far (canyons twice as wide or half as tall, faults crowded or far apart), the same way on every level of a stratum.
+- The genes test (`test/styleGenes.test.ts`) now judges a style's slope by its 99.9th percentile, since a style's own roughness makes the very steepest probe a matter of luck.
+
 ## v0.128 — Karst genes: a deep world's caves stray from ours
 
 - The karst now reads six genes for its level: how big the whole cave is, how high its domes rise, how many cells have a chamber, how wide its tubes are, and how far its outline meanders and how big its scallops are. Levels 1–10 vary only inside the safe ranges; deep strata may push a few genes far out (caves half or one and a half times our size, flat or soaring domes, packed or sparse chambers), the same way on every level of the stratum.
