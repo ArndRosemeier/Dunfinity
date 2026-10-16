@@ -31,10 +31,10 @@ Arnd's ask (2026-10-15): *we can't plan infinite levels, so we need new kinds of
 
 `strangeness(seed, depth) → S`, pure, in `src/gen/genome.ts` (one seam, one row in ARCHITECTURE.md).
 
-- **Trend:** S rises fast early and keeps rising slowly forever, so there is never a level where everything is already as strange as it gets. Proposal: `trend = log2(1 + depth / 8)`: about 0.2 at level 1, 1 at 8, 2.5 at 40, 3.9 at 110, 6 at 500.
+- **Trend:** S rises fast early and keeps rising slowly forever, so there is never a level where everything is already as strange as it gets. `trend = log2(1 + (depth + 4) / 8)`: 0.7 at level 1, 1 at 4, 2.6 at 40, 3.9 at 110, 6 at 500 (lead of 4 added 2026-10-16 after Arnd's playtest: strange from the start).
 - **Swing per stratum:** each stratum draws its own swing, ±40 % of the trend. Some deep worlds are **faithful copies**: eerily close to ours, a town street at level 300 that is almost right. Those calm strata make the strange ones land harder, and the lore supports them (a copy can be careful).
 - **Amplitude is capped, count is not.** Past a cap (S ≈ 3), deviations stop growing in size (a wall can only be so warped before it is noise) and grow in *number and combination* instead: more laws per stratum, rarer laws, laws that interact.
-- Levels 1–10: S is small and only spends itself on the hand-placed oddities (§3, C9). Town (depth 0): S = 0, always.
+- Levels 1–10: S is modest. Besides the hand-placed oddities (§3, C9), each level has one law of its own (never one its band already shows), and genes may stray from level 4, level by level (2026-10-16, Arnd: "more strangeness, right from the start"). Town (depth 0): S = 0, always.
 
 ### 2.3 Standards and laws
 

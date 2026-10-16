@@ -56,7 +56,7 @@
     "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
   },
   {
-    "key": "idiom: [.damage .range] in dunfinity/combat/thrown.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
+    "key": "idiom: [.damage .range] in dunfinity/combat/snapdragon.ts + dunfinity/combat/thrown.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
     "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
   },
   {
@@ -122,6 +122,10 @@
   {
     "key": "idiom: [.tx .tz] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/gen/level.ts#trace + dunfinity/world/blockers.ts#trace",
+    "reason": "the same question (how far a ray gets, kept a skin clear) of two different things: the rock field (sphere tracing) and the props' boxes (slab test); OrbitCamera takes the nearer"
   },
   {
     "key": "same name: core/heap.ts#size + dunfinity/workers/pool.ts#size",
@@ -3448,6 +3452,10 @@
     "reason": "each checks that a column belongs to the working it is placing on (col.working.id), the Column's own field"
   },
   {
+    "key": "same name: dunfinity/app/diaryView.ts#show + dunfinity/app/packView.ts#show",
+    "reason": "each Modal's show builds its own panel's html (the diary's pages, the pack's finds) and hands it to Modal.showHtml, the one seam"
+  },
+  {
     "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/settingsView.ts#toggle",
     "reason": "each DOM panel's open/close on its own key; the shared part is panel() and button() in src/app/panel.ts"
   },
@@ -3506,5 +3514,29 @@
   {
     "key": "idiom: [.renderer .setAnimationLoop .update] in dunfinity/game/Game.ts + dunfinity/game/title.ts + dunfinity/lab/Lab.ts",
     "reason": "each view mode (the game, the title, the Lab) runs its own frame loop: update the timer, view.frame at the viewer; the shared part is LevelView.frame"
+  },
+  {
+    "key": "idiom: [.dead .hypot .x .z Math] in dunfinity/combat/snapdragon.ts + dunfinity/creatures/fauna.ts + dunfinity/game/Game.ts",
+    "reason": "each asks its own question of someone alive near a point (a snapdragon's bite, a threat after you, the larder's cold); the reach of a blow itself is combat's reach()"
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#step + dunfinity/combat/snapdragon.ts#step",
+    "reason": "a per-tick step method: same verb, unrelated jobs (advancing the music's loops vs the snapdragons biting)."
+  },
+  {
+    "key": "same name: dunfinity/combat/snapdragon.ts#step + dunfinity/world/traverse/body.ts#step",
+    "reason": "a per-tick step method: same verb, unrelated jobs (the snapdragons biting vs moving the nobody)."
+  },
+  {
+    "key": "same name: dunfinity/render/humans/ladderClimb.ts#pose + dunfinity/render/snapdragons.ts#pose",
+    "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/stepsView.ts + dunfinity/gen/notary.ts",
+    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/tinView.ts + dunfinity/game/Game.ts",
+    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
   }
 ]

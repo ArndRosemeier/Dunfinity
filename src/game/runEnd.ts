@@ -26,6 +26,7 @@ export const HURT: Readonly<Record<string, readonly [string, string]>> = {
   foreman: ['the Foreman strikes', 'The Foreman brought his pick down on you.'],
   scavenger: ['a scavenger strikes', 'A scavenger had what you carried, in the end.'],
   goblin: ['a goblin jabs', 'The goblins picked you over.'],
+  snapdragon: ['your snapdragon bites', 'Your own snapdragon got you. She did say to step back.'],
   'tall-one': ['the Tall One reaches', 'The Tall One reached you outside the salt.'],
   fall: ['a hard landing', 'You fell to your death.'],
 };

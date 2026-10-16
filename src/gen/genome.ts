@@ -83,12 +83,13 @@ function deep(from: number): Stratum {
  * How far a level is from our world (docs/design/generative-depth.md §2): every world is a copy of
  * the one beneath it (docs/design/lore.md), and strangeness is how many copies away from ours a level
  * is. It is not difficulty (that is depth): a generator reads both and never one for the other.
- * - `trend`: rises fast at first and slowly for ever, log2(1 + depth / 8): 1 at level 8, 2.5 at 40, 6 at 500.
+ * - `trend`: rises fast at first and slowly for ever, log2(1 + (depth + 4) / 8): 0.7 at level 1 (already a
+ *   little off, Arnd 2026-10-16), 1 at level 4, 2.6 at 40, 6 at 500.
  * - `swing`: each stratum's own lean, ×0.6–1.4 (1 above level 11): some deep worlds are faithful copies.
  * - `s`: the strangeness, trend × swing; 0 in the town and the cellar.
  * - `amplitude`: how far a deviation may go, capped at STRANGE_CAP (past it, worlds get more laws, not wilder ones).
- * - `laws`: how many of the deviation catalogue's laws hold all over the stratum, 1 + floor(s) (none in
- *   levels 1–10, whose oddities are placed by hand).
+ * - `laws`: how many of the deviation catalogue's laws hold all over the stratum, 1 + floor(s); one on
+ *   each of levels 1–10, its own (there are no strata up there).
  * Pure: a function of (seed, depth), the same on every level of a stratum but for the trend.
  */
 export interface Strangeness {
@@ -105,12 +106,20 @@ export const STRANGE_CAP = 3;
 /** How far a stratum's strangeness strays from the trend, either way (a share of it). */
 const SWING = 0.4;
 
+/** How many levels ahead of its depth the trend starts: level 1 is already a little strange. */
+const LEAD = 4;
+
+/** The first level of the run that shares its strangeness, laws and genes: its stratum's first, or the level itself above level 11. */
+export function strangeFrom(depth: number): number {
+  return stratumOf(depth)?.from ?? depth;
+}
+
 export function strangeness(seed: number, depth: number): Strangeness {
   if (depth <= 0) return { trend: 0, swing: 1, s: 0, amplitude: 0, laws: 0 };
-  const trend = Math.log2(1 + depth / 8), stratum = stratumOf(depth);
+  const trend = Math.log2(1 + (depth + LEAD) / 8), stratum = stratumOf(depth);
   const swing = stratum ? 1 + SWING * new Rng(deriveSeed(seed, 'strangeness', stratum.from)).range(-1, 1) : 1;
   const s = trend * swing;
-  return { trend, swing, s, amplitude: Math.min(s, STRANGE_CAP), laws: stratum ? 1 + Math.floor(s) : 0 };
+  return { trend, swing, s, amplitude: Math.min(s, STRANGE_CAP), laws: stratum ? 1 + Math.floor(s) : 1 };
 }
 
 /** Strangeness in a few words, for the Lab's HUD and the depth strip (`tools/shot/strip.mjs`). */

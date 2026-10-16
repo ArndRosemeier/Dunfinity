@@ -311,5 +311,45 @@
   "gain": 0.5,
   "sound": "a quiet low airy whoosh of cold air blowing out of a dark opening",
   "seed": "deep natural caverns, a low eerie wind moaning out of the dark once and fading away"
+ },
+ "wisp_rise": {
+  "kind": "shot",
+  "max": 2.0,
+  "files": 1,
+  "gain": 0.35,
+  "sound": "a soft airy shimmering chime rising, like a small light floating up out of rock; quiet and magical",
+  "seed": "a wind chime of thin glass rods stirred gently by one soft breath of wind, a delicate tinkling that fades"
+ },
+ "wisp_pop": {
+  "kind": "shot",
+  "max": 0.45,
+  "files": 1,
+  "gain": 0.45,
+  "sound": "a bright little glassy pop with a sparkle, short and delicate, not a bang",
+  "seed": "a small glass christmas bauble tapped once with a silver spoon, a single bright ting"
+ },
+ "drip": {
+  "kind": "shot",
+  "max": 1.0,
+  "files": 4,
+  "gain": 0.5,
+  "sound": "a single water drop landing on wet stone in a cave, with a short cave echo",
+  "seed": "a leaky kitchen tap dripping slowly into a full sink of water, single drops, plink, plink"
+ },
+ "snap_sprout": {
+  "kind": "shot",
+  "max": 1.2,
+  "files": 1,
+  "gain": 0.7,
+  "sound": "earth bursting open and a thick fleshy plant stalk shooting up with a whoosh and a creak",
+  "seed": "a big tree root tearing up out of the ground, soil ripping open and wood creaking"
+ },
+ "snap_bite": {
+  "kind": "shot",
+  "max": 0.35,
+  "files": 1,
+  "gain": 0.7,
+  "sound": "a wet, leafy jaw snapping shut, a short crunchy snap",
+  "seed": "a fresh crisp stick of celery snapped in half, once, wet and crunchy"
  }
 }
