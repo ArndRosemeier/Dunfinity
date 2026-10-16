@@ -3288,10 +3288,6 @@
     "reason": "each style roughens its walls with its own seeded 3D Noise (this.rough.n3); Noise is the one seam, the scales and amounts are each style's own"
   },
   {
-    "key": "idiom: [.range .t] in dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each creature kind's brain reads its own range and timer (.range/.t) for its own attack; surfaced when the idiom finder's corpus grew (a new level style), not a new copy"
-  },
-  {
     "key": "same name: dunfinity/gen/collapse.ts#at + dunfinity/gen/karst.ts#at",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
