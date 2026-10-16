@@ -14,7 +14,7 @@
  */
 import type { Tin } from './tin';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'salt-line';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'salt-line';
 
 export interface Card {
   readonly id: CardId;
@@ -58,6 +58,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['Earlier. Lower. Again.'],
     cost: [4, 8],
     does: ['Q: roll away; blows miss you for most of it; costs 4 stamina', 'blows miss you for nearly all of it; costs 2.5 stamina'],
+  },
+  {
+    id: 'spring', title: 'Spring in Your Step', chapter: 'Footwork',
+    need: 'knees, both. A pinch of the good salt in each shoe.',
+    method: 'Bend, then go up like the bread does. Your grandfather could clear the garden fence in one go, until the night he didn\'t.',
+    ranks: ['And once more off nothing at all. Don\'t ask me how, it\'s the salt.'],
+    cost: [4, 8],
+    does: ['Space: jump about twice as high (2 m); costs 1 stamina', 'and jump again once in mid-air'],
   },
   {
     id: 'candle', title: 'Sunday Candle', chapter: 'Light',
@@ -114,6 +122,30 @@ export const CARDS: readonly Card[] = [
     ranks: ['Lean into it. Don\'t flinch, it\'s only a lid.'],
     cost: [8, 14],
     does: ['hold X: raise the lid; blows from in front do 30% and knock you less; each one costs 1.5 stamina', 'blows from in front do 10%; each costs 1 stamina'],
+  },
+  {
+    id: 'stove-flame', title: 'Stove Flame', chapter: 'Fire & Frost',
+    need: 'a match, a pinch of the good salt between finger and thumb. Not near the curtains.',
+    method: 'Strike the match, sprinkle the salt over it, and blow. Like lighting the old gas stove, only it goes the other way. Eyebrows grow back.',
+    ranks: ['A bigger pinch. Lean back.'],
+    cost: [4, 8],
+    does: ['R: a gout of flame 4 m ahead, 6–10 damage to everything in it; costs 3 stamina; every 2.5 s', 'flame 5.5 m ahead, 9–14 damage; every 1.8 s'],
+  },
+  {
+    id: 'cold-larder', title: 'Cold Larder', chapter: 'Fire & Frost',
+    need: 'the larder door, open. A pinch of salt on the cold shelf. A cardigan.',
+    method: 'Open the door and let the cold out round your feet. Whatever is near you goes slow and stupid, like your uncle after Sunday lunch.',
+    ranks: ['Leave the door open longer. Mind the milk.'],
+    cost: [4, 8],
+    does: ['K: things within 4 m of you move at 40% for 4 s; costs 3 stamina; every 8 s', 'within 5.5 m, at 30% for 6 s'],
+  },
+  {
+    id: 'rolling-pin', title: 'Rolling Pin', chapter: 'Force',
+    need: 'the rolling pin (don\'t touch it, just think of it), salt on your palms.',
+    method: 'Roll it out flat, away from you, firmly. The dough does not need to be in arm\'s reach. Neither does the other fellow.',
+    ranks: ['Firmer. From the shoulders.'],
+    cost: [4, 8],
+    does: ['P: shove everything 3.5 m in front of you back, hard (2–4 damage); costs 2.5 stamina; every 3 s', 'reaches 4.5 m and shoves twice as hard'],
   },
   {
     id: 'salt-line', title: 'Salt Line', chapter: 'Lost Cards', lost: true,
@@ -177,6 +209,11 @@ export class Cooked {
     return c;
   }
 
+  /** What `id` does at the rank cooked: `ranks[rank - 1]`, or null if not cooked. */
+  private at<T>(id: CardId, ranks: readonly T[]): T | null {
+    return ranks[this.rank(id) - 1] ?? null;
+  }
+
   /** The salt the next rank of `id` costs, or null at the last rank. */
   costOf(id: CardId): number | null {
     return card(id).cost[this.rank(id)] ?? null;
@@ -208,13 +245,18 @@ export class Cooked {
 
   /** Seconds between thrown knives (right mouse), if cooked. */
   get helpings(): number | null {
-    return [null, 1.4, 0.8][this.rank('helpings')];
+    return this.at('helpings', [1.4, 0.8]);
   }
 
   /** The roll (Q), if cooked: its stamina cost and the seconds of it that blows miss. */
   get duck(): { stamina: number; safe: readonly [number, number] } | null {
     const r = this.rank('duck');
     return r === 0 ? null : r === 1 ? { stamina: 4, safe: [0.08, 0.42] } : { stamina: 2.5, safe: [0.04, 0.52] };
+  }
+
+  /** Grandma's Spring in Your Step, if cooked: a jump's speed off the floor, m/s, the jumps it may take in mid-air, and the stamina each costs. */
+  get spring(): { jump: number; air: number; cost: number } | null {
+    return this.at('spring', [{ jump: 8.5, air: 0, cost: 1 }, { jump: 8.5, air: 1, cost: 1 }]);
   }
 
   /** How many Sunday candles may burn at once (G), 0 if not cooked. */
@@ -229,7 +271,7 @@ export class Cooked {
 
   /** Tiptoeing (hold Z), if cooked: its speed, m/s, and how far off things notice you then (a share). */
   get tiptoe(): { speed: number; hush: number } | null {
-    return [null, { speed: 1.6, hush: 0.5 }, { speed: 2.2, hush: 0.33 }][this.rank('tiptoe')];
+    return this.at('tiptoe', [{ speed: 1.6, hush: 0.5 }, { speed: 2.2, hush: 0.33 }]);
   }
 
   /** Grandma's Way Home: 0 not cooked, 1 home to the armchair, 2 and back down again. */
@@ -245,12 +287,27 @@ export class Cooked {
 
   /** Grandma's Pot Lid (hold X), if cooked: the share of a blow from in front that gets through, and the stamina each costs. */
   get lid(): { through: number; cost: number } | null {
-    return [null, { through: 0.3, cost: 1.5 }, { through: 0.1, cost: 1 }][this.rank('pot-lid')];
+    return this.at('pot-lid', [{ through: 0.3, cost: 1.5 }, { through: 0.1, cost: 1 }]);
   }
 
   /** Grandma's Salt Line (L), if cooked: the circle's radius, metres, and how long it keeps, seconds. */
   get saltLine(): { readonly r: number; readonly keeps: number } | null {
     return SALT_RINGS[this.rank('salt-line') - 1] ?? null;
+  }
+
+  /** Grandma's Stove Flame (R), if cooked: how far the flame reaches, metres, its damage, and the seconds between. */
+  get flame(): { reach: number; damage: readonly [number, number]; every: number } | null {
+    return this.at('stove-flame', [{ reach: 4, damage: [6, 10], every: 2.5 }, { reach: 5.5, damage: [9, 14], every: 1.8 }]);
+  }
+
+  /** Grandma's Cold Larder (K), if cooked: how far round you the cold goes, metres, what it slows things to, for how long, seconds. */
+  get larder(): { r: number; slow: number; lasts: number } | null {
+    return this.at('cold-larder', [{ r: 4, slow: 0.4, lasts: 4 }, { r: 5.5, slow: 0.3, lasts: 6 }]);
+  }
+
+  /** Grandma's Rolling Pin (P), if cooked: how far in front it reaches, metres, and how hard it shoves, m/s. */
+  get pin(): { reach: number; knock: number } | null {
+    return this.at('rolling-pin', [{ reach: 3.5, knock: 9 }, { reach: 4.5, knock: 18 }]);
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */

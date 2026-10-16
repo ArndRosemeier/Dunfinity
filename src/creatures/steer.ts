@@ -25,6 +25,8 @@ export interface Walker {
   side: number;
   /** Getting nowhere (see `Steer.move`): its goal, the nearest it has come to it, for how long not nearer (seconds), and how long it still stands. */
   aim?: { x: number; z: number; best: number; since: number; wait: number };
+  /** Chilled (grandma's Cold Larder): seconds left, and the share of its pace it keeps meanwhile. */
+  chill?: { left: number; by: number };
   readonly radius: number;
   readonly height: number;
   readonly dead: boolean;
@@ -126,7 +128,7 @@ export class Steer {
     return d;
   }
 
-  /** Move w by its velocity where the floor allows (not into the legs of `keepOff`: a lunge stops there), settle on the ground. Returns the distance moved. */
+  /** Move w by its velocity (less, chilled) where the floor allows (not into the legs of `keepOff`: a lunge stops there), settle on the ground. Returns the distance moved. */
   slide(w: Walker, dt: number): number {
     const p = this.keepOff;
     if (p && !w.dead && Math.abs(p.y - w.y) < 1) {
@@ -134,7 +136,9 @@ export class Steer {
       const inward = od > 1e-4 ? (w.vx * ox + w.vz * oz) / od : 0;
       if (inward < 0 && Math.hypot(ox + w.vx * dt, oz + w.vz * dt) < p.radius + w.radius * 0.5) { w.vx -= (inward * ox) / od; w.vz -= (inward * oz) / od; }
     }
-    const nx = w.x + w.vx * dt, nz = w.z + w.vz * dt;
+    // Chilled (grandma's Cold Larder): everything it does goes slow, walking, lunging and being knocked back alike.
+    const by = w.chill && w.chill.left > 0 ? w.chill.by : 1;
+    const nx = w.x + w.vx * dt * by, nz = w.z + w.vz * dt * by;
     let moved = 0;
     if (this.walkable(w, nx, nz)) {
       moved = Math.hypot(nx - w.x, nz - w.z);
