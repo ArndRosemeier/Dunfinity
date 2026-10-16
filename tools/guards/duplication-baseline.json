@@ -68,7 +68,7 @@
     "reason": "creatures, quarry props and fire each ask the level whether a spot is dry (level.dry) for their own placement; one seam called from three places, surfaced when the finder's corpus grew"
   },
   {
-    "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts + dunfinity/render/creatures/rigged.ts",
+    "key": "idiom: [.entries Object] in dunfinity/audio/audio.ts + dunfinity/audio/music/tracks.ts + dunfinity/input/bindings.ts + dunfinity/loot/practice.ts + dunfinity/loot/recipes.ts + dunfinity/render/creatures/rigged.ts",
     "reason": "Object.entries over a record, a language idiom (parsing a manifest, walking ambience levels, practice and recipe tables); nothing to share."
   },
   {
@@ -3442,5 +3442,13 @@
   {
     "key": "idiom: [.id .working] in dunfinity/gen/descents.ts + dunfinity/gen/quarryProps.ts + dunfinity/gen/sheds.ts",
     "reason": "each checks that a column belongs to the working it is placing on (col.working.id), the Column's own field"
+  },
+  {
+    "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/settingsView.ts#toggle",
+    "reason": "each DOM panel's open/close on its own key; the shared part is panel() and button() in src/app/panel.ts"
+  },
+  {
+    "key": "same name: dunfinity/input/bindings.ts#data + dunfinity/loot/practice.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
   }
 ]
