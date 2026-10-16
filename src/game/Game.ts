@@ -62,6 +62,7 @@ import { VERSION } from '../app/whatsNew';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
 import { TinView } from '../app/tinView';
+import { SpellView } from '../render/spells';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { Thrown } from '../combat/thrown';
 import { GameSounds } from '../audio/gameSounds';
@@ -83,6 +84,11 @@ const CLIMB_SHOWN = 4.5;
  */
 const STAB = { dur: 0.42, hit: 0.19, range: 0.95, arc: 0.85, low: -0.3, high: 1.3, damage: [6, 10] as const, knock: 3.5, aim: 2.4, aimArc: 1.2 };
 /** Grandma's Tenderising (V): an overhead blow with the knife's handle, slower, wider, knocking far back; its stamina (damage: the card's). */
+/** Grandma's salt-magic: Stove Flame's sweep and stamina, Cold Larder's, Rolling Pin's (how far, how much and how often: the card's); how long the nobody's cast pose lasts. */
+const FLAME = { arc: 0.45, low: -0.3, high: 2, knock: 2, stamina: 3 };
+const LARDER = { stamina: 3, every: 8 };
+const PIN = { arc: 0.75, low: -0.3, high: 2, damage: [2, 4] as const, stamina: 2.5, every: 3 };
+const CAST = { dur: 0.5, glints: 8 };
 const POUND = { dur: 0.9, hit: 0.5, range: 1.15, arc: 1.1, low: -0.3, high: 1.3, knock: 8, aim: 2.6, aimArc: 1.2, stamina: 3 };
 /** Picking a find up: seconds it takes, when it is in hand; how far round the nobody finds are drawn. */
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
@@ -253,6 +259,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
   await view.stage.add(drift.root);
+  const spells = new SpellView(params.seed);
+  await view.stage.add(spells.root);
+  /** Grandma's salt-magic: when each was last cast, and the last cast (its pose, and which way it went). */
+  /** The last sprung jump seen (Spring in Your Step: its puff of salt). */
+  let sprangSeen = -Infinity;
+  let flameAt = -Infinity, larderAt = -Infinity, pinAt = -Infinity, castAt = -Infinity, castYaw = 0, casting: 'flame' | 'larder' | 'pin' = 'flame';
   /** Knives thrown (grandma's Second Helpings), and when the last throw began. */
   const thrown = new Thrown();
   const thrownView = new ThrownView();
@@ -517,7 +529,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
     if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
     if (controls.tap('Backquote')) debug.toggle();
-    // The bar's slots answer to 1–8 too (not at Kemal's counter); a dead grandchild holds nothing.
+    // The bar's slots answer to 1–0, - and = too (not at Kemal's counter); a dead grandchild holds nothing.
     const bar = barOf(cooked);
     controls.alias(atCounter ? [] : bar.map((a, i) => [SLOT_KEYS[i], a.key] as const));
     if (body.dead) for (const a of ABILITIES) controls.latch(a.key, false);
@@ -560,6 +572,42 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const why = fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : level.depth === 0 && !back ? (cooked.wayHome >= 2 && reached > 0 ? 'Stand in her salt circle to think of where you were.' : 'You are home.') : back && reached === 0 ? 'You have not been down yet.' : '';
       if (why) say(why, 2.5);
       else { homeAt = now; homeMote = now; homeTo = back ? reached : 0; say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', WAY_HOME.dur); }
+    }
+    // Grandma's salt-magic (Fire & Frost, Force): R a gout of flame, K the larder's cold round you, P a shove; at the Tab target, if any.
+    const canCast = !busy && !tinView.open && !body.rolling && homeTo === null;
+    const cast = (kind: typeof casting, stamina: number, out: string): boolean => {
+      if (body.stamina < stamina) { say(out, 2); return false; }
+      body.stamina -= stamina;
+      castAt = now; casting = kind; castYaw = target ? yawTo(target, body.x, body.z) : cam.yaw;
+      return true;
+    };
+    const flame = cooked.flame, larder = cooked.larder, pin = cooked.pin;
+    if (controls.tap('KeyR') && flame && canCast && now - flameAt > flame.every && cast('flame', FLAME.stamina, 'Too out of breath to blow.')) {
+      flameAt = now;
+      spells.flame(body.x - Math.sin(castYaw) * 0.4, body.y + 1.35, body.z - Math.cos(castYaw) * 0.4, castYaw, flame.reach, now);
+      sounds.play('throw', null, 0.9, 0.6);
+      const b = blowFrom(body, castYaw, { range: flame.reach, arc: FLAME.arc, low: FLAME.low, high: FLAME.high });
+      for (const f of foes()) if (reach(b, f)) damage(f, blows.range(flame.damage[0], flame.damage[1]), body.x, body.z, FLAME.knock, 'fire');
+    }
+    if (controls.tap('KeyK') && larder && canCast && now - larderAt > LARDER.every && cast('larder', LARDER.stamina, 'Too out of breath to let the cold out.')) {
+      larderAt = now;
+      spells.frost(body.x, body.y, body.z, larder.r, now);
+      sounds.play('throw', null, 0.6, 0.45);
+      for (const f of foes()) if (!f.dead && Math.hypot(f.x - body.x, f.z - body.z) - f.radius < larder.r && Math.abs(f.y - body.y) < 3) f.chill = { left: larder.lasts, by: larder.slow };
+    }
+    if (controls.tap('KeyP') && pin && canCast && now - pinAt > PIN.every && cast('pin', PIN.stamina, 'Too out of breath to roll it out.')) {
+      pinAt = now;
+      spells.push(body.x, body.y, body.z, castYaw, pin.reach, now);
+      sounds.play('pound', null, 0.8, 0.7);
+      const b = blowFrom(body, castYaw, { range: pin.reach, arc: PIN.arc, low: PIN.low, high: PIN.high });
+      for (const f of foes()) if (reach(b, f)) damage(f, blows.range(PIN.damage[0], PIN.damage[1]), body.x, body.z, pin.knock, 'force');
+    }
+    // The larder's cold wears off; frost glints on what it caught meanwhile.
+    const glint = Math.floor(now * CAST.glints) !== Math.floor((now - dt) * CAST.glints);
+    for (const f of foes()) {
+      if (!f.chill || f.chill.left <= 0) continue;
+      f.chill.left -= dt;
+      if (glint && !f.dead) spells.glint(f.x, f.y, f.z, f.height, now);
     }
     // Grandma's Salt Line: L, kneeling, pours a circle of salt round you.
     const line = cooked.saltLine;
@@ -676,6 +724,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const aim = target ? yawTo(target, body.x, body.z) : cam.yaw;
       if (body.guarding) body.facing = cam.yaw;
       if (throwing) body.facing = aim;
+      if (now - castAt < CAST.dur) body.facing = castYaw;
       if (!released && now - throwAt >= THROWING.release) {
         released = true;
         const hx = body.x - Math.sin(aim) * 0.3, hy = body.y + 1.45, hz = body.z - Math.cos(aim) * 0.3;
@@ -736,6 +785,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (climbed >= 1) { practised('climbing', Math.floor(climbed)); climbed -= Math.floor(climbed); }
       if (body.blockedAt !== blockedAt) { if (body.blockedAt > blockedAt) practised('guard'); blockedAt = body.blockedAt; }
       body.tiptoe = cooked.tiptoe;
+      body.spring = cooked.spring;
       campfire.soup = cooked.soup;
       campfire.step(body, threat, now, dt);
       if (homeTo !== null) {
@@ -761,7 +811,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const lighting = campfire.kindling(now);
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
@@ -795,6 +845,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
+    if (body.sprangAt !== sprangSeen) { sprangSeen = body.sprangAt; if (Number.isFinite(sprangSeen)) spells.puff(body.x, body.y, body.z, now); }
+    spells.place(now);
     thrownView.arrange(thrown.missiles, now);
     saltLineView.draw(saltLine, level, now);
     nobody.shown = !cam.firstPerson;
@@ -828,6 +880,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
         case 'tenderising': return { ready: striking === 'pound' ? ready(stabAt, POUND.dur) : 1, on: false, dim: body.stamina < POUND.stamina };
         case 'helpings': return { ready: ready(throwAt, Math.max(THROWING.dur, every ?? 0)), on: false, dim: false };
         case 'duck': return { ready: body.rolling ? ready(rollAt, MOVE.roll.dur) : 1, on: body.rolling, dim: body.stamina < (duck?.stamina ?? 0) };
+        case 'spring': return { ready: 1, on: !body.grounded && body.time - body.sprangAt < 1.5, dim: body.stamina < (cooked.spring?.cost ?? 0) };
+        case 'stove-flame': return { ready: ready(flameAt, flame?.every ?? 1), on: false, dim: body.stamina < FLAME.stamina };
+        case 'cold-larder': return { ready: ready(larderAt, LARDER.every), on: false, dim: body.stamina < LARDER.stamina };
+        case 'rolling-pin': return { ready: ready(pinAt, PIN.every), on: false, dim: body.stamina < PIN.stamina };
         case 'pot-lid': return { ready: 1, on: body.guarding, dim: false };
         case 'tiptoe': return { ready: 1, on: !!input.sneak, dim: false };
         case 'candle': return { ready: 1, on: false, dim: thrown.candles.length >= cooked.candles, count: `${thrown.candles.length}/${cooked.candles}` };
@@ -889,6 +945,6 @@ function hudText(b: Body, backend: string, list: readonly string[]): string {
   ];
   if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
   if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
-  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · 1–8 or the bar: grandma's cards (Esc frees the mouse to click) · Tab target · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
+  lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · 1–0 or the bar: grandma's cards (Esc frees the mouse to click) · Tab target · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
   return lines.join('\n');
 }

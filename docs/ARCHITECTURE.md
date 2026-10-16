@@ -37,6 +37,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Which meshes cast and receive the headlamp's shadow | the material kind's `shadow` flags, set by `meshFromData` (never per mesh) | `src/render/materials.ts` |
 | How strongly the rock's veins glow, and the band's finish of its rock (concrete shuttering, wet sheen) | `ROCK_VEINS.value`, `ROCK_FINISH`, set by `LevelView` from `level.band.veins` / `level.band.finish` | `src/render/materials.ts` |
 | Which rock a place is cut through (limestone, sandstone, shale, granite, salt, basalt, marble, slate, in patches and beds) | `Style.rocks` (a `RockMix` from `rockMix({...})`), else `band.rocks`; blended by `StyledField.rocks`, meshed with the surface (`SURFACE_STRIDE`, `surfaceAttributes`) | `src/gen/rockTypes.ts` |
+| What covers the rock (moss on floors and ledges, bark on roots) | `Style.cover` (a `Cover`, else `BARE`); blended by `StyledField.cover`, the last 2 of the surface record (`SURFACE_STRIDE`, split by `surfaceAttributes`); the rock shader draws it, no new material | `src/gen/style.ts`, `src/render/materials.ts` |
+| A town house's look (plastered walls, tiled roofs) | the `HOUSE` material kind: props built into `Furnish.house` (`PropTile.house`); the roof is what faces up. Props never use `ROCK` for big surfaces: it is far too heavy per draw | `src/render/materials.ts`, `src/gen/townProps.ts` |
 | How a style's rock is worked at a point (pick marks, masonry and its course height, flowstone), for the rock shader | `Style.surface` (a `Surface`; natural rock if left out), blended by `StyledField.surface`, meshed as the `surface` attribute (`level.surfaces`) | `src/gen/style.ts`, `src/gen/styledField.ts` |
 | An antialiased thin line in a shader (joints, cracks, board marks) | `thinLine(dist, width)` | `src/render/materials.ts` |
 | Where the headlamp is carried (it casts the one shadow) | `view.carrier` (null: on the camera) | `src/render/LevelView.ts` |
@@ -190,6 +192,8 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Show the ability bar (a slot per ability: number, key, how soon it is ready; a click uses it) | `AbilityBar` (`paint(bar, states, passives, hide)`) | `src/app/abilityBar.ts` |
 | Tab targeting: which foe Tab picks next, when it is let go, the yaw to it | `nextTarget`, `candidates`, `keeps`, `yawTo`, `TARGET` | `src/game/target.ts` |
 | Mark the Tab target on screen (chevron and health) | `TargetMark` (`paint(camera, x, y, z, left)`) | `src/app/targetMark.ts` |
+| Show grandma's salt-magic cast (flame, the larder's cold and frost glinting on what it caught, the rolling pin's shove) | `SpellView` (`flame`, `frost`, `glint`, `push`, `place(now)`) | `src/render/spells.ts` |
+| Slow a creature (Cold Larder): all its movement through `Steer.slide` | `walker.chill = { left, by }` | `src/creatures/steer.ts` |
 | Show the tin open by the fire | `TinView` (`show(cooked, tin, sel, why)`, `hide`, `TinView.order()`) | `src/app/tinView.ts` |
 | Remember what a grandchild has seen of each level (exploration memory) | `Explored` (`see(level, x, y, z)`, `has(depth, i, j)`, `cells`, `data`/`from`), `EXPLORE` | `src/world/explored.ts` |
 | A DOM panel of the game (its stylesheet and element), and an element in it | `panel(host, tag, id, css)`, `addStyle(css)`, `child(parent, tag, cls, text)` | `src/app/panel.ts` |
@@ -214,7 +218,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 |---|---|---|
 | Read seed, depth, position, look, colour mode and backend from the URL | `parseViewParams` | `src/app/params.ts` |
 | The version and its history (What's new) | `parseChangelog` (CHANGELOG.md), shown by `mountWhatsNew` | `src/app/changelog.ts`, `src/app/whatsNew.ts` |
-| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's 1–8) | `Controls` | `src/input/controls.ts` |
+| Held keys, presses this frame (`tap`; unasked presses are dropped by `endFrame`), mouse look, wheel; a key pressed or held for you (`press`, `latch`) and other keys that count as it (`alias`: the bar's number keys) | `Controls` | `src/input/controls.ts` |
 | Fly around | `FlyCamera` | `src/lab/FlyCamera.ts` |
 
 ## Layers

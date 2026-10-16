@@ -17,7 +17,7 @@
  */
 import { newColumn, type Column, type ColumnMix, type QuarryField } from './quarry';
 import { REGIONS, Regions, newShares, type Mix, type Shares } from './regions';
-import { NATURAL, SHARE_OWN, putSurface, type Style } from './style';
+import { BARE, NATURAL, SHARE_OWN, type Style } from './style';
 import { putRocks, rockMix, type RockMix } from './rockTypes';
 
 /**
@@ -201,12 +201,22 @@ export class StyledField {
 
   /** How the rock is worked at a surface point (`Surface`), blended across edges like the colour. */
   surface(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
-    this.blend(col, out, o, 4, (st, c) => { if (st.surface) st.surface(c, x, y, z, out, o); else putSurface(NATURAL, out, o); });
+    this.record('surface', NATURAL, col, x, y, z, out, o);
   }
 
   /** Which rock it is at a surface point (`RockMix`, eight numbers), blended across edges like the colour. */
   rocks(col: Column, out: Float32Array, o: number): void {
     this.blend(col, out, o, 8, (st) => putRocks(st.rocks ?? this.bandRocks, out, o));
+  }
+
+  /** What covers the rock at a surface point (`Cover`: moss, bark), blended across edges like the colour. */
+  cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    this.record('cover', BARE, col, x, y, z, out, o);
+  }
+
+  /** A style's record at a point (its `surface` or `cover`, else `none`), blended across edges. */
+  private record(key: 'surface' | 'cover', none: readonly number[], col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    this.blend(col, out, o, none.length, (st, c) => { const f = st[key]; if (f) f.call(st, c, x, y, z, out, o); else for (let k = 0; k < none.length; k++) out[o + k] = none[k]; });
   }
 
   /** `size` numbers at out[o] written by `one` for the column's style, or weighted over its mix of styles. */

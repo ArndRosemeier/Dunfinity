@@ -2518,5 +2518,13 @@
   {
     "key": "idiom: [.get .own] in dunfinity/gen/dwarven.ts + dunfinity/gen/elven.ts + dunfinity/gen/lava.ts",
     "reason": "per-style column data kept in a WeakMap<Column, Own> and read back (this.own.get(col)): the Style contract's one way of keeping private column data. The finder regroups these as files are added"
+  },
+  {
+    "key": "idiom: [.n2 .noise] in dunfinity/gen/basalt.ts + dunfinity/gen/collapse.ts + dunfinity/gen/roots.ts",
+    "reason": "each style samples its own seeded Noise; the shared seam is Noise itself"
+  },
+  {
+    "key": "same name: dunfinity/gen/fungal.ts#cover + dunfinity/gen/roots.ts#cover",
+    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   }
 ]
