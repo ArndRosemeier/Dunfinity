@@ -2636,7 +2636,11 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/dwarven.ts#props + dunfinity/gen/goblin.ts#props",
+    "key": "same name: dunfinity/gen/goblin.ts#seg + dunfinity/gen/inscriptions.ts#seg",
+    "reason": "a local helper of the same name in each file for its own thing (a burrow segment, a stroke segment); the shapes and rolls differ"
+  },
+  {
+    "key": "same name: dunfinity/gen/elven.ts#props + dunfinity/gen/goblin.ts#props",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
