@@ -31,6 +31,17 @@ export function pushChance(s: number): number {
   return s < 1 ? 0 : Math.min(PUSH_MOST, 0.15 + (s - 1) * 0.15);
 }
 
+/** How a level reads its genes: a style made with one asks it for each of its knobs. */
+export type Traits = (g: Gene) => number;
+
+/** Our world: every gene at its standard. */
+export const STANDARD: Traits = (g) => g.standard;
+
+/** The genes of level `depth` of world `seed`. */
+export function traitsOf(seed: number, depth: number): Traits {
+  return (g) => express(g, seed, depth);
+}
+
 /** The value of `g` on level `depth` of world `seed`. */
 export function express(g: Gene, seed: number, depth: number): number {
   // A stratum reads its first level's strangeness and one stream per gene, so its levels agree; levels
