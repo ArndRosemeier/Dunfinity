@@ -4,12 +4,13 @@
  *
  * Lights are fixed before the warm-up: they are part of every shader's cache key (docs/SHADERS.md).
  */
-import { Scene, PerspectiveCamera, Color, Fog, HemisphereLight, PointLight, SpotLight, Group, Vector3, type Object3D, type WebGPURenderer } from 'three/webgpu';
+import { Scene, PerspectiveCamera, Color, SRGBColorSpace, Fog, HemisphereLight, PointLight, SpotLight, Group, Vector3, type Object3D, type WebGPURenderer } from 'three/webgpu';
 import type { Level } from '../gen/level';
+import { airOf, type Air } from '../gen/air';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
 import { Dust } from './dust';
-import { ROCK_FINISH, ROCK_VEINS } from './materials';
+import { ROCK_FINISH, ROCK_VEINS, setRockRecipes } from './materials';
 import { Terrain } from './terrain/Terrain';
 import { Props } from './props/Props';
 import { LampLights } from './props/lamps';
@@ -43,6 +44,8 @@ export class LevelView {
   private terrain_: Terrain | null = null;
   private props_: Props | null = null;
   private dark_ = false;
+  /** The level's light and air (src/gen/air.ts). */
+  private air: Air = airOf(0, 0);
   /** Headlamp intensity in the survey view and in the dark (a lamp carried close to the body wants less). */
   headlampPower = { survey: 60, dark: 17 };
 
@@ -101,7 +104,18 @@ export class LevelView {
   }
 
   private stream(): void {
-    ROCK_VEINS.value = this.level_.band.veins; // a uniform: the same shader in every band
+    // The level's light and air: uniforms and light colours only, the same shaders in every stratum.
+    this.air = airOf(this.level_.seed, this.level_.depth);
+    ROCK_VEINS.value = this.air.veins;
+    this.fog.color.setRGB(...this.air.fog, SRGBColorSpace);
+    (this.scene.background as Color).setRGB(...this.air.fog, SRGBColorSpace);
+    this.ambient.color.setRGB(...this.air.sky, SRGBColorSpace);
+    this.ambient.groundColor.setRGB(...this.air.ground, SRGBColorSpace);
+    this.headlamp.color.setRGB(...this.air.lamp, SRGBColorSpace);
+    this.spill.color.setRGB(...this.air.lamp, SRGBColorSpace);
+    this.lamps.tint(this.air.flame);
+    this.dark = this.dark_; // the fog's distances, as clear as the air
+    setRockRecipes(this.level_.rockRecipes);
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;
     this.lamps.power = this.level_.band.lamplight;
@@ -116,7 +130,8 @@ export class LevelView {
   get dark(): boolean { return this.dark_; }
   set dark(dark: boolean) {
     this.dark_ = dark;
-    [this.fog.near, this.fog.far] = dark ? FOG.dark : FOG.survey;
+    const [near, far] = dark ? FOG.dark : FOG.survey;
+    this.fog.near = near * this.air.clear; this.fog.far = far * this.air.clear;
     this.ambient.intensity = dark ? 0.05 : 0.7;
     this.headlamp.intensity = dark ? this.headlampPower.dark : this.headlampPower.survey;
     this.spill.intensity = this.headlamp.intensity * HEADLAMP.spill;

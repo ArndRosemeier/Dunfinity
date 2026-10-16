@@ -22,6 +22,8 @@ import { Basalt } from './basalt';
 import { Flooded, type WaterTable } from './flooded';
 import { Dwarven } from './dwarven';
 import { Elven } from './elven';
+import { Goblin } from './goblin';
+import { Bones } from './bones';
 import type { Style, StyleId } from './style';
 
 /** Makes the style for a level, from the level's seed and band, and its water table (the excavation's, one per level, E5). */
@@ -41,6 +43,8 @@ const MAKE: Partial<Record<StyleId, Make>> = {
   flooded: (seed, band, water) => new Flooded(seed, band, water),
   dwarven: (seed, band) => new Dwarven(seed, band),
   elven: (seed, band) => new Elven(seed, band),
+  goblin: (seed, band) => new Goblin(seed, band),
+  bones: (seed, band) => new Bones(seed, band),
 };
 
 /** The styles that can be asked for by name (`?style=`), the excavation and the cellar aside. */

@@ -1,5 +1,60 @@
 # Changelog
 
+## v0.127 — Grandma's diary
+
+- Grandma's diary is in her tin: press J anywhere to read it. What's left in the book are the pages she wrote at home after 1966. The pages from her trips down, 1959 to 1966, are stubs: she tore them out and took each one back to where she wrote it.
+- Sixteen of those pages lie on levels 1 to 40, folded under a stone somewhere away from the arrival. Press E to read one. It goes back into the book and puts infused salt in the tin the first time anyone in the family finds it.
+- Found pages stay in the tin, so the next grandchild opens a fuller book. The notary's letter now mentions the diary.
+
+## v0.126 — Goblins live in the warrens
+
+- The goblin warrens are lived in now: goblins squat in threes and fours in the dens, some round a cook fire. They're Norgo's goblin race on the same bodies as the people: small and big-headed, with long arms, green to ochre skin, ears that stick out and faintly glowing eyes. They wear stolen clothes and each carries a stolen kitchen knife.
+- The first goblin to see you jumps up and shrieks, and the whole den comes. Each one runs round to its own side of you before it jabs, then circles again, so they come at you from all sides.
+- A jab that lands may snatch the best thing in your pack. The thief runs off with it. Kill it and your find drops where it falls, ready to pick up again.
+- A badly hurt goblin runs. Salt doesn't stop them.
+- The debug menu lists the nearest goblin den, and the first goblin you kill gives salt like a scavenger.
+
+## v0.125 — Deep laws: water that climbs, pillars on older stone
+
+- Two new laws for deep strata. In some, water runs up the rock wherever it laps it, as it does in a few places in the Cisterns, but everywhere. In others, the old workings' pillars stand on drums of an older people's stone.
+- Like the light laws, a stratum keeps them on all its levels. Levels 1–10 are unchanged.
+
+## v0.124 — Bone hollows
+
+- New level style, bone hollows: caverns inside the carcasses of something enormous and long dead, lying one after another down the level's grain and joined by low passages.
+- Each carcass tapers up its tail into a ribcage, where great ivory ribs every seven metres stand out from the dark rock between them and a spine of vertebrae runs down the roof; then the neck narrows into a domed skull chamber with two eye-holes going on ahead.
+- Bones and skulls lie about the floors, and pale lichen glows on the feet of the ribs, some patches bright enough to light the ribcage. Before People (levels 41–60) draw them; `?style=bones` shows a level of them.
+
+## v0.123 — Dwarven runes and elven script in the Threshold, the halls and the vaults
+
+- The crypt fronts in the Threshold's caverns (levels 9–10) carry a worn line of dwarven runes cut across the lintel. Stand in front and press E to read it.
+- Grandma's note at her camp on level 9 has a pencil rubbing folded into it: the runes she was sure of, which go into the key in her tin.
+- The dwarven halls (levels 21–40) are written in: each hall's name in gold runes over its gates, and gold friezes along the backs of the wall panels with the dwarves' own account (they dug for the first fire; the climbers come up to take back what they took) and the hall's records (who cut it, who fell, how many fathoms to the fire). Every one can be read with E.
+- The elven vaults are written in too: some ribs carry a line of elven Thread script in salt-white, running up over the point of the arch. It is the elves' own account (the climbers are only going home; they sang the doors shut) and laments for their lost. Stand under one in the nave and press E to read it.
+
+## v0.122 — Deep strata draw their own stone
+
+- From level 11 on, each stratum draws its eight kinds of stone from genes: the familiar stones, nudged in hue, brightness, beds, veins and crystals, and further down genuinely new stone (green, purple, banded, gold-veined).
+- A deep stratum may have glowing veins all through its rock.
+- Every level of a stratum carries the same stone; levels 1–10 look as before.
+
+## v0.121 — The deep's own light and air
+
+- Below level 10, each stratum of a world now has its own light: the colour of the air and the fog, the tint of your headlamp, how far you can see.
+- The first laws of the deep: in some strata the light is another colour, the air hangs thick and close, or the rock glows in its seams. A stratum keeps its laws on every one of its levels.
+- Levels 1–10 and the town look exactly as before.
+
+## v0.120 — Goblin warrens
+
+- New level style, goblin warrens: low, round, crooked burrows dug from knot to knot, most knots swelling into a small den, and a second storey of burrows over the first, joined by steep ramps and climbing shafts.
+- Dug through soft sandstone, shale and limestone, scratched and soot-black over the dens; bones, skulls and stolen crates, barrels, ropes and buckets about the burrows, and a cook fire in some dens.
+- The Old Halls (levels 21–40) draw them as a minority style; `?style=goblin` shows a level of them.
+
+## v0.119 — Rock types become recipes
+
+- The rock shader no longer hard-codes its eight kinds of stone: each is now a recipe of sixteen numbers (colours, beds, laminae, veins and how they glow, crystals, cleavage, salt) loaded into eight slots per level, so a level can carry any stone without a new shader.
+- Today's eight rock types are the eight presets and look the same as before (a side-by-side check of four long walls differs by at most 1 in 255 per pixel).
+
 ## v0.118 — New cards: salt-magic and Spring in Your Step
 
 - Stove Flame (Fire & Frost, R): a gout of flame 4 m ahead burns everything in it (6–10 damage, every 2.5 s, 3 stamina); rank 2 reaches 5.5 m, 9–14 damage, every 1.8 s.

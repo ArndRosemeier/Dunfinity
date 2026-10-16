@@ -10,7 +10,8 @@ import { readSave, writeSave, type GrandchildData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
 import { ReadView } from '../app/readView';
-import { Key } from '../lore/key';
+import { DiaryView } from '../app/diaryView';
+import { GRANDMA_KERF, Key } from '../lore/key';
 import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
 import { CELLAR } from '../gen/cellar';
@@ -19,7 +20,7 @@ import { PAWN, sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, Gear } from '../loot/hardware';
 import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { Level } from '../gen/level';
-import { CAMP, NOTE } from '../gen/grandmasCamp';
+import { CAMP, NOTE, RUBBING } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
 import { LevelView } from '../render/LevelView';
 import { OrbitCamera } from '../render/camera/OrbitCamera';
@@ -41,6 +42,7 @@ import { DogView } from '../render/creatures/dogView';
 import { Rigged } from '../render/creatures/rigged';
 import { EelView } from '../render/creatures/eelView';
 import { ScavengerView } from '../render/creatures/scavengerView';
+import { GoblinView } from '../render/creatures/goblinView';
 import { NeighbourView } from '../render/humans/neighbourView';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { TallOneView } from '../render/creatures/tallOneView';
@@ -153,7 +155,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
-    touchedView.level = foremanView.level = scavengerView.people.level = neighbourView.people.level = tallView.level = l;
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = neighbourView.people.level = tallView.level = l;
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
@@ -192,6 +194,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const foremanView = await ForemanView.create(params.seed);
   foremanView.level = level;
   const scavengerView = await ScavengerView.create(params.seed);
+  const goblinView = await GoblinView.create(params.seed);
+  goblinView.level = level;
   const neighbourView = await NeighbourView.create();
   const weber = new Neighbour();
   scavengerView.people.level = neighbourView.people.level = level;
@@ -229,12 +233,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const shroomView = await ShroomView.create();
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
-  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
+  await view.start([nobody.root, ...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...tallView.figures, ...neighbourView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root]);
   await view.stage.add(nobody.root);
   await view.stage.add(touchedView.root);
   await view.stage.add(foremanView.root);
   await view.stage.add(scavengerView.people.root);
   await view.stage.add(scavengerView.camps.root);
+  await view.stage.add(goblinView.root);
   await view.stage.add(neighbourView.people.root);
   await view.stage.add(tallView.root);
   await view.stage.add(ratView.root);
@@ -275,6 +280,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   await view.stage.add(saltLineView.root);
   const tinView = new TinView(document.body);
   const readView = new ReadView(document.body);
+  const diaryView = new DiaryView(document.body);
   const mapView = new MapView(document.body);
   // The ability bar: a click uses a slot (a held one, the lid or tiptoeing, stays held until the next click).
   const abilityBar = new AbilityBar(document.body, (i) => {
@@ -431,6 +437,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const say = (text: string, secs: number): void => { notice = text; noticeUntil = timer.getElapsed() + secs; };
   /** Times the Foreman's bell has rung (each ringing gets a notice). */
   let bells = 0, calls = 0, stares = 0;
+  /** A goblin's jab landed: it takes the best thing in the pack (src/creatures/goblins.ts); it drops where the goblin dies. */
+  const snatch = (): Find | null => {
+    if (!pack.items.length) return null;
+    const best = pack.items.reduce((a, b) => (b.value > a.value ? b : a));
+    pack.items.splice(pack.items.indexOf(best), 1);
+    say(`A goblin snatches ${FINDS[best.kind].name} from your pack and runs!`, 3.5);
+    return best;
+  };
   const ladder: [number, number] = [0, 0];
   /** The shaft whose ladder the nobody stands at (a way down or the way up), or null. */
   const atLadder = (): Shaft | null => {
@@ -526,6 +540,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
     if (controls.tap('KeyM')) mapView.toggle();
+    // Grandma's diary, from the tin: open anywhere, J or Escape to close.
+    if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
+    else if (controls.tap('KeyJ') && !tinView.open) diaryView.show((d) => tin.hasPage(d));
     if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
     if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
     if (controls.tap('Backquote')) debug.toggle();
@@ -627,7 +644,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
     atCounter = nearKemal;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
-    const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : level.inscriptions.find((i) => canRead(i, body.x, body.y, body.z));
+    const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : [...level.inscriptions, ...view.props.inscriptions].find((i) => canRead(i, body.x, body.y, body.z));
     if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
     const nearDoor = busy || nearLadder || nearFind || nearNote || nearMarks || !body.grounded ? null : doors.near(body.x, body.y, body.z);
     // Kemal's counter: 1, 2, 3 buy what is on it.
@@ -680,9 +697,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
         readAt = now;
         readView.show(breakLines(nearMarks.script, nearMarks.text, 22).map((t) => letter(nearMarks.script, t)), nearMarks.script === 'kerf' ? '#8a6420' : '#2f4f6a', nearMarks.where,
           key.makeOut(nearMarks.script, nearMarks.text), learned && `Looking long enough, you are sure of one: ${learned.toUpperCase()}. You pencil it into the key in her tin.`);
+      } else if (nearNote && writing!.kind === 'page') {
+        const p = level.page!, gain = tin.page(level.depth);
+        readAt = now; say(`A page torn out of grandma's diary, in her young, fast hand:\n\n${p.page.date}. ${p.page.text}${gain ? '\n\nYou fold it back into her diary in the tin (J).' : ''}`, 20);
+        gained(gain, note[0], note[1], note[2], now);
+        if (diaryView.open) diaryView.show((d) => tin.hasPage(d));
       } else if (nearNote) {
         const found = writing!.kind !== 'letter' && cooked.find('salt-line');
-        readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}`, 20);
+        const runes = writing!.kind !== 'letter' && key.pencil('kerf', GRANDMA_KERF) > 0;
+        readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}${runes ? `\n\n${RUBBING}` : ''}`, 20);
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
       }
     }
@@ -739,7 +762,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       fauna.glare = candles;
       fauna.salt = saltLine.keeping(now);
       view.props.loose = new Float32Array(candles.flatMap((c) => [c.x, c.y + 0.35, c.z]));
-      if (picking && now - pickAt >= PICKUP.at && !finds.taken.has(picking.id)) {
+      if (picking && now - pickAt >= PICKUP.at && finds.lying(picking)) {
         finds.take(picking);
         sounds.play('pickup');
         pack.add(picking);
@@ -767,7 +790,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
       view.camera.getWorldDirection(lampDir);
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
+      fauna.goblins.thief = snatch;
       const struck = fauna.advance(dt, body, lamp, body.facing);
+      for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
       for (const f of fauna.fallen()) gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now);
       if (body.health < health) {
         // Flinch away from the nearest foe (thrown back by a pick).
@@ -834,6 +859,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     scavengerView.draw(fauna.scavengers.list, body.x, body.z, dt, now);
     if (fauna.scavengers.calls > calls) say(fauna.scavengers.said, 3.5);
     calls = fauna.scavengers.calls;
+    goblinView.draw(fauna.goblins.list, body.x, body.z, dt, now);
     tallView.draw(fauna.tall.list, body.x, body.z, dt, now);
     if (level.depth === 0) weber.turn(body.x, body.z, dt);
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
@@ -862,7 +888,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     else if (nearPawn) lines.push(pack.items.length ? `E: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearMarks && !readView.open) lines.push('E: read the marks');
     else if (nearDoor) lines.push(`E: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
-    else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : 'E: read the note');
+    else if (nearNote && timer.getElapsed() >= noticeUntil) lines.push(writing!.kind === 'letter' ? 'E: read the notary\'s letter' : writing!.kind === 'page' ? 'E: read the page under the stone' : 'E: read the note');
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. T: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push('C: light a fire and rest');
     else if (!body.dead && !climb.active) {

@@ -13,11 +13,13 @@ export const SALT = {
   /** What the tin holds at the start (recipe-box.md §8: three pinches). */
   start: 3,
   /** The first kill of a kind, per population name (src/creatures/*). */
-  kills: { rats: 1, crickets: 2, 'slimes-lumen': 2, 'slimes-murk': 2, dogs: 3, eels: 3, toadstools: 3, puffcaps: 3, scavengers: 3, touched: 4, foreman: 15, 'tall-one': 25 } as Readonly<Record<string, number>>,
+  kills: { rats: 1, crickets: 2, 'slimes-lumen': 2, 'slimes-murk': 2, dogs: 3, eels: 3, toadstools: 3, puffcaps: 3, scavengers: 3, goblins: 3, touched: 4, foreman: 15, 'tall-one': 25 } as Readonly<Record<string, number>>,
   /** A new depth: base, and per level of depth. */
   depth: [2, 0.5] as const,
   /** One of grandma's camps, its note read. */
   camp: 6,
+  /** A page of her diary found (docs/design/grandmas-diary.md). */
+  page: 4,
   /** Later kills of a kind that still give a pinch. */
   pinch: [5, 10, 20] as const,
 };
@@ -25,7 +27,7 @@ export const SALT = {
 /** What each kind is called on the HUD. */
 const KIND: Readonly<Record<string, string>> = {
   rats: 'rat', crickets: 'cave cricket', 'slimes-lumen': 'Lumen slime', 'slimes-murk': 'Murk slime', dogs: 'feral dog', eels: 'brine eel', toadstools: 'toadstool', puffcaps: 'puffcap',
-  scavengers: 'scavenger', touched: 'Salt-Touched', foreman: 'Foreman', 'tall-one': 'Tall One',
+  scavengers: 'scavenger', goblins: 'goblin', touched: 'Salt-Touched', foreman: 'Foreman', 'tall-one': 'Tall One',
 };
 
 /** Pinches for the k-th time (1-based) of something worth `base` the first time. */
@@ -70,6 +72,17 @@ export class Tin {
   camp(depth: number): Gain | null {
     if (this.nth(`camp:${depth}`) > 1) return null;
     return this.add(SALT.camp, 'Grandma was here.');
+  }
+
+  /** The page of her diary that lay on level `depth`, read: back in the book, salt once. */
+  page(depth: number): Gain | null {
+    if (this.nth(`page:${depth}`) > 1) return null;
+    return this.add(SALT.page, 'A page of her diary, back in the book. Grandma was here.');
+  }
+
+  /** Whether the page that lay on level `depth` is back in the book. */
+  hasPage(depth: number): boolean {
+    return this.times.has(`page:${depth}`);
   }
 
   /** What the tin holds, to keep; `Tin.from` puts it back. */

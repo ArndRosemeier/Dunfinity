@@ -484,6 +484,64 @@ test('the elven vaults are none of them: tall naves that narrow to a pointed vau
   for (const id of Object.keys(st)) if (id !== 'elven' && st[id].n > 100) assert.ok(pointed(id) < pointed('elven') / 4, `${id}: a pointed vault over ${(pointed(id) * 100).toFixed(0)}%`);
 });
 
+test('the goblin warrens are none of them: low burrows with more burrows over them', () => {
+  // (The Old Halls draw them: a level all of them, against the Old Halls', Before People's and the Threshold's mixes.)
+  const st: Record<string, { n: number; stacked: number }> = {};
+  for (const l of [new Level(1, 25, 'goblin'), new Level(1, 25), new Level(1, 45), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 3000; k++) {
+      const x = ax + (hash3f(67, k, 25, 0) - 0.5) * 3000, z = az + (hash3f(67, k, 25, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, stacked: 0 });
+      s.n++;
+      // Stacked: the roof under 4.5 m up, and over it, past a metre of rock or more, air again within 10 m.
+      let y = c.floor + 1.5;
+      while (y < c.floor + 6 && l.sdf(x, y, z) > 0) y += 0.25;
+      if (y >= c.floor + 4.5) continue;
+      let y2 = y;
+      while (y2 < y + 10 && l.sdf(x, y2, z) <= 0) y2 += 0.25;
+      if (y2 < y + 10 && y2 - y >= 1) s.stacked++;
+    }
+  }
+  const stacked = (id: string) => st[id].stacked / st[id].n;
+  assert.ok(st.goblin.n > 500, `${st.goblin.n} open goblin columns`);
+  assert.ok(stacked('goblin') > 0.08, `burrows over burrows over ${(stacked('goblin') * 100).toFixed(1)}% of the goblin warrens`);
+  for (const id of Object.keys(st)) if (id !== 'goblin' && st[id].n > 100) assert.ok(stacked(id) < stacked('goblin') / 4, `${id}: stacked over ${(stacked(id) * 100).toFixed(1)}%`);
+});
+
+test('the bone hollows are none of them: arched chambers ribbed every few metres, rib after rib', () => {
+  // (Before People draw them: a level all of them, against Before People's, the Old Halls' and the Threshold's mixes.)
+  const st: Record<string, { n: number; ribbed: number }> = {};
+  const roof = (l: Level, x: number, y: number, z: number) => { while (y < 60 && l.sdf(x, y, z) > 0.05) y += Math.max(0.05, l.sdf(x, y, z) * 0.8); return y; };
+  for (const l of [new Level(1, 45, 'bones'), new Level(1, 45), new Level(1, 25), new Level(1, 9)]) {
+    const [ax, , az] = l.arrival;
+    for (let k = 0; k < 3000; k++) {
+      const x = ax + (hash3f(71, k, 45, 0) - 0.5) * 3000, z = az + (hash3f(71, k, 45, 1) - 0.5) * 3000, c = l.columnAt(x, z);
+      if (c.mix || c.passage > -20 || l.sdf(x, c.floor + 1.5, z) <= 0.3) continue;
+      const r0 = roof(l, x, c.floor + 1.5, z) - c.floor;
+      if (r0 < 6 || r0 > 20) continue;
+      const s = (st[l.field.styles[c.style].id] ??= { n: 0, ribbed: 0 });
+      s.n++;
+      // Ribbed: along some line through here the roof dips (by 0.8–4 m, staying over 4 m up) twice, 5.5–9.5 m apart: two ribs.
+      let ribbed = false;
+      for (let a = 0; a < 8 && !ribbed; a++) {
+        const dx = Math.cos((a * Math.PI) / 8), dz = Math.sin((a * Math.PI) / 8), r: number[] = [], dips: number[] = [];
+        for (let t = -8.5; t <= 8.5; t += 0.5) r.push(roof(l, x + dx * t, c.floor + 1.5, z + dz * t) - c.floor);
+        for (let i = 6; i < r.length - 6; i++) {
+          const lo = r[i], before = Math.max(...r.slice(i - 6, i)), after = Math.max(...r.slice(i + 1, i + 7));
+          if (lo >= 4 && lo <= Math.min(...r.slice(i - 2, i + 3)) && before - lo > 0.8 && after - lo > 0.8 && Math.max(before, after) - lo < 4) dips.push(i * 0.5);
+        }
+        for (let i = 1; i < dips.length; i++) if (dips[i] - dips[i - 1] >= 5.5 && dips[i] - dips[i - 1] <= 9.5) ribbed = true;
+      }
+      if (ribbed) s.ribbed++;
+    }
+  }
+  const ribbed = (id: string) => st[id].ribbed / st[id].n;
+  assert.ok(st.bones.n > 300, `${st.bones.n} open bone hollow columns`);
+  assert.ok(ribbed('bones') > 0.15, `ribbed over ${(ribbed('bones') * 100).toFixed(1)}% of the bone hollows`);
+  for (const id of Object.keys(st)) if (id !== 'bones' && st[id].n > 50) assert.ok(ribbed(id) < ribbed('bones') / 4, `${id}: ribbed over ${(ribbed(id) * 100).toFixed(1)}%`);
+});
+
 test('no style is cut through one rock alone: each names several, none more than 80% (Arnd: walls are mixed rock)', () => {
   for (const id of NAMED_STYLES) {
     const l = new Level(1, 25, id), st = l.field.styles.find((s) => s.id === id)!;
