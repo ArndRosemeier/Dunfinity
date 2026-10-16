@@ -2440,6 +2440,14 @@
     "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
   },
   {
+    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/hardware.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and Kemal's gear each know their own fields"
+  },
+  {
+    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/tin.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and the Tin each know their own fields"
+  },
+  {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   },
