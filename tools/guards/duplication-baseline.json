@@ -3704,10 +3704,6 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/foreman.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/goblins.ts#act",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
@@ -3732,31 +3728,11 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/dogs.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/eels.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/goblins.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/rats.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/scavengers.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/shrooms.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/slimes.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
@@ -3776,19 +3752,19 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/scavengers.ts#hatch",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/shrooms.ts#hatch",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
     "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/touched.ts#hatch",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/crickets.ts#denIn + dunfinity/creatures/critters.ts#denIn",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/ghosts.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   }
 ]

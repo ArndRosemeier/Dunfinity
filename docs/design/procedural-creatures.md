@@ -87,6 +87,14 @@ Most of what moves should not attack. Peaceful species graze, scuttle, drift and
 from the player, follow each other in herds, or look at the lamp and keep their distance. They are for
 wonder and for a living cave. (The light wisps from glowing rock are a separate thread.)
 
+The hunting ones (hunter, lurker, swarmer, brute) take a share of the dens (about a third on levels 1
+to 10, more deeper). They are grown to a fair fight for their level (`fitSize` in
+src/creatures/critters.ts): a pack member's health is 12 + 2.5 per level, times its role's share (a
+swarmer 0.35, a lurker 1.4, a brute 3), and its size follows from that, so power is still size. They
+stalk you, at most two of a pack strike at once, each blow has a wind-up before the lunge (or the
+brute's slam), and after it they spring back. A lurker lies still until you are nearly on it. Badly
+hurt, they run.
+
 ## 7. Rollout, one PR each
 
 1. Generator, mesher, material, rig and the Lab's `?critters` lineup (no gameplay).
