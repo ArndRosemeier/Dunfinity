@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.164 — Sounds for the deep wonders, the flour bag and the match
+
+- Singing crystals hum in five notes that sound well together, a distant choir swells when a thin place opens, and salt blooms crackle faintly as they grow.
+- The flour bag bursts with a soft thump, the flour cloud goes up with a deep fiery whoomph, and the matchstick scratches and flares.
+
 ## v0.163 — Held tool models
 
 - Blender-made hatchet, miner's pick and crowbar models (`held_hatchet`, `held_pick`, `held_crowbar`) are now in the model pack, ready for the inventory's weapons.
