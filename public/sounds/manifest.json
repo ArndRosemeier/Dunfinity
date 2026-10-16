@@ -116,6 +116,13 @@
   "loop": false,
   "gain": 0.6
  },
+ "draft": {
+  "files": [
+   "draft_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
  "eel_strike": {
   "files": [
    "eel_strike_1.ogg",
@@ -171,6 +178,21 @@
   ],
   "loop": false,
   "gain": 0.6
+ },
+ "paper": {
+  "files": [
+   "paper_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "pencil_tick": {
+  "files": [
+   "pencil_tick_1.ogg",
+   "pencil_tick_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
  },
  "pick_swing": {
   "files": [
