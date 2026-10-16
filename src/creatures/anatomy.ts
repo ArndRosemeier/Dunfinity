@@ -287,6 +287,14 @@ export function anatomyOf(sp: Species): Anatomy {
     const discR = L * 0.5;
     B.ell([0, pelvisY, 0], [discR, R * sy * 0.6, discR], pelvis, kBody);
     B.ell([0, pelvisY + R * sy * 0.35, 0], [discR * 0.55, R * sy * 0.55, discR * 0.55], pelvis, kBody, Part.Shell);
+  } else if (jointed && !crab && plan !== 'myriapod') {
+    // An insect's or a spider's body comes in parts: a swollen abdomen behind, a narrow waist, and a
+    // smaller thorax in front that carries the legs (not one capsule).
+    const boneAt = (t: number) => spine[Math.min(spine.length - 1, Math.round(t * (spine.length - 1)))];
+    const swell = lerp(1.05, 1.3, sp.chunky), waist = plan === 'octopod' ? 0.36 : 0.44;
+    B.ell(mix(spinePts[0], chestPt, waist * 0.45), [R * sx * swell, R * sy * swell * 0.92, L * waist * 0.62], boneAt(0.1), R * 0.12, Part.Skin, Region.Body);
+    B.cone(mix(spinePts[0], chestPt, waist * 0.8), mix(spinePts[0], chestPt, waist + 0.08), R * 0.34, R * 0.34, boneAt(waist), R * 0.08, Part.Shell, Region.Body, sx, sy);
+    B.ell(mix(spinePts[0], chestPt, lerp(waist + 0.08, 1, 0.5)), [R * sx * 0.74, R * sy * 0.68, L * (1 - waist) * 0.5], boneAt(0.72), R * 0.1, Part.Shell, Region.Body);
   } else {
     for (let i = 0; i < spinePts.length - 1; i++) {
       const t0 = i / (spinePts.length - 1), t1 = (i + 1) / (spinePts.length - 1);

@@ -557,7 +557,10 @@ export const CRITTER = defineKind('critter', ['position', 'normal', 'color', 'lo
   // Glow pulses slowly, each spot in its own time; see-through skin lights at the rim.
   const pulse = sin(time.mul(2.1).add(p.z.mul(9)).add(p.x.mul(5))).mul(0.25).add(0.75);
   const rim = float(1).sub(abs(dot(normalView, positionView.normalize().negate()))).pow(2);
-  m.emissiveNode = vertexColor().mul(look.z.mul(pulse).mul(2.2).add(look.w.mul(rim).mul(0.9))).add(vec3(0.7, 0.04, 0.02).mul(hurt));
+  // Its outline catches the cave's own light (the salt veins' blue where they run), so a creature
+  // off in the dark still reads as a shape, not a hole.
+  const outline = rim.mul(rim).mul(float(0.035).add(ROCK_VEINS.mul(0.06)));
+  m.emissiveNode = vertexColor().mul(look.z.mul(pulse).mul(2.2).add(look.w.mul(rim).mul(0.9))).add(VEIN_BLUE.mul(outline)).add(vec3(0.7, 0.04, 0.02).mul(hurt));
   return m;
 });
 
