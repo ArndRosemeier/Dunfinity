@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.169 — Checks that take minutes, not a quarter of an hour
+
+- The shader check no longer runs on every change: it is started on demand (Actions → Shaders → Run workflow), every so often and after render changes.
+- The tests run on three machines side by side, and the slowest test file is split in three, so a change is checked in about two minutes.
+
 ## v0.168 — The map grows over with salt
 
 - The map (M) is redrawn: the floor you have seen has soft edges, is shaded by height and has faint contour lines, and the edge of what you have not seen fades into the dark instead of stopping in hard squares.
