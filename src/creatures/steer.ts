@@ -170,7 +170,7 @@ export class Steer {
       moved = Math.hypot(nx - w.x, nz - w.z);
       w.x = nx; w.z = nz;
     } else { w.vx *= 0.3; w.vz *= 0.3; }
-    const g = this.level.groundAt(w.x, w.z);
+    const g = this.level.groundAt(w.x, w.z, w.y + this.gait.step + 0.5);
     if (Math.abs(g - w.y) < 1.2) w.y += (g - w.y) * Math.min(1, dt * 15);
     return moved;
   }
@@ -184,7 +184,7 @@ export class Steer {
       const d = Math.hypot(x - c.x, z - c.z);
       if (d < c.r + w.radius && d < Math.hypot(w.x - c.x, w.z - c.z)) return false;
     }
-    const g = l.groundAt(x, z);
+    const g = l.groundAt(x, z, w.y + this.gait.step + 0.5);
     if (g - w.y > this.gait.step || w.y - g > this.gait.drop) return false;
     return l.waterAt(x, z) < g + 0.2;
   }

@@ -22,7 +22,7 @@ import { GrainLines, grainOf } from './grainLines';
 import { rockMix } from './rockTypes';
 import { putSurface, type Style, type StyleId, type Surface } from './style';
 import { roundRoof } from './shapes';
-import { scatter, type Dress } from './styleProps';
+import { glowCluster, scatter, type Dress, type GlowCluster } from './styleProps';
 
 export const ORGANIC = {
   /** Gullets lie this far apart, metres, each strayed by up to `jitter`, meandering by up to `meander[0]` over `meander[1]` metres. */
@@ -65,8 +65,8 @@ const GUT: Working = { id: 0x6f726761, angle: 0, spacing: 1e9, pillar: 0, floor:
 /** Wet and smooth (src/gen/style.ts `Surface`). */
 const WET: Surface = [0, 0, 1, 0];
 
-/** The pustules' sickly glow. */
-const PUS = [0.95, 0.85, 0.25] as const;
+/** A cluster of pustules, glowing a sickly yellow. */
+const PUSTULES: GlowCluster = { n: 5, spread: 1.4, size: [0.12, 0.18], shape: [1, 0.8, 1], sit: 0.5, colour: [0.95, 0.85, 0.25] };
 
 /** A column's own data: the two nearest gullets (distance across, radius at this u), and the bladders near it. */
 interface GutColumn {
@@ -238,13 +238,7 @@ export class Organic implements Style {
     const P = this.O.pustules;
     scatter(d, 2, 0x0a6, 0.5, (x, z, g, r) => {
       if (r(3) >= P.chance) return;
-      let lit = r(4) < P.bright;
-      for (let t = 0; t < 5; t++) {
-        const px = x + (r(5 + t) - 0.5) * 1.4, pz = z + (r(10 + t) - 0.5) * 1.4, s = 0.12 + 0.18 * r(15 + t);
-        d.glow.ellipsoid(px, g + s * 0.5, pz, s, s * 0.8, s, PUS, 6);
-        if (lit) { d.light(px, g + 0.8, pz); lit = false; }
-      }
-      d.placed();
+      glowCluster(d, x, z, g, r, PUSTULES, r(4) < P.bright);
     });
   }
 

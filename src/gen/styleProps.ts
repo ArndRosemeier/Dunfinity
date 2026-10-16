@@ -53,6 +53,29 @@ export function scatter(d: Dress, cell: number, salt: number, room: number, plac
   }
 }
 
+/** How a cluster of glowing blobs looks (`glowCluster`): how many, how far they stray, their size (min, extra) and shape (times the size each way), how much of its size each sits up, and its colour. */
+export interface GlowCluster {
+  n: number;
+  spread: number;
+  size: readonly [number, number];
+  shape: readonly [number, number, number];
+  sit: number;
+  colour: Rgb;
+}
+
+/**
+ * A cluster of glowing blobs (pustules, lichen) round (x, z) on ground g, from a `scatter` spot's
+ * numbers `r` (it takes r(5) on, 3·n of them); the first lights the rock round it when `lit`.
+ */
+export function glowCluster(d: Dress, x: number, z: number, g: number, r: (k: number) => number, c: GlowCluster, lit: boolean): void {
+  for (let t = 0; t < c.n; t++) {
+    const px = x + (r(5 + t) - 0.5) * c.spread, pz = z + (r(5 + c.n + t) - 0.5) * c.spread, s = c.size[0] + c.size[1] * r(5 + 2 * c.n + t);
+    d.glow.ellipsoid(px, g + s * c.sit, pz, s * c.shape[0], s * c.shape[1], s * c.shape[2], c.colour, 6);
+    if (lit && t === 0) d.light(px, g + 0.8, pz);
+  }
+  d.placed();
+}
+
 /** The roof over (x, y, z), marching up to `far` metres (Infinity: none that near). */
 export function roofOver(level: Level, x: number, y: number, z: number, far: number): number {
   let t = y;

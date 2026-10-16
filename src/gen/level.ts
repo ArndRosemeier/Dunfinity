@@ -29,6 +29,11 @@ import { Skies } from './glowworms';
 export type ColorMode = 'rock' | 'working' | 'lod';
 export const COLOR_MODES: readonly ColorMode[] = ['rock', 'working', 'lod'];
 
+/** Over a void (`Style.drop`), `groundAt` steps down at least this far at a time, metres: no rock there is thinner. */
+const GROUND_STEP = 0.75;
+/** A body this far under the floor of a void's column has fallen out of the level (`fellOut`), metres: lower than any ground there. */
+export const FALL_OUT = 30;
+
 export interface Grid {
   /** Samples per axis (cells + 1). */
   n: number;
@@ -83,6 +88,9 @@ export class Level {
   /** The stone of each rock slot (src/gen/rockTypes.ts): what the weights of a `RockMix` mean on this level. */
   readonly rockRecipes: readonly RockRecipe[];
   private readonly col = newColumn();
+  /** Scratch for `waterAt` (so it leaves `col` to its callers), and whether any style here has a void. */
+  private readonly wetCol = newColumn();
+  private readonly voids: boolean;
   private arrival_: [number, number, number] | null = null;
   private ascent_: Shaft | null | undefined;
   private camp_: GrandmasCamp | null | undefined;
@@ -98,6 +106,7 @@ export class Level {
     const excavation = depth === 0 ? new CellarField() : new QuarryField(s, this.band);
     const mix = style && depth > 0 ? onlyMix(style, excavation.id) : mixOf(seed, depth);
     this.field = new StyledField(excavation, stylesOf(mix, excavation, s, this.band, traitsOf(seed, depth)), mix, s);
+    this.voids = this.field.styles.some((st) => st.drop !== undefined);
     this.descents = new Descents(this.field.excavation, seed, depth, () => [this.arrival[0], this.arrival[2]], () => this.ascent, depth === 0 ? CELLAR_SHAFT : undefined, shareOf(mix, excavation.id));
     this.sheds = new Sheds(this);
     this.drips = new Drips(this);
@@ -252,17 +261,23 @@ export class Level {
     return this.field.column(x, z, this.col);
   }
 
-  /**
-   * Height of the rock surface under (x, z) on open floor, roughness included (where props stand).
-   * Starts at the floor and steps along the field, at most a metre; under a pillar or a wall the answer means little.
-   */
   /** Is (x, z) dry ground, its floor `margin` metres or more above the water? */
   dry(x: number, z: number, margin: number): boolean {
     return this.groundAt(x, z) > this.waterAt(x, z) + margin;
   }
 
-  groundAt(x: number, z: number): number {
-    const f = this.floorAt(x, z);
+  /**
+   * Height of the rock surface under (x, z) on open floor, roughness included (where props stand).
+   * Starts at the floor and steps along the field, at most a metre; under a pillar or a wall the answer means little.
+   * Where ground can lie over open void (a style with a `drop`: the floating islands), it is the first
+   * rock under `from` (a body's height: the island it is on, not one over it; the topmost ground,
+   * from under the roof, if left out), found by stepping down the field, at least GROUND_STEP at a time,
+   * then onto the surface; the void's bottom if there is none.
+   */
+  groundAt(x: number, z: number, from?: number): number {
+    // (Blended columns, at the edges between styles, are never over a void: its drops keep clear of them.)
+    const col = this.field.column(x, z, this.col), f = col.floor, drop = col.mix ? undefined : this.field.styles[col.style].drop;
+    if (drop !== undefined) return this.groundUnder(x, z, from ?? col.ceiling - 1, f - drop);
     let y = f;
     for (let i = 0; i < 3; i++) {
       const d = this.sdf(x, y, z);
@@ -272,8 +287,43 @@ export class Level {
     return y;
   }
 
-  /** Height of the water surface at (x, z): wherever the ground is lower, there is water. */
+  /** The first rock under (x, top, z), down to `bottom` (see `groundAt`). */
+  private groundUnder(x: number, z: number, top: number, bottom: number): number {
+    let y = top;
+    // Out of any rock it starts in (an arch over the body), downwards.
+    for (let i = 0; i < 32 && y > bottom; i++) {
+      const d = this.sdf(x, y, z);
+      if (d > 0.05) break;
+      y -= Math.max(-d, GROUND_STEP);
+    }
+    for (let i = 0; i < 96 && y > bottom; i++) {
+      const d = this.sdf(x, y, z);
+      if (d < 0.02) {
+        // On or into the rock: onto its surface (up, if the step went in).
+        for (let k = 0; k < 4; k++) { const e = this.sdf(x, y, z); if (Math.abs(e) < 0.01) break; y -= e; }
+        return y;
+      }
+      y -= Math.max(d * 0.9, GROUND_STEP);
+    }
+    return bottom;
+  }
+
+  /** Has a body at (x, y, z) fallen into a void, FALL_OUT metres or more under the floor beside it (the floating islands)? */
+  fellOut(x: number, y: number, z: number): boolean {
+    const col = this.field.column(x, z, this.col), drop = col.mix ? undefined : this.field.styles[col.style].drop;
+    return drop !== undefined && y < col.floor - FALL_OUT;
+  }
+
+  /**
+   * Height of the water surface at (x, z): wherever the ground is lower, there is water. Over a
+   * style with a void (`Style.drop`) there is none: it drains into the drops, whose islands would
+   * otherwise lie under the table (the void's bottom, less a metre).
+   */
   waterAt(x: number, z: number): number {
+    if (this.voids) {
+      const col = this.field.column(x, z, this.wetCol), drop = col.mix ? undefined : this.field.styles[col.style].drop;
+      if (drop !== undefined) return col.floor - drop - 1;
+    }
     return this.field.water(x, z);
   }
 

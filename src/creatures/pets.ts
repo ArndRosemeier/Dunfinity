@@ -217,7 +217,8 @@ export class Pets {
   private reform(p: Pet, x: number, y: number, z: number): void {
     const a = p.yaw + 2.2;
     p.x = x - Math.sin(a) * (PET.heel + 0.4); p.z = z - Math.cos(a) * (PET.heel + 0.4);
-    p.y = Math.abs(this.level.groundAt(p.x, p.z) - y) < 1 ? this.level.groundAt(p.x, p.z) : y;
+    const g = this.level.groundAt(p.x, p.z, y + 1);
+    p.y = Math.abs(g - y) < 1 ? g : y;
     if (Math.abs(p.y - y) >= 1 || !this.steer.walkable(p, p.x, p.z)) { p.x = x; p.z = z; p.y = y; }
     p.vx = p.vz = 0;
     p.quarry = null;
