@@ -399,5 +399,29 @@
   "gain": 0.7,
   "sound": "a long match struck and flaring up",
   "seed": "a long wooden match struck on a matchbox and flaring up"
+ },
+ "tv_on": {
+  "kind": "shot",
+  "max": 2.5,
+  "files": 1,
+  "gain": 0.6,
+  "sound": "an old 1960s television switched on, a heavy mechanical clunk and the high whine of the picture tube",
+  "seed": "an old 1960s television set being switched on, a heavy mechanical knob clunk, then the high-pitched whine of the picture tube warming up"
+ },
+ "tv_glitch": {
+  "kind": "shot",
+  "max": 0.5,
+  "files": 4,
+  "gain": 0.5,
+  "sound": "a short burst of TV signal interference, crackle and static tearing",
+  "seed": "an old television losing its signal for a moment, short harsh bursts of static crackle"
+ },
+ "tv_static": {
+  "kind": "loop",
+  "max": 20.0,
+  "files": 1,
+  "gain": 0.5,
+  "sound": "soft static of an old television with a 50 Hz mains hum",
+  "seed": "synthesized: seeded noise and mains hum (see the hand-cuts note in the PR)"
  }
 }
