@@ -17,7 +17,8 @@ import { canRead } from '../gen/inscriptions';
 import { CELLAR } from '../gen/cellar';
 import { shopDoor } from '../gen/town';
 import { PAWN, sell } from '../loot/pawn';
-import { GEAR, GEAR_ORDER, Gear } from '../loot/hardware';
+import { GEAR, GEAR_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
+import { Kit, isItem, packRows, rummage } from '../loot/items';
 import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { DeathView, DEATH, NEXT } from '../app/deathView';
 import { deathLine, hurtLine, runEnd } from './runEnd';
@@ -175,8 +176,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!);
   };
   let pack = new Pack();
-  let gear = new Gear(saved?.child?.gear ?? []);
+  /** What the grandchild wears and holds (src/loot/items.ts; an older save: what they bought at Kemal's). */
+  let kit = saved?.child?.kit ? new Kit(saved.child.kit) : kitFromGear(saved?.child?.gear ?? []);
   for (const f of saved?.child?.pack ?? []) pack.add(f);
+  for (const it of saved?.child?.spare ?? []) if (isItem(it)) pack.stow(it);
   /** Grandma's tin: the infused salt outlives every grandchild. */
   let tin = saved ? Tin.from(saved.tin) : new Tin();
   tin.deepest = Math.max(tin.deepest, level.depth);
@@ -255,7 +258,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const freshFamily = (): void => {
     taken.clear();
     tin = new Tin(); key = new Key();
-    pack = new Pack(); gear = new Gear(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
+    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
     heir = 0; reached = 0; euros = 0; sales = 0; saltAtStart = 0;
     fallen.length = 0;
     body = nextGrandchild();
@@ -318,7 +321,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data, saltAtStart,
+      cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart,
     };
     writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data });
   };
@@ -446,7 +449,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     allAbilities: () => {
       cooked = Cooked.from(Object.fromEntries(CARDS.map((c) => [c.id, c.cost.length])));
       for (const a of ABILITIES) mainBar.slotIn(a.card);
-      gear = new Gear(GEAR_ORDER);
+      kit = kitFromGear(GEAR_ORDER);
       return 'Every recipe card at its top rank, and all of Kemal\'s gear.';
     },
     toLevel: (d) => {
@@ -664,7 +667,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, garden, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -679,6 +682,20 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     pressKey: (key: string) => controls.press(key),
     /** Bring the knife's handle down, as V would (grandma's Tenderising). */
     pound: () => stab(timer.getElapsed(), 'pound'),
+    /** Wander about `steps` × 2 m on the floor from the nobody, marking it seen as walking there would (the map probe). */
+    explore: (steps = 400, salt = 0) => {
+      const rng = new Rng(deriveSeed(params.seed, 'explore', salt));
+      let x = body.x, z = body.z, a = rng.range(0, Math.PI * 2);
+      for (let s = 0; s < steps; s++) {
+        a += rng.range(-0.5, 0.5);
+        for (let t = 0; t < 8; t++) {
+          const nx = x + Math.cos(a) * 2, nz = z + Math.sin(a) * 2, g = level.groundAt(nx, nz);
+          if (Math.abs(g - level.groundAt(x, z)) < 1.5 && level.sdf(nx, g + 1, nz) > 0.3) { x = nx; z = nz; break; }
+          a += rng.range(1, 2.5);
+        }
+        if (s % 3 === 0) explored.see(level, x, level.groundAt(x, z), z);
+      }
+    },
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
     descend: (up = false) => {
       const s = up ? level.ascent : level.descents.nearest(body.x, body.z, 5000);
@@ -771,7 +788,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     fallen.push(f);
     deathView.layOut({
       how: deathLine(body.lastCause), before: earlier, name: heirName(heir, params.seed), where: fallenAt(f), next: heirName(heir + 1, params.seed),
-      end: runEnd({ tin, saltAtStart, key: key.data, euros, taken: [...taken.values()].reduce((n, ids) => n + ids.size, 0), pack, cooked, practice, gear }),
+      end: runEnd({ tin, saltAtStart, key: key.data, euros, taken: [...taken.values()].reduce((n, ids) => n + ids.size, 0), pack, cooked, practice, kit }),
     });
     before = cam.distance;
     cam.distance = Math.max(cam.distance, 3.5);
@@ -783,7 +800,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const sendNextDown = (): void => {
     body = nextGrandchild();
     fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
-    pack = new Pack(); gear = new Gear(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
+    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
     picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; flour.clouds.length = 0;
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
@@ -865,7 +882,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Keep the game every few seconds (not mid-climb or mid-way home), and at once when the grandchild dies.
     if (!climb.active && homeTo === null && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
     const [mx, my] = controls.takeLook();
-    cam.look(mx, my, controls.takeWheel());
+    // With the map open the wheel brings it nearer or farther, not the camera.
+    const wheel = controls.takeWheel();
+    if (mapView.open && wheel) mapView.zoomBy(-Math.sign(wheel));
+    cam.look(mx, my, mapView.open ? 0 : wheel);
     input.forward = (controls.held('KeyW') ? 1 : 0) - (controls.held('KeyS') ? 1 : 0);
     input.right = (controls.held('KeyD') ? 1 : 0) - (controls.held('KeyA') ? 1 : 0);
     input.sprint = controls.held('ShiftLeft') || controls.held('ShiftRight');
@@ -873,7 +893,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (controls.tap('KeyM')) mapView.toggle();
+    if (controls.tap('KeyM') || (mapView.open && controls.tap('Escape'))) mapView.toggle(level.depth ? `Level ${level.depth} · ${level.band.name}` : level.band.name);
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
     else if (controls.tap('KeyJ') && !tinView.open) { diaryView.show((d) => tin.hasPage(d)); tick('diary'); }
@@ -1000,7 +1020,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Kemal's counter: 1, 2, 3 buy what is on it.
     if (nearKemal) GEAR_ORDER.forEach((k, i) => {
       if (!controls.tap(`Digit${i + 1}`)) return;
-      const r = gear.buy(k, euros);
+      const r = buyGear(kit, k, euros);
       if (r.euros !== euros) readAt = now; // (stooping over his counter)
       euros = r.euros;
       say(r.line, 6);
@@ -1035,29 +1055,29 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!cooked.has(tinSel)) tinSel = TinView.order(cooked)[0];
       tinView.show(cooked, tin, tinSel, null, practice, mainBar, keyName);
     }
-    // The pack (I), open anywhere: W/S choose a find, E leaves it on the floor before you to make room.
-    const packKeys = { up: keyName('KeyW'), down: keyName('KeyS'), leave: keyName('KeyE'), close: keyName('KeyI') };
+    // The pack (I), open anywhere: W/S choose a line, E uses it (a find left on the floor before you, a spare item put on, a worn one taken off).
+    const packKeys = { up: keyName('KeyW'), down: keyName('KeyS'), use: keyName('KeyE'), close: keyName('KeyI') };
     if (packView.open) {
       if (controls.tap('KeyI') || controls.tap('Escape') || tinView.open || body.dead || climb.active) packView.hide();
       else {
-        const n = pack.items.length;
+        const rows = packRows(pack), n = rows.length;
         let said: string | null = null;
-        if (n && controls.tap('KeyW')) { packSel = (packSel + n - 1) % n; said = ''; }
-        if (n && controls.tap('KeyS')) { packSel = (packSel + 1) % n; said = ''; }
-        if (controls.tap('KeyE')) {
-          const f = pack.takeOut(packSel);
-          if (f) {
-            finds.drop(f, body.x - Math.sin(body.facing) * 0.5, body.z - Math.cos(body.facing) * 0.5);
+        if (controls.tap('KeyW')) { packSel = (packSel + n - 1) % n; said = ''; }
+        if (controls.tap('KeyS')) { packSel = (packSel + 1) % n; said = ''; }
+        if (controls.tap('KeyE') && rows[packSel]) {
+          const r = rummage(rows[packSel], pack, kit);
+          if (r.left) {
+            finds.drop(r.left, body.x - Math.sin(body.facing) * 0.5, body.z - Math.cos(body.facing) * 0.5);
             readAt = now; // (stooping to lay it down)
-            packSel = Math.max(0, Math.min(packSel, pack.items.length - 1));
-            said = `You leave ${FINDS[f.kind].name} on the floor.`;
           }
+          packSel = Math.min(packSel, packRows(pack).length - 1);
+          said = r.line;
         }
-        if (said !== null) packView.show(pack, gear, packSel, packKeys, said);
+        if (said !== null) packView.show(pack, kit, packSel, packKeys, said);
       }
     } else if (controls.tap('KeyI') && !tinView.open && !body.dead) {
       packSel = 0;
-      packView.show(pack, gear, packSel, packKeys);
+      packView.show(pack, kit, packSel, packKeys);
     }
     if (letterView.open && (!nearNote || controls.tap('Escape'))) letterView.hide();
     if (controls.tap('KeyE') && !packView.open) {
@@ -1110,7 +1130,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Grandma's Pot Lid: hold its slot to keep it up between you and whatever it is.
     const lid = cooked.lid;
     body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard') };
-    nobody.lid = !!cooked.lid;
+    nobody.wear(!!cooked.lid, kit.items);
     body.guarding = !!cooked.lid && controls.held(useOf('pot-lid')) && !busy && !handsBusy && !body.rolling && homeTo === null && now - stabAt > stabDur;
     if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
     if (climb.active) {
@@ -1213,11 +1233,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
           const struck = pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : [];
           for (const r of struck) sounds.play('pound', r);
-          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * gear.edge * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
+          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
           if (struck.length) practised('knife');
         } else {
           const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
-          if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * gear.edge * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
+          if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
           if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : 1.3); }
           if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
         }
@@ -1239,8 +1259,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
-      body.climbCost = cooked.climbing * practice.less('climbing') * gear.climb;
-      body.armour = gear.armour;
+      body.climbCost = cooked.climbing * practice.less('climbing') * kit.climb;
+      body.armour = kit.armour;
       // Practice: metres climbed, and blows the lid stopped.
       if (body.mode === 'climb') climbed += Math.max(0, body.y - climbY);
       climbY = body.y;
@@ -1342,7 +1362,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${FINDS[nearFind.kind].name}` : `${E}: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
-    else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${gear.owned.has(k) ? ' (yours)' : ''}`).join(' · '));
+    else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(' · '));
     else if (nearPawn) lines.push(pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);

@@ -18,8 +18,8 @@ const key = (i: number, j: number) => (i + 0x100000) * 0x200000 + (j + 0x100000)
 /** A cell's quarter points, tried when its centre is shut: a 1 m door whose edges fall on cell centres is still seen. */
 const QUARTERS = [[-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25], [0.25, 0.25]] as const;
 
-/** Open floor at (x, z) within a storey of height y (not the rock, not a hall far above or below). */
-function open(level: Level, x: number, z: number, y: number): boolean {
+/** Open floor at (x, z) within a storey of height y (not the rock, not a hall far above or below); the map asks it of the rock beside what was seen. */
+export function onStorey(level: Level, x: number, z: number, y: number): boolean {
   const g = level.groundAt(x, z);
   return Math.abs(g - y) < 6 && level.sdf(x, g + 1, z) > 0.1;
 }
@@ -37,7 +37,7 @@ export class Explored {
       if (s.has(k)) continue;
       const px = (i + 0.5) * c, pz = (j + 0.5) * c;
       if (Math.hypot(px - x, pz - z) > EXPLORE.radius) continue;
-      if (open(level, px, pz, y) || QUARTERS.some(([a, b]) => open(level, px + a * c, pz + b * c, y))) s.add(k);
+      if (onStorey(level, px, pz, y) || QUARTERS.some(([a, b]) => onStorey(level, px + a * c, pz + b * c, y))) s.add(k);
     }
   }
 

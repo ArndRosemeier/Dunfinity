@@ -2440,8 +2440,12 @@
     "reason": "each landmark's one call to searchOut (src/gen/searchOut.ts, the one seam) with its own seeded bearing and its own near/far numbers"
   },
   {
-    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/hardware.ts#data",
-    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and Kemal's gear each know their own fields"
+    "key": "same name: dunfinity/input/bindings.ts#data + dunfinity/loot/items.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
+    "key": "same name: dunfinity/loot/items.ts#data + dunfinity/loot/practice.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
   },
   {
     "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/tin.ts#data",
@@ -3448,8 +3452,8 @@
     "reason": "each checks that a column belongs to the working it is placing on (col.working.id), the Column's own field"
   },
   {
-    "key": "same name: dunfinity/app/diaryView.ts#show + dunfinity/app/packView.ts#show",
-    "reason": "each Modal's show builds its own panel's html (the diary's pages, the pack's finds) and hands it to Modal.showHtml, the one seam"
+    "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/tinView.ts#show",
+    "reason": "each Modal's show builds its own panel's html (the tin's cards, the pack's kit and finds) and hands it to Modal.showHtml, the one seam"
   },
   {
     "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/settingsView.ts#toggle",
@@ -3516,14 +3520,6 @@
     "reason": "Figure.pose: the interface every drawn figure in a FigurePool implements"
   },
   {
-    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/stepsView.ts + dunfinity/gen/notary.ts",
-    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
-  },
-  {
-    "key": "idiom: [.join .map] in dunfinity/app/packView.ts + dunfinity/app/tinView.ts + dunfinity/game/Game.ts",
-    "reason": "a list of things put into one line of text (finds, steps, heirs, cards): one map and join each, nothing to fold"
-  },
-  {
     "key": "clone: dunfinity/loot/recipes.ts#match + dunfinity/loot/recipes.ts#snapdragon",
     "reason": "two of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
   },
@@ -3560,7 +3556,7 @@
     "reason": "the save idiom: each kept thing gives its `data` and takes it back with `from` (docs/ARCHITECTURE.md, Keep the game)"
   },
   {
-    "key": "same name: dunfinity/game/abilities.ts#data + dunfinity/loot/hardware.ts#data",
+    "key": "same name: dunfinity/game/abilities.ts#data + dunfinity/loot/items.ts#data",
     "reason": "the save idiom: each kept thing gives its `data` and takes it back with `from` (docs/ARCHITECTURE.md, Keep the game)"
   },
   {
@@ -3574,5 +3570,33 @@
   {
     "key": "same name: dunfinity/gen/drips.ts#near + dunfinity/gen/glowworms.ts#near",
     "reason": "one line each over the one seam (cellMemo.ts sitesNear): stalagmite sites vs glow-worm skies"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/humanPool.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/shroomView.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/loot/findView.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/mapView.ts#toggle",
+    "reason": "each panel opens and closes its own way; the map fills its header and canvas as it opens"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#toggle + dunfinity/app/settingsView.ts#toggle",
+    "reason": "each panel opens and closes its own way; the map fills its header and canvas as it opens"
   }
 ]

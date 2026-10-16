@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.168 — The map grows over with salt
+
+- The map (M) is redrawn: the floor you have seen has soft edges, is shaded by height and has faint contour lines, and the edge of what you have not seen fades into the dark instead of stopping in hard squares.
+- The rock walls you have seen glow like grandma's salt veins, with little veinlets and buds running off into the stone and some moss by the walls. Light runs slowly along them now and then (still when less motion is asked for).
+- Your lamp shows as a warm pool and a beam the way you look; the ways down are dark wells ringed in salt, the way up a golden ladder, your fire a flickering glow.
+- A compass, a 10 m scale bar, and zoom: + and − (or the mouse wheel while the map is open). Escape closes it too. The map's frame grows salt like the other panels.
+
+## v0.167 — Faster checks on every change
+
+- CI runs the tests and the two halves of the shader check (the Lab, the game) as three jobs side by side instead of one after another.
+- A pull request that changes nothing the browser loads (only docs, change notes, tests or tools) skips the shader check; main always runs it.
+- The slow cap test inside it runs only when the shader scheduling code changes (and always on main).
+- A new push to a pull request cancels that pull request's older run.
+- Two stale lines left in the duplication baseline are gone, so main's checks are green again.
+
+## v0.166 — Your kit on the body
+
+- Kemal's miner's helmet, a dented green enamel hard hat with its lamp, sits on the grandchild's head with the hair tucked under it, and his work gloves are on their hands.
+- A worn piece looks more worn than a fine one.
+
+## v0.165 — What you wear and hold
+
+- The pack (I) now shows what you wear and hold, slot by slot: head, body, hands, legs, feet, main hand, off hand and a trinket.
+- Choose a line with W and S, then press E to take a piece off into your pack, put on a spare one, or leave a find on the floor.
+- Kemal's gloves and helmet are things you wear now, and his whetstone hones grandma's knife to fine.
+- The pack's 8 places hold finds and spare things together.
+
 ## v0.164 — Sounds for the deep wonders, the flour bag and the match
 
 - Singing crystals hum in five notes that sound well together, a distant choir swells when a thin place opens, and salt blooms crackle faintly as they grow.

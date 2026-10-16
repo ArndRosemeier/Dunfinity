@@ -8,6 +8,7 @@
  * broken save is no save.
  */
 import type { TinData } from '../loot/tin';
+import type { Item } from '../loot/items';
 import type { Find } from '../loot/finds';
 import type { Fallen } from '../gen/notary';
 import type { KeyData } from '../lore/key';
@@ -26,8 +27,11 @@ export interface GrandchildData {
   readonly bar?: readonly (string | null)[];
   readonly practice: Partial<Record<string, number>>;
   readonly pack: readonly Find[];
-  /** What they bought at Kemal's (src/loot/hardware.ts). */
+  /** What they bought at Kemal's (src/loot/hardware.ts): older saves, before the kit. */
   readonly gear?: readonly string[];
+  /** What they wear and hold (src/loot/items.ts), and the spare items in the pack. */
+  readonly kit?: readonly Item[];
+  readonly spare?: readonly Item[];
   /** What they have seen of each level (src/world/explored.ts). */
   readonly explored?: Record<string, readonly number[]>;
   /** The salt in grandma's tin when they took it up (the death screen says what they added). */
