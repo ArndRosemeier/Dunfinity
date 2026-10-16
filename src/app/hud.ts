@@ -2,7 +2,7 @@
  * The HUD (docs/design/ui.md): health and stamina top left with what just hurt, a boss's bar at the
  * top, the level's name as one arrives, the notice of the moment, what E (or another key) would do
  * now, grandma's salt, purse and the pack top right, and the keys while in the cellar.
- * The game hands it a `HudState` each frame; it touches the DOM only where something changed.
+ * The game hands it a `HudState` each frame (`render`); it touches the DOM only where something changed.
  *
  * `#hud` (the page's text HUD, still the Lab's) keeps the same lines as text, hidden, for the shot
  * tools that read it.
@@ -159,7 +159,7 @@ export class Hud {
     this.bannerUntil = now + secs;
   }
 
-  paint(s: HudState, now: number): void {
+  render(s: HudState, now: number): void {
     const p = this.parts;
     const alive = !s.dead;
     this.set('health', String(Math.max(0, s.health / s.maxHealth)), (v) => p.health.style.setProperty('--v', v));
