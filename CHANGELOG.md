@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.150 — Glowing veins creep twice as fast
+
+- The blue salt veins now creep about 5 cm a second, twice as fast as before (Arnd asked for double the movement).
+
 ## v0.149 — The salt stays on the panels' edges
 
 - The salt growing on a menu or panel now follows the panel's real size. Before, it kept the size the panel had when it opened, so after a settings tab, a font or new text made the panel taller, a vein ran through the middle of it.
