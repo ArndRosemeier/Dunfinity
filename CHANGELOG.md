@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.178 — A pulse in the veins
+
+- Now and then the glowing blue veins in the rock draw a breath: a ring of brighter light starts a little behind you, runs through the veins past you and on, always towards the nearest way down, and fades.
+- It happens only where the rock has glowing veins, about once every minute and a half.
+
 ## v0.177 — Peaceful animals in the levels
 
 - Every level now has a few herds of its own animals, grown by the creature generator: grazers, scuttlers, watchers, drifters and giants. They are rare on levels 1 to 10 and more common deeper.
