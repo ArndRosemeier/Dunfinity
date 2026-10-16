@@ -92,31 +92,23 @@ export function kitchenKnife(): Object3D {
 }
 
 /**
- * A miner's pick, in grip space: held like a hammer, near the end of the ash handle (up +y from the
- * fist), the iron head across the top with a point at each end.
+ * A modelled tool held in the fist (the hatchet, pick and crowbar from AssetGenerator's Blender
+ * props: origin at the butt of the handle, the handle up +y), stamped so the fist closes a hand's
+ * breadth above the butt.
  */
-function minersPick(): Object3D {
-  return held((wood, iron) => {
-    wood.upright(0, 0.28, 0, 0, 0.017, 0.38, 0.022, [0.3, 0.22, 0.14]);
-    iron.upright(0, 0.64, 0, 0, 0.05, 0.03, 0.028, [0.2, 0.19, 0.18]); // the eye round the handle
-    for (const s of [-1, 1]) {
-      iron.beam(0, 0.64, 0, s * 0.2, 0.62, 0, 0.022, 0.024, [0.22, 0.21, 0.2]);
-      iron.beam(s * 0.2, 0.62, 0, s * 0.31, 0.585, 0, 0.012, 0.012, [0.3, 0.29, 0.28]);
-    }
-  });
+function tool(name: 'held_hatchet' | 'held_pick' | 'held_crowbar'): Object3D {
+  return held((paint) => paint.stamp(propModel(name), 0, -GRIP_UP, 0, 0));
 }
 
-/**
- * A crowbar, in grip space: a bent iron bar held near its straight end, the claw hooked over at
- * the top (up +y from the fist).
- */
-function crowbar(): Object3D {
-  return held((_, iron) => {
-    iron.tube(0, -0.08, 0, 0, 0.5, 0, 0.014, [0.24, 0.16, 0.12]);
-    iron.tube(0, 0.5, 0, 0.035, 0.58, 0, 0.014, [0.24, 0.16, 0.12]);
-    iron.tube(0.035, 0.58, 0, 0.1, 0.6, 0, 0.012, [0.3, 0.29, 0.28]); // the claw, worn bright
-  });
-}
+/** How far above the butt of a modelled tool's handle the fist holds it, metres. */
+const GRIP_UP = 0.07;
+
+/** What each held item is built from (its defId, as the Salt-Touched's pick and the scavengers' crowbars use too), and its shape (for the grip). */
+const TOOLS: Readonly<Record<string, readonly ['held_hatchet' | 'held_pick' | 'held_crowbar', string]>> = {
+  hatchet: ['held_hatchet', 'axe-hatchet'],
+  pick: ['held_pick', 'pick'],
+  crowbar: ['held_crowbar', 'crowbar'],
+};
 
 /**
  * Grandma's pot lid, as a shield (grip space as the humanoid straps a shield to the forearm: its
@@ -153,8 +145,7 @@ export const WARDROBE: Wardrobe = {
   itemDef: (defId) => (defId === 'knife' ? { visual: { shape: 'knife' }, category: 'weapon' } : defId === 'potlid' ? { visual: { shape: 'shield-potlid' }, category: 'shield' } : { visual: { shape: defId } }),
   buildItem: (defId) => {
     if (defId === 'knife') return kitchenKnife();
-    if (defId === 'pick') return minersPick();
-    if (defId === 'crowbar') return crowbar();
+    if (TOOLS[defId]) return tool(TOOLS[defId][0]);
     if (defId === 'potlid') return potLid();
     throw new Error(`no held item "${defId}"`);
   },
@@ -229,9 +220,11 @@ function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = 
     eq[slot] = { defId: it.kind, visual: visual(seed + 7, a, b, Math.min(1, wear / QUALITY[it.quality].factor)) };
   }
   o.clothes.forEach(([slot, defId, a, b, wear], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear) }; });
-  if (o.hand) {
+  const weapon = items.find((it) => TOOLS[it.kind]);
+  if (weapon) eq.mainhand = { defId: weapon.kind, visual: { ...visual(seed + 3, [0.3, 0.29, 0.28], [0.3, 0.22, 0.14], Math.min(1, 0.5 / QUALITY[weapon.quality].factor)), shape: TOOLS[weapon.kind][1], material: 'metal' } };
+  else if (o.hand) {
     const [defId, a, b, wear] = o.hand;
-    eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: defId, material: 'metal' } };
+    eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: TOOLS[defId]?.[1] ?? defId, material: 'metal' } };
   }
   if (lid) eq.offhand = { defId: 'potlid', visual: { ...visual(seed + 4, [0.16, 0.24, 0.38], [0.05, 0.05, 0.06], 0.4), shape: 'shield-potlid', material: 'metal' } };
   return eq;

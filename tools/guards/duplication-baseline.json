@@ -3600,6 +3600,14 @@
     "reason": "every view's per-frame draw of its own thing; the things differ"
   },
   {
+    "key": "same name: dunfinity/gen/dwarven.ts#put + dunfinity/loot/items.ts#put",
+    "reason": "different things put: a dwarven hall piece on a level, an item on a grandchild (its slot, or grandma's knife in the belt)"
+  },
+  {
+    "key": "same name: dunfinity/loot/items.ts#has + dunfinity/loot/recipes.ts#has",
+    "reason": "each asks its own store: the kit for an item worn or held, the tin for a recipe card"
+  },
+  {
     "key": "idiom: [.add .root .visible] in dunfinity/render/creatures/wispView.ts + dunfinity/render/loot/saltDrift.ts + dunfinity/render/props/watchers.ts",
     "reason": "fixed pools of hidden meshes built once into a root for the Stage: three.js calls, each view shows its own"
   },

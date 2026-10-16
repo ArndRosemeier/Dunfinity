@@ -63,7 +63,7 @@ import { Doors } from '../world/doors';
 import { DoorView } from '../render/props/doorView';
 import { PROPS_RADIUS } from '../render/props/Props';
 import { PROP_TILE } from '../gen/propGrid';
-import { STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
+import { MOVES, STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
 import { Finds, Pack, FINDS, PACK, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
@@ -604,7 +604,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     stabAt = now;
     stabDone = false;
     striking = how;
-    sounds.play(how === 'pound' ? 'throw' : 'knife_swing', null, 0.8, how === 'pound' ? 0.8 : 1);
+    const mv = MOVES[kit.move];
+    sounds.play(how === 'pound' ? 'throw' : mv.sound, null, 0.8, how === 'pound' ? 0.8 : mv.pitch);
     // Turn to the Tab target if it is in reach; else to the nearest foe roughly where the camera looks, else where it looks.
     stabYaw = cam.yaw;
     if (target && Math.hypot(target.x - body.x, target.z - body.z) < STAB.aim && Math.abs(target.y - body.y) < 1.5) { stabYaw = yawTo(target, body.x, body.z); return; }
@@ -953,8 +954,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (debug.tireless) body.stamina = MOVE.stamina;
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
-    const knife = cooked.knife, pound = cooked.tenderising;
-    const stabDur = striking === 'pound' ? POUND.dur : STAB.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : STAB.hit * knife.time;
+    // The weapon in hand (grandma's knife, or what was put on in the pack) and how it swings; her knife cards work with any of them.
+    const knife = cooked.knife, pound = cooked.tenderising, move = MOVES[kit.move];
+    const stabDur = striking === 'pound' ? POUND.dur : move.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : move.hit * knife.time;
     const canStrike = !busy && !handsBusy && !body.rolling && now - stabAt > stabDur;
     if (controls.tap('Mouse0') && canStrike) stab(now);
     // Grandma's Tenderising (its slot on the bar) brings the knife's handle down overhead.
@@ -1313,10 +1315,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
           if (struck.length) practised('knife');
         } else {
-          const r = nearestReached(blowFrom(body, stabYaw, STAB), foes());
-          if (r) { damage(r, blows.range(STAB.damage[0], STAB.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, STAB.knock, 'knife'); practised('knife'); }
-          if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : 1.3); }
-          if (r && 'took' in r && r.took < 1) say('The knife skids off the salt on his chest.', 2);
+          const r = nearestReached(blowFrom(body, stabYaw, move), foes());
+          if (r) { damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, move.knock, 'knife'); practised('knife'); }
+          if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid || kit.move === 'mine' ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : kit.move === 'stab' ? 1.3 : 0.9); }
+          if (r && 'took' in r && r.took < 1) say(kit.move === 'stab' ? 'The knife skids off the salt on his chest.' : 'Your blow skids off the salt on his chest.', 2);
         }
       }
       const health = body.health;
@@ -1374,7 +1376,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const lighting = campfire.kindling(now);
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
-      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'root' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : 'swing_1h', t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
+      const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'root' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : move.anim, t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }

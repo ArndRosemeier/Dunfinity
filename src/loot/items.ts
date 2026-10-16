@@ -6,6 +6,7 @@
  * Pure. Items turn up only where they make sense (plan F2): for now Kemal's store; later humanoids,
  * sheds, a slime's belly, a lair.
  */
+import type { Move } from '../combat/combat';
 import { FINDS, type Find, type Pack } from './finds';
 
 /** Where an item is worn or held. */
@@ -29,15 +30,15 @@ export const QUALITY: Readonly<Record<Quality, { readonly name: string; readonly
   master: { name: 'master', factor: 1.5 },
 };
 
-export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet';
+export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar';
 
 export interface ItemDef {
   readonly name: string;
   readonly slot: Slot;
   /** The share it takes off a blow, sound (0.2: a fifth). */
   readonly armour?: number;
-  /** A weapon's bite, sound (the kitchen knife: 1). */
-  readonly edge?: number;
+  /** A weapon: how it is swung (src/combat/combat.ts MOVES; its quality scales the damage). */
+  readonly move?: Move;
   /** What climbing costs with it on (0.75: a quarter less). */
   readonly climb?: number;
   /** What it does, in a few words for the pack. */
@@ -45,10 +46,16 @@ export interface ItemDef {
 }
 
 export const ITEMS: Readonly<Record<ItemKind, ItemDef>> = {
-  'kitchen-knife': { name: "grandma's kitchen knife", slot: 'main', edge: 1, what: 'stabs' },
+  'kitchen-knife': { name: "grandma's kitchen knife", slot: 'main', move: 'stab', what: 'stabs, quick and light' },
   'work-gloves': { name: 'work gloves', slot: 'hands', climb: 0.75, what: 'climbing tires you less' },
   'miners-helmet': { name: "a miner's helmet", slot: 'head', armour: 0.2, what: 'blows hurt you less' },
+  hatchet: { name: 'a hatchet', slot: 'main', move: 'chop', what: 'chops, slower and harder' },
+  pick: { name: "a miner's pick", slot: 'main', move: 'mine', what: 'comes down two-handed, slow and very hard' },
+  crowbar: { name: 'a crowbar', slot: 'main', move: 'swat', what: 'swats wide, knocks them back' },
 };
+
+/** Grandma's knife: never in the pack, never lost from the belt. */
+const KNIFE: ItemKind = 'kitchen-knife';
 
 export interface Item {
   readonly kind: ItemKind;
@@ -66,35 +73,52 @@ export function itemName(item: Item): string {
   return item.quality === 'sound' ? n : `${n} (${QUALITY[item.quality].name})`;
 }
 
-/** What a grandchild wears and holds, slot by slot; it starts with grandma's knife in the hand. */
+/**
+ * What a grandchild wears and holds, slot by slot, and grandma's knife: in the hand while no other
+ * weapon is (`worn.main` empty), else in the belt.
+ */
 export class Kit {
   readonly worn: Partial<Record<Slot, Item>> = {};
+  knife: Item = { kind: KNIFE, quality: 'sound' };
 
-  constructor(items: readonly Item[] = [{ kind: 'kitchen-knife', quality: 'sound' }]) {
-    for (const i of items) if (isItem(i)) this.worn[ITEMS[i.kind].slot] = { kind: i.kind, quality: i.quality };
+  constructor(items: readonly Item[] = []) {
+    for (const i of items) if (isItem(i)) this.put({ kind: i.kind, quality: i.quality });
   }
 
-  /** Put `item` on (in its slot): what it takes the place of, or null. */
+  /** Put `item` on (in its slot; grandma's knife: in place of the one in the belt): what it takes the place of, or null. */
   put(item: Item): Item | null {
+    if (item.kind === KNIFE) { this.knife = item; return null; }
     const slot = ITEMS[item.kind].slot, was = this.worn[slot] ?? null;
     this.worn[slot] = item;
     return was;
   }
 
-  /** Take off what is in `slot`, or null. */
+  /** Take off what is in `slot`, or null (the knife stays). */
   off(slot: Slot): Item | null {
     const was = this.worn[slot] ?? null;
     delete this.worn[slot];
     return was;
   }
 
-  /** Whether a `kind` is worn. */
+  /** Whether a `kind` is worn or held. */
   has(kind: ItemKind): boolean {
-    return this.items.some((i) => i.kind === kind);
+    return kind === KNIFE || this.items.some((i) => i.kind === kind);
   }
 
+  /** What is in the main hand: a weapon, or grandma's knife. */
+  get hand(): Item {
+    return this.worn.main ?? this.knife;
+  }
+
+  /** How the weapon in hand is swung. */
+  get move(): Move {
+    return ITEMS[this.hand.kind].move ?? 'stab';
+  }
+
+  /** What is worn and held, slot by slot (the knife in the hand, or after the rest when in the belt). */
   get items(): Item[] {
-    return SLOTS.flatMap((s) => (this.worn[s] ? [this.worn[s]!] : []));
+    const on = SLOTS.flatMap((s) => (s === 'main' ? [this.hand] : this.worn[s] ? [this.worn[s]!] : []));
+    return this.worn.main ? [...on, this.knife] : on;
   }
 
   /** What is left of a blow after the armour (1: nothing off). */
@@ -104,10 +128,9 @@ export class Kit {
     return left;
   }
 
-  /** The bite of what is in the main hand (bare hands: half the knife's). */
+  /** How much of its move's damage the weapon in hand does (its quality: sound, all of it). */
   get edge(): number {
-    const m = this.worn.main;
-    return m ? (ITEMS[m.kind].edge ?? 0.5) * QUALITY[m.quality].factor : 0.5;
+    return QUALITY[this.hand.quality].factor;
   }
 
   /** What climbing costs. */
@@ -134,14 +157,13 @@ export function packRows(pack: Pack): PackRow[] {
 export function rowUse(row: PackRow, kit: Kit): string {
   if (row.what === 'find') return 'leave it here';
   if (row.what === 'spare') return 'put it on';
-  const it = kit.worn[row.slot];
-  return it && it.kind !== 'kitchen-knife' ? 'take it off' : '';
+  return kit.worn[row.slot] ? (row.slot === 'main' ? 'put it away, take the knife' : 'take it off') : '';
 }
 
 /**
  * Do what E does on `row`: a find is left on the floor (`left`, for the caller to lay down), a spare
  * item put on (what it replaces goes into the pack), a worn one taken off into the pack. Grandma's
- * knife stays in the hand. What is said.
+ * knife stays: a weapon taken off leaves it in the hand. What is said.
  */
 export function rummage(row: PackRow, pack: Pack, kit: Kit): { line: string; left: Find | null } {
   if (row.what === 'find') {
@@ -156,10 +178,9 @@ export function rummage(row: PackRow, pack: Pack, kit: Kit): { line: string; lef
     return { line: `You put on ${itemName(it)}${was ? `, and pack ${itemName(was)}` : ''}.`, left: null };
   }
   const it = kit.worn[row.slot];
-  if (!it) return { line: '', left: null };
-  if (it.kind === 'kitchen-knife') return { line: "Grandma's knife stays in your hand.", left: null };
+  if (!it) return { line: row.slot === 'main' ? "Grandma's knife stays with you, in the hand or the belt." : '', left: null };
   if (pack.full) return { line: 'No room in the pack for it.', left: null };
   kit.off(row.slot);
   pack.stow(it);
-  return { line: `You take off ${itemName(it)} and pack it.`, left: null };
+  return { line: row.slot === 'main' ? `You pack ${itemName(it)} and take grandma's knife from your belt.` : `You take off ${itemName(it)} and pack it.`, left: null };
 }
