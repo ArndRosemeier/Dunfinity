@@ -18,7 +18,9 @@ import { CELLAR } from '../gen/cellar';
 import { shopDoor } from '../gen/town';
 import { PAWN, sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, Gear } from '../loot/hardware';
-import { notaryLetter, notaryList, type Fallen } from '../gen/notary';
+import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
+import { DeathView, DEATH, NEXT } from '../app/deathView';
+import { deathLine, hurtLine, runEnd } from './runEnd';
 import { Level } from '../gen/level';
 import { CAMP, NOTE, RUBBING } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
@@ -171,6 +173,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Grandma's purse: euros from Ilse, kept for the family. */
   let euros = saved?.euros ?? 0, sales = 0;
   let mourned = false;
+  /** The salt in the tin when this grandchild took it up (the death screen says what they added). */
+  let saltAtStart = saved?.child?.saltAtStart ?? tin.salt;
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth, params.style)); // the next grandchild starts at the top
     heir++;
@@ -212,7 +216,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data,
+      cooked: cooked.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data, saltAtStart,
     };
     writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data });
   };
@@ -517,12 +521,57 @@ export async function startGame(host: HTMLElement): Promise<void> {
       return true;
     },
   };
+  const deathView = new DeathView(document.body);
+  /** When this grandchild died, and when the next was asked for (null: not yet); the camera's distance before death pulled it back. */
+  let diedAt = 0, nextAt: number | null = null, before = cam.distance;
+  /** The grandchild has died: on the notary's list (once), the camera pulled back to see them fall, the sheet laid out. */
+  const mourn = (): void => {
+    mourned = true;
+    diedAt = timer.getElapsed();
+    const f: Fallen = { heir, depth: level.depth, what: hurtLine(body.lastCause) };
+    const earlier = notaryList(fallen, heir, params.seed).slice(0, -1);
+    fallen.push(f);
+    deathView.layOut({
+      how: deathLine(body.lastCause), before: earlier, name: heirName(heir, params.seed), where: fallenAt(f), next: heirName(heir + 1, params.seed),
+      end: runEnd({ tin, saltAtStart, key: key.data, euros, taken: [...taken.values()].reduce((n, ids) => n + ids.size, 0), pack, cooked, practice, gear }),
+    });
+    before = cam.distance;
+    cam.distance = Math.max(cam.distance, 3.5);
+    tinView.hide(); readView.hide(); diaryView.hide();
+    target = null;
+    document.exitPointerLock?.();
+  };
+  /** The next grandchild, in the cellar, with nothing but what the family keeps. */
+  const sendNextDown = (): void => {
+    body = nextGrandchild();
+    fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
+    pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored();
+    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0;
+    tinSel = TinView.order(cooked)[0];
+    saltAtStart = tin.salt;
+    cam.distance = before;
+    cam.follow(body.x, body.y + 1.6, body.z, 1);
+    notice = levelName(level); noticeUntil = timer.getElapsed() + NEXT.letter + 5;
+    keepGame();
+  };
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
     // A death goes on the notary's list (once).
-    if (body.dead && !mourned) { mourned = true; fallen.push({ heir, depth: level.depth, what: HURT[body.lastCause]?.[0] ?? 'a fall' }); }
+    if (body.dead && !mourned) mourn();
     if (!body.dead) mourned = false;
+    // The death screen plays out; then (R, or its button) to black, who the letter is for, and the next grandchild in the cellar.
+    if (nextAt !== null) {
+      const t = timer.getElapsed() - nextAt;
+      if (body.dead) {
+        fade.style.opacity = String(Math.max(DEATH.dark, Math.min(1, t / NEXT.black)));
+        if (t >= NEXT.black) { sendNextDown(); deathView.letterFor(`Some weeks later, a letter comes for ${heirName(heir, params.seed)}.`); }
+      } else if (t >= NEXT.black + NEXT.letter) { deathView.letterFor(null); nextAt = null; fadeIn = 0.8; }
+      else fade.style.opacity = '1';
+    } else if (body.dead) {
+      fade.style.opacity = String(deathView.playOut(timer.getElapsed() - diedAt));
+      if (deathView.ready && (controls.tap('KeyR') || deathView.takeAsked())) { nextAt = timer.getElapsed(); deathView.putAway(); }
+    }
     // Keep the game every few seconds (not mid-climb or mid-way home), and at once when the grandchild dies.
     if (!climb.active && homeTo === null && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
     const [mx, my] = controls.takeLook();
@@ -553,7 +602,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (target && (!keeps(target, body.x, body.z) || body.dead || (!tinView.open && controls.held('Escape')))) target = null;
     body.invulnerable = debug.invulnerable;
     if (debug.tireless) body.stamina = MOVE.stamina;
-    if (body.dead && controls.tap('KeyR')) { body = nextGrandchild(); fauna = new Fauna(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina); pack = new Pack(); gear = new Gear(); cooked = new Cooked(); practice = new Practice(); explored = new Explored(); picking = null; saltLine.circle = null; }
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     const knife = cooked.knife, pound = cooked.tenderising;
@@ -919,7 +967,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
     abilityBar.paint(bar, bar.map(slot), passivesOf(cooked), body.dead || tinView.open);
-    if (hud) hud.textContent = hudText(body, backend, body.dead ? notaryList(fallen, heir + 1, params.seed) : []) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
+    if (hud) hud.textContent = hudText(body, backend) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
@@ -944,29 +992,13 @@ function bar(value: number, max: number): string {
   return '█'.repeat(n) + '░'.repeat(20 - n);
 }
 
-/** What hurt you, per cause: the HUD line, and the death line. */
-const HURT: Record<string, [string, string]> = {
-  rat: ['a rat bites', 'The rats got you.'],
-  cricket: ['a cave cricket', 'The cave crickets got you.'],
-  dog: ['a feral dog bites', 'The dogs pulled you down.'],
-  eel: ['a brine eel strikes', 'Something in the water took you.'],
-  lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
-  toadstool: ['a toadstool slams', 'A toadstool crushed you. It was only a mushroom.'],
-  spores: ['spores burn', 'The spores filled your lungs.'],
-  murk: ['a Murk slime burns', 'The Murk swallowed you.'],
-  'salt-touched': ['a Salt-Touched strikes', 'A Salt-Touched brought its pick down on you.'],
-  foreman: ['the Foreman strikes', 'The Foreman brought his pick down on you.'],
-  fall: ['a hard landing', 'You fell to your death.'],
-};
-
-/** The HUD; `list`: the notary's list, shown on the death screen (its last line the next heir). */
-function hudText(b: Body, backend: string, list: readonly string[]): string {
+/** The HUD. */
+function hudText(b: Body, backend: string): string {
   const lines = [
     `health   ${bar(b.health, MOVE.maxHealth)}  ${b.health.toFixed(0)}`,
     `stamina  ${bar(b.stamina, MOVE.stamina)}${b.mode === 'climb' ? '  climbing' : b.mode === 'swim' ? '  swimming' : ''}`,
   ];
-  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${HURT[b.lastCause]?.[0] ?? 'a hard landing'}: -${b.lastHurt.toFixed(0)}`);
-  if (b.dead) lines.push('', HURT[b.lastCause]?.[1] ?? 'You fell to your death.', '', 'Herr Brüggemann crosses out another name and writes another letter.', ...list.map((l) => `    ${l}`), '', 'Grandma\'s knife block has another knife: press R to send the next grandchild down.');
+  if (b.time - b.hurtAt < 2 && !b.dead) lines.push(`${hurtLine(b.lastCause)}: -${b.lastHurt.toFixed(0)}`);
   lines.push('', `click: mouse look, then stab · WASD move · Shift run · Space jump · walk into rock to climb · E climb a ladder or pick up · 1–0 or the bar: grandma's cards (Esc frees the mouse to click) · Tab target · wheel zoom · F light · M map · N sound · B music · \` debug  ·  ${backend}`);
   return lines.join('\n');
 }
