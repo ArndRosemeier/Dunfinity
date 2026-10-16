@@ -6,7 +6,7 @@
   "files": 5,
   "gain": 0.35,
   "sound": "a single quiet footstep of a light person in worn shoes on a gritty stone floor in a cave",
-  "seed": "slow quiet footsteps of a light person in worn shoes on a gritty stone floor in a cave, each step separate"
+  "seed": "footsteps of a person walking slowly in leather boots on a hard stone floor, close up, loud clear separate steps"
  },
  "step_water": {
   "kind": "steps",
@@ -14,7 +14,7 @@
   "files": 4,
   "gain": 0.4,
   "sound": "a footstep wading through shallow water",
-  "seed": "slow footsteps wading through shallow water in a cave, each step a separate splash"
+  "seed": "footsteps of a person walking slowly through ankle-deep water, close up, loud clear separate splashing steps"
  },
  "knife_swing": {
   "kind": "shot",
