@@ -28,11 +28,12 @@ export const ABILITIES: readonly Ability[] = [
   { card: 'cold-larder', key: 'KeyK', short: 'Cold larder' },
   { card: 'rolling-pin', key: 'KeyP', short: 'Rolling pin' },
   { card: 'candle', key: 'KeyG', short: 'Candle' },
+  { card: 'snapdragon', key: 'KeyU', short: 'Snapdragon' },
   { card: 'salt-line', key: 'KeyL', short: 'Salt line' },
   { card: 'way-home', key: 'KeyH', short: 'Way home' },
 ];
 
-/** The slots' number keys, and what the bar calls them. */
+/** The slots' number keys, and what the bar calls them (a slot past the last has its own key and a click only). */
 export const SLOT_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal'] as const;
 export const SLOT_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='] as const;
 
