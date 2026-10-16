@@ -8,7 +8,8 @@ import { Humanoid, type ActionAnim, type MoveState } from '@futuremagic/humanoid
 import { deriveSeed } from '@futuremagic/core';
 import type { Body } from '../../world/traverse/body';
 import type { Level } from '../../gen/level';
-import { WARDROBE, rags } from './wardrobe';
+import type { Item } from '../../loot/items';
+import { WARDROBE, hidesHair, rags } from './wardrobe';
 import { moveOf, SWIM, swimLift } from './move';
 
 /** Where Vite serves the package's assets (vite.config.ts). */
@@ -44,14 +45,16 @@ export class Nobody {
     return new Nobody(h, level, seed);
   }
 
-  /** Grandma's pot lid on the arm (the Pot Lid card), or not. Re-dresses only when it changes. */
-  set lid(on: boolean) {
-    if (on === this.lid_) return;
-    this.lid_ = on;
-    this.human.dress(rags(this.seed, on));
+  /** Dress in grandma's pot lid on the arm (the Pot Lid card) or not, and what of the kit is on (src/loot/items.ts). Re-dresses only when it changes. */
+  wear(lid: boolean, items: readonly Item[]): void {
+    const key = `${lid}|${items.map((i) => `${i.kind}:${i.quality}`).join(',')}`;
+    if (key === this.worn) return;
+    this.worn = key;
+    this.hidesHair = hidesHair(items);
+    this.human.dress(rags(this.seed, lid, items));
   }
 
-  private lid_ = false;
+  private worn = 'false|';
 
   /** How far the figure is drawn over the body's feet now (`swimLift` while swimming, else 0, eased). */
   lift = 0;
@@ -69,8 +72,15 @@ export class Nobody {
    * it must stay in the scene, or the light count, and every shader, would change.
    */
   set shown(v: boolean) {
+    if (v === this.shown_) return;
+    this.shown_ = v;
     this.root.traverse((o) => { if ((o as Mesh).isMesh) o.visible = v; });
+    // (That showed the hair too: under a helmet it stays hidden.)
+    if (v && this.hidesHair) this.human.char.setHairHidden(true, false);
   }
+
+  private shown_ = true;
+  private hidesHair = false;
 
   /** Pose as a puppet (a scripted scene such as a ladder climb): feet at pos, facing yaw. */
   puppet(pos: [number, number, number], vel: [number, number, number], yaw: number, move: MoveState, dt: number, time: number): void {

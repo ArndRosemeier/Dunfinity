@@ -1,7 +1,8 @@
 /**
  * The debug menu's places: everything worth checking out on a level (grandma's house and the street
  * at depth 0; the way up, the nearest way down, the bosses, grandma's camp, the nearest living
- * stalagmite and the nearest den of every kind of creature below), and a spot to stand near each.
+ * stalagmite and glow-worm sky, and the nearest den of every kind of creature below), and a spot
+ * to stand near each.
  */
 import { CELLAR, CELLAR_SHAFT } from '../gen/cellar';
 import { TOWN, homeDoor, shopDoor } from '../gen/town';
@@ -92,6 +93,8 @@ export function placesOn(level: Level, fauna: Fauna, x: number, z: number): Plac
   ];
   const drip = level.drips.nearest(x, z);
   if (drip) out.push(standBy(level, `A living stalagmite (${Math.round(Math.hypot(drip.x - x, drip.z - z))} m)`, drip.x, drip.z, 2.5, 5));
+  const sky = level.skies.closest(x, z);
+  if (sky) out.push({ name: `A glow-worm sky (${Math.round(Math.hypot(sky.x - x, sky.z - z))} m)`, x: sky.x, y: sky.y, z: sky.z, yaw: 0 });
   for (const [name, pop] of dens) {
     const d = pop.nearestDen(x, z, DEN_RINGS);
     if (d) out.push(standBy(level, `${name} (${Math.round(Math.hypot(d.x - x, d.z - z))} m)`, d.x, d.z, 6, 10));

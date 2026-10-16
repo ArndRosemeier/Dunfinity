@@ -19,3 +19,29 @@ export class CellMemo<T> {
     return v as T;
   }
 }
+
+/** A thing standing at a place (x, z). */
+export interface Sited {
+  readonly x: number;
+  readonly z: number;
+}
+
+/** The things of `memo` (at most one per cell `size` wide) within `r` of (x, z), into `out`. */
+export function sitesNear<T extends Sited>(memo: CellMemo<T | null>, size: number, x: number, z: number, r: number, out: T[] = []): T[] {
+  out.length = 0;
+  for (let j = Math.floor((z - r) / size); j <= Math.floor((z + r) / size); j++) for (let i = Math.floor((x - r) / size); i <= Math.floor((x + r) / size); i++) {
+    const s = memo.at(i, j);
+    if (s && (s.x - x) ** 2 + (s.z - z) ** 2 <= r * r) out.push(s);
+  }
+  return out;
+}
+
+/** The thing of `memo` nearest (x, z) within `far`, or null. */
+export function siteNearest<T extends Sited>(memo: CellMemo<T | null>, size: number, x: number, z: number, far: number): T | null {
+  let best: T | null = null, bd = Infinity;
+  for (const s of sitesNear(memo, size, x, z, far)) {
+    const d = (s.x - x) ** 2 + (s.z - z) ** 2;
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}

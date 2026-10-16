@@ -1,5 +1,51 @@
 # Changelog
 
+## v0.167 — Faster checks on every change
+
+- CI runs the tests and the two halves of the shader check (the Lab, the game) as three jobs side by side instead of one after another.
+- A pull request that changes nothing the browser loads (only docs, change notes, tests or tools) skips the shader check; main always runs it.
+- The slow cap test inside it runs only when the shader scheduling code changes (and always on main).
+- A new push to a pull request cancels that pull request's older run.
+- Two stale lines left in the duplication baseline are gone, so main's checks are green again.
+
+## v0.166 — Your kit on the body
+
+- Kemal's miner's helmet, a dented green enamel hard hat with its lamp, sits on the grandchild's head with the hair tucked under it, and his work gloves are on their hands.
+- A worn piece looks more worn than a fine one.
+
+## v0.165 — What you wear and hold
+
+- The pack (I) now shows what you wear and hold, slot by slot: head, body, hands, legs, feet, main hand, off hand and a trinket.
+- Choose a line with W and S, then press E to take a piece off into your pack, put on a spare one, or leave a find on the floor.
+- Kemal's gloves and helmet are things you wear now, and his whetstone hones grandma's knife to fine.
+- The pack's 8 places hold finds and spare things together.
+
+## v0.164 — Sounds for the deep wonders, the flour bag and the match
+
+- Singing crystals hum in five notes that sound well together, a distant choir swells when a thin place opens, and salt blooms crackle faintly as they grow.
+- The flour bag bursts with a soft thump, the flour cloud goes up with a deep fiery whoomph, and the matchstick scratches and flares.
+
+## v0.163 — Held tool models
+
+- Blender-made hatchet, miner's pick and crowbar models (`held_hatchet`, `held_pick`, `held_crowbar`) are now in the model pack, ready for the inventory's weapons.
+
+## v0.162 — Snapdragon leaves above the floor
+
+- The rosette of leaves at a snapdragon's foot sits on the floor and curls up, instead of sinking into it.
+
+## v0.161 — Glow-worm skies
+
+- Here and there the roof of a high cavern is covered with tiny blue-green lights, like a night sky, with brighter stars drawn into constellations that are not ours. They twinkle slowly and fade where your headlamp falls on them, as glow-worms do.
+- The stranger a level, the stranger its sky: deeper down the lights change colour, and their glow turns slowly round the roof in arms, like a galaxy.
+- The debug menu can take you to the nearest one.
+
+## v0.160 — Grandma, briefly, below
+
+- The first time the Tall One looks at anyone of the family, grandma's ghost stands between it and you for a moment, then is gone.
+- On level 18, far off, she is seen where she laid her first ring of salt.
+- On level 40, by the two names cut in the rock, she comes and stands beside you, looking at her father's name: "I came, Papa." Back home she has one more thing to say.
+- Each of these happens once for the whole family, never again.
+
 ## v0.159 — Miner's hard hat model
 
 - A Blender-made miner's hard hat (`wear_hard_hat`) is now in the model pack, ready for the inventory's head slot: dented dark green enamel, a crown ridge, a brim and a lamp on the front.

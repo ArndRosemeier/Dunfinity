@@ -12,6 +12,7 @@ import { deriveSeed, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { CellMemo } from '../gen/cellMemo';
 import { SHED_SPOTS, shedPoint } from '../gen/sheds';
+import type { Item } from './items';
 
 /** Where a find lies: on open floor, in a rat's hoard, in a miners' shed. */
 type Where = 'floor' | 'hoard' | 'shed';
@@ -189,12 +190,13 @@ function pick(r: number, where: Where): FindKind {
   return 'coin';
 }
 
-/** How many finds a pack holds: past that, something has to be left behind to pick up the next. */
+/** How many things a pack holds (finds and spare items together): past that, something has to be left behind. */
 export const PACK = { room: 8 } as const;
 
-/** What the nobody carries up: finds (at most `PACK.room`), and what they might fetch. Lost with the nobody. */
+/** What the nobody carries up: finds, spare items (src/loot/items.ts), at most `PACK.room` of them together, and what the finds might fetch. Lost with the nobody. */
 export class Pack {
   readonly items: Find[] = [];
+  readonly spare: Item[] = [];
 
   get worth(): number {
     let w = 0;
@@ -203,7 +205,7 @@ export class Pack {
   }
 
   get full(): boolean {
-    return this.items.length >= PACK.room;
+    return this.items.length + this.spare.length >= PACK.room;
   }
 
   /** Put `f` in, if there is room: whether it went in. */
@@ -213,8 +215,20 @@ export class Pack {
     return true;
   }
 
+  /** Put a spare `item` in, if there is room: whether it went in. */
+  stow(item: Item): boolean {
+    if (this.full) return false;
+    this.spare.push(item);
+    return true;
+  }
+
   /** Take out the `i`th find (to leave it on the floor), or null. */
   takeOut(i: number): Find | null {
     return i >= 0 && i < this.items.length ? this.items.splice(i, 1)[0] : null;
+  }
+
+  /** Take out the `i`th spare item (to put it on), or null. */
+  unstow(i: number): Item | null {
+    return i >= 0 && i < this.spare.length ? this.spare.splice(i, 1)[0] : null;
   }
 }
