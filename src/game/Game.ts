@@ -72,6 +72,10 @@ import { AbilityBar, type SlotState } from '../app/abilityBar';
 import { ABILITIES, SLOT_KEYS, barOf, passivesOf, type Ability } from './abilities';
 import { TargetMark } from '../app/targetMark';
 import { keeps, nextTarget, yawTo } from './target';
+import { Prologue, Walk } from './prologue';
+import { FirstSteps, type StepId } from './firstSteps';
+import { PrologueView } from '../app/prologueView';
+import { StepsView } from '../app/stepsView';
 
 /** Fixed simulation step, seconds. */
 const STEP = 1 / 120;
@@ -171,6 +175,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Grandma's purse: euros from Ilse, kept for the family. */
   let euros = saved?.euros ?? 0, sales = 0;
   let mourned = false;
+  /**
+   * The introduction (src/game/prologue.ts, src/game/firstSteps.ts): a new family met on a plain
+   * load (or ?intro) sees the prologue and then the first steps; a family kept from before the list,
+   * or any test view, does not.
+   */
+  const introduce = q.has('intro') || (keep && !saved && !['seed', 'depth', 'pos', 'style'].some((k) => q.has(k)));
+  let steps = FirstSteps.from(introduce ? [] : saved?.steps ?? true);
   const nextGrandchild = (): Body => {
     if (level.depth !== params.depth) show(new Level(params.seed, params.depth, params.style)); // the next grandchild starts at the top
     heir++;
@@ -214,7 +225,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
       cooked: cooked.data, practice: practice.data, pack: [...pack.items], gear: gear.data, explored: explored.data,
     };
-    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data });
+    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data });
   };
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
@@ -501,6 +512,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let fadeIn = 0;
   (globalThis as { __game?: unknown }).__game = {
     view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get doors() { return doors; }, get pack() { return pack; }, tin, get cooked() { return cooked; }, thrown, saltLine, debug,
+    /** The introduction: the prologue playing (null: none), and the first steps. */
+    get prologue() { return prologue; }, get steps() { return steps; },
     /** Pick up the find in reach, as E would. */
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Stab as the mouse button would. */
@@ -517,9 +530,76 @@ export async function startGame(host: HTMLElement): Promise<void> {
       return true;
     },
   };
+  /** A first step done: ticked off with a pencil. */
+  const tick = (id: StepId): void => { if (steps.tick(id)) sounds.play('pickup', null, 0.5, 1.4); };
+  const stepsView = new StepsView(document.body);
+  /** The prologue playing (null: none), the shot the nobody was put into last, and its walk. */
+  let prologue: Prologue | null = null, prologueShot = -1, walk = new Walk([]);
+  const prologueView = new PrologueView(document.body, () => prologue?.next());
+  /** Start the introduction: the prologue, then the first steps from the top (a new family). */
+  const beginIntro = (): void => {
+    prologue = new Prologue();
+    prologueShot = -1;
+    steps = new FirstSteps();
+    prologueView.show();
+  };
+  /** The prologue played out or skipped: the nobody by grandma's armchair, the camera behind, play begins. */
+  const endPrologue = (): void => {
+    prologue = null;
+    prologueView.hide();
+    body = arrive(null);
+    body.facing = cam.yaw = CELLAR.start.yaw;
+    cam.pitch = -0.2;
+    acc = 0;
+    cam.follow(body.x, body.y + 1.6, body.z, 1);
+    say(levelName(level), 5);
+  };
+  /** A frame of the prologue: the nobody walks its shot, the camera keeps to the shot's way, the captions show. */
+  const prologueFrame = (dt: number, now: number): void => {
+    const p = prologue!;
+    controls.takeLook(); controls.takeWheel();
+    if (controls.tap('Escape')) p.skip();
+    else if (controls.tap('Space') || controls.tap('Enter')) p.next();
+    // Time stands while the place is still streaming in (behind the black).
+    if (view.settled) p.advance(dt);
+    if (p.done) { endPrologue(); return; }
+    const f = p.frame(), shot = p.shots[f.shot];
+    if (f.shot !== prologueShot) {
+      prologueShot = f.shot;
+      const st = shot.stand;
+      body = new Body(st.x, level.groundAt(st.x, st.z) + 0.05, st.z);
+      body.facing = st.yaw;
+      walk = new Walk(shot.acts);
+    }
+    const stride = walk.stride(body.x, body.z, now);
+    const door = stride.open && doors.list.find((d) => d.spec.kind === stride.open);
+    if (door && !door.want) doors.toggle(door, now);
+    Object.assign(input, { forward: stride.forward, right: 0, yaw: stride.yaw, sprint: false, jump: false, sneak: false });
+    doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
+    for (acc += dt; acc >= STEP; acc -= STEP) body.step(level, input, STEP, view.props.blockers);
+    nobody.pose(body, dt, now);
+    doorView.draw();
+    const c = p.camera(f.shot, f.through, [body.x, body.y + 1.45, body.z]);
+    view.camera.position.set(c.eye[0], c.eye[1], c.eye[2]);
+    view.camera.lookAt(c.at[0], c.at[1], c.at[2]);
+    prologueView.showFrame(f.line >= 0 ? shot.lines[f.line] : '', f.caption, f.black);
+    if (hud) hud.textContent = '';
+    view.carrier!.set(body.x, body.y + 1.85, body.z);
+    view.frame(body.x, body.y, body.z, now);
+    view.camera.getWorldDirection(lampDir);
+    const ear = view.camera.position;
+    sounds.update({
+      dt, body, level, fauna, doors: doors.list, fire: null, resting: false, ladder: false,
+      ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
+    });
+    (globalThis as { __ready?: boolean }).__ready = view.settled;
+    controls.endFrame();
+  };
+  if (introduce) beginIntro();
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
+    if (prologue) { prologueFrame(dt, timer.getElapsed()); return; }
     // A death goes on the notary's list (once).
     if (body.dead && !mourned) { mourned = true; fallen.push({ heir, depth: level.depth, what: HURT[body.lastCause]?.[0] ?? 'a fall' }); }
     if (!body.dead) mourned = false;
@@ -537,7 +617,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (controls.tap('KeyM')) mapView.toggle();
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
-    else if (controls.tap('KeyJ') && !tinView.open) diaryView.show((d) => tin.hasPage(d));
+    else if (controls.tap('KeyJ') && !tinView.open) { diaryView.show((d) => tin.hasPage(d)); tick('diary'); }
     if (controls.tap('KeyN')) { sounds.engine.set({ muted: !sounds.engine.settings.muted }); say(sounds.engine.settings.muted ? 'Sound off (N).' : 'Sound on (N).', 2); }
     if (controls.tap('KeyB')) { sounds.engine.set({ music: !sounds.engine.settings.music }); say(sounds.engine.settings.music ? 'Music on (B).' : 'Music off (B).', 2); }
     if (controls.tap('Backquote')) debug.toggle();
@@ -664,6 +744,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
             const r = cooked.cook(tinSel, tin), c = card(tinSel), fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
             cookAt = now;
             tinView.hide();
+            tick('cook');
             say(r === 1 ? `${c.title}, cooked.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
           }
@@ -701,6 +782,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (nearNote) {
         const found = writing!.kind !== 'letter' && cooked.find('salt-line');
         const runes = writing!.kind !== 'letter' && key.pencil('kerf', GRANDMA_KERF) > 0;
+        if (writing!.kind === 'letter') tick('letter');
         readAt = now; say(writing!.kind === 'letter' ? notaryLetter(heir, params.seed) : `Grandma's handwriting, young and fast:\n\n${NOTE.join('\n\n')}${found ? `\n\nUnder the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : ''}${runes ? `\n\n${RUBBING}` : ''}`, 20);
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
       }
@@ -762,6 +844,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         finds.take(picking);
         sounds.play('pickup');
         pack.add(picking);
+        tick('pickup');
         say(`You pick up ${FINDS[picking.kind].name}.`, 3);
       }
       const reading = now - readAt < PICKUP.dur, stooping = picking !== null || reading;
@@ -789,7 +872,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       fauna.goblins.thief = snatch;
       const struck = fauna.advance(dt, body, lamp, body.facing);
       for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
-      for (const f of fauna.fallen()) gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now);
+      for (const f of fauna.fallen()) { gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now); tick('stab'); }
       if (body.health < health) {
         // Flinch away from the nearest foe (thrown back by a pick).
         let near: Foe | undefined, nd = Infinity;
@@ -809,6 +892,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       body.spring = cooked.spring;
       campfire.soup = cooked.soup;
       campfire.step(body, threat, now, dt);
+      // First steps done by being somewhere or doing something (the rest tick where they happen).
+      if (campfire.resting) tick(campfire.inHaven(body) ? 'circle' : 'fire');
+      if (body.mode === 'climb') tick('climb');
+      if (level.depth >= 1) tick('down');
+      if (level.depth >= 2) tick('deeper');
       if (homeTo !== null) {
         const t = now - homeAt;
         if (threat || body.dead || body.health < health) { homeTo = null; fade.style.opacity = '0'; say('Something is coming. You cannot think of the armchair now.', 3); }
@@ -919,6 +1007,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
     abilityBar.paint(bar, bar.map(slot), passivesOf(cooked), body.dead || tinView.open);
+    stepsView.redraw(steps, now);
     if (hud) hud.textContent = hudText(body, backend, body.dead ? notaryList(fallen, heir + 1, params.seed) : []) + `\n${view.stage.hudLine()}\n\n${lines.filter(Boolean).join('\n')}`;
     // The headlamp: above the head and a little towards where one looks (the camera, not the
     // body: standing and looking round, the figure would shade its own way).

@@ -2468,6 +2468,18 @@
     "reason": "each DOM panel's one-line `open` getter on its own element; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
   },
   {
+    "key": "idiom: [.classList .el] in dunfinity/app/debugMenu.ts + dunfinity/app/diaryView.ts + dunfinity/app/prologueView.ts",
+    "reason": "each DOM panel opening and shutting its own element by class; the shared part (stylesheet, element) is panel() in src/app/panel.ts"
+  },
+  {
+    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/hardware.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and Kemal's gear each know their own fields"
+  },
+  {
+    "key": "same name: dunfinity/game/firstSteps.ts#data + dunfinity/loot/tin.ts#data",
+    "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): the first steps and the Tin each know their own fields"
+  },
+  {
     "key": "same name: dunfinity/loot/tin.ts#data + dunfinity/lore/key.ts#data",
     "reason": "each kept thing's own snapshot for the one save seam (src/persist/save.ts): Tin and grandma's Key each know their own fields"
   },
