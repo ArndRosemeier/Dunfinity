@@ -13,8 +13,9 @@
  * reads.
  */
 import type { Tin } from './tin';
+import type { Sowing } from '../combat/snapdragon';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'salt-line';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'salt-line';
 
 export interface Card {
   readonly id: CardId;
@@ -148,6 +149,14 @@ export const CARDS: readonly Card[] = [
     does: ['P: shove everything 3.5 m in front of you back, hard (2–4 damage); costs 2.5 stamina; every 3 s', 'reaches 4.5 m and shoves twice as hard'],
   },
   {
+    id: 'snapdragon', title: 'Snapdragons', chapter: 'The Garden',
+    need: 'one seed from the brown envelope at the back of the shed, the one I wrote NO on. A pinch of the good salt on it.',
+    method: 'Throw it, then step back. Further than that. It comes up before you can say Jack Robinson and bites whatever is nearest, and it does not care whose grandchild you are. Your grandfather lost a slipper to one.',
+    ranks: ['A bigger seed, and a bigger step back. Don\'t feed it.'],
+    cost: [5, 9],
+    does: ['U: toss a seed that comes up in 1.6 s and for 12 s bites the nearest living thing within 2.2 m, you too (5–8 damage, about every 1.1 s); costs 2 stamina; every 15 s', 'bites within 3 m (7–11 damage, about every 0.9 s) for 15 s; every 13 s'],
+  },
+  {
     id: 'salt-line', title: 'Salt Line', chapter: 'Lost Cards', lost: true,
     need: 'the good salt, a steady hand, and nerve.',
     method: 'Pour it round you in one go, no gaps. They won\'t cross it. Mostly. (Smudged:) Except the tall one. Must find out about the tall one.',
@@ -160,7 +169,7 @@ export const CARDS: readonly Card[] = [
 /** The chapters in the tin's order (recipe-box.md §6). Every one is open from the start; its stronger cards open with depth (`Card.opens`). */
 export const CHAPTERS: readonly string[] = [
   'Kitchen Work', 'Throwing', 'Footwork', 'Climbing & Water', 'Light', 'Grandma\'s Remedies',
-  'Heavy Things', 'Quiet', 'Way Home', 'Guard', 'Fire & Frost', 'Force',
+  'Heavy Things', 'Quiet', 'Way Home', 'Guard', 'Fire & Frost', 'Force', 'The Garden',
   'Lost Cards',
 ];
 
@@ -308,6 +317,11 @@ export class Cooked {
   /** Grandma's Rolling Pin (P), if cooked: how far in front it reaches, metres, and how hard it shoves, m/s. */
   get pin(): { reach: number; knock: number } | null {
     return this.at('rolling-pin', [{ reach: 3.5, knock: 9 }, { reach: 4.5, knock: 18 }]);
+  }
+
+  /** Grandma's Snapdragons (U), if cooked: what a plant does (src/combat/snapdragon.ts), and the seconds between seeds. */
+  get snapdragon(): (Sowing & { between: number }) | null {
+    return this.at('snapdragon', [{ lasts: 12, reach: 2.2, damage: [5, 8] as const, every: 1.1, between: 15 }, { lasts: 15, reach: 3, damage: [7, 11] as const, every: 0.9, between: 13 }]);
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */
