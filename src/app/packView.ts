@@ -48,7 +48,7 @@ export class PackView extends Modal {
     let worn = '', finds = '', spare = '';
     rows.forEach((r, i) => {
       if (r.what === 'slot') {
-        const it = kit.worn[r.slot];
+        const it = r.slot === 'main' ? kit.hand : kit.worn[r.slot];
         worn += line(i, it ? '' : ' bare', `<span class="slot">${SLOT_NAME[r.slot]}</span><span>${it ? esc(itemName(it)) : '·'}</span>`);
       } else if (r.what === 'find') {
         const f = pack.items[r.i];

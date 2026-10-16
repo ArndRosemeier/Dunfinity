@@ -55,5 +55,24 @@ test('a full pack shares its room between finds and spare items', () => {
 test('a save with things this build does not know keeps only what it knows', () => {
   assert.ok(!isItem({ kind: 'garden-hose', quality: 'sound' }));
   assert.ok(!isItem({ kind: 'work-gloves', quality: 'legendary' }));
-  assert.deepEqual(new Kit([{ kind: 'garden-hose', quality: 'sound' } as never]).data, []);
+  assert.deepEqual(new Kit([{ kind: 'garden-hose', quality: 'sound' } as never]).data, [{ kind: 'kitchen-knife', quality: 'sound' }], 'and her knife');
+});
+
+test('a weapon in the hand puts grandma\'s knife in the belt, and its move is how it swings', () => {
+  const p = new Pack(), k = new Kit();
+  p.stow({ kind: 'hatchet', quality: 'fine' });
+  assert.match(rummage({ what: 'spare', i: 0 }, p, k).line, /hatchet/);
+  assert.equal(k.hand.kind, 'hatchet');
+  assert.equal(k.move, 'chop');
+  assert.equal(k.edge, 1.25, 'a fine one');
+  assert.deepEqual(new Kit(k.data).data, k.data, 'kept in the save, the knife with it');
+  p.stow({ kind: 'crowbar', quality: 'sound' });
+  rummage({ what: 'spare', i: 0 }, p, k);
+  assert.equal(k.move, 'swat');
+  assert.equal(p.spare[0].kind, 'hatchet', 'swapped into the pack');
+  assert.equal(rowUse(slot('main'), k), 'put it away, take the knife');
+  rummage(slot('main'), p, k);
+  assert.equal(k.hand.kind, 'kitchen-knife');
+  assert.equal(k.move, 'stab');
+  assert.equal(p.spare.length, 2);
 });

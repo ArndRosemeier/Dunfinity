@@ -20,7 +20,7 @@ test("Kemal sells each thing once, for euros from grandma's purse, put on at onc
   r = buyGear(k, 'helmet', r.euros);
   assert.equal(k.armour, 0.8);
   r = buyGear(k, 'whetstone', r.euros);
-  assert.equal(k.worn.main?.quality, 'fine', 'the whetstone hones her knife');
+  assert.equal(k.knife.quality, 'fine', 'the whetstone hones her knife');
   assert.equal(k.edge, 1.25);
   assert.ok(hasGear(k, 'whetstone') && hasGear(k, 'helmet'));
   assert.deepEqual(new Kit(k.data).data, k.data, 'kept in the save');
@@ -47,4 +47,15 @@ test("his store is next door to grandma's, up the street, and one can stand at i
   assert.ok(house.z0 > TOWN.grandma.z[1] && house.z0 < TOWN.grandma.z[1] + 4, 'next door');
   const level = new Level(1, 0);
   assert.ok(level.sdf(x, TOWN.ground + 1, z) > 0.5, 'on the street before his door');
+});
+
+test('Kemal sells a hatchet, a crowbar and a pick, one in the hand at a time', () => {
+  const k = new Kit();
+  let r = buyGear(k, 'hatchet', 100);
+  assert.equal(k.move, 'chop');
+  r = buyGear(k, 'crowbar', r.euros);
+  assert.equal(r.euros, 100 - GEAR.hatchet.price, 'not with the hatchet in hand');
+  assert.match(r.line, /hand is full/);
+  r = buyGear(k, 'whetstone', r.euros);
+  assert.equal(k.knife.quality, 'fine', 'the knife in the belt can still be honed');
 });
