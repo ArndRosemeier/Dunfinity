@@ -419,6 +419,30 @@
   "loop": false,
   "gain": 0.4
  },
+ "sun_drip": {
+  "files": [
+   "sun_drip_1.ogg",
+   "sun_drip_2.ogg",
+   "sun_drip_3.ogg"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
+ "sun_hum": {
+  "files": [
+   "sun_hum_1.ogg"
+  ],
+  "loop": true,
+  "gain": 0.4
+ },
+ "sun_rise": {
+  "files": [
+   "sun_rise_1.ogg",
+   "sun_rise_2.ogg"
+  ],
+  "loop": false,
+  "gain": 0.6
+ },
  "tall_stare": {
   "files": [
    "tall_stare_1.ogg"

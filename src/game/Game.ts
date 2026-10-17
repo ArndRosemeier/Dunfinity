@@ -113,7 +113,9 @@ import { touchLabel } from '../input/touchButtons';
 import { LetterView } from '../app/letterView';
 import { PauseMenu } from '../app/pauseMenu';
 import { pageId } from '../lore/diary';
-import { candidates, keeps, nextTarget, yawTo } from './target';
+import { candidates, clicked, keeps, nextTarget, offLine, TARGET, yawTo } from './target';
+import { toScreen } from '../render/screen';
+import { Toadstool } from '../creatures/shrooms';
 import { Prologue, Walk } from './prologue';
 import { FirstSteps, type StepId } from './firstSteps';
 import { PrologueView } from '../app/prologueView';
@@ -185,7 +187,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let joinTitle: (g: TitleGame) => void = () => {};
   const titling = titled ? playTitle(host, {
     seed: params.seed, canContinue: !!saved, families: keep ? families() : [], pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
-    sound: sounds.engine, game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
+    sound: sounds.engine, tune: (dt, level) => sounds.music.theme(dt, level), game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
     shown: () => { if (loading.open) loading.hide(); },
   }) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
@@ -614,6 +616,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let atCounter = false;
   /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
   let target: Foe | null = null, targetFull = 1;
+  /** The foes Tab has been round since the cycle began (each seen one gets its turn before the first again). */
+  const tabbed = new Set<Foe>();
   const targetMark = new TargetMark(document.body);
   const hudView = new Hud(document.body);
   hudView.keys(keysOf(keyName, controls.byTouch));
@@ -791,6 +795,31 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
   /** Everyone the knife can hit. */
   const foes = (): Foe[] => fauna.foes();
+  /** Whether the player can see `f`: on screen, not behind rock or a house, not a toadstool still posing as a mushroom. */
+  const seen = (f: Foe): boolean => {
+    if (f instanceof Toadstool && !f.up) return false;
+    const eye = view.camera.position, mid = f.y + f.height * 0.6;
+    if (!toScreen(view.camera, f.x, mid, f.z, 0)) return false;
+    const dx = f.x - eye.x, dy = mid - eye.y, dz = f.z - eye.z, d = Math.hypot(dx, dy, dz);
+    if (d < 1e-3) return true;
+    const clear = d - Math.max(0.3, f.radius) - 0.1;
+    return level.trace(eye.x, eye.y, eye.z, dx / d, dy / d, dz / d, d) >= clear && view.props.blockers.trace(eye.x, eye.y, eye.z, dx / d, dy / d, dz / d, d) >= clear;
+  };
+  /** The foes Tab goes through now: those the player sees, best first. */
+  const inView = (): Foe[] => candidates(foes(), body.x, body.y, body.z, cam.yaw, seen);
+  /** Make `f` the target (null: none). */
+  const aimAt = (f: Foe | null): void => {
+    if (f !== target) tabbed.clear();
+    target = f;
+    targetFull = f ? Math.max(1, f.health) : 1;
+    if (f) tabbed.add(f);
+  };
+  // A click on a foe with the mouse free picks it (the click then takes the mouse for looking round, as ever).
+  canvas.addEventListener('click', (e) => {
+    if (document.pointerLockElement || controls.byTouch || controls.paused || body.dead) return;
+    const f = clicked(foes().filter(seen), (c) => toScreen(view.camera, c.x, c.y + c.height * 0.5, c.z, 0), e.clientX, e.clientY);
+    if (f) aimAt(f);
+  });
   /** Which blow is in progress: a stab, or (grandma's Tenderising) a pound. */
   let striking: 'stab' | 'pound' = 'stab';
   const stab = (now: number, how: 'stab' | 'pound' = 'stab'): void => {
@@ -909,6 +938,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     pickUp: () => { const f = finds.inReach(body.x, body.y, body.z); if (f) pickUp(f, timer.getElapsed()); return !!f; },
     /** Dress the creatures as the kin of another depth (a look at them without going down). */
     kinOn: (depth: number) => Rigged.kinOn(params.seed, depth),
+    /** The Tab target (null: none), and the foes Tab would go through now (those seen). */
+    get target() { return target; }, inView: () => inView(), foes: () => foes(),
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
     /** Press a key (an action's own key, 'Mouse1'…) for the next frame, as the bar's click does. */
@@ -1027,7 +1058,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     before = cam.distance;
     cam.distance = Math.max(cam.distance, 3.5);
     tinView.hide(); packView.hide(); readView.hide(); diaryView.hide();
-    target = null;
+    aimAt(null);
     document.exitPointerLock?.();
   };
   /** The next grandchild, in the cellar, with nothing but what the family keeps. */
@@ -1179,10 +1210,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const handsBusy = tinView.open || packView.open;
     // Tab targeting: Tab picks (and then goes round) the foes near where the camera looks; Escape lets go.
     if (controls.tap('Tab') && !body.dead) {
-      target = nextTarget(foes(), target, body.x, body.y, body.z, cam.yaw);
-      targetFull = target ? Math.max(1, target.health) : 1;
+      const t = nextTarget(inView(), target, tabbed);
+      target = t;
+      targetFull = t ? Math.max(1, t.health) : 1;
     }
-    if (target && (!keeps(target, body.x, body.z) || body.dead || (!handsBusy && controls.held('Escape')))) target = null;
+    if (target && (!keeps(target, body.x, body.z) || body.dead || (!handsBusy && controls.held('Escape')))) aimAt(null);
     body.invulnerable = debug.invulnerable || !!pocket;
     if (debug.tireless) body.stamina = MOVE.stamina;
     const now = timer.getElapsed();
@@ -1191,7 +1223,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const knife = cooked.knife, pound = cooked.tenderising, move = MOVES[kit.move];
     const stabDur = striking === 'pound' ? POUND.dur : move.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : move.hit * knife.time;
     const canStrike = !busy && !handsBusy && !body.rolling && now - stabAt > stabDur;
-    if (controls.tap('Mouse0') && canStrike) stab(now);
+    if (controls.tap('Mouse0') && canStrike) {
+      // A stab with no target picks the foe you see right where you look.
+      if (!target) { const f = inView()[0]; if (f && offLine(f, body.x, body.z, cam.yaw) < TARGET.stabPick) aimAt(f); }
+      stab(now);
+    }
     // Grandma's Tenderising (its slot on the bar) brings the knife's handle down overhead.
     if (controls.tap(useOf('tenderising')) && pound && canStrike) {
       if (body.stamina < POUND.stamina) say('Too out of breath to put your back into it.', 2);
@@ -1262,7 +1298,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Grandma's Horseradish: stoop and set a root at your feet; it tunnels to the Tab target (or the foe nearest where you look).
     const rooting = cooked.horseradish;
     if (controls.tap(useOf('horseradish')) && rooting && canCast && now - radishAt > rooting.every) {
-      const quarry = target ?? candidates(foes(), body.x, body.y, body.z, cam.yaw)[0] ?? null;
+      const quarry = target ?? inView()[0] ?? null;
       if (!quarry) say('Nothing near enough to set it at.', 2);
       else if (cast('stoop', ROOTING.stamina, 'Too out of breath to push it in.')) {
         radishAt = now; castYaw = yawTo(quarry, body.x, body.z);
@@ -1633,6 +1669,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         let near: Foe | undefined, nd = Infinity;
         for (const r of foes()) { const d = Math.hypot(r.x - body.x, r.z - body.z); if (!r.dead && d < nd) { nd = d; near = r; } }
         if (near) nobody.hit(body.x - near.x, body.z - near.z, struck ? 1 : 0.5);
+        // Something hurting you while you hold no target becomes it: the nearest that is after you, else the nearest foe in reach of a blow.
+        if (!target && !body.dead) {
+          const after = fauna.threats(body).sort((a, b) => Math.hypot(a.x - body.x, a.z - body.z) - Math.hypot(b.x - body.x, b.z - body.z))[0];
+          const by = after ?? (near && nd < 4 ? near : null);
+          if (by) aimAt(by);
+        }
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);

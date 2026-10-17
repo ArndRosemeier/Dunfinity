@@ -503,5 +503,29 @@
   "gain": 0.9,
   "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: And yet, eight days on, no dog in that town will walk down Lindenstraße. Good night.",
   "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "sun_rise": {
+  "kind": "shot",
+  "max": 3.5,
+  "files": 2,
+  "gain": 0.6,
+  "sound": "a deep warm swell as a big burning sun of light pulls free from the rock: a soft whoomp of fire catching and a low rising roar",
+  "seed": "two takes, hand-cut (hand-cuts-sun.py): \"a large bonfire flaring up suddenly with a deep soft whoosh of flames, then settling into a low roar\" and \"a big gas burner igniting with a deep soft whoomp and then a low warm roar swelling up, close\""
+ },
+ "sun_drip": {
+  "kind": "shot",
+  "max": 1.2,
+  "files": 3,
+  "gain": 0.5,
+  "sound": "a burning drop of fire falling and splashing on stone with a short hiss",
+  "seed": "a single drop of molten metal falling onto wet stone, a small splat and a short sharp sizzling hiss"
+ },
+ "sun_hum": {
+  "kind": "loop",
+  "max": 10.0,
+  "files": 1,
+  "gain": 0.4,
+  "sound": "a low steady warm roar of a big flame burning in the air, soft",
+  "seed": "hand-cut loop (hand-cuts-sun.py) of: \"a hot air balloon burner flame burning steadily at low power, a soft continuous low roar, nothing else\""
  }
 }
