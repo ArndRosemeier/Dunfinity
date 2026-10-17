@@ -1,8 +1,8 @@
 /**
  * What is in grandma's cellar (src/gen/cellar.ts): shelves of jars and a crate or two, a bare bulb
  * under the vault, the stairs' wooden treads up into the house; in the strange room her armchair
- * with the tin on it, the side table with her lamp and the knife block, the circle of infused salt
- * glowing on the floor; the bricks of the broken arch lying where they fell; a lamp by the old shaft.
+ * with the tin on it, the side table with her lamp and the knife block (her salt circle is
+ * `HavenView`'s); the bricks of the broken arch lying where they fell; a lamp by the old shaft.
  * Upstairs, her ground floor as she left it (`furnishHouse`): its thin walls, the front door open,
  * night at the windows, the kitchen, her bedroom, the living room and its photographs.
  *
@@ -10,7 +10,6 @@
  */
 import { hash3f } from '@futuremagic/core';
 import { CELLAR } from './cellar';
-import { inscribe, inscriptionsAt } from './inscriptions';
 import { local, type PropBuilder, type Rgb } from './propMesh';
 import { furnishTown } from './townProps';
 
@@ -30,7 +29,7 @@ export interface Furnish {
 
 const WOOD: Rgb = [0.2, 0.13, 0.075], DARK: Rgb = [0.12, 0.08, 0.05], BRICK: Rgb = [0.4, 0.2, 0.14];
 const PLUSH: Rgb = [0.17, 0.21, 0.12], TIN: Rgb = [0.16, 0.24, 0.38], GOLD: Rgb = [0.55, 0.42, 0.18];
-const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], SALT: Rgb = [0.45, 0.8, 1.1], WARD: Rgb = [0.3, 0.55, 0.78], STEEL: Rgb = [0.55, 0.56, 0.58];
+const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], STEEL: Rgb = [0.55, 0.56, 0.58];
 const JARS: readonly Rgb[] = [[0.45, 0.28, 0.08], [0.2, 0.3, 0.12], [0.5, 0.12, 0.1], [0.55, 0.45, 0.2]];
 
 export function furnishCellar(f: Furnish): void {
@@ -84,14 +83,7 @@ export function furnishCellar(f: Furnish): void {
   }
 
   if (at(C.room.x, C.room.z)) {
-    // The circle of infused salt: a thin glowing ring on the flagstones.
-    const ci = C.circle, n = 40;
-    for (let k = 0; k < n; k++) {
-      const a = (k / n) * Math.PI * 2, x = ci.x + Math.cos(a) * ci.r, z = ci.z + Math.sin(a) * ci.r;
-      f.glow.upright(x, 0.006, z, -a, 0.035, 0.006, (Math.PI * ci.r) / n + 0.01, SALT);
-    }
-    // Round it, traced in the same salt, the ward she copied (src/gen/inscriptions.ts).
-    for (const ins of inscriptionsAt(0)) inscribe(f.glow, ins, 0.022, 0.008, WARD);
+    // The circle of infused salt and the ward round it are drawn turning slowly by `HavenView` (src/render/props/havenView.ts).
     // Her armchair, the tin on its seat.
     const ch = C.chair, p = local(ch.x, ch.z, ch.yaw);
     const box = (side: number, fwd: number, y: number, hx: number, hy: number, hz: number, c: Rgb) => {

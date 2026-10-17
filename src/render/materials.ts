@@ -381,6 +381,21 @@ export const GLOW = defineKind('glow', ['position', 'normal', 'color'], () => {
 }, { cast: false, receive: false });
 
 /**
+ * Grandma's salt circle and the ward round it (src/render/props/havenView.ts): infused salt glowing
+ * softly, light added to the floor under it, breathing slowly with a shimmer that drifts through the
+ * salt (in the mesh's own frame, so it turns with the circle). Its vertex colour is the glow at rest.
+ * Same attributes as the solid kind.
+ */
+export const SALT_GLOW = defineKind('saltGlow', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending });
+  const p = positionLocal;
+  const breath = sin(time.mul(0.6)).mul(0.2).add(0.8);
+  const shimmer = mx_noise_float(vec3(p.x.mul(2.5), time.mul(0.15), p.z.mul(2.5))).mul(0.4).add(0.8);
+  m.colorNode = vertexColor().mul(breath.mul(shimmer));
+  return m;
+}, { cast: false, receive: false });
+
+/**
  * Standing water: clear over the shallows (the floor shows through, tinted), dark and green-black
  * where it is deep, its surface stirred by slow ripples so the lamps and the headlamp glint and
  * wobble on it. Its vertex colour is the props' depth shade (pale shallow, near black deep). Same attributes as the solid kind.

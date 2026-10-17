@@ -78,6 +78,7 @@ import { playTitle, type TitleGame } from './title';
 import { playCreator } from './creator';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
+import { HavenView } from '../render/props/havenView';
 import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
 import { PackView } from '../app/packView';
@@ -385,6 +386,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const slimeView = await SlimeView.create();
   const eelView = await EelView.create();
   const shroomView = await ShroomView.create();
+  /** Grandma's salt circle in the round room, turning slowly. */
+  const havenView = new HavenView();
   // The level's own animals: one stand-in through the warm-up builds the shaders every species draws with.
   const herd = new HerdView(view.stage);
   herdView = herd;
@@ -450,6 +453,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Grandma's Salt Line, poured (one at a time; it stays on the level it was poured on). */
   const saltLineView = new SaltLineView(SALT_RINGS.map((k) => k.r));
   await view.stage.add(saltLineView.root);
+  await view.stage.add(havenView.root);
   const tinView = new TinView(document.body);
   /** The pack open (I), and the find chosen in it. */
   const packView = new PackView(document.body);
@@ -1545,6 +1549,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     radishView.draw(radish.roots, now, body);
     petView.draw(pets.list, now);
     saltLineView.draw(saltLine, level, now);
+    havenView.draw(level, now);
     nobody.shown = !cam.firstPerson;
     cam.room = shedOf();
     cam.follow(body.x, body.y + 1.6, body.z, dt);
