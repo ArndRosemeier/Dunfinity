@@ -1,17 +1,15 @@
 /**
- * Who the living people of a level are (docs/design/lore.md §3: the worlds are stacked like strata,
- * so each buried world has its own people). Down to level 10 no people of ours live below the town
- * (only grandma ever went down and came back): the camps there are goblins', come up the rift to
- * pick over what the miners left. Below, each game's dark has two peoples of Norgo's races (seeded
- * per game, so a new game meets others), and each stratum belongs to one of the two. Dwarves and
- * elves are not among them (only their ghosts are left, src/creatures/ghosts.ts), nor giantkin (too
- * big for a camp).
+ * The peoples of the deep (docs/design/lore.md §3: the worlds are stacked like strata, so each
+ * buried world had its own people): two of Norgo's races per game, seeded, so a new game meets
+ * others. None of them live in the dark the grandchildren walk (Arnd 2026-10-17: no other people
+ * down there; the camps are goblins', src/creatures/scavengers.ts). One has come up: the stranger at
+ * Ilse's (src/world/stranger.ts). Dwarves and elves are not among them (only their ghosts are
+ * left, src/creatures/ghosts.ts), nor goblins or giantkin.
  *
  * Pure.
  */
 import { deriveSeed, Rng } from '@futuremagic/core';
 import type { RaceId } from '@futuremagic/humanoid';
-import { stratumOf } from '../gen/genome';
 
 /** The peoples a buried world may have. */
 export const DEEP_FOLK: readonly RaceId[] = ['orc', 'halfling', 'sylvan', 'drakeborn', 'umbral'];
@@ -23,9 +21,3 @@ export function deepFolk(seed: number): readonly [RaceId, RaceId] {
   return [DEEP_FOLK[a], DEEP_FOLK[b]];
 }
 
-/** Which of `deepFolk(seed)` lives at `depth` (0 or 1), or -1 above the buried worlds, where the camps are goblins'. */
-export function folkAt(seed: number, depth: number): -1 | 0 | 1 {
-  const s = stratumOf(depth);
-  if (!s) return -1;
-  return new Rng(deriveSeed(seed, 'folk', s.from)).chance(0.5) ? 0 : 1;
-}
