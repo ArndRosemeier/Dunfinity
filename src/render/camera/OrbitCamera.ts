@@ -30,6 +30,9 @@ export class OrbitCamera {
   /** The shed the target is in, whose walls and roof pull the camera in too. */
   room: Shed | null = null;
 
+  /** A jolt on top of the look this frame, radians (a blow landing or taken: src/game/feel.ts); it never moves where the camera is. */
+  readonly jolt = { yaw: 0, pitch: 0 };
+
   /** The props in the way (src/world/blockers.ts), which pull the camera in as the rock does. */
   blockers: Blockers | null = null;
 
@@ -63,7 +66,7 @@ export class OrbitCamera {
     if (this.room && reach > 0) reach = Math.min(reach, inside(this.room, x, y, z, bx, by, bz));
     this.current = reach < this.current ? reach : this.current + (reach - this.current) * Math.min(1, dt * 4);
     this.camera.position.set(x + bx * this.current, y + by * this.current, z + bz * this.current);
-    this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+    this.camera.rotation.set(this.pitch + this.jolt.pitch, this.yaw + this.jolt.yaw, 0, 'YXZ');
   }
 }
 
