@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { AGGRESSION, bestiaryOf, type Species } from '../src/creatures/bestiary';
-import { Critters, HERD, rangeOf, type Critter, type Herd } from '../src/creatures/critters';
+import { Critters, HERD, natureOf, type Critter, type Herd } from '../src/creatures/critters';
+import { rangeOf } from '../src/creatures/animals';
 import { ALARMS, FLOCKS, HABITS, LAMPS, PACES, STRATEGIES, temperOf } from '../src/creatures/temper';
 import { damage, type Fighter } from '../src/combat/combat';
 
@@ -48,11 +49,11 @@ test('the more aggressive, the further off it comes for you; one that leaves you
   const sp = bestiaryOf(3, 9)[0];
   let last = 0;
   for (const a of [0.56, 0.65, 0.8, 1]) {
-    const r = rangeOf({ ...sp, aggression: a, peaceful: false }, 1);
+    const r = rangeOf({ ...natureOf(sp), aggression: a, peaceful: false }, 1);
     assert.ok(r > last, `range ${r} at ${a}`);
     last = r;
   }
-  assert.equal(rangeOf({ ...sp, aggression: 0.4, peaceful: true }, 1), 0);
+  assert.equal(rangeOf({ ...natureOf(sp), aggression: 0.4, peaceful: true }, 1), 0);
 });
 
 test('the most passive only run, even when hit; nothing peaceful ever hurts you unprovoked (habits, warnings, curiosity)', () => {

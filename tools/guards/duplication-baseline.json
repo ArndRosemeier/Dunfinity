@@ -3468,27 +3468,7 @@
     "reason": "the views' one verb: each draws its own things once a frame"
   },
   {
-    "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/crickets.ts + dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "idiom: [.move .steer .x .z] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/ghosts.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
-  },
-  {
-    "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/critters.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/crickets.ts#hatch + dunfinity/creatures/critters.ts#hatch",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/dogs.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/rats.ts#act",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
@@ -3666,14 +3646,6 @@
   {
     "key": "same name: dunfinity/render/creatures/ghostView.ts#roots + dunfinity/render/creatures/petView.ts#roots",
     "reason": "a view with several FigurePools hands their roots to the Stage: same getter, different pools"
-  },
-  {
-    "key": "idiom: [.slide .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
-    "reason": "walkers moving by their velocity through Steer.slide, the one way to move on the floor"
-  },
-  {
-    "key": "idiom: [.slide .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/critters.ts + dunfinity/creatures/pets.ts",
-    "reason": "walkers moving by their velocity through Steer.slide, the one way to move on the floor"
   },
   {
     "key": "clone: dunfinity/gen/lava.ts#constructor + dunfinity/gen/organic.ts#constructor + dunfinity/gen/rift.ts#constructor",
@@ -4704,23 +4676,51 @@
     "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
   },
   {
-    "key": "idiom: [.hypot .tx .tz .x .z Math] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/population.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
-  },
-  {
-    "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
-  },
-  {
-    "key": "idiom: [.move .steer .tx .tz] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/population.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
-  },
-  {
-    "key": "idiom: [.roamFrom .tx .tz] in dunfinity/creatures/critters.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/petView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
     "reason": "each RiggedFigure answers clipFor from its own creature's modes and clips (the Figure seam in rigged.ts)"
+  },
+  {
+    "key": "idiom: [.hypot .tx .tz .x .z Math] in dunfinity/creatures/animals.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/population.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
+  },
+  {
+    "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/animals.ts + dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/animals.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "idiom: [.move .steer .tx .tz] in dunfinity/creatures/animals.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/population.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
+  },
+  {
+    "key": "idiom: [.move .steer .x .z] in dunfinity/creatures/animals.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/ghosts.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
+  },
+  {
+    "key": "idiom: [.roamFrom .tx .tz] in dunfinity/creatures/animals.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
+  },
+  {
+    "key": "idiom: [.slide .steer] in dunfinity/creatures/animals.ts + dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
+    "reason": "walkers moving by their velocity through Steer.slide, the one way to move on the floor"
+  },
+  {
+    "key": "idiom: [.slide .steer] in dunfinity/creatures/animals.ts + dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts",
+    "reason": "walkers moving by their velocity through Steer.slide, the one way to move on the floor"
+  },
+  {
+    "key": "same name: dunfinity/creatures/animals.ts#act + dunfinity/creatures/crickets.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/animals.ts#act + dunfinity/creatures/dogs.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
+  },
+  {
+    "key": "same name: dunfinity/creatures/animals.ts#act + dunfinity/creatures/rats.ts#act",
+    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   }
 ]
