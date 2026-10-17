@@ -5,12 +5,12 @@
  * place one left is copied from the screen (`LevelView.capture` into `WAY_PICTURES.back`).
  */
 import { ImageLoader } from 'three/webgpu';
-import { windowQuad } from './thinView';
+import { tintHall, windowQuad } from './thinView';
 import { WAY as WAY_KIND, WAY_PICTURES, WAY_STATE } from './materials';
 import { WAY, wayOpen, type WayDoor } from '../world/wayHome';
 
-/** Rim colours: the veins' green leading up (home), their blue leading down. */
-const RIM: Record<'home' | 'down', [number, number, number]> = { home: [0.35, 0.9, 0.55], down: [0.3, 0.6, 1.0] };
+/** Rim colours: the veins' green leading up (home), their blue leading down (the hall between worlds' too). */
+export const RIM: Record<'home' | 'down', [number, number, number]> = { home: [0.35, 0.9, 0.55], down: [0.3, 0.6, 1.0] };
 
 /** Where the picture is looked at from (m before the window) and laid (m behind it). */
 const PICTURE = { eye: 1.6, behind: 0.6 } as const;
@@ -35,9 +35,7 @@ export class WayView {
     this.mesh.scale.set(WAY.half[0], WAY.half[1], 1);
     WAY_STATE.open.value.set(wayOpen(w.age), w.age, g.bay, Math.min(g.height, 3.2));
     WAY_STATE.floor.value = -WAY.over;
-    WAY_STATE.stone.value.set(...g.stone);
-    WAY_STATE.light.value.set(...g.light);
-    WAY_STATE.haze.value.set(...g.haze);
+    tintHall(WAY_STATE, g);
     WAY_STATE.rim.value.set(...(up ? RIM.home : RIM.down));
     // The picture: laid just behind the window and seen from close before it, so its whole height
     // shows (the middle of its width) and it shifts only a little as one moves.

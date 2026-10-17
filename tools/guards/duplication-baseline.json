@@ -4782,5 +4782,45 @@
   {
     "key": "same name: dunfinity/app/minimap.ts#show + dunfinity/render/props/saltLine.ts#show",
     "reason": "each view draws or shows its own thing; the minimap paints the map small in the HUD corner"
+  },
+  {
+    "key": "same name: dunfinity/app/minimap.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/hallView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/hallView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/hallView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/humView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/world/hall.ts#walk + dunfinity/world/traverse/body.ts#walk",
+    "reason": "the same verb for a different thing"
   }
 ]
