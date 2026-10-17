@@ -56,6 +56,11 @@
    "kind": "stream",
    "seconds": 177.087
   },
+  "title": {
+   "file": "tracks/title.ogg",
+   "kind": "loop",
+   "seconds": 78.91
+  },
   "town": {
    "file": "tracks/town.mp3",
    "kind": "stream",
