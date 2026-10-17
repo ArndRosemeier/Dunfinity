@@ -93,7 +93,7 @@ export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise
       if (look && !building && t - builtAt > CREATOR.rebuild) {
         want = null;
         building = true;
-        nobody.restyle(look, (o) => view.stage.prepare(o)).catch((e) => console.warn('[creator] rebuild failed', e)).finally(() => { building = false; builtAt = clock(); });
+        nobody.restyle(look, (o) => view.stage.prepare(o, { everyCaster: true })).catch((e) => console.warn('[creator] rebuild failed', e)).finally(() => { building = false; builtAt = clock(); });
       }
       nobody.puppet([feet.x, feet.y, feet.z], [0, 0, 0], yaw, 'idle', dt, t);
       aim();

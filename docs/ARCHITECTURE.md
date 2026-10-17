@@ -55,7 +55,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | A third-person camera that stays out of the rock and the props | `OrbitCamera` (pulls in along `level.trace`, and `Blockers.trace` through `cam.blockers`) | `src/render/camera/OrbitCamera.ts` |
 | Look at a level: scene, fixed lights, warm-up, streamed rock and props; switch to another level | `LevelView` (`LevelView.open`, `view.go(level)`) | `src/render/LevelView.ts` |
 | The player's figure | `Nobody` (Scale's human in rags, posed from the `Body`; `Nobody.create(seed, level, look)`, a saved look or the seed's) | `src/render/humans/nobody.ts` |
-| Give the player's figure a new look (built and compiled before it is swapped in) | `nobody.restyle(look, (o) => stage.prepare(o))` | `src/render/humans/nobody.ts` |
+| Give the player's figure a new look (built and compiled before it is swapped in) | `nobody.restyle(look, (o) => stage.prepare(o, { everyCaster: true }))` (a rebuilt human's shadow-pass shaders are its own) | `src/render/humans/nobody.ts` |
 | Make the first grandchild after New Game (Scale's character creator: body, face, hair, skin and eyes; the nobody in the cellar on the game's own renderer while the rest of the shaders build; "Go down" waits on them); the look kept as `SaveData.look` | `playCreator(host, cast)` (a `CreatorCast`), placing `CREATOR`; the overlay `CreatorView` (`done`, `ready`); `?creator` opens it alone | `src/game/creator.ts`, `src/app/creatorView.ts` |
 | A human: body, skeleton, materials, clothes, animation | `Humanoid` (`Humanoid.create(look, { wardrobe })`, `dress`, `update`) | `@futuremagic/humanoid/three` |
 | A human's look (race, age, hair, skin) from a seed | `randomAppearance(race, seed, opts)` | `@futuremagic/humanoid` |

@@ -134,14 +134,14 @@ export class Stage {
    * caster in it is drawn once, in a cap slot of its own, into the shadow camera only (a layer the
    * camera does not see).
    */
-  private async warmShadowsOf(obj: Object3D): Promise<void> {
+  private async warmShadowsOf(obj: Object3D, every = false): Promise<void> {
     if (!this.shadowCam || !this.cap.active || obj.parent) return;
     const meshes: Mesh[] = [], fresh: Mesh[] = [];
     obj.traverse((c) => { if ((c as Mesh).isMesh) meshes.push(c as Mesh); });
     for (const m of meshes) {
       if (!m.castShadow) continue; // the shadow pass draws casters only
       const key = casterKey(m);
-      if (this.casters.has(key)) continue;
+      if (this.casters.has(key) && !every) continue;
       this.casters.add(key);
       fresh.push(m);
     }
@@ -183,16 +183,18 @@ export class Stage {
 
   /**
    * Compile everything `obj` draws with, without adding it (for callers that add it to a group of
-   * their own once it is ready, like the terrain).
+   * their own once it is ready, like the terrain). `everyCaster`: draw each of its shadow casters
+   * into the shadow pass once, even of a kind already warmed (a rebuilt human: its shadow builds are
+   * its own, src/render/humans/nobody.ts restyle).
    */
-  prepare(obj: Object3D): Promise<void> {
+  prepare(obj: Object3D, opts: { everyCaster?: boolean } = {}): Promise<void> {
     // compileAsync skips what is outside the view; it must compile everything, or the object
     // would build its shader on the render path the first time it comes into view.
     const culled: Object3D[] = [];
     obj.traverse((o) => { if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); } });
     return this.renderer.compileAsync(obj, this.camera, this.scene).finally(() => {
       for (const o of culled) o.frustumCulled = true;
-    }).then(() => this.warmShadowsOf(obj));
+    }).then(() => this.warmShadowsOf(obj, opts.everyCaster));
   }
 
   remove(obj: Object3D): void {
