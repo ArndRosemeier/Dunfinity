@@ -13,7 +13,8 @@ export type TitleChoice = 'continue' | 'new';
 
 const CSS = `
   #title { position: fixed; inset: 0; z-index: 20; pointer-events: none; font-family: var(--ui-font-display); color: var(--ui-ink); }
-  #title .back { position: absolute; inset: 0; background: #000; }
+  /* The set catches clicks: they must not reach the game's canvas behind, which would take the mouse. */
+  #title .back { position: absolute; inset: 0; background: #000; pointer-events: auto; }
   #title .back canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   #title .black { position: absolute; inset: 0; background: #000; opacity: 0; }
   #title .shade { position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.45) 30%, transparent 48%); }
