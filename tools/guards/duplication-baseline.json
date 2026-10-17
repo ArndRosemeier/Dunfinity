@@ -28,10 +28,6 @@
     "reason": "Two lines each: the Style contract's portal, answered with the style's own feature of the cell containing (x, z) (an air bell's beach, a geode's middle); a helper would be longer than the copies."
   },
   {
-    "key": "clone: dunfinity/gen/regions.ts#newShares + dunfinity/gen/voronoi.ts#newNear",
-    "reason": "empty out-objects for two different scans (style shares vs Voronoi neighbours); same factory shape, different fields"
-  },
-  {
     "key": "clone: dunfinity/gen/shapes.ts#boxDist2 + dunfinity/gen/shapes.ts#boxDist3",
     "reason": "the box distance in two and in three dimensions, side by side in the one shapes seam (they were seven inline copies); a shared body would cost a vararg call in the hottest field code"
   },
