@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.227 — Contact us opens the Futuremagic board
+
+- The title screen's Contact us button now opens https://board.futuremagic.de/ in a new tab instead of writing a mail.
+
 ## v0.226 — Shader check follows New Game's mode question
 
 - The on-demand shader check (and the title probe) picks a game mode after New Game before it waits for the character creator, so its title part runs again.
