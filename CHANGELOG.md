@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.257 — A gift waits in every thin-place pocket
+
+- Stepping through a thin place, a crystal of that deeper world glows on the floor a few steps ahead, and a thread of rising salt leads to it. Take it before the pocket lets go of you.
+- The crystal is a find like the others: it goes in your rucksack and the shops buy it, worth more the deeper the world it came from.
+
 ## v0.256 — A minimap
 
 - A small map in the bottom right corner of the screen, north up and centred on you, in the map's salt-vein look: what you have seen below, the whole village with its shops and grandma's house up top.
