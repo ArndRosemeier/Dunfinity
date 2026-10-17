@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.219 — Step through a thin place
+
+- Walk into a thin place while it is open and you stand in the world it shows, 8 to 40 levels down: its stone, its light, its air, on open floor near where that world's ladder comes in.
+- Nothing there wakes or can hurt you, and nothing there counts as reached; the way back hangs open behind you.
+- After a short while the pocket grows unstable: the way back flickers, the edges of sight shake and go blue. Then it lets go and you are back where you stepped in. Walk into the way back to go home sooner.
+- Thin places stay open a little longer, so there is time to reach one.
+
 ## v0.218 — The townsfolk of today
 
 - The game happens today: the village's people now wear present-day clothes (jeans and a hoodie, a yellow rain jacket, a puffer and leggings, a fleece, a red parka, a white shirt; trainers and boots) instead of 1966 ones.
