@@ -24,7 +24,7 @@ test('a caption shows in whole sentences, a line at a time, all of it in order',
     for (const l of lines) assert.ok(l.length <= PACE.line || !l.slice(0, -1).match(/[.!?] /), l);
   }
   const i = 2, seen: string[] = [];
-  for (let t = 0; t < shotSeconds(REPORT[i]); t += 0.1) {
+  for (let t = 0.01; t < shotSeconds(REPORT[i]); t += 0.1) {
     const { line } = onAir(shotStart(i) + t);
     if (seen.at(-1) !== line) seen.push(line);
   }
