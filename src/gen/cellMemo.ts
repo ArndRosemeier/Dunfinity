@@ -1,5 +1,8 @@
 import { Rng, deriveSeed } from '@futuremagic/core';
 
+/** A grid cell's number, unique for |i|, |j| < 32768 (the key of every per-cell map). */
+export const cellKey = (i: number, j: number): number => (i + 32768) * 65536 + (j + 32768);
+
 /**
  * Things scattered one per grid cell (shafts, rat nests), decided by a pure function of the cell
  * and worked out once: the first look at a cell asks `decide(i, j, key)`, later looks reuse it.

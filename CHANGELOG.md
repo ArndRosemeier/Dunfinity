@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.199 — Root hollows run smoothly again
+
+- The root hollows (and the fungal grotto and geodes) no longer drag the frame rate down: every step a creature took there looked up all the roots of the nearby chambers again. Now each 2 m patch of floor remembers its nearby roots once. The game's own work per frame there drops from about 15 ms to the level of the other caves; the rock looks exactly the same.
+
+## v0.198 — Creature maker in the debug menu
+
+- The debug menu (`) has a creature maker. Pick a role, a body plan, a skin, a seed and a strangeness, or press Randomize for a new one.
+- Under "Its genome", every value a procedural creature is grown from is a slider: torso length and girth, legs, neck, head, snout, eyes, horns, tail, spikes, shell, arms, hue, pattern, glow and see-through skin.
+- Spawn puts the creature down a few of its lengths in front of you, facing you and standing still so you can look at it. With one out, letting go of a slider remakes it in place. Remove takes it away.
+
+## v0.197 — Footsteps without the whoosh
+
+- Walking no longer makes a continuous whooshing hiss: the stone and water footstep clips were long stretches of amplified scuffing noise that blurred together. They are now single steps cut at their impact with a fast decay (0.2 s on stone, 0.35 s in water), from new louder takes with clear, separate steps.
+
+## v0.196 — A country village round grandma's street
+
+- The town is no longer one street in a closed valley: it is a whole village, laid out like Scale's country villages, with fields all round it.
+- A lane runs from opposite grandma's door to the village square, where the church stands with its tall spired tower.
+- Country roads wander out of the square across the fields, lanes and side lanes branch off them, and houses line every street, closer and taller near the square, now and then a barn at the edge.
+- Out in the fields: a patchwork of wheat, barley, green cereal, maize, ploughed earth, pasture, rapeseed and stubble, hedgerows along some of the borders, and farmsteads with their farmhouse, barn and shed round a yard, a dirt track out to the road.
+- Street lamps along the village streets and round the square; windows lit here and there, front and back.
+- Grandma's street, her house, Kemal's store next door, Ilse's pawn shop and Frau Weber's across the street are where they were. The quarry hill still rises behind her house, curving away round the village.
+
 ## v0.195 — The presenter speaks
 
 - On the title screen's television, the presenter, Horst Weidner, now speaks his lines: the opening, the baker's sighting, the dogs, the milk, the mine's "no comment" and his good night.

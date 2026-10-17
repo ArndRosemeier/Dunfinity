@@ -1,50 +1,46 @@
 /**
- * The town at night (depth 0, above grandma's cellar; docs/design/town-and-first-strata.md §3):
- * grandma's street. Her house, its back built into the quarry hill the town stands against, the
- * cobbled street in front, a row of houses on each side, the valley closing round it all. Like the
- * cellar it is hand-placed (from a fixed seed), the same for every seed.
+ * The town at night (depth 0, above grandma's cellar; docs/design/town-and-first-strata.md §3): a
+ * country village (src/gen/village.ts) in the lee of the quarry hill, with fields all round it.
+ * Grandma's street runs along the foot of the hill, her house's back built into it; a lane leads
+ * from opposite her door to the square and the church; country roads, lanes and side lanes, houses
+ * along them all, and farmsteads out in the fields, all laid out from the town's seed (the same for
+ * every seed of the game: the family's town does not move). Ilse's pawn shop is across the street,
+ * Kemal's hardware store next door, Frau Weber across the street just down from the lane.
  *
- * A part of the cellar's field (src/gen/cellar.ts): air above the ground and outside the houses, the
- * houses solid (only grandma's has an inside). Pure.
+ * A part of the cellar's field (src/gen/cellar.ts): air above the ground and outside the buildings,
+ * the buildings solid (only grandma's has an inside), hedgerows along some of the fields' borders.
+ * Pure.
  */
-import { hash3f } from '@futuremagic/core';
+import { Noise, Rng, deriveSeed, lerp, smoothstep } from '@futuremagic/core';
+import { CROP_COLOR, CROP_GRASS, newParcel, parcelAt, parcelGrid, type Crop } from './fields';
+import { local } from './propMesh';
+import { Village, buildingDistance, type Building, type Road } from './village';
 
 /** Where things are, metres (the street level is the house floor; the cellar is below). */
 export const TOWN = {
-  /** Street level. */
+  /** Street level: the village's ground. */
   ground: 2.7,
-  /** The cobbled street, along z in front of grandma's house. */
-  street: { x: [-22, -16.2] },
+  /** Grandma's street, along z in front of her house (between the house fronts), and how far it runs each way. */
+  street: { x: [-22, -16.2], reach: 92 },
   /** Her house: its walls and roof (the inside is CELLAR.house), the back in the hill. */
   grandma: { x: [-16.2, -6.4], z: [-5.6, 5.6], eaves: 6.2, pitch: 0.75 },
   /** Her front door, open: from the hall out onto the street (its air reaching well into both, as the cellar's doorway). */
   door: { x: [-17.4, -14.0], z: [-0.5, 0.5], top: 2.05 },
-  /** The quarry hill behind her side of the street: where it starts, how steep, how high. */
-  hill: { x: -9, slope: 1.2, rise: 30 },
-  /** The valley's sides, closing the street off: past |z| = `z` and west of `x` the ground rises. */
-  valley: { z: 60, x: -72, rise: 40 },
-  /** The rows of houses: across the street (west) and on her side (east). */
-  across: { x: [-31, -22] },
-  side: { x: [-16.2, -6.4] },
+  /**
+   * The quarry hill behind her side of the street: where its foot is (x, along her street within
+   * `straight` of her door, curving away east beyond, by `bend` per metre², wandering by up to
+   * `wobble`), how steep, how high.
+   */
+  hill: { x: -9, slope: 1.2, rise: 30, straight: 25, bend: 0.006, wobble: 14 },
+  /** How far the village reaches from its square; how high the land rolls out beyond it. */
+  village: { r: 150, roll: 8 },
 } as const;
 
-export interface House {
-  readonly x0: number;
-  readonly x1: number;
-  readonly z0: number;
-  readonly z1: number;
-  /** Height of the eaves, and the roof's pitch (the ridge runs along x, the gable to the street). */
-  readonly eaves: number;
-  readonly pitch: number;
-  /** Which way its front faces the street (+1: east, -1: west), and a number for its look. */
-  readonly faces: 1 | -1;
-  readonly look: number;
-  /** Where along its front its door is (z), and what it is (a shop, or someone's home). */
-  readonly door: number;
-  readonly shop?: Shop;
-  /** Whose home it is, when that is someone one can call on. */
-  readonly home?: Neighbour;
-}
+/** The town's seed: its layout, the same for every game. */
+const SEED = 1931;
+
+/** A building of the town (src/gen/village.ts); its `role` says whose it is. */
+export type House = Building;
 
 /** The shops of the street (town-and-first-strata.md §3). */
 export type Shop = 'pawn' | 'hardware';
@@ -52,103 +48,289 @@ export type Shop = 'pawn' | 'hardware';
 /** The neighbours one can call on (town-and-first-strata.md §3): old Frau Weber, across the street. */
 export type Neighbour = 'weber';
 
-const SEED = 1931;
+const land = new Noise(deriveSeed(SEED, 'land'));
+
+/** The quarry hill at (x, z): its height and its slope. */
+function hill(x: number, z: number): { h: number; gx: number; gz: number } {
+  const H = TOWN.hill, a = Math.max(0, Math.abs(z) - H.straight), wobble = H.wobble * smoothstep(0, 40, a);
+  const foot = H.x + H.bend * a * a + (wobble > 0 ? wobble * land.n2(z / 90, 7.7) : 0), t = x - foot;
+  if (t <= 0) return { h: 0, gx: 0, gz: 0 };
+  const h = Math.min(H.rise, t * H.slope), on = t * H.slope < H.rise;
+  // (The wobble's own slope along z is at most about wobble / 40 per metre: counted in.)
+  return { h, gx: on ? H.slope : 0, gz: on ? H.slope * (2 * H.bend * a + wobble / 40) : 0 };
+}
+
+/** The square's place (from the seed): out west of her street, roughly opposite her door. */
+const SQUARE = (() => {
+  const r = new Rng(deriveSeed(SEED, 'square'));
+  return { x: (TOWN.street.x[0] + TOWN.street.x[1]) / 2 - r.range(50, 70), z: r.range(-12, 12) };
+})();
+
+/** How much the land rolls at (x, z): none in the village (nor over the cellar), more the farther out. */
+function rollOf(x: number, z: number): number {
+  return smoothstep(TOWN.village.r, TOWN.village.r * 2.2, Math.hypot(x - SQUARE.x, z - SQUARE.z));
+}
+
+/** The ground before the farmyards are levelled: the village's level, the hill, the rolling land. */
+function rawGround(x: number, z: number): number {
+  const m = rollOf(x, z);
+  return TOWN.ground + hill(x, z).h + (m > 0 ? m * TOWN.village.roll * land.fbm2(x / 260, z / 260, 3) : 0);
+}
+
+const STREET_X = (TOWN.street.x[0] + TOWN.street.x[1]) / 2;
+
+/** Her house, as the village keeps it: front to the street (west), the ridge running back into the hill. */
+const GRANDMAS: Building = {
+  kind: 'house', cx: (TOWN.grandma.x[0] + TOWN.grandma.x[1]) / 2, cz: 0, yaw: -Math.PI / 2,
+  hu: (TOWN.grandma.z[1] - TOWN.grandma.z[0]) / 2, hv: (TOWN.grandma.x[1] - TOWN.grandma.x[0]) / 2,
+  base: TOWN.ground, eaves: TOWN.grandma.eaves, pitch: TOWN.grandma.pitch, ridge: 'across', look: 0.5, door: 0, role: 'grandma',
+};
+
+/** The village. */
+export const VILLAGE = new Village({
+  seed: SEED,
+  x: SQUARE.x,
+  z: SQUARE.z,
+  r: TOWN.village.r,
+  ground: rawGround,
+  blocked: (x, z) => hill(x, z).h > 0.3,
+  streets: [{ pts: [STREET_X, -TOWN.street.reach, STREET_X, TOWN.street.reach], kind: 'lane', hw: (TOWN.street.x[1] - TOWN.street.x[0]) / 2, join: [STREET_X, 0] }],
+  buildings: [GRANDMAS],
+  farms: 5,
+});
+
+/** Every building of the town, grandma's first. */
+export const HOUSES: readonly House[] = VILLAGE.buildings;
+
+/** Give the house on her street that `pick` chooses its role (its door in the middle of its front). */
+function assign(role: Shop | Neighbour, pick: (h: House) => number): void {
+  let best = -1, bk = Infinity;
+  VILLAGE.buildings.forEach((h, i) => {
+    if (h.kind !== 'house' || h.role || Math.abs(h.cz) > TOWN.street.reach) return;
+    const k = pick(h);
+    if (k < bk) { bk = k; best = i; }
+  });
+  if (best < 0) throw new Error(`no house in the town for ${role}`);
+  VILLAGE.buildings[best] = { ...VILLAGE.buildings[best], role, door: 0 };
+}
+/** Facing the street from her side (west), or from across it (east). */
+const herSide = (h: House) => Math.abs(h.yaw + Math.PI / 2) < 0.01 && h.cx > TOWN.street.x[1];
+const across = (h: House) => Math.abs(h.yaw - Math.PI / 2) < 0.01 && h.cx < TOWN.street.x[0];
+// Kemal's next door to her (up the street), Ilse's across the street just up from the lane, Frau Weber's just down from it.
+assign('hardware', (h) => (herSide(h) && h.cz > 0 ? h.cz : Infinity));
+assign('pawn', (h) => (across(h) && h.cz > 0 ? h.cz : Infinity));
+assign('weber', (h) => (across(h) && h.cz < 0 ? -h.cz : Infinity));
 
 /** The houses' plaster, picked by their `look`: limestone, ochre, whitewash gone grey, old pink. */
 const PLASTER: readonly (readonly [number, number, number])[] = [[0.56, 0.53, 0.44], [0.55, 0.45, 0.3], [0.5, 0.5, 0.48], [0.5, 0.4, 0.37]];
+const CHURCH_STONE: readonly [number, number, number] = [0.46, 0.43, 0.37];
+const BARN_WOOD: readonly [number, number, number] = [0.26, 0.15, 0.09];
 
-/** A house's plaster and its roof (slate or red tile), by its look. */
+/** A building's walls and roof: plaster and slate or red tile; the church's stone and slate; a barn's boards. */
 export function houseColors(h: House): { wall: [number, number, number]; roof: [number, number, number] } {
-  const p = PLASTER[Math.floor(h.look * PLASTER.length)];
-  return { wall: [p[0], p[1], p[2]], roof: h.look < 0.5 ? [0.15, 0.16, 0.19] : [0.33, 0.15, 0.1] };
+  const p = h.kind === 'church' || h.kind === 'tower' ? CHURCH_STONE : h.kind === 'barn' ? BARN_WOOD : PLASTER[Math.floor(h.look * PLASTER.length)];
+  const slate = h.kind === 'church' || h.kind === 'tower' || h.look < 0.5;
+  return { wall: [p[0], p[1], p[2]], roof: slate ? [0.15, 0.16, 0.19] : [0.33, 0.15, 0.1] };
 }
 
-/** Lay out a row from z0 to z1 (each way from the middle, leaving `keep` clear round z = 0). */
-function row(x0: number, x1: number, faces: 1 | -1, k: number, keep: number): House[] {
-  const out: House[] = [];
-  for (const dir of [1, -1]) {
-    let z = keep;
-    for (let i = 0; z < TOWN.valley.z - 4; i++) {
-      const r = (j: number) => hash3f(SEED, k * 2 + (dir > 0 ? 0 : 1), i, j);
-      const w = 6.5 + r(1) * 4, gap = 0.6 + r(2) * 1.8;
-      const za = z + gap, zb = Math.min(TOWN.valley.z - 2, za + w);
-      // A lane between the houses now and then, its gap wider.
-      const lane = r(3) < 0.18 ? 3 : 0;
-      const z0 = dir > 0 ? za + lane : -zb, z1 = dir > 0 ? zb : -(za + lane);
-      out.push({ x0: x0 + (faces > 0 ? 0 : r(4) * 0.6), x1: x1 - (faces > 0 ? r(4) * 0.6 : 0), z0, z1, eaves: GROUND_EAVES + r(5) * 2.6, pitch: 0.55 + r(6) * 0.45, faces, look: r(7), door: (z0 + z1) / 2 + (r(8) - 0.5) * (z1 - z0 - 3) });
-      z = zb + lane;
+/** Where one stands at a house's door (out on the street, before its step), which way is out (nx, nz) and which way along its front (sx, sz). */
+export function atDoor(house: House): { house: House; x: number; z: number; nx: number; nz: number; sx: number; sz: number } {
+  const [x, z] = local(house.cx, house.cz, house.yaw)(house.door, house.hv + 1.0);
+  return { house, x, z, nx: Math.sin(house.yaw), nz: Math.cos(house.yaw), sx: Math.cos(house.yaw), sz: -Math.sin(house.yaw) };
+}
+
+/** The shop's house, and where one stands at its door to deal. */
+export function shopDoor(shop: Shop): ReturnType<typeof atDoor> {
+  return atDoor(HOUSES.find((h) => h.role === shop)!);
+}
+
+/** The neighbour's house, and where one stands at her door. */
+export function homeDoor(who: Neighbour): ReturnType<typeof atDoor> {
+  return atDoor(HOUSES.find((h) => h.role === who)!);
+}
+
+/**
+ * The ground's height at (x, z) (the farmyards levelled), and how steep it may be there (for the
+ * field's distance). Read it at once: the answer is a slot of the column table, reused.
+ */
+export function townGround(x: number, z: number): { readonly y: number; readonly steep: number } {
+  return columnAt(x, z);
+}
+
+function landHeight(x: number, z: number): { y: number; steep: number } {
+  const H = hill(x, z), m = rollOf(x, z);
+  let y = rawGround(x, z), g = Math.hypot(H.gx, H.gz) + m * TOWN.village.roll * 0.02;
+  if (m > 0) {
+    const f = VILLAGE.farmAt(x, z);
+    if (f.farm) {
+      const w = smoothstep(-8, 2, f.d);
+      g += Math.abs(y - f.farm.base) / 10;
+      y = lerp(y, f.farm.base, w);
     }
+  }
+  return { y, steep: Math.hypot(1, g) };
+}
+
+/** Signed distance to house `h` (negative inside its walls or under its roof). */
+export const houseDistance = buildingDistance;
+
+/** The house (x, y, z) is nearest to, and how far (negative: inside it); none when it is some metres from them all. */
+export function nearestHouse(x: number, y: number, z: number): { house: House | null; d: number } {
+  const n = VILLAGE.nearestBuilding(x, y, z);
+  return { house: n.building, d: n.d };
+}
+
+/** What the land is at (x, z): on a road (which), on the square, in a farmyard, how much a field (and which), how much the hill. */
+export interface Land {
+  road: Road | null;
+  /** Distance to the nearest road's edge (negative on it). */
+  roadEdge: number;
+  square: number;
+  yard: number;
+  field: number;
+  crop: Crop;
+  /** Distance to the field's edge; to the nearest hedgerow. */
+  border: number;
+  hedge: number;
+  hill: number;
+}
+
+const GRID = parcelGrid(SEED), parcel = newParcel(), hit: { road: Road | null } = { road: null };
+
+/** The land at (x, z) (filled into `out`). */
+export function landAt(x: number, z: number, out: Land): Land {
+  out.roadEdge = VILLAGE.roadEdge(x, z, hit);
+  out.road = hit.road;
+  out.square = VILLAGE.squareEdge(x, z);
+  const f = VILLAGE.farmAt(x, z);
+  out.yard = f.d;
+  const H = hill(x, z);
+  out.hill = H.h;
+  // (Fields on the hill's top too, not on its steep side.)
+  out.field = (1 - VILLAGE.clearing(x, z)) * smoothstep(1, 4, out.roadEdge) * (1 - smoothstep(0.1, 0.4, Math.hypot(H.gx, H.gz)));
+  if (out.field > 0) {
+    parcelAt(GRID, x, z, parcel);
+    out.crop = parcel.crop;
+    out.border = parcel.border;
+    out.hedge = parcel.hedge;
+  } else {
+    out.crop = 'pasture';
+    out.border = 0;
+    out.hedge = Infinity;
   }
   return out;
 }
 
-const GROUND_EAVES = TOWN.ground + 3.2;
-
-/** Every house of the street, grandma's first. */
-export const HOUSES: readonly House[] = [
-  { x0: TOWN.grandma.x[0], x1: TOWN.grandma.x[1], z0: TOWN.grandma.z[0], z1: TOWN.grandma.z[1], eaves: TOWN.grandma.eaves, pitch: TOWN.grandma.pitch, faces: -1, look: 0.5, door: 0 },
-  ...weber(shop(row(TOWN.across.x[0], TOWN.across.x[1], 1, 0, 3), 'pawn')), // a lane west, opposite her door
-  ...shop(row(TOWN.side.x[0], TOWN.side.x[1], -1, 1, TOWN.grandma.z[1]), 'hardware'),
-];
-
-/** The first house of a row up the street (north) is a shop, its door in the middle of its front: Ilse's pawn shop across from grandma's, Kemal's hardware store next door to her. */
-function shop(houses: House[], what: Shop): House[] {
-  const i = houses.findIndex((h) => h.z0 > 0);
-  houses[i] = { ...houses[i], shop: what, door: (houses[i].z0 + houses[i].z1) / 2 };
-  return houses;
+export function newLand(): Land {
+  return { road: null, roadEdge: Infinity, square: Infinity, yard: -Infinity, field: 0, crop: 'pasture', border: 0, hedge: Infinity, hill: 0 };
 }
 
-/** Frau Weber's is the house across the street just down from the lane opposite grandma's door, its door in the middle. */
-function weber(houses: House[]): House[] {
-  const i = houses.reduce((b, h, k) => (h.z1 < 0 && (b < 0 || h.z1 > houses[b].z1) ? k : b), -1);
-  houses[i] = { ...houses[i], home: 'weber', door: (houses[i].z0 + houses[i].z1) / 2 };
-  return houses;
+const probe = newLand();
+
+/** The hedgerows' signed distance at (x, y, z), over ground at `g` (Infinity where there are none). */
+function hedgeAir(c: TownColumn, y: number): number {
+  return c.hedge === Infinity || y > c.top + 1 ? Infinity : Math.max(c.hedge, y - c.top);
 }
 
-/** Where one stands at a house's door (on the street, before its step). */
-export function atDoor(house: House): { house: House; x: number; z: number } {
-  return { house, x: (house.faces > 0 ? house.x1 : house.x0) + house.faces * 1.0, z: house.door };
+/** What the town is in one column (x, z), whatever the height: the ground, how steep, the hedgerow's distance in plan and top. */
+interface TownColumn {
+  x: number;
+  z: number;
+  y: number;
+  steep: number;
+  hedge: number;
+  top: number;
 }
 
-/** The shop's house, and where one stands at its door to deal. */
-export function shopDoor(shop: Shop): { house: House; x: number; z: number } {
-  return atDoor(HOUSES.find((h) => h.shop === shop)!);
-}
+/**
+ * The columns asked lately (a chunk asks each of its columns over and over, a row of x at a time):
+ * a small table indexed by a hash of the point, each slot keeping the last column that fell in it.
+ */
+const COLUMNS: TownColumn[] = Array.from({ length: 4096 }, () => ({ x: NaN, z: NaN, y: 0, steep: 1, hedge: Infinity, top: 0 }));
 
-/** The neighbour's house, and where one stands at her door. */
-export function homeDoor(who: Neighbour): { house: House; x: number; z: number } {
-  return atDoor(HOUSES.find((h) => h.home === who)!);
-}
-
-/** The ground's height at (x, z), and how steep it is there (for the field's distance). */
-export function townGround(x: number, z: number): { y: number; steep: number } {
-  const H = TOWN.hill, V = TOWN.valley;
-  const hill = Math.max(0, x - H.x) * H.slope, side = Math.max(0, Math.abs(z) - V.z), back = Math.max(0, V.x - x);
-  const h = Math.min(H.rise, hill), v = Math.min(V.rise, side + back);
-  const gx = (hill > 0 && hill < H.rise ? H.slope : 0) + (back > 0 && v < V.rise ? 1 : 0), gz = side > 0 && v < V.rise ? 1 : 0;
-  return { y: TOWN.ground + h + v, steep: Math.hypot(1, gx, gz) };
-}
-
-/** Signed distance to house `h` (negative inside its walls or under its roof). */
-export function houseDistance(h: House, x: number, y: number, z: number): number {
-  const plan = Math.max(h.x0 - x, x - h.x1, h.z0 - z, z - h.z1);
-  const half = (h.z1 - h.z0) / 2, top = h.eaves + (half - Math.abs(z - (h.z0 + h.z1) / 2)) * h.pitch;
-  return Math.max(plan, (y - top) / Math.hypot(1, h.pitch));
-}
-
-/** The house (x, y, z) is nearest to, and how far (negative: inside it). */
-export function nearestHouse(x: number, y: number, z: number): { house: House; d: number } {
-  let best = HOUSES[0], d = Infinity;
-  for (const h of HOUSES) {
-    if (Math.max(h.x0 - x, x - h.x1, h.z0 - z, z - h.z1) > d) continue; // its plan alone is further
-    const e = houseDistance(h, x, y, z);
-    if (e < d) { d = e; best = h; }
+function columnAt(x: number, z: number): TownColumn {
+  const c = COLUMNS[(Math.imul(Math.round(x * 8), 73856093) ^ Math.imul(Math.round(z * 8), 19349663)) & 4095];
+  if (c.x === x && c.z === z) return c;
+  const g = landHeight(x, z);
+  c.x = x; c.z = z; c.y = g.y; c.steep = g.steep; c.hedge = Infinity;
+  landAt(x, z, probe);
+  if (probe.field >= 0.6 && probe.hedge < 3) {
+    c.top = g.y + 1.5 + 0.45 * land.n2(x / 3.1, z / 3.1);
+    c.hedge = probe.hedge - (0.75 + 0.25 * land.n2(x / 2.3 + 40, z / 2.3));
   }
-  return { house: best, d };
+  return c;
 }
 
-/** The town's air at (x, y, z): above the ground and outside every house (negative: earth or walls). */
+/** The town's air at (x, y, z): above the ground and the hedgerows, outside every building (negative: earth or walls). */
 export function townAir(x: number, y: number, z: number): number {
-  const g = townGround(x, z);
-  return Math.min((y - g.y) / g.steep, nearestHouse(x, y, z).d);
+  const c = columnAt(x, z);
+  return Math.min((y - c.y) / c.steep, hedgeAir(c, y), nearestHouse(x, y, z).d);
+}
+
+/** Whether the solid nearest (x, y, z) is a building (not the ground, the hill or a hedge): not climbed. */
+export function onBuilding(x: number, y: number, z: number): boolean {
+  const c = columnAt(x, z);
+  return nearestHouse(x, y, z).d < Math.min((y - c.y) / c.steep, hedgeAir(c, y)) + 0.2;
+}
+
+/** How a point of the town's surface looks: its colour (linear RGB), how much grass grows on it, whether it is cobbled or plastered. */
+export interface Look {
+  rgb: [number, number, number];
+  grass: number;
+  cobbles: boolean;
+  plaster: boolean;
+}
+
+const looked = { x: NaN, y: NaN, z: NaN }, look: Look = { rgb: [0, 0, 0], grass: 0, cobbles: false, plaster: false }, at = newLand();
+
+/** The look of the town's surface at (x, y, z) (the last answer again when asked about the same point: colour, surface and cover ask in turn). */
+export function townLook(x: number, y: number, z: number, k: number): Look {
+  if (x === looked.x && y === looked.y && z === looked.z) return look;
+  looked.x = x; looked.y = y; looked.z = z;
+  const g = townGround(x, z), { house, d } = nearestHouse(x, y, z), c = look.rgb;
+  look.grass = 0; look.cobbles = false; look.plaster = false;
+  const set = (r: number, gg: number, b: number) => { c[0] = r + k; c[1] = gg + k; c[2] = b + k; };
+  if (house && d < 0.25 && y > g.y + 0.05) {
+    // (Mostly under the buildings' own walls and roofs, src/gen/townProps.ts: what shows is in the same colours.)
+    const roof = y > house.eaves - 0.05;
+    const w = houseColors(house)[roof ? 'roof' : 'wall'];
+    set(w[0], w[1], w[2]);
+    look.plaster = true;
+    return look;
+  }
+  landAt(x, z, at);
+  if (y > g.y + 0.3) {
+    // A hedgerow: dark leaves.
+    set(0.06, 0.1, 0.04);
+    look.grass = 1;
+    return look;
+  }
+  const R = at.road;
+  if (at.square < 0 || (R && at.roadEdge < 0 && R.kind === 'lane')) {
+    // Cobbles: grey setts in rows, darker between.
+    const sett = Math.abs(Math.sin(x * 6.5)) * Math.abs(Math.sin(z * 4.7 + Math.floor(x * 2.07) * 1.3)), v = 0.2 + 0.1 * Math.min(1, sett * 3);
+    set(v, v * 0.98, v * 0.95);
+    look.cobbles = true;
+    return look;
+  }
+  if (R && at.roadEdge < 0 && R.kind === 'main') {
+    // Old tarmac, patched.
+    const v = 0.1 + 0.03 * land.n2(x / 4, z / 4);
+    set(v, v, v * 1.05);
+    return look;
+  }
+  if ((R && at.roadEdge < 0) || at.yard > 0) {
+    // A dirt track (grass down its middle), a trodden farmyard.
+    const mid = R && at.roadEdge < 0 ? 1 - smoothstep(0.2, 0.5, R.hw + at.roadEdge) : 0;
+    set(lerp(0.2, 0.12, mid), lerp(0.15, 0.16, mid), lerp(0.1, 0.08, mid));
+    look.grass = mid * 0.6;
+    return look;
+  }
+  if (g.steep > 1.2) { set(0.3, 0.29, 0.26); return look; }
+  // Grass (verges, gardens, meadows), giving way to the fields' crops, a grass margin round each.
+  const fw = at.field * smoothstep(0.8, 1.6, at.border), crop = CROP_COLOR[at.crop];
+  const shade = 1 + 0.12 * land.n2(x / 17, z / 17);
+  set(lerp(0.12, crop[0], fw) * shade, lerp(0.16, crop[1], fw) * shade, lerp(0.08, crop[2], fw) * shade);
+  look.grass = lerp(1, CROP_GRASS[at.crop], fw);
+  return look;
 }

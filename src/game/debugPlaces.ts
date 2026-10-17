@@ -51,7 +51,7 @@ function atLadder(name: string, s: Shaft): Place {
 /** The places of grandma's house, the cellar and the street (depth 0, the same for every seed). */
 function home(level: Level): Place[] {
   /** Before a house's door on the street, facing it. */
-  const out = (name: string, d: ReturnType<typeof shopDoor>): Place => ({ name, x: d.x, y: level.groundAt(d.x, d.z), z: d.z, yaw: towards(d.x, d.z, d.x - d.house.faces, d.z) });
+  const out = (name: string, d: ReturnType<typeof shopDoor>): Place => ({ name, x: d.x, y: level.groundAt(d.x, d.z), z: d.z, yaw: towards(d.x, d.z, d.x - d.nx, d.z - d.nz) });
   const street = TOWN.street.x[1] - 1.5;
   const door = HOUSE_DOORS[0], house = CELLAR.house;
   return [

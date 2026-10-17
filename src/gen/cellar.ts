@@ -15,7 +15,7 @@ import { CELLAR_BAND } from './bands';
 import { putSurface, type StyleId, type Surface } from './style';
 import { QuarryField, unworked, type Column, type Working } from './quarry';
 import type { Shaft } from './descents';
-import { TOWN, houseColors, nearestHouse, townAir, townGround } from './town';
+import { TOWN, onBuilding, townAir, townGround, townLook } from './town';
 
 /** The places of the cellar, metres (floor at y = 0, the house to the west, the way down to the east). */
 export const CELLAR = {
@@ -130,8 +130,7 @@ export class CellarField extends QuarryField {
   climbable(x: number, y: number, z: number): boolean {
     if (x >= CELLAR.passage.x[0]) return true;
     if (this.planAir(x, z) > -1) return false;
-    const g = townGround(x, z);
-    return nearestHouse(x, y, z).d > (y - g.y) / g.steep + 0.2;
+    return !onBuilding(x, y, z);
   }
 
   at(col: Column, x: number, y: number, z: number): number {
@@ -157,21 +156,30 @@ export class CellarField extends QuarryField {
     return air + wild * (this.grain.n3(x / 1.6, y / 1.6, z / 1.6) * 0.22 + this.grain.n3(x / 0.6, y / 0.6, z / 0.6) * 0.05) * smoothstep(0.1, 0.6, y);
   }
 
-  /** Bricks in her part, flagstones on its floor, the mine's pick-marked rock beyond the arch, cobbles in the street. */
+  /** Bricks in her part, flagstones on its floor, the mine's pick-marked rock beyond the arch; in the town cobbles on the streets, smooth plaster and ground elsewhere. */
   override surface(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
-    if (townAir(x, y, z) > this.inside(col, x, y, z)) {
-      const street = x > TOWN.street.x[0] && x < TOWN.street.x[1] + 0.4 && nearestHouse(x, y, z).d >= 0.25;
-      putSurface(street ? COBBLES : HOUSE_SURFACE, out, o);
-    } else if (x > 9.3) putSurface(MINE, out, o);
+    if (townAir(x, y, z) > this.inside(col, x, y, z)) putSurface(this.town(x, y, z).cobbles ? COBBLES : HOUSE_SURFACE, out, o);
+    else if (x > 9.3) putSurface(MINE, out, o);
     else if (y > CELLAR.house.floor - 0.1 && x < -7) putSurface(HOUSE_SURFACE, out, o);
     else putSurface(BRICK, out, o);
+  }
+
+  /** Grass on the town's verges, gardens, meadows and some fields, leaves on the hedgerows (the rock shader's moss); nothing indoors. */
+  cover(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
+    out[o] = townAir(x, y, z) > this.inside(col, x, y, z) ? this.town(x, y, z).grass : 0;
+    out[o + 1] = 0;
+  }
+
+  /** The town's look at a surface point (src/gen/town.ts), its colour roughened by the grain. */
+  private town(x: number, y: number, z: number) {
+    return townLook(x, y, z, this.grain.n2(x * 2.1, z * 2.1) * 0.04);
   }
 
   /** Bricks in her part (walls and vaults), flagstones on its floor, the mine's rock beyond the arch. */
   color(col: Column, x: number, y: number, z: number, out: Float32Array, o: number): void {
     let r: number, g: number, b: number;
     if (townAir(x, y, z) > this.inside(col, x, y, z)) {
-      [r, g, b] = this.townColor(x, y, z);
+      [r, g, b] = this.town(x, y, z).rgb;
     } else if (x > 9.3) {
       const band = 0.5 + 0.5 * Math.sin(y * 1.3 + x * 0.2);
       r = 0.42 + 0.05 * band; g = 0.38 + 0.045 * band; b = 0.32 + 0.035 * band;
@@ -192,25 +200,6 @@ export class CellarField extends QuarryField {
       r = (0.4 + k) * soot; g = (0.2 + k * 0.6) * soot; b = (0.14 + k * 0.4) * soot;
     }
     out[o] = r; out[o + 1] = g; out[o + 2] = b;
-  }
-
-  /** The town's surfaces: cobbles, grass and the hill's rock; the houses' plaster, stone plinths and roofs. */
-  private townColor(x: number, y: number, z: number): [number, number, number] {
-    const k = this.grain.n2(x * 2.1, z * 2.1) * 0.04, g = townGround(x, z), { house, d } = nearestHouse(x, y, z);
-    if (d < 0.25 && y > g.y + 0.05) {
-      // (Mostly under the houses' own walls and roofs, src/gen/townProps.ts: what shows is in the same colours.)
-      const roof = y > house.eaves - 0.05 && Math.max(house.x0 - x, x - house.x1, house.z0 - z, z - house.z1) > -0.3;
-      const c = houseColors(house)[roof ? 'roof' : 'wall'];
-      return [c[0] + k, c[1] + k, c[2] + k];
-    }
-    if (x > TOWN.street.x[0] && x < TOWN.street.x[1] + 0.4) {
-      // Cobbles: grey setts in rows, darker between.
-      const sett = Math.abs(Math.sin(x * 6.5)) * Math.abs(Math.sin(z * 4.7 + Math.floor(x * 2.07) * 1.3));
-      const c = 0.2 + 0.1 * Math.min(1, sett * 3) + k;
-      return [c, c * 0.98, c * 0.95];
-    }
-    if (g.steep > 1.2) return [0.3 + k, 0.29 + k, 0.26 + k];
-    return [0.12 + k, 0.16 + k, 0.08 + k];
   }
 
   water(): number {

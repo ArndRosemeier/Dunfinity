@@ -27,6 +27,10 @@ export const karstChambers = (cave: Karst): Chambers<Chamber> => ({ cell: cave.K
 /** How far in plan a column looks for things, metres; the field is capped at this. */
 export const THING_REACH = 3;
 
+/** The side of the squares `column` keeps its lists for, metres. */
+const BUCKET = 2;
+const BIAS = 2 ** 24, SPAN = 2 ** 25;
+
 export interface ThingKind<T, C = Chamber> {
   /** The things in chamber `c`, rolled with `f` (a fresh number in [0, 1) each call). */
   make(c: C, f: () => number): T[];
@@ -41,7 +45,9 @@ export interface ThingKind<T, C = Chamber> {
 
 export class CaveThings<T, C extends { x: number; z: number; r: number } = Chamber> {
   private readonly made = new Map<number, T[]>();
-  private readonly near = new WeakMap<Column, T[]>();
+  private readonly near = new WeakMap<Column, readonly T[]>();
+  /** The things near each BUCKET square, as `column` hands them out. */
+  private readonly buckets = new Map<number, readonly T[]>();
 
   constructor(private readonly cave: Chambers<C>, private readonly seed: number, private readonly kind: ThingKind<T, C>) {}
 
@@ -58,17 +64,36 @@ export class CaveThings<T, C extends { x: number; z: number; r: number } = Chamb
     return things;
   }
 
-  /** Keeps the things near (x, z) with the column (call from the style's `column`). */
+  /**
+   * Keeps the things near (x, z) with the column (call from the style's `column`). The list is the
+   * one of the BUCKET-metre square (x, z) lies in, made once: every thing within THING_REACH in plan
+   * of any point of the square (more than the column needs, which changes nothing: the extra ones are
+   * further than THING_REACH from it). Creatures walking ask for columns thousands of times a frame.
+   */
   column(x: number, z: number, col: Column): void {
-    let near = this.near.get(col);
-    if (!near) { near = []; this.near.set(col, near); }
-    near.length = 0;
-    const K = this.kind, i0 = Math.floor(x / this.cave.cell), j0 = Math.floor(z / this.cave.cell);
-    for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
-      const c = this.cave.chamber(i, j);
-      if (!c || Math.hypot(x - c.x, z - c.z) > c.r * K.radii + K.pad + THING_REACH) continue;
-      for (const t of this.of(i, j, c)) if (K.plan(t, x, z) < THING_REACH) near.push(t);
+    const bi = Math.floor(x / BUCKET), bj = Math.floor(z / BUCKET), key = (bi + BIAS) * SPAN + (bj + BIAS);
+    let near = this.buckets.get(key);
+    if (!near) {
+      near = this.bucket(bi, bj);
+      if (this.buckets.size > 8192) this.buckets.clear();
+      this.buckets.set(key, near);
     }
+    this.near.set(col, near);
+  }
+
+  /** The things within THING_REACH in plan of the bucket (bi, bj). */
+  private bucket(bi: number, bj: number): readonly T[] {
+    const near: T[] = [];
+    const K = this.kind, cell = this.cave.cell, half = BUCKET / 2, cx = (bi + 0.5) * BUCKET, cz = (bj + 0.5) * BUCKET;
+    // (Plan distances change by at most a metre a metre, so what is within REACH of any point of the square is within REACH + its half diagonal of its middle.)
+    const reach = THING_REACH + half * Math.SQRT2;
+    const i0 = Math.floor((cx - half) / cell), i1 = Math.floor((cx + half) / cell), j0 = Math.floor((cz - half) / cell), j1 = Math.floor((cz + half) / cell);
+    for (let j = j0 - 1; j <= j1 + 1; j++) for (let i = i0 - 1; i <= i1 + 1; i++) {
+      const c = this.cave.chamber(i, j);
+      if (!c || Math.hypot(cx - c.x, cz - c.z) > c.r * K.radii + K.pad + reach) continue;
+      for (const t of this.of(i, j, c)) if (K.plan(t, cx, cz) < reach) near.push(t);
+    }
+    return near;
   }
 
   /** How far from the nearest thing near the column (Infinity: none near). */

@@ -4,6 +4,9 @@
  * nearest of that species and kept by it while it is drawn (its rig remembers where its feet stand).
  * One stand-in figure goes through the warm-up, so the skinned creature shaders are built before play;
  * every species after draws with the same ones.
+ *
+ * The debug menu's creature maker puts one specimen down too: it stands where it was put, breathing
+ * and watching you, until another replaces it or the level changes.
  */
 import { Group, type Object3D } from 'three/webgpu';
 import { Rng } from '@futuremagic/core';
@@ -29,6 +32,7 @@ export class HerdView {
   readonly warmUp: Object3D;
   private pools = new Map<Species, Pool>();
   private shown: Level | null = null;
+  private specimen: { readonly model: CritterModel; readonly figure: CritterFigure; readonly group: Group; readonly x: number; readonly y: number; readonly z: number; readonly yaw: number } | null = null;
   private readonly input: { -readonly [K in keyof RigInput]: RigInput[K] } = { x: 0, y: 0, z: 0, yaw: 0, vx: 0, vz: 0, dead: false, action: '', actionT: 0, lookAt: null, running: false, time: 0, scale: 1 };
   private readonly eye: [number, number, number] = [0, 0, 0];
 
@@ -41,6 +45,7 @@ export class HerdView {
   stock(level: Level, species: readonly Species[]): void {
     if (this.shown === level) return;
     this.shown = level;
+    this.clearSpecimen();
     for (const p of this.pools.values()) { this.stage.remove(p.group); p.model.free(); }
     this.pools = new Map();
     const floorOf = (x: number, z: number) => level.groundAt(x, z);
@@ -57,6 +62,25 @@ export class HerdView {
       this.pools.set(sp, { model, group, free, used: new Map() });
       void this.stage.add(group);
     }
+  }
+
+  /** Put a specimen of `sp` down at (x, y, z) facing `yaw` on the level shown (the last one goes). */
+  showSpecimen(sp: Species, x: number, y: number, z: number, yaw: number): void {
+    this.clearSpecimen();
+    const level = this.shown;
+    const model = new CritterModel(sp), group = new Group();
+    group.name = `specimen ${sp.id}`;
+    const figure = model.figure((gx, gz) => level ? level.groundAt(gx, gz) : y);
+    group.add(figure.root);
+    void this.stage.add(group);
+    this.specimen = { model, figure, group, x, y, z, yaw };
+  }
+
+  clearSpecimen(): void {
+    if (!this.specimen) return;
+    this.stage.remove(this.specimen.group);
+    this.specimen.model.free();
+    this.specimen = null;
   }
 
   /** Pose the ones near `at` (the nearest first); `head`: where your eyes are (they watch you). */
@@ -81,6 +105,14 @@ export class HerdView {
       // A hit shows: a flinch (unless it is striking) and a red flash.
       if (c.action) { i.action = c.action; i.actionT = c.actionT; } else if (c.hurtT < FLINCH && !c.dead) { i.action = 'flinch'; i.actionT = c.hurtT / FLINCH; } else { i.action = ''; i.actionT = 0; }
       fig.animate(i, dt, c.hurtT < FLINCH ? 1 - c.hurtT / FLINCH : 0);
+    }
+    const s = this.specimen;
+    if (s) {
+      const i = this.input;
+      i.x = s.x; i.y = s.y; i.z = s.z; i.yaw = s.yaw; i.vx = 0; i.vz = 0;
+      i.dead = false; i.running = false; i.time = time; i.scale = 1; i.action = ''; i.actionT = 0;
+      i.lookAt = this.eye;
+      s.figure.animate(i, dt);
     }
     for (const pool of this.pools.values()) for (const [id, fig] of pool.used) {
       if (seen.has(id)) continue;
