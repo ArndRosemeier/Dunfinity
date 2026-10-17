@@ -1,10 +1,8 @@
 {
   "title": "Dunfinity",
-  "tagline": "A procedural roguelike dungeon crawler for the browser.",
-  "tags": [
-    "game",
-    "roguelike",
-    "dungeon",
-    "procedural"
-  ]
+  "tagline": "An infinite roguelike dungeon crawler for the browser.",
+  "tags": ["game", "roguelike", "dungeon", "infinite", "procedural"],
+  "screenshot": "/shots/dunfinity.png",
+  "description": "Grandma left you her kitchen knife, and a way down that never ends. A vintage-feeling infinite roguelike crawler, lit by a CRT and built on hand-me-down hardware.",
+  "cta": "Start the descent"
 }
