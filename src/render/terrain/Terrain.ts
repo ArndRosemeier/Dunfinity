@@ -12,6 +12,12 @@ import type { MeshJob } from '../../workers/mesh.worker';
 import { ROCK } from '../materials';
 import { meshFromData } from '../meshes';
 import type { Stage } from '../stage';
+import type { Prepared } from '../prepared';
+
+/** The mesher's job for chunk k of `level`. */
+export function meshJob(level: LevelKey, k: ChunkKey, colorMode: ColorMode): MeshJob {
+  return { level, ox: k.ix * k.size, oy: k.iy * k.size, oz: k.iz * k.size, step: k.step, cells: CELLS, lod: k.lod, colorMode, overlap: k.overlap };
+}
 
 interface Shown {
   key: ChunkKey;
@@ -33,7 +39,8 @@ export class Terrain {
   /** Totals for the HUD. */
   stats = { chunks: 0, triangles: 0, pending: 0 };
 
-  constructor(private readonly stage: Stage, private readonly group: Group, readonly level: LevelKey, private view: ChunkView = DEFAULT_VIEW) {
+  /** `prepared`: chunks meshed before (src/render/prepared.ts), taken first and kept. */
+  constructor(private readonly stage: Stage, private readonly group: Group, readonly level: LevelKey, private view: ChunkView = DEFAULT_VIEW, private readonly prepared: Prepared | null = null) {
     this.pool = createMeshPool();
   }
 
@@ -97,8 +104,10 @@ export class Terrain {
   private request(k: ChunkKey): void {
     const gen = this.generation;
     this.requested.add(k.id);
-    const job: MeshJob = { level: this.level, ox: k.ix * k.size, oy: k.iy * k.size, oz: k.iz * k.size, step: k.step, cells: CELLS, lod: k.lod, colorMode: this.colorMode, overlap: k.overlap };
-    void this.pool.run(job).then(async (data) => {
+    const job = meshJob(this.level, k, this.colorMode);
+    const kept = this.prepared?.chunk(this.level, k, this.colorMode);
+    const meshed = kept !== undefined ? Promise.resolve(kept) : this.pool.run(job).then((m) => { this.prepared?.keepChunk(this.level, k, job.colorMode, m); return m; });
+    void meshed.then(async (data) => {
       if (gen !== this.generation || !this.wantedIds.has(k.id)) { this.requested.delete(k.id); return; }
       const shown: Shown = { key: k, mesh: data ? meshFromData(data, ROCK) : null };
       if (shown.mesh) await this.stage.prepare(shown.mesh);

@@ -36,6 +36,7 @@ import { QUALITY_NOTES } from '../render/quality';
 import { SettingsView } from '../app/settingsView';
 import { parseViewParams, titleWanted } from '../app/params';
 import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
+import type { Spot } from '../render/prepared';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
 import { DRAFT_RANGE, draftLine, homeLine } from './draft';
 import { Fauna, type Foe } from '../creatures/fauna';
@@ -270,6 +271,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     reached = Math.max(reached, l.depth);
     dropFlying();
     look(l);
+    prepareNext(l);
   };
   /** The doors of level l hung, and everything in the way on it (the doors, Frau Weber, the stranger) put in the props' way. */
   const hangDoors = (l: Level): void => {
@@ -282,6 +284,21 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** What was thrown, sown, grown or puffed is gone (a level left behind). */
   const dropFlying = (): void => {
     thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; radish.roots.length = 0; flour.clouds.length = 0;
+  };
+  /** Where a climb comes out on level `other`: at the foot of its way up (climbing down), or at its way down nearest its arrival (climbing up). */
+  const cameOut = (other: Level, up: boolean): Shaft | null => {
+    const [ax, , az] = other.arrival;
+    return up ? other.descents.nearest(ax, az, 5000) : other.ascent;
+  };
+  /** Prepare the levels above and below l in the background, round where a climb would come out on them (src/render/prepared.ts). */
+  const prepareNext = (l: Level): void => {
+    const spots: Spot[] = [];
+    for (const d of [l.depth + 1, l.depth - 1]) {
+      if (d < 0) continue;
+      const other = new Level(params.seed, d, params.style), s = cameOut(other, d < l.depth);
+      if (s) spots.push({ level: other.key, x: s.x, y: s.floor, z: s.z });
+    }
+    view.prepared.want(spots);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
   const look = (l: Level): void => {
@@ -425,6 +442,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   // Under the title screen only the nobody warms up now; everyone else warms while it plays.
   const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, villagerView.root, strangerView.people.root, grandmaView.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root, ...petView.roots];
   await view.start(titled ? [nobody.root] : [nobody.root, ...figures], titled ? [...figures, ...roots] : []);
+  prepareNext(level);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
   herd.stock(level, fauna.critters.species);
@@ -798,9 +816,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const top = climb.rimFeet(here);
       steps.push({ kind: 'rim', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: top, to: top - CLIMB_SHOWN, fade: 'out' });
     }
-    // Comes out at the foot of the way up below, or at the way down nearest the arrival above.
-    const [ax, , az] = other.arrival;
-    const to = s.up ? other.descents.nearest(ax, az, 5000) : other.ascent;
+    const to = cameOut(other, s.up);
     steps.push({
       kind: 'call', then: () => {
         show(other);

@@ -23,6 +23,7 @@ import { BloomView } from './props/bloomView';
 import { HumView } from './humView';
 import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
 import { QUALITY } from './quality';
+import { Prepared } from './prepared';
 import type { Quality } from '../persist/settings';
 
 /** Fog distances: a lit survey view, and roughly what a headlamp shows. */
@@ -63,6 +64,8 @@ export class LevelView {
   readonly blooms = new BloomView();
   /** Singing crystals ringing (src/world/singing.ts): rung by the game, drawn each frame. */
   readonly hums = new HumView();
+  /** The levels one may go to next, prepared in the background (`prepared.want(spots)`). */
+  readonly prepared = new Prepared();
   private lastTime = 0;
   /** The pulse in the veins running now: when it started and where from. */
   private pulse: { start: number; at: [number, number] } | null = null;
@@ -168,8 +171,8 @@ export class LevelView {
     SKY_LOOK.arms.value.set(sky.arms, sky.spin);
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;
-    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key, this.chunkView);
-    this.props_ = new Props(this.stage, this.things, this.level_.key, this.lamps);
+    this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key, this.chunkView, this.prepared);
+    this.props_ = new Props(this.stage, this.things, this.level_.key, this.lamps, this.prepared);
   }
 
   /** The graphics quality: pixels drawn, the headlamp's shadow map, the rock's detail far off (src/render/quality.ts). Applies at once; compiles nothing. */
@@ -181,6 +184,7 @@ export class LevelView {
     this.headlamp.shadow.mapSize.set(p.shadowMap, p.shadowMap);
     this.chunkView = { ...DEFAULT_VIEW, split: p.split };
     this.terrain_?.setView(this.chunkView);
+    this.prepared.view = this.chunkView;
   }
 
   get terrain(): Terrain { return need(this.terrain_); }
@@ -279,6 +283,7 @@ export class LevelView {
     this.dust.follow(this.headlamp);
     this.terrain.update(x, y, z);
     this.props.update(x, y, z, time);
+    this.prepared.work(this.settled, time);
     this.drips.draw(this.level_, x, z, time);
     this.blooms.draw(this.level_, x, z, time);
     this.hums.draw(time);

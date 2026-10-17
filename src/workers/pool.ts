@@ -47,12 +47,12 @@ export class WorkerPool<Job, Result> {
   }
 }
 
-/** The mesher pool: level chunks are meshed off the main thread. */
-export function createMeshPool(): WorkerPool<import('./mesh.worker').MeshJob, import('../gen/chunkMesh').ChunkMesh | null> {
-  return new WorkerPool(() => new Worker(new URL('./mesh.worker.ts', import.meta.url), { type: 'module' }));
+/** The mesher pool: level chunks are meshed off the main thread (`size` workers; by default as many as the cores spare). */
+export function createMeshPool(size?: number): WorkerPool<import('./mesh.worker').MeshJob, import('../gen/chunkMesh').ChunkMesh | null> {
+  return new WorkerPool(() => new Worker(new URL('./mesh.worker.ts', import.meta.url), { type: 'module' }), size);
 }
 
 /** The prop pool: rails, lamps and shacks are built off the main thread, beside the meshing. */
-export function createPropsPool(): WorkerPool<import('./props.worker').PropsJob, import('../gen/quarryProps').PropTile> {
-  return new WorkerPool(() => new Worker(new URL('./props.worker.ts', import.meta.url), { type: 'module' }), 2);
+export function createPropsPool(size = 2): WorkerPool<import('./props.worker').PropsJob, import('../gen/quarryProps').PropTile> {
+  return new WorkerPool(() => new Worker(new URL('./props.worker.ts', import.meta.url), { type: 'module' }), size);
 }

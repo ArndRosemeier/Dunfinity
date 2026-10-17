@@ -148,6 +148,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Mesh one chunk of a level | `meshChunk` (skips chunks far from any surface: `farFromSurface`, a sample per octant) | `src/gen/chunkMesh.ts` |
 | Which chunks, at which detail, around a viewer? | `chunksAround` (octree; marks sides next to coarser chunks) | `src/world/chunks.ts` |
 | Run work off the main thread | `WorkerPool` / `createMeshPool` / `createPropsPool` (guarded: `new Worker` only there) | `src/workers/pool.ts` |
+| Prepare the levels one may go to next (rock chunks and prop tiles round where one would come out), and keep what was built lately | `view.prepared` (`Prepared`: `want(spots)`, `work(idle, time)` once a frame, `chunk`/`keepChunk`, `tile`/`keepTile`; `Kept` is the size-bounded cache); `Terrain` and `Props` take from it first. The game asks with `prepareNext(level)` (the climbs' ends, `cameOut`) | `src/render/prepared.ts` |
 | Write a worker script | `serve(handle)` and `levelFor(seed, depth)` | `src/workers/serve.ts` |
 
 ### The world (planned)
