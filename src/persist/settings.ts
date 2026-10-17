@@ -3,6 +3,8 @@
  * switch), the keys and the graphics (quality, reduced motion). Reading never throws: a missing, blocked or broken
  * entry is the default, and a bad field in one is that field's default.
  */
+import { recall, remember } from './store';
+
 export interface SoundSettings {
   /** Master volume 0…1. */
   readonly volume: number;
@@ -45,32 +47,20 @@ export const readSoundSettings = (): SoundSettings => kept('sound', SOUND_DEFAUL
   muted: flag(o.muted, SOUND_DEFAULTS.muted),
   music: flag(o.music, SOUND_DEFAULTS.music),
 }));
-export const writeSoundSettings = (s: SoundSettings): void => keep('sound', s);
+export const writeSoundSettings = (s: SoundSettings): void => remember('sound', s);
 
 /** The graphics kept, or `defaults` for what was never set (`TABLET_GRAPHICS` on a tablet). */
 export const readGraphicsSettings = (defaults = GRAPHICS_DEFAULTS): GraphicsSettings => kept('graphics', defaults, (o) => ({
   quality: QUALITIES.includes(o.quality as Quality) ? (o.quality as Quality) : defaults.quality,
   still: flag(o.still, defaults.still),
 }));
-export const writeGraphicsSettings = (s: GraphicsSettings): void => keep('graphics', s);
+export const writeGraphicsSettings = (s: GraphicsSettings): void => remember('graphics', s);
 
 export const readKeySettings = (): KeySettings => kept<KeySettings>('keys', {}, (o) =>
   Object.fromEntries(Object.entries(o).filter((e): e is [string, string] => typeof e[1] === 'string')));
-export const writeKeySettings = (s: KeySettings): void => keep('keys', s);
+export const writeKeySettings = (s: KeySettings): void => remember('keys', s);
 
 function kept<T>(name: string, defaults: T, fix: (o: Record<string, unknown>) => T): T {
-  try {
-    const o: unknown = JSON.parse(localStorage.getItem(`dunfinity:${name}`) ?? '{}');
-    return o && typeof o === 'object' && !Array.isArray(o) ? fix(o as Record<string, unknown>) : defaults;
-  } catch {
-    return defaults;
-  }
-}
-
-function keep(name: string, value: unknown): void {
-  try {
-    localStorage.setItem(`dunfinity:${name}`, JSON.stringify(value));
-  } catch {
-    // (storage blocked: the setting lasts for this visit)
-  }
+  const o = recall<unknown>(name);
+  return o && typeof o === 'object' && !Array.isArray(o) ? fix(o as Record<string, unknown>) : defaults;
 }

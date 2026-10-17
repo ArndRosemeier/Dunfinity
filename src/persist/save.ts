@@ -4,8 +4,9 @@
  * down there, if one is alive: where, how hurt, what they cooked, practised and picked up. A dead
  * grandchild is not kept, so a reload sends the next one down.
  *
- * In the browser's localStorage (only ever touched in src/persist/), one save per seed. Reading never throws: a missing, blocked or
- * broken save is no save.
+ * In the browser's localStorage (only ever touched in src/persist/). Several families can be kept side
+ * by side, each in its own mode (`GameMode`); the list of them is the title's Load. Reading never
+ * throws: a missing, blocked or broken save is no save.
  */
 import type { TinData } from '../loot/tin';
 import type { Item } from '../loot/items';
@@ -15,6 +16,7 @@ import type { KeyData } from '../lore/key';
 import type { FirstStepsData } from '../game/firstSteps';
 import type { PetData } from '../creatures/pets';
 import type { HumanoidAppearance } from '@futuremagic/humanoid';
+import { names, recall, remember } from './store';
 
 export interface GrandchildData {
   readonly depth: number;
@@ -59,24 +61,135 @@ export interface SaveData {
   readonly steps?: FirstStepsData;
   /** The grandchildren's look, made in the character creator (src/game/creator.ts); none: the seed's own. */
   readonly look?: HumanoidAppearance;
+  /** How the family plays (none: from before modes, Rogue like). */
+  readonly mode?: GameMode;
 }
 
-const key = (seed: number) => `dunfinity:save:${seed}`;
+/** How a family plays (chosen when it begins): Rogue like keeps one save that a grandchild's death
+ * ends; Adventure also keeps saves made by hand that can be gone back to at any time. */
+export type GameMode = 'rogue' | 'adventure';
+export const GAME_MODES: readonly GameMode[] = ['rogue', 'adventure'];
+export const MODE_NAMES: Readonly<Record<GameMode, string>> = { rogue: 'Rogue like', adventure: 'Adventure' };
 
-export function readSave(seed: number): SaveData | null {
-  try {
-    const raw = localStorage.getItem(key(seed));
-    const d = raw ? (JSON.parse(raw) as SaveData) : null;
-    return d && d.v === 1 && d.tin && Array.isArray(d.taken) ? d : null;
-  } catch {
-    return null;
-  }
+/** A family in the list of families kept (the title's Load): which, how it plays, how far it got, when it was last kept. */
+export interface FamilyEntry {
+  readonly id: string;
+  readonly seed: number;
+  readonly mode: GameMode;
+  /** The grandchild now down there (their number in the family), or the next to go. */
+  readonly heir: number;
+  /** Where the living grandchild is (null: none alive, the next waits). */
+  readonly depth: number | null;
+  /** The deepest level the family has reached. */
+  readonly deepest: number;
+  /** When it was last kept (ms since 1970). */
+  readonly savedAt: number;
 }
 
-export function writeSave(seed: number, d: SaveData): void {
-  try {
-    localStorage.setItem(key(seed), JSON.stringify(d));
-  } catch {
-    // (storage full or blocked: the game goes on unsaved)
+/** A save made by hand in an Adventure: when, and the whole family as it stood. */
+export interface ManualSave {
+  readonly at: number;
+  readonly entry: FamilyEntry;
+  readonly data: SaveData;
+}
+
+/** How many saves by hand an Adventure family keeps (the oldest goes). */
+export const MANUAL_SAVES = 8;
+
+const INDEX = 'families', ACTIVE = 'active', STRAIGHT = 'straight-in';
+const familyKey = (id: string) => `family:${id}`;
+const savesKey = (id: string) => `family:${id}:saves`;
+
+const valid = (d: SaveData | null): d is SaveData => !!d && d.v === 1 && !!d.tin && Array.isArray(d.taken);
+
+/** The list entry for a family's save. */
+function entryOf(id: string, seed: number, d: SaveData, at: number): FamilyEntry {
+  return { id, seed, mode: d.mode ?? 'rogue', heir: d.heir, depth: d.child?.depth ?? null, deepest: d.tin.deepest ?? 0, savedAt: at };
+}
+
+/** Every family kept, the last played first (families kept the old way, one per seed under `dunfinity:save:<seed>`, are taken in once). */
+export function families(): FamilyEntry[] {
+  let index = recall<FamilyEntry[]>(INDEX);
+  if (!Array.isArray(index)) {
+    index = [];
+    for (const name of names()) {
+      const m = /^save:(\d+)$/.exec(name);
+      const d = m ? recall<SaveData>(name) : null;
+      if (!m || !valid(d)) continue;
+      const id = `seed${m[1]}`;
+      remember(familyKey(id), d);
+      index.push(entryOf(id, Number(m[1]), d, 0));
+    }
+    remember(INDEX, index);
+    if (index[0]) remember(ACTIVE, index[0].id);
   }
+  return [...index].sort((a, b) => b.savedAt - a.savedAt);
+}
+
+/** The family played last (null: none). */
+export function activeFamily(): FamilyEntry | null {
+  const all = families(), id = recall<string>(ACTIVE);
+  return all.find((f) => f.id === id) ?? null;
+}
+
+/** Play `id` from now on (the next start goes on with it). */
+export function setActiveFamily(id: string): void { remember(ACTIVE, id); }
+
+/** A new family playing `mode` on world `seed`, made the one played; its id. */
+export function newFamily(seed: number, mode: GameMode, now: number): string {
+  const all = families();
+  let n = 0, id = '';
+  do id = `${now.toString(36)}${n ? `-${n}` : ''}`, n++; while (all.some((f) => f.id === id));
+  remember(INDEX, [...all, { id, seed, mode, heir: 0, depth: null, deepest: 0, savedAt: now }]);
+  remember(ACTIVE, id);
+  return id;
+}
+
+/** A family's save (null: none yet, or broken). */
+export function readFamily(id: string): SaveData | null {
+  const d = recall<SaveData>(familyKey(id));
+  return valid(d) ? d : null;
+}
+
+/** Keep a family as it stands (its list entry follows). */
+export function writeFamily(id: string, seed: number, d: SaveData, now: number): void {
+  remember(familyKey(id), d);
+  remember(INDEX, families().filter((f) => f.id !== id).concat(entryOf(id, seed, d, now)));
+}
+
+/** Forget a family, its saves by hand too. */
+export function deleteFamily(id: string): void {
+  remember(familyKey(id), null);
+  remember(savesKey(id), null);
+  remember(INDEX, families().filter((f) => f.id !== id));
+  if (recall<string>(ACTIVE) === id) remember(ACTIVE, null);
+}
+
+/** An Adventure family's saves by hand, the newest first. */
+export function manualSaves(id: string): ManualSave[] {
+  const made = recall<ManualSave[]>(savesKey(id));
+  return Array.isArray(made) ? made.filter((m) => valid(m.data)).sort((a, b) => b.at - a.at) : [];
+}
+
+/** Make a save by hand of the family as it stands (keeping the newest `MANUAL_SAVES`). */
+export function saveByHand(id: string, seed: number, d: SaveData, now: number): void {
+  remember(savesKey(id), [{ at: now, entry: entryOf(id, seed, d, now), data: d }, ...manualSaves(id)].slice(0, MANUAL_SAVES));
+}
+
+/** Go back to the save by hand made at `at`: it becomes the family's own save. False: no such save. */
+export function loadByHand(id: string, at: number, now: number): boolean {
+  const m = manualSaves(id).find((s) => s.at === at);
+  if (!m) return false;
+  writeFamily(id, m.entry.seed, m.data, now);
+  return true;
+}
+
+/** The next start skips the title and goes straight on with the family played (after a load, or New Game). */
+export function goStraightIn(on: boolean): void { remember(STRAIGHT, on || null); }
+
+/** Does this start skip the title? (Asked once: the flag is cleared.) */
+export function takeStraightIn(): boolean {
+  const on = recall<boolean>(STRAIGHT) === true;
+  if (on) remember(STRAIGHT, null);
+  return on;
 }
