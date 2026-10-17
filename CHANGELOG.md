@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.226 — Shader check follows New Game's mode question
+
+- The on-demand shader check (and the title probe) picks a game mode after New Game before it waits for the character creator, so its title part runs again.
+
 ## v0.225 — Animals that feed and sleep
 
 - Every animal, the strange ones as well as the rats and dogs, now lives between fights instead of standing about: it walks off to feed, head down and chewing.
