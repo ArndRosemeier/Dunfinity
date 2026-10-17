@@ -1,21 +1,21 @@
 /**
  * The rats on screen (src/creatures/rats.ts): a fat, grizzled quarry rat modelled, rigged and animated
  * in Blender (AssetGenerator spec `creature_quarry_rat`, see src/render/creatures/rigged.ts), with
- * naked ears and a long ringed tail, orange incisors, and eyes in the glow kind that catch the light.
+ * naked ears and a long ringed tail, orange incisors. The deep's have the salt in their eyes, glowing
+ * blue (`BEAST_EYE`, `EYE_HALO`: no ordinary animals, Arnd 2026-10-17); the town's have ordinary dark ones.
  * Every action shows: sniffing about with its nose working, the pottering scurry, the bounding run at
  * you, up on its hind legs when it notices you, the bite (rearing back with the mouth wide, then the
  * snap with the paws flung out), a flinch when hit, and over onto its back with its legs curling when
  * it dies.
  *
- * A fixed pool, built once and added with the Stage before play.
+ * Two fixed pools, built once and added with the Stage before play.
  */
-import { FigurePool } from './figures';
 import { RAT_COAT } from '../materials';
 import type { Rat } from '../../creatures/rats';
-import { Rigged, RiggedFigure, type ClipUse } from './rigged';
+import { RiggedFigure, WildAndTame, type ClipUse } from './rigged';
 
-/** How many rats can be drawn at once. */
-const POOL = 36;
+/** How many rats can be drawn at once: the deep's, and the town's. */
+const POOL = { wild: 36, tame: 12 } as const;
 
 /** The clips (AssetGenerator's quadruped rat_clips.py; strides there as STRIDES). */
 const CLIPS: Record<string, ClipUse> = {
@@ -47,13 +47,9 @@ class RatFigure extends RiggedFigure<Rat> {
   }
 }
 
-export class RatView extends FigurePool<Rat> {
-  private constructor(rig: Rigged) {
-    super('rats', POOL, () => new RatFigure(rig, CLIPS));
-  }
+/** The deep's and the town's, drawn (`RatView.draw(wild, town, time, from)`). */
+export type RatView = WildAndTame<Rat>;
 
-  /** Load the model (before the warm-up, so its coat's maps are there when the shaders build). */
-  static async create(): Promise<RatView> {
-    return new RatView(await Rigged.fetch('quarry_rat.glb', RAT_COAT));
-  }
-}
+export const RatView = {
+  load: (): Promise<RatView> => WildAndTame.load('quarry_rat.glb', RAT_COAT, 'rats', POOL, (rig) => new RatFigure(rig, CLIPS)),
+};
