@@ -190,13 +190,30 @@ function pick(r: number, where: Where): FindKind {
   return 'coin';
 }
 
-/** How many things a pack holds (finds and spare items together): past that, something has to be left behind. */
-export const PACK = { room: 8 } as const;
+/**
+ * How many things (finds and spare items together) a plain rucksack holds, and the pockets without
+ * one: past that, something has to be left behind. A bigger or stranger rucksack holds more
+ * (src/loot/items.ts `ItemDef.room`, `Kit.room`).
+ */
+export const PACK = { room: 8, pockets: 2 } as const;
 
-/** What the nobody carries up: finds, spare items (src/loot/items.ts), at most `PACK.room` of them together, and what the finds might fetch. Lost with the nobody. */
+/** What the nobody carries up: finds, spare items (src/loot/items.ts), at most `room` of them together (what their rucksack holds), and what the finds might fetch. Lost with the nobody. */
 export class Pack {
   readonly items: Find[] = [];
   readonly spare: Item[] = [];
+
+  /** `roomOf`: how many things there is room for now (the rucksack worn: `Kit.room`). */
+  constructor(private readonly roomOf: () => number = () => PACK.room) {}
+
+  /** How many things there is room for. */
+  get room(): number {
+    return this.roomOf();
+  }
+
+  /** How many things are in it. */
+  get count(): number {
+    return this.items.length + this.spare.length;
+  }
 
   get worth(): number {
     let w = 0;
@@ -205,7 +222,7 @@ export class Pack {
   }
 
   get full(): boolean {
-    return this.items.length + this.spare.length >= PACK.room;
+    return this.count >= this.room;
   }
 
   /** Put `f` in, if there is room: whether it went in. */

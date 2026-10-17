@@ -7,17 +7,17 @@
  * sheds, a slime's belly, a lair.
  */
 import type { Move } from '../combat/combat';
-import { FINDS, type Find, type Pack } from './finds';
+import { FINDS, PACK, type Find, type Pack } from './finds';
 
 /** Where an item is worn or held. */
-export type Slot = 'head' | 'body' | 'hands' | 'legs' | 'feet' | 'main' | 'off' | 'trinket';
+export type Slot = 'head' | 'body' | 'hands' | 'legs' | 'feet' | 'main' | 'off' | 'trinket' | 'back';
 
 /** The slots in the order the pack lists them. */
-export const SLOTS: readonly Slot[] = ['head', 'body', 'hands', 'legs', 'feet', 'main', 'off', 'trinket'];
+export const SLOTS: readonly Slot[] = ['head', 'body', 'hands', 'legs', 'feet', 'main', 'off', 'trinket', 'back'];
 
 /** What the pack calls a slot. */
 export const SLOT_NAME: Readonly<Record<Slot, string>> = {
-  head: 'Head', body: 'Body', hands: 'Hands', legs: 'Legs', feet: 'Feet', main: 'Main hand', off: 'Off hand', trinket: 'Trinket',
+  head: 'Head', body: 'Body', hands: 'Hands', legs: 'Legs', feet: 'Feet', main: 'Main hand', off: 'Off hand', trinket: 'Trinket', back: 'Back',
 };
 
 export type Quality = 'worn' | 'sound' | 'fine' | 'master';
@@ -30,7 +30,7 @@ export const QUALITY: Readonly<Record<Quality, { readonly name: string; readonly
   master: { name: 'master', factor: 1.5 },
 };
 
-export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar' | 'flashlight';
+export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar' | 'flashlight' | 'rucksack' | 'army-rucksack' | 'salt-satchel';
 
 export interface ItemDef {
   readonly name: string;
@@ -39,6 +39,8 @@ export interface ItemDef {
   readonly armour?: number;
   /** A weapon: how it is swung (src/combat/combat.ts MOVES; its quality scales the damage). */
   readonly move?: Move;
+  /** A rucksack: how many things the pack holds with it on the back, sound (its quality scales it). */
+  readonly room?: number;
   /** What climbing costs with it on (0.75: a quarter less). */
   readonly climb?: number;
   /** What it does, in a few words for the pack. */
@@ -53,10 +55,15 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDef>> = {
   pick: { name: "a miner's pick", slot: 'main', move: 'mine', what: 'comes down two-handed, slow and very hard' },
   crowbar: { name: 'a crowbar', slot: 'main', move: 'swat', what: 'swats wide, knocks them back' },
   flashlight: { name: 'a flashlight', slot: 'off', what: 'a long bright beam, on and off with L' },
+  rucksack: { name: 'a canvas rucksack', slot: 'back', room: PACK.room, what: `holds ${PACK.room} things` },
+  'army-rucksack': { name: 'an army rucksack', slot: 'back', room: 14, what: 'holds 14 things' },
+  'salt-satchel': { name: 'a salt-woven satchel', slot: 'back', room: 40, what: 'holds far more than it is big (40 things); it hums' },
 };
 
 /** Grandma's knife: never in the pack, never lost from the belt. */
 const KNIFE: ItemKind = 'kitchen-knife';
+/** What every grandchild comes with on their back. */
+const RUCKSACK: Item = { kind: 'rucksack', quality: 'sound' };
 
 export interface Item {
   readonly kind: ItemKind;
@@ -134,6 +141,12 @@ export class Kit {
     return QUALITY[this.hand.quality].factor;
   }
 
+  /** How many things the pack holds: what the rucksack on the back holds, or only the pockets. */
+  get room(): number {
+    const bag = this.worn.back;
+    return bag ? roomWith(bag) : PACK.pockets;
+  }
+
   /** What climbing costs. */
   get climb(): number {
     let c = 1;
@@ -144,6 +157,17 @@ export class Kit {
   get data(): Item[] {
     return this.items;
   }
+}
+
+/** A new grandchild's kit: the knife in the hand, their own rucksack on the back. */
+export function freshKit(): Kit {
+  return new Kit([RUCKSACK]);
+}
+
+/** `kit` from a save made before rucksacks: the plain one put on (unless one is worn or packed). */
+export function withRucksack(kit: Kit, pack: Pack): Kit {
+  if (!kit.worn.back && !pack.spare.some((i) => ITEMS[i.kind].slot === 'back')) kit.put(RUCKSACK);
+  return kit;
 }
 
 /** A line of the open pack: a slot of the kit, a find, a spare item. */
@@ -172,16 +196,25 @@ export function rummage(row: PackRow, pack: Pack, kit: Kit): { line: string; lef
     return { line: f ? `You leave ${FINDS[f.kind].name} on the floor.` : '', left: f };
   }
   if (row.what === 'spare') {
-    const it = pack.unstow(row.i);
+    const it = pack.spare[row.i];
     if (!it) return { line: '', left: null };
+    const slot = ITEMS[it.kind].slot, now = kit.worn[slot];
+    if (slot === 'back' && pack.count - 1 + (now ? 1 : 0) > roomWith(it)) return { line: `You carry more than ${itemName(it)} holds (${roomWith(it)}). Leave something first.`, left: null };
+    pack.unstow(row.i);
     const was = kit.put(it);
     if (was) pack.stow(was);
     return { line: `You put on ${itemName(it)}${was ? `, and pack ${itemName(was)}` : ''}.`, left: null };
   }
   const it = kit.worn[row.slot];
   if (!it) return { line: row.slot === 'main' ? "Grandma's knife stays with you, in the hand or the belt." : '', left: null };
+  if (row.slot === 'back' && pack.count + 1 > PACK.pockets) return { line: `Everything in it would have to go in your pockets. Leave things first (your pockets hold ${PACK.pockets}).`, left: null };
   if (pack.full) return { line: 'No room in the pack for it.', left: null };
   kit.off(row.slot);
   pack.stow(it);
   return { line: row.slot === 'main' ? `You pack ${itemName(it)} and take grandma's knife from your belt.` : `You take off ${itemName(it)} and pack it.`, left: null };
+}
+
+/** How many things the pack would hold with `bag` on the back. */
+function roomWith(bag: Item): number {
+  return Math.round((ITEMS[bag.kind].room ?? 0) * QUALITY[bag.quality].factor);
 }
