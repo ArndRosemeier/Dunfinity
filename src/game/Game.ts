@@ -260,7 +260,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
-    thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; radish.roots.length = 0; pets.clear(); flour.clouds.length = 0;
+    thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; radish.roots.length = 0; flour.clouds.length = 0;
     look(l);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
