@@ -8,11 +8,6 @@
 import { hash3f } from '@futuremagic/core';
 import type { Pack } from './finds';
 
-export const PAWN = {
-  /** How close to her door one must stand to deal, metres. */
-  reach: 1.8,
-} as const;
-
 /** What she says, paying: asks no questions, and pays too little (the finds' values are her prices). */
 const LINES: readonly ((paid: number, n: number) => string)[] = [
   (paid, n) => `Ilse turns ${n === 1 ? 'it' : 'each one'} over under her lamp and counts out €${paid}. "I don't ask where things come from."`,

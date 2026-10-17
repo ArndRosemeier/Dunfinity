@@ -13,7 +13,7 @@
  */
 import { Noise, Rng, deriveSeed, lerp, smoothstep } from '@futuremagic/core';
 import { CROP_COLOR, CROP_GRASS, newParcel, parcelAt, parcelGrid, type Crop } from './fields';
-import { local } from './propMesh';
+import { local, unlocal } from './propMesh';
 import { Village, buildingDistance, type Building, type Road } from './village';
 
 /** Where things are, metres (the street level is the house floor; the cellar is below). */
@@ -142,6 +142,42 @@ export function atDoor(house: House): { house: House; x: number; z: number; nx: 
 /** The shop's house, and where one stands at its door to deal. */
 export function shopDoor(shop: Shop): ReturnType<typeof atDoor> {
   return atDoor(HOUSES.find((h) => h.role === shop)!);
+}
+
+/**
+ * Inside the two shops (Ilse's and Kemal's): one small room behind the front, `depth` deep from
+ * `inset` inside the front wall and `inset` in from the ends, `height` high, lined (src/gen/townProps.ts
+ * `shopInside`): the field's own room reaches `lining` further out and `over` higher, behind the
+ * lining, so the field's rounded corners stay out of sight; the front door open on it, `door` wide and high; the counter `counter` in from the back of the room, `deep` through,
+ * `high`; the keeper standing `keeper` in from the back. Metres.
+ */
+export const SHOP = { inset: 0.35, depth: 5, height: 2.5, lining: 0.17, over: 0.4, door: { hw: 0.55, top: 2.1 }, counter: { at: 1.35, deep: 0.28, high: 1.0 }, keeper: 0.6 } as const;
+
+/** A shop's room in its house's frame: across (u) and front-to-back (v, the front at v1), and its floor. */
+export function shopRoom(H: House): { u: number; v0: number; v1: number; floor: number } {
+  const v1 = H.hv - SHOP.inset;
+  return { u: H.hu - SHOP.inset, v0: Math.max(-H.hv + SHOP.inset, v1 - SHOP.depth), v1, floor: H.base };
+}
+
+const SHOP_HOUSES = (['pawn', 'hardware'] as const).map((s) => HOUSES.find((h) => h.role === s)!);
+
+/** How far inside a shop's room or its open front door (x, y, z) is (positive: in the air there); far negative away from the shops. */
+export function shopAir(x: number, y: number, z: number): number {
+  let best = -9;
+  for (const H of SHOP_HOUSES) {
+    if (Math.abs(x - H.cx) > H.hv + H.hu + 2 || Math.abs(z - H.cz) > H.hv + H.hu + 2) continue;
+    const [u, v] = unlocal(x, z, H.cx, H.cz, H.yaw), R = shopRoom(H), D = SHOP.door;
+    const room = Math.min(R.u + SHOP.lining - Math.abs(u), v - R.v0 + SHOP.lining, R.v1 + SHOP.lining - v, y - R.floor, R.floor + SHOP.height + SHOP.over - y);
+    const door = Math.min(D.hw - Math.abs(u - H.door), v - (R.v1 - 0.5), H.hv + 0.6 - v, y - R.floor, R.floor + D.top - y);
+    best = Math.max(best, room, door);
+  }
+  return best;
+}
+
+/** Where the shop's keeper stands behind the counter, and which way they face (out of the door). */
+export function shopKeeper(shop: Shop): { x: number; z: number; yaw: number } {
+  const H = HOUSES.find((h) => h.role === shop)!, R = shopRoom(H), [x, z] = local(H.cx, H.cz, H.yaw)(H.door, R.v0 + SHOP.keeper);
+  return { x, z, yaw: Math.atan2(-Math.sin(H.yaw), -Math.cos(H.yaw)) };
 }
 
 /** The neighbour's house, and where one stands at her door. */

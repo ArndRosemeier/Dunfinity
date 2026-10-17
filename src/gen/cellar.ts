@@ -15,7 +15,7 @@ import { CELLAR_BAND } from './bands';
 import { putSurface, type StyleId, type Surface } from './style';
 import { QuarryField, unworked, type Column, type Working } from './quarry';
 import type { Shaft } from './descents';
-import { TOWN, onBuilding, townAir, townGround, townLook } from './town';
+import { TOWN, onBuilding, shopAir, townAir, townGround, townLook } from './town';
 
 /** The places of the cellar, metres (floor at y = 0, the house to the west, the way down to the east). */
 export const CELLAR = {
@@ -59,12 +59,13 @@ const HOUSE_DAY = 0.45;
 
 /**
  * How much of the day reaches (x, y, z) at depth 0: 1 out in the village (always day there), some in
- * her house, none down in the cellar and the passage to the shaft. Out in the fields the land falls
+ * her house and the two shops, none down in the cellar and the passage to the shaft. Out in the fields the land falls
  * below the street's level, so "below" is only her cellar's own stretch.
  */
 export function daylightAt(x: number, y: number, z: number): number {
   const C = CELLAR, h = C.house;
   if (x >= h.x[0] && x <= h.x[1] && z >= h.z[0] && z <= h.z[1]) return y < TOWN.ground - 0.5 ? 0 : HOUSE_DAY;
+  if (shopAir(x, y, z) > -0.3) return HOUSE_DAY; // (in Ilse's or Kemal's shop)
   const below = y < TOWN.ground - 0.5 && x > C.stairs.x[0] - 1 && x < C.chamber.x + C.chamber.r + 1 && Math.abs(z) < C.chamber.r + 1;
   return below ? 0 : 1;
 }
@@ -152,7 +153,7 @@ export class CellarField extends QuarryField {
     return Math.max(this.inside(col, x, y, z), townAir(x, y, z));
   }
 
-  /** The air of the cellar and the house (as `at`, without the town outside). */
+  /** The air of the cellar, the house and the two shops (as `at`, without the town outside). */
   private inside(col: Column, x: number, y: number, z: number): number {
     const C = CELLAR, rm = C.room, ch = C.chamber, H = C.house, D = TOWN.door, f = col.floor;
     const air = Math.max(
@@ -165,6 +166,7 @@ export class CellarField extends QuarryField {
       Math.min(plan(x, z, C.arch.x, C.arch.z), y, vault(z, C.arch.z[1], C.arch.spring, C.arch.crown) - y),
       Math.min(plan(x, z, C.passage.x, C.passage.z), y, C.passage.top - y),
       Math.min(ch.r - Math.hypot(x - ch.x, z - ch.z), y, ch.top - y),
+      shopAir(x, y, z),
     );
     // Beyond the arch it is the mine's rock, not her bricks: rough.
     const wild = smoothstep(10.0, 11.0, x);

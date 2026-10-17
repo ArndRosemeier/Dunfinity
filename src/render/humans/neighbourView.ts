@@ -1,7 +1,8 @@
 /**
  * The town's people one calls on, on screen: Frau Weber (src/world/neighbour.ts), one of Scale's
  * humans, old, in her cardigan, on her doorstep; and the stranger at Ilse's (src/world/stranger.ts),
- * one of the game's peoples of the deep (src/creatures/folk.ts) in a dark travelling coat; and
+ * one of the game's peoples of the deep (src/creatures/folk.ts) in a dark travelling coat; Kemal and
+ * Ilse behind their shop counters (src/world/shopkeeper.ts); and
  * grandma's ghost in her round room (src/world/grandma.ts): Grete as she was at the end, old, in her
  * cardigan, made a ghost in the salt's own blue, rising, talking and fading with a slow flicker. They
  * turn to whoever comes near and talk with their hands. Each is drawn with a HumanPool of one (built
@@ -14,9 +15,11 @@ import { HumanPool, humans } from '../creatures/humanPool';
 import type { Townsperson } from '../../world/townsperson';
 import { WEBER } from '../../world/neighbour';
 import { STRANGER } from '../../world/stranger';
+import { KEEPER } from '../../world/shopkeeper';
+import type { Shop } from '../../gen/town';
 import { GRANDMA, type Grandma } from '../../world/grandma';
 import { deepFolk } from '../../creatures/folk';
-import { cardigan, travellersClothes } from './wardrobe';
+import { cardigan, keepersClothes, travellersClothes } from './wardrobe';
 
 /** How far off they are drawn, metres. */
 const SHOWN = 45;
@@ -40,6 +43,12 @@ export class NeighbourView<T extends Townsperson = Townsperson> {
   static async stranger(seed: number): Promise<NeighbourView> {
     const s = deriveSeed(seed, 'stranger');
     return new NeighbourView(await humans(1, () => randomAppearance(deepFolk(seed)[0], s, { age: 0.55 }), () => travellersClothes(s)), STRANGER.talk, 'happy');
+  }
+
+  /** A shopkeeper behind the counter, the same for every seed: Kemal, a man of fifty-odd; Ilse, a woman of seventy. */
+  static async keeper(shop: Shop): Promise<NeighbourView> {
+    const seed = deriveSeed(1931, shop), look = shop === 'hardware' ? { age: 0.55, gender: 0.9 } : { age: 0.75, gender: 0.1 };
+    return new NeighbourView(await humans(1, () => randomAppearance('human', seed, look), () => keepersClothes(seed, shop)), KEEPER.talk, 'happy');
   }
 
   /** Grandma's ghost: Grete, born 1940, the same for every seed, her hair up in the bun she wore for sixty years. */

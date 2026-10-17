@@ -4680,6 +4680,10 @@
     "reason": "A view posing its figures each frame: the common verb, unrelated jobs."
   },
   {
+    "key": "idiom: [.cx .cz] in dunfinity/gen/quarry.ts + dunfinity/gen/town.ts + dunfinity/gen/village.ts",
+    "reason": "each passes its own record's centre (a working, a house, a building) to the one frame seam unlocal/local (src/gen/propMesh.ts); nothing more to share"
+  },
+  {
     "key": "idiom: [.kind .pts .roads] in dunfinity/gen/townProps.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",
     "reason": "each walks VILLAGE.roads for its own end (the layout lays houses, the props stand lamps, the walkers find their streets); the roads are the one seam"
   },
