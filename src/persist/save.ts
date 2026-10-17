@@ -16,6 +16,7 @@ import type { KeyData } from '../lore/key';
 import type { FirstStepsData } from '../game/firstSteps';
 import type { PetData } from '../creatures/pets';
 import type { HumanoidAppearance } from '@futuremagic/humanoid';
+import type { OutfitSpec } from '../loot/outfit';
 import { names, recall, remember } from './store';
 
 export interface GrandchildData {
@@ -61,6 +62,8 @@ export interface SaveData {
   readonly steps?: FirstStepsData;
   /** The grandchildren's look, made in the character creator (src/game/creator.ts); none: the seed's own. */
   readonly look?: HumanoidAppearance;
+  /** What they wear, chosen in the creator (src/loot/outfit.ts); none: the rags. */
+  readonly outfit?: OutfitSpec;
   /** How the family plays (none: from before modes, Rogue like). */
   readonly mode?: GameMode;
 }

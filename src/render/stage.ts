@@ -17,6 +17,8 @@ import { installShaderPolicy } from './shaders/patches';
 
 /** Frames drawn to warm the shadow pass (async pipelines finish over a few). */
 const WARM_FRAMES = 8;
+/** Milliseconds the warm-up waits before its shadow frames (`warmShadows`). */
+const SETTLE_MS = 500;
 /** A layer only the headlamp's shadow camera sees: casters warmed later are drawn into its map alone. */
 const WARM_LAYER = 7;
 
@@ -95,6 +97,10 @@ export class Stage {
       o.traverse((c) => { c.frustumCulled = false; });
     }
     this.scene.add(group);
+    // A moment first for the work the compiles just started to settle (measured, not fully understood):
+    // without it the first shadow build, which carries the shadow pass's one-time setup, took 40 to 125 ms
+    // in software GL, with it 37 to 53 ms (the budget is 100).
+    await new Promise((r) => setTimeout(r, SETTLE_MS));
     for (let k = 0; k < WARM_FRAMES; k++) {
       this.renderer.render(this.scene, this.camera);
       await new Promise((r) => setTimeout(r, 30));

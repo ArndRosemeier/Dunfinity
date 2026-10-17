@@ -1,7 +1,7 @@
 /**
  * The character creator (Scale's, brought over): after New Game, before the introduction, the
  * first grandchild stands in grandma's round room, lit by the lamp of whoever looks at them, and is
- * made: body, face, hair, skin and eyes (src/app/creatorView.ts). Each change rebuilds the figure
+ * made: body, face, hair, skin and eyes, and today's clothes (src/app/creatorView.ts). Each change rebuilds the figure
  * (the nobody itself, `Nobody.restyle`), compiled before it is swapped in.
  *
  * It is drawn by the game's own renderer in the game's own scene, so nothing of it is warmed apart:
@@ -10,8 +10,9 @@
  */
 import { Vector3 } from 'three/webgpu';
 import { deriveSeed } from '@futuremagic/core';
-import { randomAppearance, type HumanoidAppearance } from '@futuremagic/humanoid';
-import { CreatorView, type Framing } from '../app/creatorView';
+import { randomAppearance } from '@futuremagic/humanoid';
+import { CreatorView, type Framing, type Made } from '../app/creatorView';
+import { everydayOutfit } from '../loot/outfit';
 import type { LevelView } from '../render/LevelView';
 import type { Nobody } from '../render/humans/nobody';
 import { CELLAR } from '../gen/cellar';
@@ -44,16 +45,22 @@ export interface CreatorCast {
   floor(x: number, z: number): number;
 }
 
-/** Make the first grandchild; resolves with their look and the screen black, the overlay gone. */
-export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise<HumanoidAppearance> {
+/** Make the first grandchild; resolves with their look and clothes, the screen black, the overlay gone. */
+export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise<Made> {
   const { view, nobody } = cast;
   const clock = (): number => performance.now() / 1000;
-  let yaw = Math.atan2(CREATOR.at.x - CREATOR.from.x, CREATOR.at.z - CREATOR.from.z) - CREATOR.turned, focus: Framing = 'body', want: HumanoidAppearance | null = null, building = false, builtAt = 0, strangers = 0;
-  const ui = new CreatorView(host, nobody.look, {
-    changed: (look) => { want = structuredClone(look); },
+  let yaw = Math.atan2(CREATOR.at.x - CREATOR.from.x, CREATOR.at.z - CREATOR.from.z) - CREATOR.turned, focus: Framing = 'body', want: Made | null = null, building = false, builtAt = 0, strangers = 0;
+  // Dressed for today from the start (a family from before kept the rags: they get today's clothes too).
+  const first: Made = { look: nobody.look, outfit: nobody.outfit ?? everydayOutfit(cast.seed, nobody.look.gender < 0.5) };
+  if (!nobody.outfit) want = structuredClone(first);
+  const ui = new CreatorView(host, first, {
+    changed: (made) => { want = structuredClone(made); },
     turn: (by) => { yaw += by; },
     frame: (f) => { focus = f; },
-    stranger: () => randomAppearance('human', deriveSeed(cast.seed, 'creator', ++strangers), { age: nobody.look.age }),
+    someoneElse: () => {
+      const look = randomAppearance('human', deriveSeed(cast.seed, 'creator', ++strangers), { age: nobody.look.age });
+      return { look, outfit: everydayOutfit(deriveSeed(cast.seed, 'creator', strangers), look.gender < 0.5) };
+    },
   });
   cast.ready.then(() => ui.ready());
   // The lamp held by the one looking (not on a forehead), the camera's own field of view: uniforms, nothing compiles.
@@ -82,18 +89,18 @@ export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise
   aim();
   eye.copy(wantEye); at.copy(wantAt);
   const start = clock();
-  let last = start, chosen: HumanoidAppearance | null = null, chosenAt = 0;
+  let last = start, chosen: Made | null = null, chosenAt = 0;
   ui.done.then((l) => { chosen = l; chosenAt = clock(); });
   return new Promise((resolve) => {
     const pace = (): void => {
       const t = clock(), dt = Math.min(0.1, t - last);
       last = t;
-      // Rebuild in the newest look, one at a time and not too often while a slider is dragged.
-      const look = want;
-      if (look && !building && t - builtAt > CREATOR.rebuild) {
+      // Rebuild in the newest look and clothes, one at a time and not too often while a slider is dragged.
+      const made = want;
+      if (made && !building && t - builtAt > CREATOR.rebuild) {
         want = null;
         building = true;
-        nobody.restyle(look, (o) => view.stage.prepare(o, { everyCaster: true })).catch((e) => console.warn('[creator] rebuild failed', e)).finally(() => { building = false; builtAt = clock(); });
+        nobody.restyle(made.look, made.outfit, (o) => view.stage.prepare(o, { everyCaster: true })).catch((e) => console.warn('[creator] rebuild failed', e)).finally(() => { building = false; builtAt = clock(); });
       }
       nobody.puppet([feet.x, feet.y, feet.z], [0, 0, 0], yaw, 'idle', dt, t);
       aim();
