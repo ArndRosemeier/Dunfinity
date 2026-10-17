@@ -1,6 +1,6 @@
 /**
- * Old Frau Weber, across the street (town-and-first-strata.md §3): she stands on her doorstep at
- * night, turns to whoever comes near, and talks when called on (E at her door): hints and rumours,
+ * Old Frau Weber, across the street (town-and-first-strata.md §3): she stands on her doorstep by
+ * day, turns to whoever comes near, and talks when called on (E at her door): hints and rumours,
  * the more of them the deeper the family has been. She knew grandma sixty years; she never asks what
  * you are doing in that cellar, and she always knows. Pure.
  */

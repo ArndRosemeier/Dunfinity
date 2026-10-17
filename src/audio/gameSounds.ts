@@ -12,8 +12,7 @@ import type { Body } from '../world/traverse/body';
 import type { Level } from '../gen/level';
 import type { Fauna } from '../creatures/fauna';
 import type { DoorSpec } from '../gen/doorways';
-import { TOWN } from '../gen/town';
-import { CELLAR } from '../gen/cellar';
+import { daylightAt } from '../gen/cellar';
 import { SoundEngine, type SoundLoop } from './audio';
 import { Music } from './music/Music';
 import type { Place } from './music/mood';
@@ -101,11 +100,7 @@ export class GameSounds {
   /** Where one is, for the ambience and the music. */
   static place(level: Level, b: { readonly x: number; readonly y: number; readonly z: number }): Place {
     if (level.band.id !== 'cellar') return level.band.id;
-    const h = CELLAR.house;
-    const inHouse = b.x >= h.x[0] && b.x <= h.x[1] && b.z >= h.z[0] && b.z <= h.z[1];
-    // (Under the town only in her cellar's own stretch: out in the fields the land falls below the street's level.)
-    const C = CELLAR, below = b.y < TOWN.ground - 0.5 && b.x > C.stairs.x[0] - 1 && b.x < C.chamber.x + C.chamber.r + 1 && Math.abs(b.z) < C.chamber.r + 1;
-    return below || inHouse ? 'cellar' : 'town';
+    return daylightAt(b.x, b.y, b.z) < 1 ? 'cellar' : 'town';
   }
 
   update(s: SoundScene): void {

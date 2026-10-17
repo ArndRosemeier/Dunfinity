@@ -1,5 +1,5 @@
 /**
- * The town at night (depth 0, above grandma's cellar; docs/design/town-and-first-strata.md §3): a
+ * The town by day (depth 0, above grandma's cellar; docs/design/town-and-first-strata.md §3): a
  * country village (src/gen/village.ts) in the lee of the quarry hill, with fields all round it.
  * Grandma's street runs along the foot of the hill, her house's back built into it; a lane leads
  * from opposite her door to the square and the church; country roads, lanes and side lanes, houses

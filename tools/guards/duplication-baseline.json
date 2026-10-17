@@ -4762,9 +4762,5 @@
   {
     "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
     "reason": "each creature kind turns towards its heading at its own rate (a clamped atan2 step on its yaw); found on main before the village PR, not touched by it"
-  },
-  {
-    "key": "same name: dunfinity/audio/gameSounds.ts#place + dunfinity/render/spells.ts#place",
-    "reason": "where one is for sound (town or cellar) and where a spell lands: different things that share a word"
   }
 ]
