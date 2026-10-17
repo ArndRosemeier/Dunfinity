@@ -111,6 +111,19 @@ const TOOLS: Readonly<Record<string, readonly ['held_hatchet' | 'held_pick' | 'h
 };
 
 /**
+ * Kemal's flashlight, in grip space like the knife (along the forearm, the lamp end forward): a
+ * black rubber barrel with a ridged grip and a chrome head round the glass.
+ */
+function flashlight(): Object3D {
+  return held((rubber, chrome) => {
+    rubber.tube(0, -0.07, 0, 0, 0.1, 0, 0.017, [0.06, 0.06, 0.065]);
+    for (const y of [-0.04, -0.01, 0.02]) rubber.tube(0, y, 0, 0, y + 0.012, 0, 0.0185, [0.1, 0.1, 0.11]);
+    chrome.tube(0, 0.1, 0, 0, 0.145, 0, 0.025, [0.62, 0.63, 0.66]);
+    rubber.tube(0, 0.143, 0, 0, 0.147, 0, 0.022, [0.9, 0.88, 0.7]); // the glass
+  }, KNIFE_TILT);
+}
+
+/**
  * Grandma's pot lid, as a shield (grip space as the humanoid straps a shield to the forearm: its
  * face out along +z): dented blue enamel, a black rim and a wooden knob.
  */
@@ -147,6 +160,7 @@ export const WARDROBE: Wardrobe = {
     if (defId === 'knife') return kitchenKnife();
     if (TOOLS[defId]) return tool(TOOLS[defId][0]);
     if (defId === 'potlid') return potLid();
+    if (defId === 'flashlight') return flashlight();
     throw new Error(`no held item "${defId}"`);
   },
   disposeItem: (o) => o.traverse((m) => (m as Mesh).geometry?.dispose()),
@@ -226,6 +240,7 @@ function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = 
     const [defId, a, b, wear] = o.hand;
     eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: TOOLS[defId]?.[1] ?? defId, material: 'metal' } };
   }
+  if (!lid && items.some((it) => it.kind === 'flashlight')) eq.offhand = { defId: 'flashlight', visual: { ...visual(seed + 4, [0.06, 0.06, 0.065], [0.62, 0.63, 0.66], 0.3), shape: 'flashlight', material: 'metal' } };
   if (lid) eq.offhand = { defId: 'potlid', visual: { ...visual(seed + 4, [0.16, 0.24, 0.38], [0.05, 0.05, 0.06], 0.4), shape: 'shield-potlid', material: 'metal' } };
   return eq;
 }

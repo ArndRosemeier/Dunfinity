@@ -68,6 +68,7 @@ export const HELP: readonly (readonly [readonly string[], string])[] = [
   [['Digit1'], 'to 0: grandma\'s cards (the bar)'],
   [['Tab'], 'pick a target'],
   [['KeyF'], 'headlamp'],
+  [['KeyL'], 'flashlight, if you have one'],
   [['KeyM'], 'map'],
   [['KeyJ'], 'grandma\'s diary'],
   [['KeyI'], 'your pack'],

@@ -72,6 +72,7 @@ export class LevelView {
   private terrain_: Terrain | null = null;
   private props_: Props | null = null;
   private dark_ = false;
+  private torch_ = false;
   /** The level's light and air (src/gen/air.ts). */
   private air: Air = airOf(0, 0);
   /** Which chunks the rock is streamed in (the quality's detail). */
@@ -189,12 +190,23 @@ export class LevelView {
   get dark(): boolean { return this.dark_; }
   set dark(dark: boolean) {
     this.dark_ = dark;
-    const [near, far] = dark ? FOG.dark : FOG.survey;
-    this.fog.near = near * this.air.clear; this.fog.far = far * this.air.clear;
+    const [near, far] = dark ? FOG.dark : FOG.survey, torch = dark && this.torch_;
+    const reach = torch ? TORCH.reach : 1;
+    this.fog.near = near * this.air.clear * reach; this.fog.far = far * this.air.clear * reach;
     this.ambient.intensity = dark ? 0.05 : 0.7;
-    this.headlamp.intensity = dark ? this.headlampPower.dark : this.headlampPower.survey;
-    this.spill.intensity = this.headlamp.intensity * HEADLAMP.spill;
+    const power = dark ? this.headlampPower.dark : this.headlampPower.survey;
+    this.headlamp.intensity = power * (torch ? TORCH.power : 1);
+    this.headlamp.angle = torch ? TORCH.angle : HEADLAMP.angle;
+    this.spill.intensity = power * HEADLAMP.spill;
     this.applyDay();
+  }
+
+  /** A flashlight on in the hand (Kemal's): in the dark the cone narrows, burns brighter and reaches farther. Light values only; compiles nothing. */
+  get torch(): boolean { return this.torch_; }
+  set torch(on: boolean) {
+    if (on === this.torch_) return;
+    this.torch_ = on;
+    this.dark = this.dark_;
   }
 
   /**
@@ -296,6 +308,8 @@ export class LevelView {
  * rock an arm's length away must not burn out to white while the far end of a hall still shows.
  */
 const HEADLAMP = { angle: 0.95, penumbra: 0.6, map: 1024, shadowFar: 60, spill: 0.15, decay: 1 };
+/** The flashlight's beam over the headlamp's: its half angle, how much brighter, how much farther the dark lets one see. */
+const TORCH = { angle: 0.38, power: 10, reach: 2.2 };
 
 /**
  * The day over the village: the haze far off (and the sky behind it), the ambient light from the sky
