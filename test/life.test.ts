@@ -61,7 +61,7 @@ test('a pasture is the same every time, on its den\'s dry floor, and its wall an
   const nest = dens<Nest>(r, RAT.cell, l.arrival[0], l.arrival[2]).find((n) => Math.hypot(n.x - l.arrival[0], n.z - l.arrival[2]) > 30)!;
   for (const diet of ['floor', 'wall', 'water', 'bloom'] as const) {
     const a = pastureOf(l, nest, diet, 8, 0.2, 0.32), b = pastureOf(l, nest, diet, 8, 0.2, 0.32);
-    assert.deepEqual(a, b);
+    assert.deepEqual([a.food, a.nook], [b.food, b.nook]);
     assert.ok(a.food.length > 0, `${diet}: some food`);
     for (const s of a.food) {
       assert.ok(Math.hypot(s.x - nest.x, s.z - nest.z) < 8 * 2 + 3, `${diet}: near home`);

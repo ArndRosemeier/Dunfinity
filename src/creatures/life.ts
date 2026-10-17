@@ -20,6 +20,8 @@ export const LIFE = {
   feedFor: [4, 12] as const,
   /** One that feeds where it is (`Population.liveInPlace`): seconds between its meals' chances. */
   between: [3, 8] as const,
+  /** Seconds of getting nowhere on the straight way to its food before it takes the way round the rock. */
+  round: 0.5,
   /** A den's hours: awake, then at rest, s (each den its own, seeded). */
   awake: [60, 140] as const,
   asleep: [25, 60] as const,
@@ -46,6 +48,8 @@ export class Life {
   t = 0;
   /** How far it moved in its last step, m (a kind's gait follows it). */
   moved = 0;
+  /** On its way round the rock (the straight way to its food got it nowhere). */
+  round = false;
   /** Its mind called on its life this step (else it stops). */
   seen = false;
 
@@ -54,6 +58,6 @@ export class Life {
   }
 
   stop(): void {
-    this.doing = ''; this.down = false; this.spot = null;
+    this.doing = ''; this.down = false; this.spot = null; this.round = false;
   }
 }

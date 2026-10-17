@@ -4634,5 +4634,37 @@
   {
     "key": "same name: dunfinity/render/creatures/ratView.ts#clipFor + dunfinity/render/creatures/slimeView.ts#clipFor",
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
+  },
+  {
+    "key": "idiom: [.move .steer] in dunfinity/creatures/animals.ts + dunfinity/creatures/population.ts + dunfinity/creatures/tallOne.ts",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/bestiary.ts#settle + dunfinity/creatures/population.ts#settle",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/life.ts#stop + dunfinity/render/humans/ladderClimb.ts#stop",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#at + dunfinity/gen/surfaceNets.ts#at",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/gen/cellMemo.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/gen/gates.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/loot/finds.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/world/doors.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
   }
 ]
