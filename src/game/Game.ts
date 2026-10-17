@@ -9,6 +9,7 @@ import { Practice, SKILLS, type Skill } from '../loot/practice';
 import { activeFamily, families, freshWorldSeed, goNewGame, goStraightIn, loadByHand, manualSaves, newFamily, readFamily, saveByHand, setActiveFamily, takeNewGame, takeStraightIn, writeFamily, MODE_NAMES, type GameMode, type GrandchildData, type SaveData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
+import { Minimap } from '../app/minimap';
 import { inVillage } from '../app/villageMap';
 import { ReadView } from '../app/readView';
 import { DiaryView } from '../app/diaryView';
@@ -599,6 +600,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const readView = new ReadView(document.body);
   const diaryView = new DiaryView(document.body);
   const mapView = new MapView(document.body);
+  const minimap = new Minimap(document.body);
   // The main bar: a click uses a slot (a held one, the lid, stays held until the next click).
   const abilityBar = new AbilityBar(document.body, (i) => {
     const a = barOf(mainBar)[i];
@@ -766,6 +768,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     setQuality: (q) => { view.quality = q; graphics = { ...graphics, quality: q }; writeGraphicsSettings(graphics); },
     still: () => graphics.still,
     setStill: (on) => { graphics = { ...graphics, still: on }; writeGraphicsSettings(graphics); document.documentElement.classList.toggle('ui-still', on); },
+    minimap: () => graphics.minimap,
+    setMinimap: (on) => { graphics = { ...graphics, minimap: on }; writeGraphicsSettings(graphics); },
     qualityNotes: QUALITY_NOTES,
     opened: (open) => { controls.paused = open; },
     modeLine: () => `This family plays ${MODE_NAMES[mode]} (chosen at New Game)`,
@@ -1164,6 +1168,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (loading.open) { loading.hide(); fadeIn = 0; fade.style.opacity = '0'; }
     }
     if (arriving && loading.open) loading.step('Carving the rock', 0.65 + 0.35 * view.streamed);
+    // The minimap in the corner: not over the map, through the prologue, or once dead.
+    minimap.show(graphics.minimap && !mapView.open && !prologue && !body.dead);
     if (prologue) { prologueFrame(dt, timer.getElapsed()); return; }
     // A death goes on the notary's list (once).
     if (body.dead && !mourned) mourn();
@@ -1848,7 +1854,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       sunSeenAt = timer.getElapsed();
       for (const s of suns.list) if (s.age > SUN.rise && Math.hypot(s.x - body.x, s.z - body.z) < SUN.revealNear) explored.see(level, s.x, level.groundAt(s.x, s.z, s.y), s.z, SUN.reveal);
     }
-    mapView.draw(level, explored, body.x, body.y, body.z, cam.yaw, campfire.burning(timer.getElapsed()) ? campfire.fire : null, timer.getElapsed());
+    const fireNow = campfire.burning(timer.getElapsed()) ? campfire.fire : null;
+    mapView.draw(level, explored, body.x, body.y, body.z, cam.yaw, fireNow, timer.getElapsed());
+    minimap.draw(level, explored, body.x, body.y, body.z, cam.yaw, fireNow, timer.getElapsed());
     const lines: string[] = [];
     const E = keyName('KeyE');
     if (riding) lines.push(`${E}: let go (${Math.max(0, Math.round(body.y - level.groundAt(body.x, body.z, body.y)))} m above the floor)`);
