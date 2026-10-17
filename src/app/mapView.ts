@@ -12,6 +12,7 @@ import { hash2f, hash3f, hashString } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import type { Explored } from '../world/explored';
 import { MapCells, sheetOf, type Sheet } from './mapSheet';
+import { VILLAGE_KNOWN, VILLAGE_MARKS, inVillage, type MapMark } from './villageMap';
 import { Modal, esc, keycap } from './panel';
 import { THEME } from './theme';
 
@@ -38,7 +39,7 @@ export class MapView extends Modal {
   private readonly cellsPx = document.createElement('canvas');
   private grain: CanvasPattern | null = null;
   private cells: MapCells | null = null;
-  private made: { x: number; z: number; seen: number; zoom: number; w: number; h: number; walls: Path2D } | null = null;
+  private made: { x: number; z: number; seen: number; zoom: number; w: number; h: number; walls: Path2D; village: boolean } | null = null;
   private zoom: number = MAP.zoom;
   private drawnAt = -Infinity;
 
@@ -60,9 +61,9 @@ export class MapView extends Modal {
   }
 
   /** Open or close it (`name`: the level's name for its header). */
-  toggle(name = ''): void {
+  toggle(name = '', village = false): void {
     if (this.open) { this.hide(); return; }
-    this.showHtml(`<header><h2 class="ui-title">${esc(name)}</h2><span class="ui-label">What you have seen</span></header><div class="sheet"></div>`
+    this.showHtml(`<header><h2 class="ui-title">${esc(village ? 'The village' : name)}</h2><span class="ui-label">${village ? 'Known by heart' : 'What you have seen'}</span></header><div class="sheet"></div>`
       + `<div class="ui-keys"><span>${keycap('M')} or ${keycap('Esc')} close</span><span>${keycap('+')} ${keycap('−')} or the wheel: nearer, farther</span></div>`
       + '<div class="ui-touch-only ui-label">Pinch: nearer, farther</div>');
     this.el.querySelector('.sheet')!.appendChild(this.canvas);
@@ -89,17 +90,19 @@ export class MapView extends Modal {
     const g = cv.getContext('2d');
     if (!g) return;
     const S = MAP.zooms[this.zoom], margin = Math.ceil(MAP.remake * S) + 4, L = SALT;
-    if (this.cells?.level !== level) { this.cells = new MapCells(level); this.made = null; }
+    // Up in the village the map shows all of it (src/app/villageMap.ts); below, what was seen.
+    const village = inVillage(level, y);
+    if (this.cells?.level !== level || (this.made?.village ?? village) !== village) { this.cells = new MapCells(level, village ? VILLAGE_KNOWN : undefined); this.made = null; }
     let k = this.made;
     if (!k || Math.hypot(x - k.x, z - k.z) > MAP.remake || seen.cells(level.depth) !== k.seen || this.zoom !== k.zoom || w !== k.w || h !== k.h) {
-      k = this.made = { ...this.make(level, seen, L, x, y, z, w + 2 * margin, h + 2 * margin, S, dpr), w, h };
+      k = this.made = { ...this.make(level, seen, L, x, y, z, w + 2 * margin, h + 2 * margin, S, dpr), w, h, village };
     }
     const ox = (k.x - x) * S - margin, oz = (k.z - z) * S - margin;
     reset(g, dpr);
     g.clearRect(0, 0, w, h);
     g.drawImage(this.layer, ox, oz, w + 2 * margin, h + 2 * margin);
     const p: Paint = { g, w, h, S, x, y, z, yaw, now: still() ? 0 : now, moving: !still(), sheet: null, level, seed: hashString(`map${level.depth}`) };
-    L.lamp(p);
+    if (!village) L.lamp(p);
     g.save();
     g.translate(ox, oz);
     L.shimmer(p, k.walls);
@@ -108,6 +111,7 @@ export class MapView extends Modal {
     if (fire) L.blaze(p, sx(fire.x), sz(fire.z));
     L.nobody(p, w / 2, h / 2, -Math.sin(yaw), -Math.cos(yaw));
     rim(p, L);
+    if (village) for (const m of VILLAGE_MARKS) mark(p, m, sx(m.x), sz(m.z));
   }
 
   /** Make the shapes round (x, z) and paint what stays put onto the layer (w × h px). */
@@ -301,6 +305,30 @@ function arrow(g: CanvasRenderingContext2D, cx: number, cy: number, fx: number, 
   g.stroke();
   g.fillStyle = fill;
   g.fill();
+}
+
+/** A place's name on the map, beside a dot on its house: shops in lamp gold, homes in salt blue, with a dark halo. */
+function mark(p: Paint, m: MapMark, cx: number, cy: number): void {
+  const { g, w, h } = p;
+  if (cx < -120 || cy < -20 || cx > w + 120 || cy > h + 20) return;
+  g.save();
+  g.font = `16px ${THEME.fontDisplay}`;
+  g.textAlign = m.side < 0 ? 'right' : 'left';
+  g.textBaseline = 'middle';
+  const colour = m.shop ? THEME.accent : THEME.vein;
+  g.fillStyle = colour;
+  g.shadowColor = colour;
+  g.shadowBlur = 6;
+  g.beginPath(); g.arc(cx, cy, 3, 0, Math.PI * 2); g.fill();
+  g.shadowBlur = 0;
+  g.lineJoin = 'round';
+  g.lineWidth = 4;
+  g.strokeStyle = rgba(THEME.darkSolid, 0.85);
+  const tx = cx + m.side * 8;
+  g.strokeText(m.name, tx, cy);
+  g.fillStyle = m.shop ? '#ffe3a8' : '#dff3ff';
+  g.fillText(m.name, tx, cy);
+  g.restore();
 }
 
 /** The shade round the edge; north, and a bar of ten metres. */

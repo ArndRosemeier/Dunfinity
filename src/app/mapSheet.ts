@@ -59,27 +59,42 @@ const SIDES = [
 
 const vkey = (i: number, j: number) => (i + 0x100000) * 0x200000 + (j + 0x100000);
 
-/** The cells of one level the map has asked about, kept: seen cells' looks, and whether an unseen one beside them is rock. */
+/**
+ * What the map shows of a place the family knows by heart, seen or not (the village round grandma's
+ * house): the cell's look, `'rock'` (a building), or null beyond it.
+ */
+export type Known = (x: number, z: number) => MapCell | 'rock' | null;
+
+/**
+ * The cells of one level the map has asked about, kept: seen cells' looks, and whether an unseen one
+ * beside them is rock. With `known`, it shows what that knows instead of what was seen.
+ */
 export class MapCells {
-  private readonly looks = new Map<number, MapCell>();
+  private readonly looks = new Map<number, MapCell | 'rock' | null>();
   private readonly rock = new Map<number, boolean>();
 
-  constructor(readonly level: Level) {}
+  constructor(readonly level: Level, private readonly known?: Known) {}
 
-  /** Cell (i, j)'s look (only ask for seen cells). */
-  seenCell(i: number, j: number): MapCell {
+  /** Cell (i, j)'s look, if the map shows it: seen (`seen` says whether it was), or known. */
+  cell(i: number, j: number, seen: boolean): MapCell | null {
+    if (!seen && !this.known) return null;
     const k = vkey(i, j);
     let m = this.looks.get(k);
-    if (!m) {
-      const level = this.level, c = EXPLORE.cell, x = (i + 0.5) * c, z = (j + 0.5) * c, floor = level.floorAt(x, z);
-      m = { floor, water: level.waterAt(x, z) > floor + 0.1, rgb: level.field.styles[level.field.regions.styleAt(x, z)].mapFloor ?? MAP_FLOOR };
+    if (m === undefined) {
+      const level = this.level, c = EXPLORE.cell, x = (i + 0.5) * c, z = (j + 0.5) * c;
+      if (this.known) m = this.known(x, z);
+      else {
+        const floor = level.floorAt(x, z);
+        m = { floor, water: level.waterAt(x, z) > floor + 0.1, rgb: level.field.styles[level.field.regions.styleAt(x, z)].mapFloor ?? MAP_FLOOR };
+      }
       this.looks.set(k, m);
     }
-    return m;
+    return m === 'rock' ? null : m;
   }
 
   /** Whether unseen cell (i, j), beside a seen floor at height y, is rock (a wall seen from there), not more floor. */
   isRock(i: number, j: number, y: number): boolean {
+    if (this.known) { this.cell(i, j, false); return this.looks.get(vkey(i, j)) === 'rock'; }
     const k = vkey(i, j);
     let r = this.rock.get(k);
     if (r === undefined) {
@@ -96,7 +111,7 @@ export function sheetOf(cells: MapCells, seen: Explored, x0: number, z0: number,
   const depth = cells.level.depth, c = EXPLORE.cell;
   const i0 = Math.floor(x0 / c) - 1, j0 = Math.floor(z0 / c) - 1, nx = Math.ceil(x1 / c) + 2 - i0, ny = Math.ceil(z1 / c) + 2 - j0;
   const grid: (MapCell | null)[] = new Array(nx * ny).fill(null);
-  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) if (seen.has(depth, i0 + i, j0 + j)) grid[j * nx + i] = cells.seenCell(i0 + i, j0 + j);
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) grid[j * nx + i] = cells.cell(i0 + i, j0 + j, seen.has(depth, i0 + i, j0 + j));
   const at = (i: number, j: number) => (i >= 0 && j >= 0 && i < nx && j < ny ? grid[j * nx + i] : null);
   // The wall edges: a seen cell's side whose neighbour is unseen rock, corner to corner clockwise round the floor.
   const from = new Map<number, number[]>(), into = new Set<number>(), edges: number[][] = [], ticks: WallTick[] = [];
