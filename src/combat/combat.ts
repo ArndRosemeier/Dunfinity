@@ -118,6 +118,19 @@ export function nearestReached<T extends Fighter>(b: Blow, targets: Iterable<T>)
   return best;
 }
 
+/**
+ * What the grandchild hurts things with: the knife (struck and thrown), grandma's cards (Flame,
+ * Pin, the Matchstick's fire and the Flour Bag's burst, Snapdragons, Horseradish) and the salt
+ * pet ('salt-pet', `GRUDGE`). A creature killed by one of these counts as the grandchild's kill
+ * (the tally, its loot); one killed by another creature does not.
+ */
+const YOURS: ReadonlySet<string> = new Set(['knife', 'fire', 'force', 'flour', 'match', 'snapdragon', 'horseradish', 'salt-pet']);
+
+/** Whether hurt of `cause` is the grandchild's doing. */
+export function byYou(cause: string): boolean {
+  return YOURS.has(cause);
+}
+
 /** `amount` of damage to `t` from a blow struck at (fromX, fromZ), knocking it back at `knock` m/s. */
 export function damage(t: Fighter, amount: number, fromX: number, fromZ: number, knock: number, cause: string): void {
   if (t.dead || amount <= 0 || t.evading || t.invulnerable) return;

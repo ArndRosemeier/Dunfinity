@@ -24,6 +24,7 @@ export const TOUCH_BUTTONS: readonly PadButton[] = [
   { action: 'KeyI', label: 'Pack', top: true },
   { action: 'KeyJ', label: 'Diary', top: true },
   { action: 'KeyF', label: 'Lamp', top: true },
+  { action: 'KeyL', label: 'Torch', top: true },
   { action: 'KeyC', label: 'Fire', top: true },
 ];
 

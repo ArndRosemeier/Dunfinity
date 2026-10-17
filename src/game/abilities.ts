@@ -128,6 +128,7 @@ export const KEY_ACTIONS: readonly KeyAction[] = (() => {
   ];
   const looking: KeyAction[] = [
     { key: 'KeyF', name: 'Headlamp', group: 'Looking' },
+    { key: 'KeyL', name: 'Flashlight (Kemal sells one)', group: 'Looking' },
     { key: 'KeyM', name: 'Map', group: 'Looking' },
     { key: 'KeyJ', name: "Grandma's diary", group: 'Looking' },
     { key: 'KeyI', name: 'Your pack', group: 'Looking' },

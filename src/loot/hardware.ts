@@ -7,7 +7,7 @@
  */
 import { ITEMS, Kit, itemName, type ItemKind } from './items';
 
-export type GearKind = 'gloves' | 'whetstone' | 'helmet' | 'hatchet' | 'crowbar' | 'pick';
+export type GearKind = 'gloves' | 'whetstone' | 'helmet' | 'hatchet' | 'crowbar' | 'pick' | 'flashlight';
 
 export interface GearDef {
   readonly name: string;
@@ -26,11 +26,12 @@ export const GEAR: Record<GearKind, GearDef> = {
   helmet: { name: "a miner's helmet", price: 45, what: 'blows hurt you less', item: 'miners-helmet', says: '"An old one from the mine. My father\'s. Take it, take it. Mind the dent."' },
   hatchet: { name: 'a hatchet', price: 30, what: 'chops, slower and harder than the knife', item: 'hatchet', says: '"For kindling. Down there? Well. Kindling is kindling."' },
   crowbar: { name: 'a crowbar', price: 25, what: 'swats wide and knocks them back', item: 'crowbar', says: '"Every house needs one. Every cellar needs two."' },
+  flashlight: { name: 'a flashlight', price: 15, what: 'a long bright beam in the off hand (L)', item: 'flashlight', says: '"Batteries included. Well. One battery. The other one is in the clock."' },
   pick: { name: "a miner's pick", price: 60, what: 'two hands, slow, and very hard', item: 'pick', says: '"Heavy, eh? My father swung one for thirty years. His back, oh, his back."' },
 };
 
-/** Their order on his counter (keys 1 to 6). */
-export const GEAR_ORDER: readonly GearKind[] = ['gloves', 'whetstone', 'helmet', 'hatchet', 'crowbar', 'pick'];
+/** Their order on his counter (keys 1 to 7). */
+export const GEAR_ORDER: readonly GearKind[] = ['gloves', 'whetstone', 'helmet', 'hatchet', 'crowbar', 'pick', 'flashlight'];
 
 /** Whether the grandchild in `kit` has what Kemal sells as `kind` (worn, or the knife honed). */
 export function hasGear(kit: Kit, kind: GearKind): boolean {

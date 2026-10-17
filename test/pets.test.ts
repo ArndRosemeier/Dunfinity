@@ -2,10 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Rng } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
-import { PET, PETS, Pets } from '../src/creatures/pets';
+import { PET, PETS, Pets, type PetData } from '../src/creatures/pets';
 import { Rats } from '../src/creatures/rats';
 import { Cooked } from '../src/loot/recipes';
-import type { Fighter } from '../src/combat/combat';
+import { byYou, type Fighter } from '../src/combat/combat';
+import { GRUDGE } from '../src/creatures/creature';
 
 const DT = 1 / 60;
 const level = new Level(1, 1);
@@ -93,4 +94,40 @@ test('down (or up) a level it comes along, as hurt as it was, and stands up at y
   assert.equal(p.mode, 'form');
   assert.ok(Math.abs(p.health - (PETS.dog.health - 30)) < 0.01, `kept its health (${p.health})`);
   assert.ok(Math.hypot(you.x - p.x, you.z - p.z) < 3, 'at your side');
+});
+
+test('what your pet (or a card) kills counts as yours, for the tally and the salt; what another creature kills does not', () => {
+  const rats = new Rats(level), nest = rats.nearestDen(ax, az)!, you = dummy(nest.x + 40, nest.z);
+  rats.advance(DT, dummy(nest.x, nest.z)); // wake the nest
+  const [a, b] = rats.list;
+  assert.ok(a && b, 'two rats');
+  a.hurt(999, GRUDGE);
+  b.hurt(999, 'dog');
+  rats.advance(DT, you);
+  assert.equal(rats.killed, 1);
+  assert.equal(rats.fallen.length, 1, 'one to give salt for');
+  for (const c of ['knife', 'fire', 'force', 'flour', 'match', 'snapdragon', 'horseradish', GRUDGE]) assert.ok(byYou(c), c);
+  assert.ok(!byYou('dog') && !byYou('spores'));
+});
+
+test('a pet that is out is kept in the save and comes back as hurt as it was, at your side', () => {
+  const pets = new Pets(level), owner = dummy(ax, az), p = pets.summon('dog', along(1), owner.y, az, 0);
+  p.mode = 'heel';
+  p.hurt(25, 'rat');
+  const kept: PetData = JSON.parse(JSON.stringify(pets.data));
+  assert.deepEqual(kept, { kind: 'dog', health: PETS.dog.health - 25 });
+  const back = new Pets(level);
+  back.restore(kept);
+  back.restore(kept); // only ever one
+  back.accompany(DT, owner, [], null, new Rng(1));
+  assert.equal(back.list.length, 1);
+  const q = back.alive!;
+  assert.equal(q.kind, 'dog');
+  assert.equal(q.health, PETS.dog.health - 25);
+  assert.equal(q.mode, 'form');
+  assert.ok(Math.hypot(owner.x - q.x, owner.z - q.z) < 3, 'at your side');
+  back.restore({ kind: 'wolf', health: 5 } as never);
+  assert.equal(back.list.length, 1, 'a broken save brings no pet');
+  p.hurt(999, 'rat');
+  assert.equal(pets.data, null, 'a dead pet is not kept');
 });

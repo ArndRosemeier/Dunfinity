@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.217 — People in the village
+
+- Townsfolk walk the village's streets by day: twenty of them in 1966 clothes, young and old, on the right of the road. They turn into other streets, cross the square, now and then stop to look about, and turn back where a street leaves the village.
+- They never walk into you: they stop, turn to you with a smile and wait until you step aside.
+
+## v0.216 — Your salt pet is kept in the save
+
+- A salt pet that is out when you leave comes back when you return, as hurt as it was, standing up out of salt at your side.
+
+## v0.215 — Creatures with tempers of their own
+
+- Every strange creature now has a temper grown with its body. Some plod and graze for ages, some dart and freeze like lizards, some never settle. Herds keep together, walk in single file behind a leader, spread out, or live alone.
+- Some are curious: they come over, look at you from a little way off and trail after you a while. Shy ones bolt from far away.
+- When one takes fright, its herd bolts, scatters every which way, freezes stock still, or bunches up with the big ones facing you.
+- Some rear up as a warning before they fight. While grazing they have habits: pecking at the floor, rearing up to look round, a tail flick or a claw wave.
+- Some are drawn to your headlamp like moths and mill in its beam; some walk out of it.
+- No creature is a hunter by type anymore. Each has an aggression dial: the most passive only ever run, even when hit; a little less passive, they fight back; from there on they come for you, from further off the more aggressive they are. How they fight (a pack taking turns, an ambush, a swarm, a charge) is part of their temper.
+- The debug menu's creature maker has an Aggression slider and says each creature's temper.
+
+## v0.214 — A flashlight from Kemal's
+
+- Kemal sells a flashlight for €15 (key 7 at his counter). It goes in the off hand, beside whatever weapon is in the main hand.
+- L switches it on and off (the Torch button by touch). On, the beam narrows, burns much brighter and lets you see about twice as far into the dark. The headlamp stays the wide, dim light you always have.
+- The crickets flee the narrower beam.
+
+## v0.213 — Kills by your salt pet and grandma's cards count as yours
+
+- What your salt pet, a Matchstick's fire, a Flour Bag's burst, Flame, Pin, Snapdragons or Horseradish kills now gives salt and counts in your kill tally, like a knife kill. Kills by other creatures still don't.
+
 ## v0.212 — The village by day
 
 - Out in the village it is now day: a pale blue sky with haze over the far fields, the sun from the south-west, and bright light from the sky. The street lamps and lanterns are out and the windows show glass, not lamplight.

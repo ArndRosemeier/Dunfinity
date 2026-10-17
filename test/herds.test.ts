@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { Critters, HERD, HUNT, fitSize, powerOf, type Critter, type Herd } from '../src/creatures/critters';
 import { damage, type Fighter } from '../src/combat/combat';
+import { temperOf } from '../src/creatures/temper';
 
 type Prey = Fighter & { taken: number };
 const someone = (l: Level, x: number, z: number): Prey => ({
@@ -39,9 +40,9 @@ test('no animals in grandma\'s cellar; a few herds from level 1, more deeper, an
 test('a hunter is grown to a fair fight for its level: small and weak on level 1, big and strong deep down', () => {
   for (const seed of [1, 2, 3, 4]) for (const depth of [1, 4, 9, 30]) {
     for (const sp of new Critters(new Level(seed, depth)).species.filter((s) => !s.peaceful)) {
-      const size = fitSize(sp, depth), p = powerOf(sp, size), want = (HUNT.base + HUNT.per * depth) * (HUNT.role[sp.role] ?? 1);
+      const size = fitSize(sp, depth), p = powerOf(sp, size), want = (HUNT.base + HUNT.per * depth) * HUNT.strategy[temperOf(sp).strategy];
       if (size > HUNT.size[0] && size < HUNT.size[1]) assert.ok(Math.abs(p.health - want) < want * 0.02, `${sp.id} health ${p.health} for ${want}`);
-      if (depth <= 9 && sp.role !== 'brute') assert.ok(p.health < 60 && p.blow < 15, `${sp.id} on level ${depth}: ${JSON.stringify(p)}`);
+      if (depth <= 9 && temperOf(sp).strategy !== 'charge') assert.ok(p.health < 60 && p.blow < 15, `${sp.id} on level ${depth}: ${JSON.stringify(p)}`);
     }
   }
 });
@@ -114,9 +115,9 @@ test('hunters come for you: a tell, then the blow; then they spring back and com
     if (!w) continue;
     found++;
     const pack = w.c.list.filter((x) => x.herd === w.h);
-    // Stand on their floor (they cannot climb to a ledge), near enough that even a lurker wakes.
+    // Stand on their floor (they cannot climb to a ledge), near enough that even the shortest-ranged one comes.
     for (let a = 0; a < 12; a++) {
-      const x = pack[0].x + Math.cos(a) * HUNT.lurk * 0.6, z = pack[0].z + Math.sin(a) * HUNT.lurk * 0.6;
+      const x = pack[0].x + Math.cos(a) * 1.4, z = pack[0].z + Math.sin(a) * 1.4;
       if (Math.abs(w.l.groundAt(x, z) - pack[0].y) < 0.2 && w.l.sdf(x, pack[0].y + 1, z) > 0.5) { w.me.x = x; w.me.z = z; w.me.y = w.l.groundAt(x, z); break; }
     }
     let hits = 0, struckBeforeTell = false, backs = 0;
@@ -125,7 +126,7 @@ test('hunters come for you: a tell, then the blow; then they spring back and com
       w.c.advance(1 / 30, w.me);
       if (w.me.taken > before) {
         hits++;
-        if (!pack.some((a) => a.action && a.actionT * HERD.strike >= (HUNT.windup[a.species.role] ?? HERD.windup))) struckBeforeTell = true;
+        if (!pack.some((a) => a.action && a.actionT * HERD.strike >= HUNT.windup[temperOf(a.species).strategy])) struckBeforeTell = true;
       }
       if (pack.some((a) => a.mode === 'back')) backs++;
     }

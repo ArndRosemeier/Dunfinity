@@ -14,6 +14,7 @@ import type { Find } from '../loot/finds';
 import type { Fallen } from '../gen/notary';
 import type { KeyData } from '../lore/key';
 import type { FirstStepsData } from '../game/firstSteps';
+import type { PetData } from '../creatures/pets';
 import type { HumanoidAppearance } from '@futuremagic/humanoid';
 import { names, recall, remember } from './store';
 
@@ -37,6 +38,8 @@ export interface GrandchildData {
   readonly spare?: readonly Item[];
   /** What they have seen of each level (src/world/explored.ts). */
   readonly explored?: Record<string, readonly number[]>;
+  /** Their salt pet, if one is with them (src/creatures/pets.ts). */
+  readonly pet?: PetData;
   /** The salt in grandma's tin when they took it up (the death screen says what they added). */
   readonly saltAtStart?: number;
 }

@@ -60,3 +60,12 @@ test('Kemal sells a hatchet, a crowbar and a pick, one in the hand at a time', (
   r = buyGear(k, 'whetstone', r.euros);
   assert.equal(k.knife.quality, 'fine', 'the knife in the belt can still be honed');
 });
+
+test("Kemal's flashlight goes in the off hand, beside whatever is in the main hand", () => {
+  const k = new Kit();
+  buyGear(k, 'hatchet', 100);
+  const r = buyGear(k, 'flashlight', 100);
+  assert.equal(r.euros, 100 - GEAR.flashlight.price);
+  assert.equal(k.worn.off?.kind, 'flashlight');
+  assert.equal(k.move, 'chop');
+});

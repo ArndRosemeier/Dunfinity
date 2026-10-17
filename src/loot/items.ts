@@ -30,7 +30,7 @@ export const QUALITY: Readonly<Record<Quality, { readonly name: string; readonly
   master: { name: 'master', factor: 1.5 },
 };
 
-export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar';
+export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar' | 'flashlight';
 
 export interface ItemDef {
   readonly name: string;
@@ -52,6 +52,7 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDef>> = {
   hatchet: { name: 'a hatchet', slot: 'main', move: 'chop', what: 'chops, slower and harder' },
   pick: { name: "a miner's pick", slot: 'main', move: 'mine', what: 'comes down two-handed, slow and very hard' },
   crowbar: { name: 'a crowbar', slot: 'main', move: 'swat', what: 'swats wide, knocks them back' },
+  flashlight: { name: 'a flashlight', slot: 'off', what: 'a long bright beam, on and off with L' },
 };
 
 /** Grandma's knife: never in the pack, never lost from the belt. */
