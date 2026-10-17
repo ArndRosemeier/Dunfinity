@@ -39,10 +39,10 @@ export class Practice {
     return this.counts.get(s) ?? 0;
   }
 
-  /** 0 … TIERS.length. */
-  tier(s: Skill): number {
+  /** 0 … TIERS.length, and `plus` on top (tiers that what is worn gives: src/loot/items.ts `Kit.gift`). */
+  tier(s: Skill, plus = 0): number {
     const n = this.count(s);
-    return TIERS.filter((t) => n >= t).length;
+    return TIERS.filter((t) => n >= t).length + plus;
   }
 
   /** Count `n` more for `s`. Returns the new tier if it went up, else 0. */
@@ -53,13 +53,13 @@ export class Practice {
     return after > before ? after : 0;
   }
 
-  /** What practice does to a number that grows with it (damage): 1 + per × tier. */
-  more(s: Skill): number {
-    return 1 + SKILLS[s].per * this.tier(s);
+  /** What practice (and `plus` tiers worn) does to a number that grows with it (damage): 1 + per × tier. */
+  more(s: Skill, plus = 0): number {
+    return 1 + SKILLS[s].per * this.tier(s, plus);
   }
 
-  /** What practice does to a cost that shrinks with it (stamina): 1 − per × tier. */
-  less(s: Skill): number {
-    return 1 - SKILLS[s].per * this.tier(s);
+  /** What practice (and `plus` tiers worn) does to a cost that shrinks with it (stamina): 1 − per × tier. */
+  less(s: Skill, plus = 0): number {
+    return 1 - SKILLS[s].per * this.tier(s, plus);
   }
 }

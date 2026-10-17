@@ -8,6 +8,7 @@
  */
 import type { Move } from '../combat/combat';
 import { FINDS, PACK, type Find, type Pack } from './finds';
+import type { Skill } from './practice';
 
 /** Where an item is worn or held. */
 export type Slot = 'head' | 'body' | 'hands' | 'legs' | 'feet' | 'main' | 'off' | 'trinket' | 'back';
@@ -30,7 +31,30 @@ export const QUALITY: Readonly<Record<Quality, { readonly name: string; readonly
   master: { name: 'master', factor: 1.5 },
 };
 
-export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar' | 'flashlight' | 'rucksack' | 'army-rucksack' | 'salt-satchel' | 'umbrella' | 'owl-cloak' | 'salt-feather';
+export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar' | 'flashlight' | 'rucksack' | 'army-rucksack' | 'salt-satchel' | 'umbrella' | 'owl-cloak' | 'salt-feather'
+  | 'hobnail-boots' | 'rope-soles' | 'knee-pads' | 'moleskins' | 'leather-apron' | 'sling' | 'snuff-tin' | 'barbara-medal';
+
+/**
+ * A gift: one number the game already has, moved by what is worn (the plan's "gifts on gear": no
+ * strength or agility under them). Health and stamina: more of it; wind: stamina back that much
+ * faster (0.25: a quarter); pace and leap: a run and a jump that much quicker; a practice skill
+ * (src/loot/practice.ts): that many tiers up while worn.
+ */
+export type Gift = 'health' | 'stamina' | 'wind' | 'pace' | 'leap' | Skill;
+
+/** Each gift: what a piece gives of it, sound, as a property (`Item.of`, below the surface: "... of the hare"), and how the pack says an amount. */
+export const GIFTS: Readonly<Record<Gift, { readonly step: number; readonly of: string; readonly say: (v: number) => string }>> = {
+  health: { step: 12, of: 'of good bread', say: (v) => `+${Math.round(v)} health` },
+  stamina: { step: 3, of: 'of the long shift', say: (v) => `+${Math.round(v)} stamina` },
+  wind: { step: 0.25, of: 'of deep breaths', say: (v) => `stamina back ${Math.round(v * 100)}% faster` },
+  pace: { step: 0.07, of: 'of the quick', say: (v) => `${Math.round(v * 100)}% quicker on your feet` },
+  leap: { step: 0.1, of: 'of the hare', say: (v) => `jumps ${Math.round(v * 100)}% higher` },
+  knife: { step: 1, of: 'of the butcher', say: (v) => `Kitchen Work +${Math.floor(v)}` },
+  throwing: { step: 1, of: 'of the darts club', say: (v) => `Throwing +${Math.floor(v)}` },
+  footwork: { step: 1, of: 'of the dance hall', say: (v) => `Footwork +${Math.floor(v)}` },
+  climbing: { step: 1, of: 'of the chimney sweep', say: (v) => `Climbing +${Math.floor(v)}` },
+  guard: { step: 1, of: 'of the goalkeeper', say: (v) => `Guard +${Math.floor(v)}` },
+};
 
 export interface ItemDef {
   readonly name: string;
@@ -45,6 +69,10 @@ export interface ItemDef {
   readonly featherfall?: number;
   /** What climbing costs with it on (0.75: a quarter less). */
   readonly climb?: number;
+  /** Its gifts, sound (its quality scales them; a skill's tiers only by whole steps). */
+  readonly gifts?: Partial<Record<Gift, number>>;
+  /** What Ilse pays for it, sound, if Kemal does not sell it new (then: half his price). */
+  readonly worth?: number;
   /** What it does, in a few words for the pack. */
   readonly what: string;
 }
@@ -63,6 +91,15 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDef>> = {
   umbrella: { name: 'a big black umbrella', slot: 'off', featherfall: 9, what: 'snaps open when you fall: you land unhurt' },
   'owl-cloak': { name: 'an owl-down cloak', slot: 'body', featherfall: 4, what: 'you sink like a feather from any height' },
   'salt-feather': { name: 'a salt feather', slot: 'trinket', featherfall: 11, what: 'a feather grown in salt: falls are slowed to a safe landing' },
+  // What the miners left (the sheds, the Quarry floor) and, deeper, what others did.
+  'hobnail-boots': { name: 'hobnail boots', slot: 'feet', gifts: { pace: 0.07 }, worth: 14, what: 'iron-studded soles' },
+  'rope-soles': { name: 'rope-soled shoes', slot: 'feet', gifts: { leap: 0.12 }, worth: 12, what: 'light and springy' },
+  'knee-pads': { name: "a miner's knee pads", slot: 'legs', gifts: { footwork: 1 }, worth: 10, what: 'leather and felt: rolling comes easier' },
+  moleskins: { name: 'moleskin trousers', slot: 'legs', gifts: { stamina: 3 }, worth: 12, what: 'thick and warm' },
+  'leather-apron': { name: 'a leather apron', slot: 'body', armour: 0.08, gifts: { knife: 1 }, worth: 15, what: "a butcher's, a little armour" },
+  sling: { name: 'a sling', slot: 'off', gifts: { throwing: 1 }, worth: 8, what: 'a boy\'s leather sling: your throws fly truer' },
+  'snuff-tin': { name: 'a tin of snuff', slot: 'trinket', gifts: { wind: 0.25 }, worth: 9, what: 'one pinch and your head clears' },
+  'barbara-medal': { name: "a St Barbara's medal", slot: 'trinket', gifts: { health: 12 }, worth: 20, what: "the miners' saint, worn thin" },
 };
 
 /** Grandma's knife: never in the pack, never lost from the belt. */
@@ -73,17 +110,38 @@ const RUCKSACK: Item = { kind: 'rucksack', quality: 'sound' };
 export interface Item {
   readonly kind: ItemKind;
   readonly quality: Quality;
+  /** Its one property, if it has one (found below): a gift more, `GIFTS[of].step` of it. */
+  readonly of?: Gift;
 }
 
 /** Whether `x` (from a save) is an item this build knows. */
-export function isItem(x: { kind: string; quality: string }): x is Item {
-  return x.kind in ITEMS && x.quality in QUALITY;
+export function isItem(x: { kind: string; quality: string; of?: string }): x is Item {
+  return x.kind in ITEMS && x.quality in QUALITY && (x.of === undefined || x.of in GIFTS);
 }
 
-/** `item` as the pack says it: 'work gloves', "grandma's kitchen knife (fine)". */
+/** `item` as the pack says it: 'work gloves', "grandma's kitchen knife (fine)", 'hobnail boots of the hare (worn)'. */
 export function itemName(item: Item): string {
-  const n = ITEMS[item.kind].name;
+  const n = item.of ? `${ITEMS[item.kind].name} ${GIFTS[item.of].of}` : ITEMS[item.kind].name;
   return item.quality === 'sound' ? n : `${n} (${QUALITY[item.quality].name})`;
+}
+
+/** The gifts of `item`, its quality and property counted: how much of each. */
+export function giftsOf(item: Item): Partial<Record<Gift, number>> {
+  const f = QUALITY[item.quality].factor, out: Partial<Record<Gift, number>> = {};
+  for (const [g, v] of Object.entries(ITEMS[item.kind].gifts ?? {}) as [Gift, number][]) out[g] = v * f;
+  if (item.of) out[item.of] = (out[item.of] ?? 0) + GIFTS[item.of].step * f;
+  return out;
+}
+
+/** What `item` does, for the pack: its line, and its gifts as numbers. */
+export function itemWhat(item: Item): string {
+  const gifts = Object.entries(giftsOf(item)) as [Gift, number][];
+  return gifts.length ? `${ITEMS[item.kind].what} (${gifts.map(([g, v]) => GIFTS[g].say(v)).join(', ')})` : ITEMS[item.kind].what;
+}
+
+/** What a find is called: its own name, or the item's if it is one. */
+export function findName(f: Find): string {
+  return f.item ? itemName(f.item) : FINDS[f.kind].name;
 }
 
 /**
@@ -95,7 +153,7 @@ export class Kit {
   knife: Item = { kind: KNIFE, quality: 'sound' };
 
   constructor(items: readonly Item[] = []) {
-    for (const i of items) if (isItem(i)) this.put({ kind: i.kind, quality: i.quality });
+    for (const i of items) if (isItem(i)) this.put(i.of ? { kind: i.kind, quality: i.quality, of: i.of } : { kind: i.kind, quality: i.quality });
   }
 
   /** Put `item` on (in its slot; grandma's knife: in place of the one in the belt): what it takes the place of, or null. */
@@ -167,6 +225,13 @@ export class Kit {
     let c = 1;
     for (const i of this.items) c *= ITEMS[i.kind].climb ?? 1;
     return c;
+  }
+
+  /** How much of `g` all that is worn gives (a skill: whole tiers only). */
+  gift(g: Gift): number {
+    let v = 0;
+    for (const i of this.items) v += giftsOf(i)[g] ?? 0;
+    return GIFTS[g].step === 1 ? Math.floor(v + 1e-9) : v;
   }
 
   get data(): Item[] {

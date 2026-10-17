@@ -6,7 +6,7 @@
  * tin stay with the family.
  */
 import { FINDS, type Pack } from '../loot/finds';
-import { ITEMS, SLOT_NAME, itemName, packRows, rowUse, type Kit } from '../loot/items';
+import { SLOT_NAME, itemName, itemWhat, packRows, rowUse, type Kit } from '../loot/items';
 import { AskingModal, esc, keycap } from './panel';
 
 const STYLE = `
@@ -25,6 +25,7 @@ const STYLE = `
   #pack .row .v { color: var(--ui-ink-dim); white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
   #pack .row .slot { color: var(--ui-ink-faint); min-width: 74px; }
   #pack .row.bare > span:last-child { color: var(--ui-ink-faint); }
+  #pack .row.item .w { display: block; color: var(--ui-ink-faint); font-size: 12.5px; }
   #pack .empty { color: var(--ui-ink-faint); font-style: italic; padding: 3px 8px; }
   #pack .said { color: var(--ui-good); min-height: 1.4em; margin-top: 8px; }
   #pack .note { color: var(--ui-ink-dim); font-size: 14px; margin-top: 4px; }`;
@@ -62,7 +63,7 @@ export class PackView extends AskingModal<number> {
         finds += line(i, '', `<span>${esc(FINDS[f.kind].name)}</span><span class="v">€${f.value}</span>`);
       } else {
         const it = pack.spare[r.i];
-        spare += line(i, '', `<span>${esc(itemName(it))}</span><span class="v">${esc(ITEMS[it.kind].what)}</span>`);
+        spare += line(i, ' item', `<span>${esc(itemName(it))}<span class="w">${esc(itemWhat(it))}</span></span>`);
       }
     });
     const use = rows[sel] ? rowUse(rows[sel], kit) : '';

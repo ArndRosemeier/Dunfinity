@@ -69,6 +69,13 @@ function shape(kind: FindKind, m: PropBuilder, s: PropBuilder, g: PropBuilder): 
         m.ellipsoid(Math.cos(a) * 0.009, 0.002, Math.sin(a) * 0.009, 0.0035, 0.0022, 0.0035, GOLD, 6);
       }
       break;
+    case 'gear':
+      // Something to wear or hold, left rolled up in sacking and tied with string, a buckle showing.
+      s.ellipsoid(0, 0.05, 0, 0.14, 0.05, 0.075, [0.42, 0.35, 0.24], 10);
+      s.ellipsoid(0.11, 0.05, 0, 0.035, 0.045, 0.07, [0.36, 0.3, 0.2], 8); // its rolled end
+      for (const u of [-0.06, 0.05]) s.upright(u, 0.05, 0, 0, 0.006, 0.052, 0.078, [0.62, 0.55, 0.4]); // the string
+      m.upright(-0.01, 0.1, 0.02, 0.3, 0.016, 0.004, 0.012, BRASS); // a buckle
+      break;
     case 'crystal':
       // A little cluster of the deep world's salt, its points leaning out, glowing the veins' blue.
       for (let k = 0; k < 5; k++) {

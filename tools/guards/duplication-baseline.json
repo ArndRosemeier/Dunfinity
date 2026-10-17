@@ -1,5 +1,9 @@
 [
   {
+    "key": "idiom: [.add .push .root] in dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/props/hearth.ts",
+    "reason": "keep a made object in a list and hang it under the view's root: two lines each view needs for its own things; nothing to fold"
+  },
+  {
     "key": "idiom: [.hypot .r .x .z Math] in dunfinity/gen/descents.ts + dunfinity/gen/lair.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",
     "reason": "distance from a point to a round thing's centre against its radius: each its own round thing (a shaft's rim, a lair, a green, a villager); one line, nothing to fold"
   },
@@ -2180,10 +2184,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/envelope.ts#add + dunfinity/loot/finds.ts#add",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "idiom: [.columnAt .level] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/gen/quarryProps.ts",
     "reason": "creatures and the prop pass each ask the level for its column at a spot (level.columnAt) for their own placement; one seam called from four places, surfaced when the finder's corpus shifted"
   },
@@ -2413,10 +2413,6 @@
   },
   {
     "key": "same name: dunfinity/gen/geode.ts#props + dunfinity/gen/goblin.ts#props",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "same name: dunfinity/gen/goblin.ts#add + dunfinity/loot/finds.ts#add",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
