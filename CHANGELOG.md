@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.228 — One mind for every animal (groundwork)
+
+- No change in play yet. The strange creatures' behaviour now lives in one shared place, ready for the rats, dogs and other animals to move onto it, so every animal follows the same rules for aggression, temper and fighting style.
+
 ## v0.227 — Contact us opens the Futuremagic board
 
 - The title screen's Contact us button now opens https://board.futuremagic.de/ in a new tab instead of writing a mail.
