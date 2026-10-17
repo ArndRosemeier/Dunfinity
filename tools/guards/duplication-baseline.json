@@ -4836,10 +4836,6 @@
     "reason": "Cooked's rank getters: each one Cooked.trainedAt(id, ranks, practice) call with its own numbers and which of them practice grows or shrinks; the shared part is Cooked.trainedAt"
   },
   {
-    "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/tinView.ts#show",
-    "reason": "two different panels' drawing (the pack's slots and finds; grandma's cards and the skills practised), both on the one Modal (showHtml) and the theme's classes"
-  },
-  {
     "key": "same name: dunfinity/loot/recipes.ts#match + dunfinity/render/humans/thrownView.ts#match",
     "reason": "different things: the Matchstick card's numbers (Cooked.match) and the flying match's mesh (ThrownView.match)"
   }
