@@ -48,7 +48,7 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
   const from = cast.canContinue ? shotStart(new Rng(deriveSeed(cast.seed, 'title', Math.floor(performance.timeOrigin))).int(1, REPORT.length - 1)) : 0;
   const tv = new TvSet(screen.back, cast.seed, from, cast.pinned);
   await tv.loaded.catch(() => {}); // a missing picture leaves its shot dark, nothing worse
-  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null, said: string | null = null;
+  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null, said = '';
   let game: TitleGame | null = null, gameAt = 0;
   const now = (): number => performance.now() / 1000;
   const start = now();
@@ -71,10 +71,10 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
       if (!hiss && chosen === null && sound?.ctx && (hiss = sound.loop('tv_static')) && t - start < SOUND.clunk) sound.play('tv_on', null);
       hiss?.set(0, 0, -1, (SOUND.hiss + SOUND.rough * tv.trouble) * (1 - leaving));
       if (slipped) sound?.play('tv_glitch', null, SOUND.crackle);
-      // The presenter speaks as each of his lines comes up (not one already under way when the set came on).
+      // The presenter reads each shot's words as it comes up (a later visit switches on at a shot's start).
       const air = tv.playing, line = air ? `${air.shot}:${air.line}` : null, voice = air && voiceOf(air);
-      if (line !== said && said !== null && voice && chosen === null) sound?.play(voice, null);
-      said = line;
+      if (line !== null && line !== said && voice && air!.t < 1 && chosen === null && sound?.ctx) sound.play(voice, null); // (only from the start of his words: never out of step)
+      said = line ?? '';
       (globalThis as { __ready?: boolean }).__ready = revealed && chosen === null;
       if (leaving >= 1) {
         hiss?.stop();
