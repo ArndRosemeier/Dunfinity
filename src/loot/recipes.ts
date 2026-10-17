@@ -16,6 +16,7 @@ import type { Tin } from './tin';
 import type { Sowing } from '../combat/snapdragon';
 import type { Dusting } from '../combat/flour';
 import type { Rooting } from '../combat/horseradish';
+import { UNTRAINED, type Trained } from './practice';
 
 export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'horseradish' | 'flour-bag' | 'matchstick' | 'salt-pet' | 'salt-line';
 
@@ -222,6 +223,8 @@ export class Cooked {
   private readonly ranks = new Map<CardId, number>();
   /** The lost cards found (cooked or not). */
   private readonly found = new Set<CardId>();
+  /** What practice does to each card's numbers (src/loot/practice.ts `Practice.trained`), set by the game; the getters below apply it. */
+  trained: (id: CardId) => Trained = () => UNTRAINED;
 
   rank(id: CardId): number {
     return this.ranks.get(id) ?? 0;
@@ -260,6 +263,12 @@ export class Cooked {
     return ranks[this.rank(id) - 1] ?? null;
   }
 
+  /** What `id` does at the rank cooked, practice applied by `f`, or null if not cooked. */
+  private trainedAt<T, U>(id: CardId, ranks: readonly T[], f: (r: T, t: Trained) => U): U | null {
+    const r = this.at(id, ranks);
+    return r === null ? null : f(r, this.trained(id));
+  }
+
   /** The salt the next rank of `id` costs, or null at the last rank. */
   costOf(id: CardId): number | null {
     return card(id).cost[this.rank(id)] ?? null;
@@ -285,24 +294,24 @@ export class Cooked {
 
   /** The knife: damage multiplier and how long a stab takes (a share of the plain one). */
   get knife(): { damage: number; time: number } {
-    const r = this.rank('hold-it');
-    return { damage: r >= 3 ? 1.6 : r >= 1 ? 1.3 : 1, time: r >= 2 ? 0.8 : 1 };
+    const r = this.rank('hold-it'), t = this.trained('hold-it');
+    return { damage: (r >= 3 ? 1.6 : r >= 1 ? 1.3 : 1) * t.more, time: r >= 2 ? 0.8 : 1 };
   }
 
   /** Seconds between thrown knives, if cooked. */
   get helpings(): number | null {
-    return this.at('helpings', [1.4, 0.8]);
+    return this.trainedAt('helpings', [1.4, 0.8], (e, t) => e * t.less);
   }
 
   /** The roll, if cooked: its stamina cost and the seconds of it that blows miss. */
   get duck(): { stamina: number; safe: readonly [number, number] } | null {
-    const r = this.rank('duck');
-    return r === 0 ? null : r === 1 ? { stamina: 4, safe: [0.08, 0.42] } : { stamina: 2.5, safe: [0.04, 0.52] };
+    const r = this.rank('duck'), less = this.trained('duck').less;
+    return r === 0 ? null : r === 1 ? { stamina: 4 * less, safe: [0.08, 0.42] } : { stamina: 2.5 * less, safe: [0.04, 0.52] };
   }
 
   /** Grandma's Spring in Your Step, if cooked: a jump's speed off the floor, m/s, the jumps it may take in mid-air, and the stamina each costs. */
   get spring(): { jump: number; air: number; cost: number } | null {
-    return this.at('spring', [{ jump: 8.5, air: 0, cost: 1 }, { jump: 8.5, air: 1, cost: 1 }]);
+    return this.trainedAt('spring', [{ jump: 8.5, air: 0, cost: 1 }, { jump: 8.5, air: 1, cost: 1 }], (s, t) => ({ ...s, cost: s.cost * t.less }));
   }
 
   /** How many Sunday candles may burn at once, 0 if not cooked. */
@@ -310,14 +319,19 @@ export class Cooked {
     return this.rank('candle');
   }
 
+  /** How much longer than plain a Sunday candle burns. */
+  get candleBurns(): number {
+    return this.trained('candle').more;
+  }
+
   /** How much faster wounds close resting by a fire. */
   get soup(): number {
-    return [1, 2, 3][this.rank('soup')];
+    return [1, 2, 3][this.rank('soup')] * this.trained('soup').more;
   }
 
   /** Tiptoeing (hold Z), if cooked: its speed, m/s, and how far off things notice you then (a share). */
   get tiptoe(): { speed: number; hush: number } | null {
-    return this.at('tiptoe', [{ speed: 1.6, hush: 0.5 }, { speed: 2.2, hush: 0.33 }]);
+    return this.trainedAt('tiptoe', [{ speed: 1.6, hush: 0.5 }, { speed: 2.2, hush: 0.33 }], (w, t) => ({ speed: w.speed * t.more, hush: w.hush * t.less }));
   }
 
   /** Grandma's Way Home: 0 not cooked, 1 home to the armchair and back, 2 the way opens sooner. */
@@ -328,61 +342,67 @@ export class Cooked {
   /** Grandma's Tenderising, if cooked: its damage range, and whether it hits everything in reach. */
   get tenderising(): { damage: readonly [number, number]; all: boolean } | null {
     const r = this.rank('tenderising');
+    // (Kitchen Work grows it through the knife: `knife.damage` multiplies it.)
     return r === 0 ? null : r === 1 ? { damage: [14, 20], all: false } : { damage: [18, 26], all: true };
   }
 
   /** Grandma's Pot Lid, if cooked: the share of a blow from in front that gets through, and the stamina each costs. */
   get lid(): { through: number; cost: number } | null {
-    return this.at('pot-lid', [{ through: 0.3, cost: 1.5 }, { through: 0.1, cost: 1 }]);
+    return this.trainedAt('pot-lid', [{ through: 0.3, cost: 1.5 }, { through: 0.1, cost: 1 }], (l, t) => ({ through: l.through, cost: l.cost * t.less }));
   }
 
   /** Grandma's Salt Line, if cooked: the circle's radius, metres, and how long it keeps, seconds. */
   get saltLine(): { readonly r: number; readonly keeps: number } | null {
-    return SALT_RINGS[this.rank('salt-line') - 1] ?? null;
+    return this.trainedAt('salt-line', SALT_RINGS, (s, t) => ({ r: s.r, keeps: s.keeps * t.more }));
   }
 
   /** Grandma's Stove Flame, if cooked: how far the flame reaches, metres, its damage, and the seconds between. */
   get flame(): { reach: number; damage: readonly [number, number]; every: number } | null {
-    return this.at('stove-flame', [{ reach: 4, damage: [6, 10], every: 2.5 }, { reach: 5.5, damage: [9, 14], every: 1.8 }]);
+    return this.trainedAt('stove-flame', [{ reach: 4, damage: [6, 10] as const, every: 2.5 }, { reach: 5.5, damage: [9, 14] as const, every: 1.8 }], (f, t) => ({ reach: f.reach, damage: grown(f.damage, t.more), every: f.every * t.less }));
   }
 
   /** Grandma's Cold Larder, if cooked: how far round you the cold goes, metres, what it slows things to, for how long, seconds. */
   get larder(): { r: number; slow: number; lasts: number } | null {
-    return this.at('cold-larder', [{ r: 4, slow: 0.4, lasts: 4 }, { r: 5.5, slow: 0.3, lasts: 6 }]);
+    return this.trainedAt('cold-larder', [{ r: 4, slow: 0.4, lasts: 4 }, { r: 5.5, slow: 0.3, lasts: 6 }], (l, t) => ({ r: l.r, slow: l.slow * t.less, lasts: l.lasts * t.more }));
   }
 
-  /** Grandma's Rolling Pin, if cooked: how far in front it reaches, metres, and how hard it shoves, m/s. */
-  get pin(): { reach: number; knock: number } | null {
-    return this.at('rolling-pin', [{ reach: 3.5, knock: 9 }, { reach: 4.5, knock: 18 }]);
+  /** Grandma's Rolling Pin, if cooked: how far in front it reaches, metres, how hard it shoves, m/s, and what its blow's damage is multiplied by. */
+  get pin(): { reach: number; knock: number; damage: number } | null {
+    return this.trainedAt('rolling-pin', [{ reach: 3.5, knock: 9 }, { reach: 4.5, knock: 18 }], (p, t) => ({ reach: p.reach, knock: p.knock * t.more, damage: t.more }));
   }
 
   /** Grandma's Horseradish, if cooked: what a root does (src/combat/horseradish.ts), and the seconds between roots. */
   get horseradish(): (Rooting & { every: number }) | null {
-    return this.at('horseradish', [{ bites: 1, damage: [16, 24] as const, every: 10 }, { bites: 2, damage: [16, 24] as const, every: 10 }, { bites: 3, damage: [18, 26] as const, every: 9 }]);
+    return this.trainedAt('horseradish', [{ bites: 1, damage: [16, 24] as const, every: 10 }, { bites: 2, damage: [16, 24] as const, every: 10 }, { bites: 3, damage: [18, 26] as const, every: 9 }], (h, t) => ({ bites: h.bites, damage: grown(h.damage, t.more), every: h.every * t.less }));
   }
 
   /** Grandma's Salt Pet, if cooked: what stands up out of the salt (src/creatures/pets.ts), the pinches of the tin's salt it takes, and the seconds between. */
   get pet(): { kind: PetKind; pinches: number; every: number } | null {
-    return this.at('salt-pet', [{ kind: 'rat' as const, pinches: 2, every: 20 }, { kind: 'dog' as const, pinches: 3, every: 20 }]);
+    return this.trainedAt('salt-pet', [{ kind: 'rat' as const, pinches: 2, every: 20 }, { kind: 'dog' as const, pinches: 3, every: 20 }], (p, t) => ({ ...p, every: p.every * t.less }));
   }
 
   /** Grandma's Snapdragons, if cooked: what a plant does (src/combat/snapdragon.ts), and the seconds between seeds. */
   get snapdragon(): (Sowing & { between: number }) | null {
-    return this.at('snapdragon', [{ lasts: 12, reach: 2.2, damage: [5, 8] as const, every: 1.1, between: 15 }, { lasts: 15, reach: 3, damage: [7, 11] as const, every: 0.9, between: 13 }]);
+    return this.trainedAt('snapdragon', [{ lasts: 12, reach: 2.2, damage: [5, 8] as const, every: 1.1, between: 15 }, { lasts: 15, reach: 3, damage: [7, 11] as const, every: 0.9, between: 13 }], (s, t) => ({ ...s, lasts: s.lasts * t.more, damage: grown(s.damage, t.more), between: s.between * t.less }));
   }
 
   /** Grandma's Flour Bag, if cooked: the cloud's radius, metres, how long it hangs, how long what was in it stays blind, and the seconds between bags (src/combat/flour.ts). */
   get flour(): (Dusting & { every: number }) | null {
-    return this.at('flour-bag', [{ r: 3, hangs: 6, blind: 2.5, every: 6 }, { r: 4.5, hangs: 9, blind: 3.5, every: 6 }]);
+    return this.trainedAt('flour-bag', [{ r: 3, hangs: 6, blind: 2.5, every: 6 }, { r: 4.5, hangs: 9, blind: 3.5, every: 6 }], (f, t) => ({ r: f.r, hangs: f.hangs * t.more, blind: f.blind * t.more, every: f.every * t.less }));
   }
 
   /** Grandma's Matchstick, if cooked: what a flour cloud going up does, and the seconds between matches. */
   get match(): { damage: readonly [number, number]; knock: number; every: number } | null {
-    return this.at('matchstick', [{ damage: [18, 28] as const, knock: 9, every: 3 }, { damage: [24, 36] as const, knock: 18, every: 3 }]);
+    return this.trainedAt('matchstick', [{ damage: [18, 28] as const, knock: 9, every: 3 }, { damage: [24, 36] as const, knock: 18, every: 3 }], (m, t) => ({ ...m, damage: grown(m.damage, t.more) }));
   }
 
   /** What climbing costs in stamina (a share of the plain cost). */
   get climbing(): number {
-    return [1, 0.65, 0.4][this.rank('kneading')];
+    return [1, 0.65, 0.4][this.rank('kneading')] * this.trained('kneading').less;
   }
+}
+
+/** A damage range grown by practice. */
+function grown(d: readonly [number, number], by: number): readonly [number, number] {
+  return [d[0] * by, d[1] * by];
 }

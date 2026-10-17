@@ -98,6 +98,8 @@ export class Thrown {
   /** Step everything thrown by dt; `rng` rolls the damage. Returns the creatures hit. */
   /** What a thrown knife's damage is multiplied by (the thrower's practice). */
   power = 1;
+  /** How much longer than plain a candle burns (grandma's Sunday Candle practised). */
+  burns = 1;
 
   /** `catches(m)`: whether a flying match is caught (and gone) where it is now (a flour cloud going up). */
   fly(level: Level, foes: readonly Fighter[], rng: Rng, dt: number, catches?: (m: Missile) => boolean): Fighter[] {
@@ -107,7 +109,7 @@ export class Thrown {
       k.t += dt;
       if (k.landed >= 0) {
         k.landed += dt;
-        if (k.landed > (k.kind === 'candle' ? CANDLE.burn : THROW.lies)) this.missiles.splice(i, 1);
+        if (k.landed > (k.kind === 'candle' ? CANDLE.burn * this.burns : THROW.lies)) this.missiles.splice(i, 1);
         continue;
       }
       if (k.t > THROW.flies) { if (k.kind === 'flour') this.burst.push(k); this.missiles.splice(i, 1); continue; }

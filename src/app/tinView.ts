@@ -11,7 +11,7 @@
  * back in it. Keys: W/S choose, A/D chapter, E cook, T or Escape close; or the mouse. What the
  * mouse asks for waits in `take()` for the game to do, the same as a key.
  */
-import { SKILLS, type Practice, type Skill } from '../loot/practice';
+import { SKILLS, usesFor, type Practice } from '../loot/practice';
 import { BAR, SLOT_KEYS, abilityOf, type MainBar } from '../game/abilities';
 import { CARDS, CHAPTERS, card, type CardId, type Cooked } from '../loot/recipes';
 import type { Tin } from '../loot/tin';
@@ -50,7 +50,11 @@ const STYLE = `
   #tin .tab.sel::before { opacity: 1; }
   #tin .tab .n { font: 12px var(--ui-font); color: var(--ui-paper-dim); white-space: nowrap; }
   #tin .practice { margin-top: 14px; padding-top: 8px; border-top: 1px dashed var(--ui-paper-line); font: 13px/1.6 var(--ui-font); }
-  #tin .practice .cost { color: var(--ui-paper-dim); }
+  #tin .practice .cost { color: var(--ui-paper-dim); grid-column: 1 / -1; font-size: 11.5px; line-height: 1.2; }
+  #tin .practice .none { color: var(--ui-paper-dim); font-style: italic; }
+  #tin .practice .skill { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; align-items: baseline; margin: 0 0 5px; }
+  #tin .practice .skill b { font-variant-numeric: tabular-nums; }
+  #tin .practice .skill i { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--ui-accent) var(--p), var(--ui-paper-line) var(--p)); }
 
   #tin .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; align-content: start; padding: 6px 6px 10px 2px; }
   #tin .chapter { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; margin: 8px 0 -2px; padding-bottom: 2px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 35%, transparent); scroll-margin-top: 4px; }
@@ -157,6 +161,16 @@ export class TinView extends AskingModal<TinAct> {
     return TinView.chapterCards(chs[(at + step + chs.length) % chs.length], cooked)[0];
   }
 
+  /** The skills practised so far: each one's level, a bar towards the next, and the count behind it. */
+  private static practised(practice: Practice): string {
+    const done = practice.practised;
+    if (!done.length) return '<div class="none">Nothing yet. Everything you do well gets better with use.</div>';
+    return done.map((k) => {
+      const l = practice.level(k), next = Math.ceil(usesFor(k, l + 1) - practice.count(k));
+      return `<div class="skill" title="${next} more ${esc(SKILLS[k].counts)} to ${l + 1}"><span>${esc(SKILLS[k].name)}</span><b>${l}</b><i style="--p: ${Math.round(practice.progress(k) * 100)}%"></i><span class="cost">${Math.floor(practice.count(k))} ${esc(SKILLS[k].counts)}</span></div>`;
+    }).join('');
+  }
+
   /** Open (or redraw) the tin with card `sel` chosen; `why`: why it could not be cooked, if that was tried. */
   show(cooked: Cooked, tin: Tin, sel: CardId, why: string | null, practice: Practice, bar: MainBar, keyName: (key: string) => string): void {
     this.cooked = cooked;
@@ -169,7 +183,7 @@ export class TinView extends AskingModal<TinAct> {
       const ids = TinView.chapterCards(ch, cooked), got = ids.filter((id) => cooked.rank(id) > 0).length;
       html += `<div class="tab${ch === c.chapter ? ' sel' : ''}" data-ch="${esc(ch)}" style="${ink(ch)}"><span>${esc(ch)}</span><span class="n">${got}/${ids.length}</span></div>`;
     }
-    html += `</div><div class="practice"><div class="ui-label">Practice</div>${(Object.keys(SKILLS) as Skill[]).map((k) => `${esc(SKILLS[k].name)} ${practice.tier(k)} <span class="cost">(${Math.floor(practice.count(k))} ${esc(SKILLS[k].counts)})</span>`).join('<br>')}</div></div>`;
+    html += `</div><div class="practice"><div class="ui-label">Practice</div>${TinView.practised(practice)}</div></div>`;
     // Every chapter's cards, under its heading (the dividers jump to one).
     html += '<div class="col"><div class="grid">';
     for (const ch of shown) {

@@ -109,6 +109,12 @@ export class Body {
   wind = 1;
   pace = 1;
   leap = 1;
+  /** Practice (src/loot/practice.ts), set by the game: how much quicker a sprint is and what share of its stamina it costs, and how much quicker a swimming stroke is (1: plain). */
+  run = 1;
+  runCost = 1;
+  stroke = 1;
+  /** Jumps taken (off the floor or in mid-air), for practice. */
+  jumps = 0;
   /** What climbing costs in stamina, a share of the plain cost (grandma's Kneading card lowers it). */
   climbCost = 1;
   /** Stamina does not come back while set (grandma's Salt Sight held open, src/game/Game.ts). */
@@ -278,8 +284,8 @@ export class Body {
     }
     const sprint = input.sprint && this.stamina > 0;
     this.sneaking = !!input.sneak && !!this.tiptoe && !sprint && depth <= 0.5 && this.grounded;
-    const speed = (depth > 0.5 ? MOVE.wade : sprint && !this.guarding ? MOVE.sprint : this.guarding ? MOVE.guarded : this.sneaking ? this.tiptoe!.speed : MOVE.walk) * this.pace;
-    if (sprint && this.grounded && Math.hypot(mx, mz) > 0.1) this.stamina = Math.max(0, this.stamina - 0.5 * dt);
+    const speed = (depth > 0.5 ? MOVE.wade : sprint && !this.guarding ? MOVE.sprint * this.run : this.guarding ? MOVE.guarded : this.sneaking ? this.tiptoe!.speed : MOVE.walk) * this.pace;
+    if (sprint && this.grounded && Math.hypot(mx, mz) > 0.1) this.stamina = Math.max(0, this.stamina - 0.5 * this.runCost * dt);
     const accel = this.grounded ? 30 : 5;
     this.vx += clampStep(mx * speed - this.vx, accel * dt);
     this.vz += clampStep(mz * speed - this.vz, accel * dt);
@@ -288,8 +294,8 @@ export class Body {
     const spring = this.spring && this.stamina >= this.spring.cost ? this.spring : null;
     if (this.grounded) {
       this.airJumps = this.spring?.air ?? 0;
-      if (input.jump && spring) { this.vy = spring.jump * this.leap; this.stamina -= spring.cost; this.sprangAt = this.time; }
-      else if (input.jump) this.vy = MOVE.jump * this.leap;
+      if (input.jump && spring) { this.vy = spring.jump * this.leap; this.stamina -= spring.cost; this.sprangAt = this.time; this.jumps++; }
+      else if (input.jump) { this.vy = MOVE.jump * this.leap; this.jumps++; }
       else this.vy = Math.min(this.vy, -2); // stick to the floor walking downhill
     } else if (input.jump && spring && this.airJumps > 0) {
       // Grandma's Spring, rank 2: once more off nothing at all.
@@ -297,6 +303,7 @@ export class Body {
       this.vy = Math.max(this.vy, spring.jump * MOVE.airJump);
       this.stamina -= spring.cost;
       this.sprangAt = this.time;
+      this.jumps++;
     }
   }
 
@@ -304,8 +311,8 @@ export class Body {
     // Float with the head out of the water.
     const target = water - MOVE.float;
     this.vy += ((target - this.y) * 8 - this.vy * 3) * dt;
-    this.vx += clampStep(mx * MOVE.swim - this.vx, 6 * dt);
-    this.vz += clampStep(mz * MOVE.swim - this.vz, 6 * dt);
+    this.vx += clampStep(mx * MOVE.swim * this.stroke - this.vx, 6 * dt);
+    this.vz += clampStep(mz * MOVE.swim * this.stroke - this.vz, 6 * dt);
     if (input.jump) this.vy = 3; // a kick, to climb out onto a shore
   }
 

@@ -5,7 +5,7 @@
  * wheel to first person.
  */
 import { Timer, Vector3 } from 'three/webgpu';
-import { Practice, SKILLS, type Skill } from '../loot/practice';
+import { Practice, SKILLS, type Skill, type Trained } from '../loot/practice';
 import { activeFamily, families, freshWorldSeed, goNewGame, goStraightIn, loadByHand, manualSaves, newFamily, readFamily, saveByHand, setActiveFamily, takeNewGame, takeStraightIn, writeFamily, MODE_NAMES, type GameMode, type GrandchildData, type SaveData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
@@ -277,7 +277,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let explored = saved?.child?.explored ? Explored.from(saved.child.explored) : new Explored();
   let exploredAt = 0, sunSeenAt = 0;
   /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
-  let climbed = 0, climbY = 0, blockedAt = -Infinity;
+  let climbed = 0, climbY = 0, blockedAt = -Infinity, jumpsSeen = 0;
+  /** Where the body stood last frame (metres run, swum and tiptoed count towards practice). */
+  const movedFrom = { x: 0, z: 0 };
   /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
   let arriving = false, arrivedAt = 0;
   /**
@@ -808,7 +810,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Way Home under way: when it began, and the level it goes to (null: none). */
   let homeAt = -Infinity, homeTo: number | null = null, homeMote = 0, homeBack = false;
   /** Seconds with eyes shut before the way opens (sooner at the card's second rank). */
-  const homeDur = (): number => (cooked.wayHome >= 2 ? WAY_HOME.sooner : WAY_HOME.dur);
+  const homeDur = (): number => (cooked.wayHome >= 2 ? WAY_HOME.sooner : WAY_HOME.dur) * practice.less('way-home', kit.gift('way-home'));
   /** When the lid's block pose (re)started. */
   let blockAt = -Infinity;
   /** The last salt gained (its HUD line), and until when it shows. */
@@ -914,11 +916,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (d < best && Math.abs(angleDiff(cam.yaw, yaw)) < STAB.aimArc && Math.abs(r.y - body.y) < 1.5) { best = d; stabYaw = yaw; }
     }
   };
-  /** Count practice of `s`; say so when it goes up a tier. */
+  /** Count practice of `s` (`n` uses, metres...); say so when it goes up a level, her line the first time. */
   const practised = (s: Skill, n = 1): void => {
-    const t = practice.use(s, n);
-    if (t) say(`${SKILLS[s].name}, practice ${t}. ${SKILLS[s].line}`, 4);
+    const l = practice.use(s, n);
+    if (l) say(l === 1 ? `${SKILLS[s].name} 1. ${SKILLS[s].line}` : `${SKILLS[s].name} ${l}.`, l === 1 ? 4 : 2.5);
   };
+  /** What practice (and the levels worn) does to each card's numbers: `Cooked`'s getters apply it. */
+  const trained = (id: CardId): Trained => practice.trained(id, (s) => kit.gift(s));
   /** A line to show for a while (arriving on a level), and until when. */
   let notice = '', noticeUntil = 0;
   /** Show `text` as the notice for `secs` seconds. */
@@ -1017,7 +1021,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get suns() { return suns; }, get riding() { return riding; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, get euros() { return euros; }, set euros(v: number) { euros = v; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get suns() { return suns; }, get riding() { return riding; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, get euros() { return euros; }, set euros(v: number) { euros = v; }, tin, get cooked() { return cooked; }, get practice() { return practice; }, thrown, garden, radish, pets, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -1321,6 +1325,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     // The weapon in hand (grandma's knife, or what was put on in the pack) and how it swings; her knife cards work with any of them.
+    cooked.trained = trained;
     const knife = cooked.knife, pound = cooked.tenderising, move = MOVES[kit.move];
     const stabDur = striking === 'pound' ? POUND.dur : move.dur * knife.time, stabHit = striking === 'pound' ? POUND.hit : move.hit * knife.time;
     const canStrike = !busy && !handsBusy && !body.rolling && now - stabAt > stabDur;
@@ -1358,7 +1363,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (controls.tap(useOf('duck')) && duck && !busy && !handsBusy && !body.rolling) {
       const f = input.forward || input.right ? input.forward : -1, rt = input.right;
       const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
-      if (body.roll(dx, dz, duck.stamina * practice.less('footwork', kit.gift('footwork')), duck.safe)) { rollAt = now; practised('footwork'); }
+      if (body.roll(dx, dz, duck.stamina, duck.safe)) { rollAt = now; practised('footwork'); }
     }
     // Grandma's Way Home: eyes shut, nothing after you; a way opens home to her armchair, or (by her chair) back to where one left.
     if (controls.tap(useOf('way-home')) && cooked.wayHome && homeTo === null && !busy && !handsBusy) {
@@ -1388,20 +1393,26 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       spells.flame(body.x - Math.sin(castYaw) * 0.4, body.y + 1.35, body.z - Math.cos(castYaw) * 0.4, castYaw, flame.reach, now);
       sounds.play('throw', null, 0.9, 0.6);
       const b = blowFrom(body, castYaw, { range: flame.reach, arc: FLAME.arc, low: FLAME.low, high: FLAME.high });
-      for (const f of foes()) if (reach(b, f)) damage(f, blows.range(flame.damage[0], flame.damage[1]), body.x, body.z, FLAME.knock, 'fire');
+      const burnt = foes().filter((f) => reach(b, f));
+      for (const f of burnt) damage(f, blows.range(flame.damage[0], flame.damage[1]), body.x, body.z, FLAME.knock, 'fire');
+      if (burnt.length) practised('flame');
     }
     if (controls.tap(useOf('cold-larder')) && larder && canCast && now - larderAt > LARDER.every && cast('larder', LARDER.stamina, 'Too out of breath to let the cold out.')) {
       larderAt = now;
       spells.frost(body.x, body.y, body.z, larder.r, now);
       sounds.play('throw', null, 0.6, 0.45);
-      for (const f of foes()) if (!f.dead && Math.hypot(f.x - body.x, f.z - body.z) - f.radius < larder.r && Math.abs(f.y - body.y) < 3) f.chill = { left: larder.lasts, by: larder.slow };
+      const chilled = foes().filter((f) => !f.dead && Math.hypot(f.x - body.x, f.z - body.z) - f.radius < larder.r && Math.abs(f.y - body.y) < 3);
+      for (const f of chilled) f.chill = { left: larder.lasts, by: larder.slow };
+      if (chilled.length) practised('frost', chilled.length);
     }
     if (controls.tap(useOf('rolling-pin')) && pin && canCast && now - pinAt > PIN.every && cast('pin', PIN.stamina, 'Too out of breath to roll it out.')) {
       pinAt = now;
       spells.push(body.x, body.y, body.z, castYaw, pin.reach, now);
       sounds.play('pound', null, 0.8, 0.7);
       const b = blowFrom(body, castYaw, { range: pin.reach, arc: PIN.arc, low: PIN.low, high: PIN.high });
-      for (const f of foes()) if (reach(b, f)) damage(f, blows.range(PIN.damage[0], PIN.damage[1]), body.x, body.z, pin.knock, 'force');
+      const shoved = foes().filter((f) => reach(b, f));
+      for (const f of shoved) damage(f, blows.range(PIN.damage[0], PIN.damage[1]) * pin.damage, body.x, body.z, pin.knock, 'force');
+      if (shoved.length) practised('force', shoved.length);
     }
     // Grandma's Horseradish: stoop and set a root at your feet; it tunnels to the Tab target (or the foe nearest where you look).
     const rooting = cooked.horseradish;
@@ -1412,6 +1423,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         radishAt = now; castYaw = yawTo(quarry, body.x, body.z);
         const r = radish.set(body.x - Math.sin(castYaw) * 0.5, level.groundAt(body.x, body.z, body.y + 1), body.z - Math.cos(castYaw) * 0.5, quarry, rooting);
         spells.breaks(r.x, r.y, r.z, now);
+        practised('roots');
         sounds.play('snap_sprout', r, 0.7, 0.8);
       }
     }
@@ -1426,6 +1438,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         const x = body.x - Math.sin(castYaw) * 1.1, z = body.z - Math.cos(castYaw) * 1.1, g = level.groundAt(x, z, body.y + 1), y = Math.abs(g - body.y) < 1 ? g : body.y;
         const p = pets.summon(petting.kind, x, y, z, castYaw + Math.PI);
         spells.saltRises(p.x, p.y, p.z, PET.form, now);
+        practised('pet');
         sounds.play('flour_burst', p, 0.6, 0.5);
       }
     }
@@ -1441,7 +1454,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (controls.tap(useOf('salt-line')) && line && !busy && !handsBusy && !body.rolling && homeTo === null && !saltLine.pouring(now)) {
       const why = saltLine.whyNot(level, body.x, body.z, line.r, body.grounded);
       if (why) say(why, 2.5);
-      else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); }
+      else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); practised('salt-line'); }
     }
     const nearLadder = climb.active || pocket ? null : atLadder();
     const nearSun = riding || climb.active || body.dead || body.mode !== 'walk' ? null : suns.reach(body.x, body.y, body.z);
@@ -1633,7 +1646,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || handsBusy || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
     // Grandma's Pot Lid: hold its slot to keep it up between you and whatever it is.
     const lid = cooked.lid;
-    body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard', kit.gift('guard')) };
+    body.lid = lid && { through: lid.through, cost: lid.cost };
     nobody.wear(!!cooked.lid, kit.items);
     body.guarding = !!cooked.lid && controls.held(useOf('pot-lid')) && !busy && !handsBusy && !body.rolling && homeTo === null && now - stabAt > stabDur;
     if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
@@ -1712,7 +1725,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           const c = flour.ahead(body.x, body.z, aim, THROW.aim, FLOURING.arc);
           thrown.throw(hx, hy, hz, aim, foes(), 'match', c ? { x: c.x, y: c.y + 1, z: c.z } : undefined);
         } else thrown.toss(hx, hy, hz, aim, tossing);
+        if (tossing === 'candle') practised('candle');
+        else if (tossing === 'seed') practised('sowing');
+        else if (tossing === 'flour') practised('flour');
       }
+      thrown.burns = cooked.candleBurns;
       thrown.power = practice.more('throwing', kit.gift('throwing'));
       // A match flown into a cloud of flour sets it off (and every cloud touching it): the nobody too, if in it.
       const hit = thrown.fly(level, foes(), blows, dt, (m) => {
@@ -1721,6 +1738,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         const up = flour.goUp(c, [...foes(), body], match.damage, match.knock, blows);
         for (const u of up.clouds) spells.blast(u.x, u.y, u.z, Flour.reach(u), now);
         sounds.play('flour_blast', c);
+        practised('match');
         return true;
       });
       if (hit.length) practised('throwing', hit.length);
@@ -1790,11 +1808,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
           const struck = pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : [];
           for (const r of struck) sounds.play('pound', r);
-          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge * practice.more('knife', kit.gift('knife')), body.x, body.z, POUND.knock, 'knife');
+          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge, body.x, body.z, POUND.knock, 'knife');
           if (struck.length) practised('knife');
         } else {
           const r = nearestReached(blowFrom(body, stabYaw, move), foes());
-          if (r) { damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge * practice.more('knife', kit.gift('knife')), body.x, body.z, move.knock, 'knife'); practised('knife'); }
+          if (r) { damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge, body.x, body.z, move.knock, 'knife'); practised('knife'); }
           if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid || kit.move === 'mine' ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : kit.move === 'stab' ? 1.3 : 0.9); }
           if (r && 'took' in r && r.took < 1) say(kit.move === 'stab' ? 'The knife skids off the salt on his chest.' : 'Your blow skids off the salt on his chest.', 2);
         }
@@ -1822,7 +1840,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
-      body.climbCost = cooked.climbing * practice.less('climbing', kit.gift('climbing')) * kit.climb;
+      body.climbCost = cooked.climbing * kit.climb;
       body.armour = kit.armour;
       body.featherfall = kit.featherfall;
       body.maxHealth = MOVE.maxHealth + kit.gift('health');
@@ -1831,7 +1849,20 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       body.stamina = Math.min(body.stamina, body.maxStamina);
       body.wind = 1 + kit.gift('wind');
       body.pace = 1 + kit.gift('pace');
-      body.leap = 1 + kit.gift('leap');
+      body.leap = (1 + kit.gift('leap')) * practice.more('leaping', kit.gift('leaping'));
+      body.run = practice.more('running', kit.gift('running'));
+      body.runCost = practice.less('running', kit.gift('running'));
+      body.stroke = practice.more('swimming', kit.gift('swimming'));
+      // Practice on the move: metres run, swum and tiptoed, jumps taken (a step that jumps further is a level, or a way, not walking).
+      const moved = Math.hypot(body.x - movedFrom.x, body.z - movedFrom.z);
+      movedFrom.x = body.x; movedFrom.z = body.z;
+      if (moved < 1.5 && !body.dead) {
+        if (body.mode === 'swim') practised('swimming', moved);
+        else if (body.sneaking) practised('tiptoe', moved);
+        else if (input.sprint && body.grounded && body.mode === 'walk' && body.stamina > 0 && !body.rolling) practised('running', moved);
+      }
+      if (body.jumps > jumpsSeen) practised('leaping', body.jumps - jumpsSeen);
+      jumpsSeen = body.jumps;
       // Practice: metres climbed, and blows the lid stopped.
       if (body.mode === 'climb') climbed += Math.max(0, body.y - climbY);
       climbY = body.y;
@@ -1840,7 +1871,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       body.tiptoe = cooked.tiptoe;
       body.spring = cooked.spring;
       campfire.soup = cooked.soup;
+      const unmended = body.health;
       campfire.step(body, threat, now, dt, body.hidden);
+      if (campfire.resting && body.health > unmended) practised('soup', body.health - unmended);
       // First steps done by being somewhere or doing something (the rest tick where they happen).
       if (campfire.resting) tick(campfire.inHaven(body) ? 'circle' : 'fire');
       if (body.mode === 'climb') tick('climb');
@@ -1859,6 +1892,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
               ? openWay(level, body.x, body.y, body.z, cam.yaw, left, 'back', left.shot, WAY.cellar)
               : openWay(level, body.x, body.y, body.z, cam.yaw, { depth: to }, null, HOME_SHOT, WAY.cellar);
           sounds.play('thin_place', way, 0.9, homeBack ? 0.7 : 0.9);
+          practised('way-home');
           fade.style.opacity = '0';
           say(homeBack ? 'Where you were stands open in the cellar behind you. Walk into it.' : 'Her room stands open before you. Walk into it.', 4);
         } else {
@@ -2056,7 +2090,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
     };
     // How tough what you look at is for you (src/combat/challenge.ts): your blow as you hold your weapon now, against its kind's.
-    const yours: Might = { health: MOVE.maxHealth, blow: ((move.damage[0] + move.damage[1]) / 2) * knife.damage * kit.edge * practice.more('knife'), every: move.dur * knife.time };
+    const yours: Might = { health: MOVE.maxHealth, blow: ((move.damage[0] + move.damage[1]) / 2) * knife.damage * kit.edge, every: move.dur * knife.time };
     const measure = (f: Foe) => {
       const kind = fauna.kindOf(f);
       return { tier: tierOf(mightOf(f), yours, body.armour), known: knowledgeOf(kind ? tin.killsOf(kind) : 0) };

@@ -23,7 +23,7 @@ test('the tin, the cards and the practice come back as they were kept (through J
   assert.equal(Cooked.from({ 'no-such-card': 3 }).data['duck' as const], undefined);
   const p = new Practice();
   p.use('climbing', 33);
-  assert.equal(Practice.from(JSON.parse(JSON.stringify(p.data))).tier('climbing'), 2);
+  assert.equal(Practice.from(JSON.parse(JSON.stringify(p.data))).level('climbing'), 2);
 });
 
 test('no storage, no save (and no throw)', () => {
