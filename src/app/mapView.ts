@@ -330,7 +330,10 @@ function mark(p: Paint, m: MapMark, cx: number, cy: number): void {
   if (cx < -120 || cy < -20 || cx > w + 120 || cy > h + 20) return;
   g.save();
   g.font = `${p.small ? 12 : 16}px ${THEME.fontDisplay}`;
-  g.textAlign = m.side < 0 ? 'right' : 'left';
+  // The name on its side of the dot, unless it would run off the edge there (the minimap is narrow): then the other side.
+  const name = p.small ? m.short : m.name, tw = g.measureText(name).width + 10;
+  const side = m.side < 0 ? (cx - tw < 2 && cx + tw <= w - 2 ? 1 : -1) : (cx + tw > w - 2 && cx - tw >= 2 ? -1 : 1);
+  g.textAlign = side < 0 ? 'right' : 'left';
   g.textBaseline = 'middle';
   const colour = m.shop ? THEME.accent : THEME.vein;
   g.fillStyle = colour;
@@ -341,10 +344,10 @@ function mark(p: Paint, m: MapMark, cx: number, cy: number): void {
   g.lineJoin = 'round';
   g.lineWidth = 4;
   g.strokeStyle = rgba(THEME.darkSolid, 0.85);
-  const tx = cx + m.side * 8;
-  g.strokeText(m.name, tx, cy);
+  const tx = cx + side * 8;
+  g.strokeText(name, tx, cy);
   g.fillStyle = m.shop ? '#ffe3a8' : '#dff3ff';
-  g.fillText(m.name, tx, cy);
+  g.fillText(name, tx, cy);
   g.restore();
 }
 

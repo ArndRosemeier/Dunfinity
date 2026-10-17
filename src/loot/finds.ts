@@ -17,7 +17,7 @@ import type { Item } from './items';
 /** Where a find lies: on open floor, in a rat's hoard, in a miners' shed. */
 type Where = 'floor' | 'hoard' | 'shed';
 
-export type FindKind = 'coin' | 'token' | 'chisel' | 'pipe' | 'tin' | 'spoon' | 'lamp' | 'medal' | 'watch' | 'ring';
+export type FindKind = 'coin' | 'token' | 'chisel' | 'pipe' | 'tin' | 'spoon' | 'lamp' | 'medal' | 'watch' | 'ring' | 'crystal';
 
 export interface FindDef {
   /** What the HUD calls it. */
@@ -41,6 +41,8 @@ export const FINDS: Record<FindKind, FindDef> = {
   medal: { name: 'a tarnished medal', value: [20, 45], floor: 0.6, hoard: 2, shed: 0.6 },
   watch: { name: 'a pocket watch, stopped at ten past three', value: [30, 60], floor: 0.4, hoard: 1.5, shed: 1.5 },
   ring: { name: 'a gold ring', value: [40, 90], floor: 0, hoard: 1.2, shed: 0.2 },
+  /** Only ever the gift waiting in a thin place's pocket (src/world/thinPlaces.ts `Pocket.gift`), never lying about. */
+  crystal: { name: 'a crystal from a deeper world, still faintly glowing', value: [45, 110], floor: 0, hoard: 0, shed: 0 },
 };
 
 export const FIND = {

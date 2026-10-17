@@ -49,12 +49,20 @@ test('walking into an open thin place steps through; a pocket holds one a while,
   assert.ok(!steppedIn(p, p.x, feet + 4, p.z), 'not over it');
   assert.ok(!steppedIn({ ...p, age: 0.1 }, p.x, feet, p.z), 'not while it is still opening');
 
-  let held = 0;
+  let held = 0, gifts = 0;
   for (let k = 0; k < 6; k++) {
     const g = glimpseOf(1, 3, k), there = new Level(1, g.depth), pocket: Pocket = new Pocket(3, { ...p, glimpse: g }, there);
     const at = pocket.at;
     assert.ok(there.sdf(at[0], at[1] + 1.7, at[2]) >= 1.8, 'one comes out in open air');
     assert.ok(there.dry(at[0], at[2], 0.2), 'on dry floor');
+    if (pocket.gift) {
+      gifts++;
+      const [gx, gy, gz] = pocket.gift, d = Math.hypot(gx - at[0], gz - at[2]);
+      assert.ok(d >= THIN.gift[0] - 1e-6 && d <= THIN.gift[1] + 1e-6, `the gift lies a few steps off (${d.toFixed(1)} m)`);
+      assert.ok(there.dry(gx, gz, 0.3) && Math.abs(gy - there.groundAt(gx, gz, at[1] + 2)) < 1e-6, 'on dry floor');
+      // Ahead, where one looks on coming out.
+      assert.ok(-(gx - at[0]) * Math.sin(pocket.facing) - (gz - at[2]) * Math.cos(pocket.facing) > 0, 'ahead');
+    }
     if (!pocket.way) continue;
     held++;
     assert.equal(pocket.way.glimpse.depth, 3, 'the way back shows home');
@@ -63,6 +71,7 @@ test('walking into an open thin place steps through; a pocket holds one a while,
     assert.ok(!pocket.walksBack(...at), 'not where one comes out');
   }
   assert.ok(held >= 3, `the way back has room (${held} of 6)`);
+  assert.ok(gifts >= 4, `a gift waits (${gifts} of 6)`);
   const pocket = new Pocket(3, p, new Level(1, p.glimpse.depth));
   let over = false, t = 0, low = 1;
   for (; t < THIN.stay + 1 && !over; t += 0.1) {

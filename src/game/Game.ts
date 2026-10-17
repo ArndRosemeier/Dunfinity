@@ -125,10 +125,12 @@ import { StepsView } from '../app/stepsView';
 import type { LoadingScreen } from '../app/loadingScreen';
 import { heard, tipOf, type DripLook } from '../gen/drips';
 import { BLOOM, crackles } from '../gen/blooms';
-import { ThinPlaces, Pocket, THIN, glimpseOf, steppedIn, type ThinPlace } from '../world/thinPlaces';
+import { ThinPlaces, Pocket, THIN, glimpseOf, homeGlimpse, steppedIn, type Glimpse, type ThinPlace } from '../world/thinPlaces';
+import { Crossing } from '../world/hall';
 import { GATE, walksInto, type Gate } from '../gen/gates';
 import { HOME_SHOT, WAY, WAY_LIFE, openWay, walksThrough, type Landing, type Shot, type WayDoor } from '../world/wayHome';
 import { WayView } from '../render/wayView';
+import { HallView } from '../render/hallView';
 import { WAY_PICTURES } from '../render/materials';
 import { ThinView } from '../render/thinView';
 import { Singing, type Sung } from '../world/singing';
@@ -275,12 +277,24 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
   let arriving = false, arrivedAt = 0;
+  /**
+   * The hall between worlds one walks after stepping through a window (src/world/hall.ts; null:
+   * none). While one is in it the world one goes to streams in behind it (`arriving`), nothing there
+   * moves, and its doorway opens once that world is ready.
+   */
+  let crossing: Crossing | null = null;
+  /** Into the hall between worlds, towards the world `look` shows (`up`: towards home), facing the way one will stand there. */
+  const crossInto = (look: Glimpse, up: boolean): void => {
+    crossing = new Crossing(cam.yaw, look, up);
+    fade.style.opacity = '0';
+  };
   /** The level's own animals on screen (made before the warm-up, below). */
   let herdView: HerdView | null = null;
   const show = (l: Level) => {
     // Back up from below into her cellar: grandma may have a word.
     if (l.depth === 0 && level.depth > 0) grandma.arrive(heir);
     below = null;
+    crossing = null;
     level = l;
     setGrowth(growthAt(l.depth));
     arriving = true;
@@ -502,6 +516,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   await view.stage.add(thinView.mesh);
   const wayView = new WayView();
   await view.stage.add(wayView.mesh);
+  const hallView = new HallView();
+  await view.stage.add(hallView.mesh);
   /** Whether the next frame drawn is copied for Way Home's picture of the place one leaves (the nobody not in it). */
   let snapping = false;
   /** How the camera shows the place one stands: Way Home's picture of it is taken so. */
@@ -512,7 +528,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Walk through Way Home's door: there, health and breath kept. */
   const throughWay = (w: WayDoor): void => {
     way = null;
-    const to = w.to;
+    const to = w.to, up = to.depth < level.depth;
     if (to.depth === 0 && w.picture === 'home') left = leaving;
     show(new Level(params.seed, to.depth, params.style));
     if (to.x !== undefined) land(to.x, to.y, to.z, to.yaw);
@@ -522,9 +538,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       body.health = hp; body.stamina = st;
       if (to.depth === 0) body.facing = cam.yaw = CELLAR.start.yaw;
     }
+    crossInto(w.glimpse, up);
     sounds.play('thin_place', null, 0.9, to.depth ? 0.7 : 0.9);
     announce(level);
-    fadeIn = 0.8;
   };
   /**
    * A stay in another world through a thin place (src/world/thinPlaces.ts), and what waits at home
@@ -555,13 +571,24 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     pets.moveTo(there);
     look(there);
     land(stay.at[0], stay.at[1], stay.at[2], stay.facing);
+    crossInto(p.glimpse, false);
     sounds.play('thin_place', null, 0.9, 0.8);
-    say('You step through. The air is another world\'s, and it will not hold you long.', 4);
+    // A gift waits a few steps ahead: a crystal of that world, worth more the deeper it lies.
+    gift = null;
+    if (stay.gift) {
+      const [gx, , gz] = stay.gift, [lo, hi] = FINDS.crystal.value, r = new Rng(deriveSeed(params.seed, 'pocket gift', stay.home, p.glimpse.depth));
+      const value = Math.round(r.range(lo, hi) * (1 + p.glimpse.depth / 60));
+      gift = finds.drop({ id: -1 - p.glimpse.depth, kind: 'crystal', x: gx, y: stay.gift[1], z: gz, yaw: r.range(0, Math.PI * 2), value }, gx, gz);
+    }
+    say(gift ? 'You step through. Something glows a little way ahead: take it before this world lets go of you.' : 'You step through. The air is another world\'s, and it will not hold you long.', 5);
   };
+  /** The gift lying in the pocket one is in (null: none, or taken), and when its trail of salt last rose. */
+  let gift: Find | null = null, giftMote = 0;
   /** The pocket lets go (or you walk back through): home, where you stepped in. */
   const leavePocket = (): void => {
     const k = pocket!;
     pocket = null;
+    gift = null;
     ({ level, fauna, wisps, suns, finds, doors, campfire } = k);
     riding = null;
     saltLine.circle = k.circle;
@@ -570,6 +597,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     pets.moveTo(level);
     look(level);
     land(k.from.x, k.from.y, k.from.z, k.from.facing + Math.PI);
+    crossInto(homeGlimpse(params.seed, level.depth), true);
     rift.style.opacity = '0';
     view.renderer.domElement.style.transform = '';
     sounds.play('thin_place', null, 0.9, 0.6);
@@ -582,6 +610,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const down = g.to > level.depth, [x, y, z] = g.twin.stand;
     show(new Level(params.seed, g.to, params.style));
     land(x, y, z, g.twin.yaw + Math.PI);
+    crossInto(homeGlimpse(params.seed, g.to), !down);
     gateAt = timer.getElapsed();
     sounds.play('thin_place', null, 0.9, down ? 0.7 : 0.9);
     announce(level);
@@ -1013,6 +1042,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         if (s % 3 === 0) explored.see(level, x, level.groundAt(x, z), z);
       }
     },
+    /** The hall between worlds one is walking (null: none). */
+    get crossing() { return crossing; },
     /** Step through a thin place into the `k`-th world one here would show (the way into a pocket, for checks). */
     stepThrough: (k = 0) => { if (!pocket) enterPocket({ x: body.x, y: body.y + THIN.over, z: body.z, yaw: body.facing, age: THIN.open, glimpse: glimpseOf(params.seed, level.depth, k) }); },
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
@@ -1205,7 +1236,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // The frame time on the dev line (a tablet's check that it keeps up), smoothed and shown in whole ms twice a second.
     frameMs += (raw * 1000 - frameMs) * 0.05;
     if (timer.getElapsed() - frameShownAt > 0.5) { frameShownAt = timer.getElapsed(); frameShown = Math.round(frameMs); }
-    if (arriving && (view.settled || performance.now() / 1000 - arrivedAt > ARRIVE.cap)) {
+    if (arriving && !crossing && (view.settled || performance.now() / 1000 - arrivedAt > ARRIVE.cap)) {
       arriving = false;
       if (!climb.active) fadeIn = 0.8; // a climb fades in by itself
       if (loading.open) { loading.hide(); fadeIn = 0; fade.style.opacity = '0'; }
@@ -1603,6 +1634,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         if (fade.style.opacity !== '0') fadeIn = 0.8;
       }
       input.jump = false;
+    } else if (arriving && crossing) {
+      // In the hall between worlds: walk down it; its doorway opens once that world is ready, and through it one is there.
+      fade.style.opacity = '0';
+      input.jump = false;
+      if (crossing.walk(dt, input.forward, input.right, cam.yaw, view.settled || performance.now() / 1000 - arrivedAt > ARRIVE.cap)) {
+        arriving = false;
+        sounds.play('thin_place', null, 0.7, 1.1);
+      }
     } else if (arriving) {
       fade.style.opacity = '1';
       input.jump = false;
@@ -1752,7 +1791,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
       fauna.goblins.thief = snatch;
-      const struck = !pocket && fauna.advance(dt, body, lamp, body.facing);
+      const struck = !pocket && !crossing && fauna.advance(dt, body, lamp, body.facing);
       for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
       for (const f of fauna.fallen()) { gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now); tick('stab'); }
       if (body.health < health) {
@@ -1879,6 +1918,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!arriving && !body.dead && (k.advance(dt) || k.walksBack(body.x, body.y, body.z))) leavePocket();
       else {
         thinView.draw(k.way, k.open);
+        // A thread of rising salt from the nobody to the gift, while it lies there.
+        if (gift && !finds.lying(gift)) gift = null;
+        if (gift && now >= giftMote) {
+          giftMote = now + 0.25;
+          const t = (now * 0.35) % 1, gx = gift.x, gz = gift.z;
+          drift.burst(body.x + (gx - body.x) * t, body.y + (gift.y - body.y) * t + 0.1, body.z + (gz - body.z) * t, 1, now);
+        }
         rift.style.opacity = String(shake * (0.55 + 0.35 * Math.sin(k.age * (4 + 9 * shake))));
         const j = shake * 3;
         view.renderer.domElement.style.transform = shake ? `translate(${(Math.sin(k.age * 31) * j).toFixed(1)}px,${(Math.sin(k.age * 23 + 1) * j).toFixed(1)}px)` : '';
@@ -2007,8 +2053,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
     const dripNow = timer.getElapsed();
     wayView.draw(way);
+    if (crossing?.over) crossing = null;
+    if (crossing && crossing.out !== null) crossing.walk(dt, 0, 0, cam.yaw, true); // coming out: the hall fades
+    hallView.draw(crossing);
     if (snapping) { view.capture(WAY_PICTURES.back); nobody.root.visible = false; }
-    view.frame(body.x, body.y, body.z, dripNow, !loading.open && !(arriving && !climb.active));
+    view.frame(body.x, body.y, body.z, dripNow, !loading.open && !(arriving && !climb.active && !crossing));
     if (snapping) { snapping = false; nobody.root.visible = true; }
     // A drop landing on each living stalagmite's tip (src/gen/drips.ts), heard close by.
     for (const s of view.drips.shown) {

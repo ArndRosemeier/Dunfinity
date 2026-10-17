@@ -3,10 +3,10 @@
  * with the Stage, placed, turned and sized to it; the glimpsed world and how open it is go to the
  * shader (`THIN_STATE`). Nothing new compiles when one opens.
  */
-import { type Mesh } from 'three/webgpu';
+import { type Mesh, type Vector3 } from 'three/webgpu';
 import { meshFromData } from './meshes';
 import { THIN as THIN_KIND, THIN_STATE, type MaterialKind } from './materials';
-import { THIN, openness, type ThinPlace } from '../world/thinPlaces';
+import { THIN, openness, type Glimpse, type ThinPlace } from '../world/thinPlaces';
 
 export class ThinView {
   readonly mesh = windowQuad(THIN_KIND, 'thin place');
@@ -20,11 +20,16 @@ export class ThinView {
     this.mesh.rotation.set(0, place.yaw, 0);
     this.mesh.scale.set(THIN.half[0], THIN.half[1], 1);
     THIN_STATE.open.value.set(open, place.age, g.bay, g.height);
-    THIN_STATE.stone.value.set(...g.stone);
-    THIN_STATE.light.value.set(...g.light);
-    THIN_STATE.haze.value.set(...g.haze);
+    tintHall(THIN_STATE, g);
     THIN_STATE.floor.value = -THIN.over;
   }
+}
+
+/** Give a hall's shader state (`THIN_STATE`, `WAY_STATE`, `HALL_STATE`) the colours of the world `g` shows. */
+export function tintHall(state: Record<'stone' | 'light' | 'haze', { value: Vector3 }>, g: Glimpse): void {
+  state.stone.value.set(...g.stone);
+  state.light.value.set(...g.light);
+  state.haze.value.set(...g.haze);
 }
 
 /** One window's quad (-1..1, facing +z, scaled to its half size when drawn) of `kind`, hidden until drawn; what it shows lies far behind it, so it is never culled. */

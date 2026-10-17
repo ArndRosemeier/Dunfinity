@@ -28,12 +28,12 @@ export const VILLAGE_KNOWN: Known = (x, z) => {
   return { floor: y, water: false, rgb: [Math.pow(c[0], 1 / 2.2), Math.pow(c[1], 1 / 2.2), Math.pow(c[2], 1 / 2.2)] };
 };
 
-/** The places named on the village's map, by the role of their house. */
-const NAMES: Readonly<Record<string, string>> = {
-  grandma: "Grandma's house",
-  hardware: "Kemal's hardware store",
-  pawn: "Ilse's pawn shop",
-  weber: 'Frau Weber',
+/** The places named on the village's map, by the role of their house: in full, and short for the minimap. */
+const NAMES: Readonly<Record<string, readonly [string, string]>> = {
+  grandma: ["Grandma's house", 'Grandma'],
+  hardware: ["Kemal's hardware store", "Kemal's"],
+  pawn: ["Ilse's pawn shop", "Ilse's"],
+  weber: ['Frau Weber', 'Weber'],
 };
 
 /** A place named on the map: where (its house's middle), what it is called, and whether it is a shop. */
@@ -41,11 +41,13 @@ export interface MapMark {
   readonly x: number;
   readonly z: number;
   readonly name: string;
+  /** The name on the minimap, where there is little room. */
+  readonly short: string;
   readonly shop: boolean;
   /** Which side of the dot the name goes (−1 west, 1 east): away from grandma's street, so the two shops facing over it do not overlap. */
   readonly side: -1 | 1;
 }
 
 export const VILLAGE_MARKS: readonly MapMark[] = HOUSES.filter((h) => h.role && NAMES[h.role]).map((h) => ({
-  x: h.cx, z: h.cz, name: NAMES[h.role!], shop: h.role === 'hardware' || h.role === 'pawn', side: h.cx < (TOWN.street.x[0] + TOWN.street.x[1]) / 2 ? -1 : 1,
+  x: h.cx, z: h.cz, name: NAMES[h.role!][0], short: NAMES[h.role!][1], shop: h.role === 'hardware' || h.role === 'pawn', side: h.cx < (TOWN.street.x[0] + TOWN.street.x[1]) / 2 ? -1 : 1,
 }));

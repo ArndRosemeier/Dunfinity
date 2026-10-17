@@ -20,8 +20,8 @@ const SCALE = 1.6;
 const BRASS: Rgb = [0.62, 0.48, 0.22], COPPER: Rgb = [0.55, 0.32, 0.2], SILVER: Rgb = [0.7, 0.7, 0.72], GOLD: Rgb = [0.85, 0.65, 0.25];
 const RUST: Rgb = [0.35, 0.2, 0.12], CLAY: Rgb = [0.75, 0.7, 0.62], TIN: Rgb = [0.5, 0.48, 0.42], RED: Rgb = [0.45, 0.12, 0.1];
 
-/** Build a find of `kind` lying on the ground at the origin, in metres: metal parts into `m`, the rest into `s`. */
-function shape(kind: FindKind, m: PropBuilder, s: PropBuilder): void {
+/** Build a find of `kind` lying on the ground at the origin, in metres: metal parts into `m`, glowing ones into `g`, the rest into `s`. */
+function shape(kind: FindKind, m: PropBuilder, s: PropBuilder, g: PropBuilder): void {
   switch (kind) {
     case 'coin':
       m.ellipsoid(0, 0.002, 0, 0.011, 0.0018, 0.011, COPPER, 10);
@@ -69,15 +69,23 @@ function shape(kind: FindKind, m: PropBuilder, s: PropBuilder): void {
         m.ellipsoid(Math.cos(a) * 0.009, 0.002, Math.sin(a) * 0.009, 0.0035, 0.0022, 0.0035, GOLD, 6);
       }
       break;
+    case 'crystal':
+      // A little cluster of the deep world's salt, its points leaning out, glowing the veins' blue.
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2 + 0.4, lean = k ? 0.012 : 0, h = k ? 0.03 + 0.01 * (k % 2) : 0.05;
+        g.ellipsoid(Math.cos(a) * lean, h * 0.5, Math.sin(a) * lean, 0.007, h * 0.5, 0.007, [0.45, 0.75, 1.0], 6);
+      }
+      break;
   }
 }
 
 /** One kind's model: its parts in a group, cloned (geometry and material shared) for the pool. */
 function model(kind: FindKind): Object3D {
-  const g = new Group(), m = new PropBuilder(), s = new PropBuilder();
-  shape(kind, m, s);
+  const g = new Group(), m = new PropBuilder(), s = new PropBuilder(), gl = new PropBuilder();
+  shape(kind, m, s, gl);
   if (!m.empty) g.add(meshFromData(m.build()!, METAL));
   if (!s.empty) g.add(meshFromData(s.build()!, VERTEX_COLOR_SOLID));
+  if (!gl.empty) g.add(meshFromData(gl.build()!, GLOW));
   g.scale.setScalar(SCALE);
   return g;
 }
