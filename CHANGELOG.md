@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.236 — Mobs on every level
+
+- Slimes, scavengers and brine eels can turn up on any level now, not only from levels 2, 4 and 5. Above their usual depth they are rare and few: a lone eel, a single scavenger at a fire, a small colony of smaller slimes. Eels met early bite less.
+- Any kind of strange creature may live on any level: hunting kinds and a third peaceful kind can appear near the top too, just less often, and more often the deeper you go.
+- A giant near the top is a young one, much smaller and weaker, and grows with depth.
+- Herds and hunters' dens grow gradually more common with depth instead of jumping at level 11.
+
 ## v0.235 — Passages between styles never cut off nearby
 
 - The field looked for the passages between styles only among the regions of other styles up to 280 m (blend distance) from a point, and only for passages from the point's own region. So where a style carried a passage's end deep into its region, or where a point stepped from one region into the next of the same style, a passage's air dropped out of the field a few metres from it. Deep in the rock, but the field jumped there (and a mesh chunk next to it could have been skipped).
