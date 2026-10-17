@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.207 — Grandma's salt circle, quiet and alive
+
+- The circle of salt round grandma's armchair, and the ward traced round it, no longer shine as a bright ring. They glow softly on the flagstones, with a faint halo spilling round them.
+- The glow breathes slowly and a shimmer drifts through the salt, and the whole circle turns, very slowly, once round in about five minutes.
+
 ## v0.206 — Alpha stamp, contact button, the television first, every line spoken
 
 - The title screen says plainly that this is an alpha: a big ALPHA stamp on the name, and a line on what that means (bugs, gaps, changes, a family that may not survive an update).
