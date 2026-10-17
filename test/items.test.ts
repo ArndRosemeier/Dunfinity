@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PACK, Pack, type Find } from '../src/loot/finds';
-import { Kit, isItem, packRows, rowUse, rummage, type PackRow } from '../src/loot/items';
+import { Kit, SLOTS, isItem, packRows, rowUse, rummage, type PackRow } from '../src/loot/items';
 
 const coin = (id: number): Find => ({ id, kind: 'coin', x: 0, y: 0, z: 0, yaw: 0, value: 2 });
 const slot = (s: 'head' | 'main'): PackRow => ({ what: 'slot', slot: s });
@@ -18,8 +18,8 @@ test('the open pack lists the slots, then the finds, then the spare items', () =
   p.add(coin(1));
   p.stow({ kind: 'work-gloves', quality: 'worn' });
   const rows = packRows(p);
-  assert.equal(rows.length, 8 + 2);
-  assert.deepEqual(rows.slice(8), [{ what: 'find', i: 0 }, { what: 'spare', i: 0 }]);
+  assert.equal(rows.length, SLOTS.length + 2);
+  assert.deepEqual(rows.slice(SLOTS.length), [{ what: 'find', i: 0 }, { what: 'spare', i: 0 }]);
 });
 
 test('taking off, putting on, swapping, and the knife stays', () => {
