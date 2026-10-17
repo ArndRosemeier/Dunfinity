@@ -5,6 +5,12 @@
  * and circles, and one at a time the dog furthest behind your back crouches (the tell), lunges in,
  * bites and springs back to its place. Turn to face them and they circle on round you.
  *
+ * The town above has dogs too (Arnd 2026-10-17): ordinary village dogs (`new Dogs(level, true)`),
+ * two or three to a farmyard or a corner of the lanes, lying about and trotting round. They let
+ * you be. Hit one and its lot turns on you as a pack does, until it has calmed down (`TOWN_DOG.calm`
+ * after the last blow) or you are well off; a badly hurt one runs from you instead. They drop no
+ * salt (src/loot/tin.ts).
+ *
  * Pure: floor walking with src/creatures/steer.ts, bites through src/combat. Packs are fixed by the
  * seed; the dead stay dead on this visit.
  */
@@ -15,6 +21,7 @@ import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
+import { VILLAGE, nearestHouse, townGround } from '../gen/town';
 
 export const DOG = {
   /** Body radius and height at size 1, metres; health. */
@@ -52,7 +59,14 @@ export const DOG = {
   sleep: 85,
 } as const;
 
-export type DogMode = 'rest' | 'trot' | 'circle' | 'crouch' | 'lunge' | 'back' | 'dead';
+/**
+ * The town's village dogs: places per cell (on open ground at least `clear` metres from the houses),
+ * dogs to a place; they calm down this long after the last blow, s, and run from you hurt below
+ * this share of their health. Gentler bites than the feral ones.
+ */
+export const TOWN_DOG = { ...DOG, cell: 50, chance: 0.4, quiet: 20, count: [1, 3] as const, roam: 6, clear: 2.5, calm: 12, cowed: 0.35, damage: [3, 6] as const, wake: 55, sleep: 75 } as const;
+
+export type DogMode = 'rest' | 'trot' | 'circle' | 'crouch' | 'lunge' | 'back' | 'flee' | 'dead';
 
 export class Dog extends Creature<DogMode> {
   /** Seconds in the mode (crouch, lunge, back), or left of it (rest, trot). */
@@ -86,20 +100,40 @@ export interface Pack extends Den {
   /** Seconds until the next one may lunge; which one it is (its id; -1: none chosen). */
   gap: number;
   next: number;
+  /** Village dogs: seconds until they have calmed down after the last blow. */
+  calm?: number;
 }
 
 export class Dogs extends Population<Pack, Dog, number> {
-  constructor(level: Level) {
-    super(level, 'dogs', DOG, { arrive: 0.5, still: 0.08, step: 0.6, drop: 1.4, accel: 12, turn: 9, face: 10 });
+  private readonly D: typeof DOG | typeof TOWN_DOG;
+
+  /** `town`: the town's village dogs (only on level 0), not the feral packs of the deep. */
+  constructor(level: Level, readonly town = false) {
+    super(level, town ? 'town-dogs' : 'dogs', town ? TOWN_DOG : DOG, { arrive: 0.5, still: 0.08, step: 0.6, drop: 1.4, accel: 12, turn: 9, face: 10 });
+    this.D = town ? TOWN_DOG : DOG;
     this.apart = 1.1;
   }
 
   protected denIn(key: number, i: number, j: number): Pack | null {
+    if (this.town) return this.yardIn(key, i, j);
     for (const [x, z] of this.sites(i, j, this.level.band.dogs)) {
       const col = this.level.columnAt(x, z);
       if (rockDistance(col) < 1.5 || rockDistance(col) > 6 || col.collapse > 0) continue;
       const y = this.floorFor(x, z, 1.2, 0.8);
       if (y !== null) return { key, x, z, y, count: this.countIn(i, j, DOG.count), hunting: false, angle: 0, gap: 0, next: -1 };
+    }
+    return null;
+  }
+
+  /** A village dogs' place in cell (i, j), if any: open ground in the village, clear of the houses. */
+  private yardIn(key: number, i: number, j: number): Pack | null {
+    if (this.level.depth) return null;
+    const V = VILLAGE.spec;
+    for (const [x, z] of this.sites(i, j, TOWN_DOG.chance)) {
+      if (Math.hypot(x - V.x, z - V.z) > V.r) continue;
+      const y = townGround(x, z).y;
+      if (nearestHouse(x, y + 0.5, z).d < TOWN_DOG.clear || this.level.sdf(x, y + 1.2, z) < 0.8) continue;
+      return { key, x, z, y, count: this.countIn(i, j, TOWN_DOG.count), hunting: false, angle: 0, gap: 0, next: -1, calm: 0 };
     }
     return null;
   }
@@ -142,14 +176,19 @@ export class Dogs extends Population<Pack, Dog, number> {
 
   /** One dog's step; `facing`: which way you face. Returns 1 if it bit you. */
   protected act(g: Dog, prey: Fighter, facing: number, dt: number): number {
-    const D = DOG, p = g.pack;
+    const D = this.D, p = g.pack;
     g.t += g.mode === 'rest' || g.mode === 'trot' ? -dt : dt;
-    if (g.provoked) { g.provoked = false; p.hunting = true; }
+    if (g.provoked) { g.provoked = false; p.hunting = true; if (this.town) p.calm = TOWN_DOG.calm; }
     if (g.dead) return this.lieDead(g, dt, 6);
     const dx = prey.x - g.x, dz = prey.z - g.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
-    if (!prey.dead && noticed(prey, d, D.notice) && Math.abs(prey.y - g.y) < 2.5) p.hunting = true;
+    // A village dog lets you be (until it is hit); a feral one comes for you once it has seen you.
+    if (!this.town && !prey.dead && noticed(prey, d, D.notice) && Math.abs(prey.y - g.y) < 2.5) p.hunting = true;
     if (p.hunting && (prey.dead || d > D.forget || Math.abs(prey.y - g.y) > 4)) p.hunting = false;
     const pack = this.living(p), k = pack.indexOf(g);
+    if (this.town && k === 0 && p.hunting && (p.calm = (p.calm ?? 0) - dt) <= 0) p.hunting = false;
+    // Badly hurt, a village dog runs from you while its lot is still angry.
+    const cowed = this.town && p.hunting && g.health < TOWN_DOG.cowed * DOG.health * g.size;
+    if (cowed && g.mode !== 'flee') { g.mode = 'flee'; g.t = 0; }
     if (k === 0 && p.hunting) this.lead(p, pack, prey, facing, dt);
     if (p.hunting && (g.mode === 'rest' || g.mode === 'trot')) g.mode = 'circle';
     if (!p.hunting && g.mode !== 'rest' && g.mode !== 'trot') { g.mode = 'trot'; g.tx = p.x; g.tz = p.z; g.t = 8; }
@@ -187,7 +226,7 @@ export class Dogs extends Population<Pack, Dog, number> {
       case 'lunge':
         g.gait += this.steer.slide(g, dt) / (0.16 * g.size);
         if (!g.bit && d - prey.radius - g.radius < D.reach && Math.abs(prey.y - g.y) < 1.2) {
-          damage(prey, this.rng.range(D.damage[0], D.damage[1]) * g.size, g.x, g.z, 1.5, 'dog');
+          damage(prey, this.rng.range(D.damage[0], D.damage[1]) * g.size, g.x, g.z, 1.5, this.town ? 'village dog' : 'dog');
           g.bit = true;
           bit = 1;
         }
@@ -201,6 +240,10 @@ export class Dogs extends Population<Pack, Dog, number> {
         brake(g, 3, dt);
         g.gait += this.steer.slide(g, dt) / (0.16 * g.size);
         if (g.t >= D.hold + D.back) { g.mode = 'circle'; p.gap = D.every; }
+        break;
+      case 'flee':
+        // Away from you, tail down, until its lot has calmed (then it trots home).
+        g.gait += this.steer.move(g, 2 * g.x - prey.x, 2 * g.z - prey.z, D.run * 0.8, dt, null) / (0.16 * g.size);
         break;
     }
     return bit;
