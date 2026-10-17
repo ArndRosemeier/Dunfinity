@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.220 — Rogue like and Adventure, and several families at once
+
+- New Game asks how the family will play: Rogue like (the default) or Adventure. The families you already have stay kept, so several runs can go on side by side.
+- Rogue like: each grandchild has one save, and it is gone when they die (grandma's tin, her purse and the notary's list carry on to the next grandchild, as before). Save and quit in the menu keeps the game and takes you back to the title.
+- Adventure: Save in the menu keeps the game as it stands, as often as you like (the last eight are kept). Load goes back to any of them at any time, even after a death. Quit to title keeps where you are.
+- The title has Load: every family with its mode, grandchild, depth and when it was last played, to play or forget.
+- Settings shows the mode of the family you are playing. A family kept from before plays Rogue like.
+
+## v0.219 — Step through a thin place
+
+- Walk into a thin place while it is open and you stand in the world it shows, 8 to 40 levels down: its stone, its light, its air, on open floor near where that world's ladder comes in.
+- Nothing there wakes or can hurt you, and nothing there counts as reached; the way back hangs open behind you.
+- After a short while the pocket grows unstable: the way back flickers, the edges of sight shake and go blue. Then it lets go and you are back where you stepped in. Walk into the way back to go home sooner.
+- Thin places stay open a little longer, so there is time to reach one.
+
+## v0.218 — The townsfolk of today
+
+- The game happens today: the village's people now wear present-day clothes (jeans and a hoodie, a yellow rain jacket, a puffer and leggings, a fleece, a red parka, a white shirt; trainers and boots) instead of 1966 ones.
+- The lore bible has a Timeline section: the town and the player are of today, and the past shows only through grandma's diary, the 1966 TV report and the old mine.
+
+## v0.217 — People in the village
+
+- Townsfolk walk the village's streets by day: twenty of them in 1966 clothes, young and old, on the right of the road. They turn into other streets, cross the square, now and then stop to look about, and turn back where a street leaves the village.
+- They never walk into you: they stop, turn to you with a smile and wait until you step aside.
+
+## v0.216 — Your salt pet is kept in the save
+
+- A salt pet that is out when you leave comes back when you return, as hurt as it was, standing up out of salt at your side.
+
+## v0.215 — Creatures with tempers of their own
+
+- Every strange creature now has a temper grown with its body. Some plod and graze for ages, some dart and freeze like lizards, some never settle. Herds keep together, walk in single file behind a leader, spread out, or live alone.
+- Some are curious: they come over, look at you from a little way off and trail after you a while. Shy ones bolt from far away.
+- When one takes fright, its herd bolts, scatters every which way, freezes stock still, or bunches up with the big ones facing you.
+- Some rear up as a warning before they fight. While grazing they have habits: pecking at the floor, rearing up to look round, a tail flick or a claw wave.
+- Some are drawn to your headlamp like moths and mill in its beam; some walk out of it.
+- No creature is a hunter by type anymore. Each has an aggression dial: the most passive only ever run, even when hit; a little less passive, they fight back; from there on they come for you, from further off the more aggressive they are. How they fight (a pack taking turns, an ambush, a swarm, a charge) is part of their temper.
+- The debug menu's creature maker has an Aggression slider and says each creature's temper.
+
 ## v0.214 — A flashlight from Kemal's
 
 - Kemal sells a flashlight for €15 (key 7 at his counter). It goes in the off hand, beside whatever weapon is in the main hand.

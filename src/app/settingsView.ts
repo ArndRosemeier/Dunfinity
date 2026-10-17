@@ -27,6 +27,8 @@ export interface SettingsHooks {
   readonly qualityNotes: Readonly<Record<Quality, string>>;
   /** Opened or closed (the game stops and starts listening). */
   opened(open: boolean): void;
+  /** How the family plays (chosen at New Game, not changed here). */
+  modeLine(): string;
 }
 
 type Tab = 'sound' | 'keys' | 'graphics';
@@ -37,6 +39,7 @@ const STYLE = `
   #settings > .ui-scroll { padding: 14px 18px 16px; }
   #settings .head { display: flex; justify-content: space-between; align-items: baseline; }
   #settings .head .ui-keys { margin: 0; }
+  #settings .mode { margin-top: 2px; }
   #settings .tabs { display: flex; gap: 6px; margin: 4px 0 12px; }
   #settings .row { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 10px; margin: 6px 0; }
   #settings .row input[type=range], #settings label.check input { accent-color: var(--ui-accent); }
@@ -121,6 +124,7 @@ export class SettingsView extends Modal {
     const h = child(this.el, 'div', 'head');
     child(h, 'h2', 'ui-title', 'Settings');
     child(h, 'div', 'ui-keys').innerHTML = `${keycap('Esc')} or ${keycap(keyLabel(this.hooks.bindings.keyOf('KeyO')))} to close`;
+    child(this.el, 'div', 'mode ui-label', this.hooks.modeLine());
     const tabs = child(this.el, 'div', 'tabs');
     for (const [id, title] of TABS) {
       button(tabs, title, () => { this.tab = id; this.waiting = null; this.said = ''; this.redraw(); }, `ui-btn small${id === this.tab ? ' primary' : ''}`);

@@ -10,6 +10,7 @@ import { REPORT, shotStart, voiceOf } from '../lore/report';
 import { TitleScreen, type TitleChoice } from '../app/titleScreen';
 import { TvSet } from '../app/tvSet';
 import type { SoundEngine, SoundLoop } from '../audio/audio';
+import type { FamilyEntry } from '../persist/save';
 
 /** Seconds: the set warming up before the name and menu come; from the choice to black. */
 const TIMING = { reveal: 1.2, leave: 0.8 };
@@ -33,6 +34,8 @@ export interface TitleCast {
   readonly seed: number;
   /** A family is kept: Continue goes on with it (and the report cuts in partway: it has been seen). */
   readonly canContinue: boolean;
+  /** Every family kept (the menu's Load). */
+  readonly families: readonly FamilyEntry[];
   /** Hold on this shot of the report (`?title&shot=<n>`, for screenshots), or null. */
   readonly pinned: number | null;
   /** The game, once set up: the set plays while it loads, and a choice made before then waits for it. */
@@ -43,7 +46,7 @@ export interface TitleCast {
 
 /** Play the title until the player chooses; resolves with the screen black, the overlay gone. */
 export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<TitleChoice> {
-  const screen = new TitleScreen(host, cast.canContinue);
+  const screen = new TitleScreen(host, cast.canContinue, cast.families);
   // A first visit watches from the start; later ones switch on partway through (a different shot each time).
   const from = cast.canContinue ? shotStart(new Rng(deriveSeed(cast.seed, 'title', Math.floor(performance.timeOrigin))).int(1, REPORT.length - 1)) : 0;
   const tv = new TvSet(screen.back, cast.seed, from, cast.pinned);

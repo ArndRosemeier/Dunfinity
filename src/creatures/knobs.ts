@@ -31,6 +31,7 @@ function turned(c: Rgb, turn: number): Rgb {
 }
 
 export const KNOBS: readonly Knob[] = [
+  knob('aggression', 'Aggression', 0, 1, (s) => s.aggression, (s, v) => ({ ...s, aggression: v })),
   knob('length', 'Torso length (m)', 0.08, 4.5, (s) => s.length, (s, v) => ({ ...s, length: v })),
   knob('girth', 'Girth', 0.05, 0.6, (s) => s.girth, (s, v) => ({ ...s, girth: v })),
   knob('width', 'Body width', 0.5, 2, (s) => s.bodyWidth, (s, v) => ({ ...s, bodyWidth: v })),

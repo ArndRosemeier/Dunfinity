@@ -1,15 +1,31 @@
 /**
  * The title screen's overlay (src/game/title.ts plays it): the television behind (`back`,
  * src/app/tvSet.ts), and beside it the name, a line under it, the menu (Continue, if there is a family
- * to go on with, and New Game), and the black the choice fades to.
+ * to go on with; Load, the families kept; New Game, which asks how the family will play), and the
+ * black the choice fades to.
  */
 import { addStyle, button, child } from './panel';
 import { useTheme } from './theme';
 import { growOn } from './growth';
 import { VERSION } from './whatsNew';
 import { writeToUs } from './contact';
+import { deleteFamily, GAME_MODES, MODE_NAMES, type FamilyEntry, type GameMode } from '../persist/save';
 
-export type TitleChoice = 'continue' | 'new';
+/** Go on with the family played last, begin a new one playing `mode`, or play the family `load`. */
+export type TitleChoice = 'continue' | { readonly new: GameMode } | { readonly load: string };
+
+/** What each mode means, on New Game. */
+export const MODE_LINES: Readonly<Record<GameMode, string>> = {
+  rogue: 'One save for each grandchild, gone when they die. Saving takes you back to the title.',
+  adventure: 'Save whenever you like, and go back to any save at any time.',
+};
+
+/** A family in the Load list: its mode, its grandchild, how deep, when last played. */
+export function familyLine(f: FamilyEntry): string {
+  const where = f.depth === null ? 'the next grandchild waits' : f.depth ? `level ${f.depth}` : 'in the cellar';
+  const when = f.savedAt ? new Date(f.savedAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'before modes';
+  return `${MODE_NAMES[f.mode]} · grandchild ${f.heir + 1}, ${where} · deepest ${f.deepest} · ${when}`;
+}
 
 const CSS = `
   #title { position: fixed; inset: 0; z-index: 20; pointer-events: none; font-family: var(--ui-font-display); color: var(--ui-ink); }
@@ -39,6 +55,11 @@ const CSS = `
   #title.shown .contact { opacity: 1; }
   #title .ask { max-width: 26em; padding: 12px 16px; font: 15px/1.45 var(--ui-font); color: var(--ui-ink-dim); }
   #title .ask .ui-btn { margin: 10px 8px 0 0; }
+  #title .ask .mode { margin-top: 8px; }
+  #title .ask .mode .ui-btn { margin: 0 0 4px; min-width: 140px; }
+  #title .ask .families { max-height: 40vh; overflow-y: auto; margin-top: 6px; }
+  #title .ask .family { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--ui-line); }
+  #title .ask .family .ui-btn { margin: 0; flex: none; }
   /* Upright screens: the set above, the name and menu under it. */
   @media (orientation: portrait) {
     #title .shade { background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4) 38%, transparent 55%); }
@@ -63,8 +84,8 @@ export class TitleScreen {
   /** The player's choice, once made. */
   readonly chosen: Promise<TitleChoice>;
 
-  /** `canContinue`: a family is kept (src/persist/save.ts), so Continue goes on with it and New Game forgets it. */
-  constructor(host: HTMLElement, canContinue: boolean) {
+  /** `canContinue`: a family is kept (src/persist/save.ts), so Continue goes on with it; `kept`: every family kept, for Load. */
+  constructor(host: HTMLElement, canContinue: boolean, kept: readonly FamilyEntry[] = []) {
     useTheme();
     addStyle(CSS);
     this.root = child(host, 'div');
@@ -84,14 +105,42 @@ export class TitleScreen {
     let going = null as HTMLButtonElement | null;
     this.chosen = new Promise((resolve) => {
       if (canContinue) going = choice(menu, 'Continue', 'primary', () => resolve('continue'));
-      const fresh = choice(menu, 'New Game', canContinue ? '' : 'primary', () => {
-        if (!canContinue) { resolve('new'); return; }
-        // A new family forgets the kept one: ask once.
-        fresh.disabled = true;
-        const ask = child(menu, 'div', 'ask ui-panel', 'Start a new family? Grandma\'s tin, the finds and everyone who went down will be forgotten.');
-        const row = child(ask, 'div');
-        button(row, 'Yes, start again', () => resolve('new'), 'ui-btn primary small');
-        button(row, 'No', () => { ask.remove(); fresh.disabled = false; }, 'ui-btn small');
+      /** One question at a time under the menu (Load's list, New Game's modes). */
+      let open: HTMLDivElement | null = null;
+      const ask = (text: string): HTMLDivElement => {
+        open?.remove();
+        open = child(menu, 'div', 'ask ui-panel', text);
+        return open;
+      };
+      let families = [...kept];
+      if (families.length) {
+        const load = choice(menu, 'Load', '', () => {
+          const list = child(ask('The families kept:'), 'div', 'families');
+          const showFamilies = (): void => {
+            list.textContent = '';
+            if (!families.length) { load.remove(); open?.remove(); return; }
+            for (const f of families) {
+              const row = child(list, 'div', 'family');
+              child(row, 'span', '', familyLine(f));
+              button(row, 'Play', () => resolve({ load: f.id }), 'ui-btn primary small');
+              const forget = button(row, 'Forget', () => {
+                if (forget.textContent !== 'Sure?') { forget.textContent = 'Sure?'; return; }
+                deleteFamily(f.id);
+                families = families.filter((g) => g.id !== f.id);
+                showFamilies();
+              }, 'ui-btn small');
+            }
+          };
+          showFamilies();
+        });
+      }
+      choice(menu, 'New Game', canContinue ? '' : 'primary', () => {
+        const box = ask('How will this family play? The families already kept stay as they are.');
+        for (const mode of GAME_MODES) {
+          const row = child(box, 'div', 'mode');
+          button(row, MODE_NAMES[mode], () => resolve({ new: mode }), `ui-btn small${mode === 'rogue' ? ' primary' : ''}`);
+          child(row, 'div', '', MODE_LINES[mode]);
+        }
       });
     });
     // Continue is greyed out until the game's shaders are ready (src/render/stage.ts warmLater), so play

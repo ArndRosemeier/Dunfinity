@@ -6,7 +6,7 @@
  */
 import { Timer, Vector3 } from 'three/webgpu';
 import { Practice, SKILLS, type Skill } from '../loot/practice';
-import { readSave, writeSave, type GrandchildData } from '../persist/save';
+import { activeFamily, families, goStraightIn, loadByHand, manualSaves, newFamily, readFamily, saveByHand, setActiveFamily, takeStraightIn, writeFamily, MODE_NAMES, type GameMode, type GrandchildData, type SaveData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
 import { ReadView } from '../app/readView';
@@ -16,6 +16,7 @@ import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
 import { CELLAR, daylightAt } from '../gen/cellar';
 import { TOWN } from '../gen/town';
+import { temperLine } from '../creatures/temper';
 import { sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
 import { Kit, isItem, packRows, rummage } from '../loot/items';
@@ -53,6 +54,8 @@ import { ScavengerView } from '../render/creatures/scavengerView';
 import { GoblinView } from '../render/creatures/goblinView';
 import { GhostView } from '../render/creatures/ghostView';
 import { NeighbourView } from '../render/humans/neighbourView';
+import { townsfolkPool } from '../render/humans/villagerView';
+import { villagers } from '../world/villagers';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { Stranger, STRANGER_KEY } from '../world/stranger';
 import { KEEPER_KEY, Shopkeeper } from '../world/shopkeeper';
@@ -114,7 +117,7 @@ import { StepsView } from '../app/stepsView';
 import type { LoadingScreen } from '../app/loadingScreen';
 import { heard, tipOf, type DripLook } from '../gen/drips';
 import { BLOOM, crackles } from '../gen/blooms';
-import { ThinPlaces } from '../world/thinPlaces';
+import { ThinPlaces, Pocket, THIN, glimpseOf, steppedIn, type ThinPlace } from '../world/thinPlaces';
 import { ThinView } from '../render/thinView';
 import { Singing, type Sung } from '../world/singing';
 
@@ -159,13 +162,21 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   loading.step('Laying out the level', 0.03);
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
-  const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
-  /** The game opens on the title screen (src/game/title.ts). */
-  const titled = titleWanted(location.search);
+  // The family played last (a link with a seed: the last family on that world), unless a fresh start is asked for.
+  const bySeed = q.has('seed');
+  let family = keep && !q.has('fresh') ? (bySeed ? families().find((f) => f.seed === params.seed) ?? null : activeFamily()) : null;
+  if (family && !bySeed) params.seed = family.seed;
+  const saved = family ? readFamily(family.id) : null;
+  /** Start the game again from what is kept (the title, or `straight` on past it into the family played). */
+  const restart = (straight: boolean): void => { goStraightIn(straight); location.reload(); };
+  /** How this family plays (src/persist/save.ts GameMode; a new one asks on New Game). */
+  let mode: GameMode = saved?.mode ?? family?.mode ?? 'rogue';
+  /** The game opens on the title screen (src/game/title.ts), unless the last visit asked to go straight on (a load, Save and quit's way back). */
+  const titled = !takeStraightIn() && titleWanted(location.search);
   // The title's television comes on at once; the game sets itself up behind it and joins it when ready (below).
   let joinTitle: (g: TitleGame) => void = () => {};
   const titling = titled ? playTitle(host, {
-    seed: params.seed, canContinue: !!saved, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
+    seed: params.seed, canContinue: !!saved, families: keep ? families() : [], pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
     game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
     shown: () => { if (loading.open) loading.hide(); },
   }) : null;
@@ -202,6 +213,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let wisps: Wisps;
   /** Grandma's Salt Pet: the one at the nobody's heel (and one crumbling), when the last was poured, and the dead ones already seen fall to salt. */
   const pets = new Pets(level);
+  pets.restore(saved?.child?.pet);
   let petAt = -Infinity;
   const crumbled = new WeakSet<object>();
   /** Glimpses of other worlds opening in the air (src/world/thinPlaces.ts). */
@@ -253,21 +265,29 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(l.doors);
+    hangDoors(l);
+    finds = findsOf(l);
+    tin.deepest = Math.max(tin.deepest, l.depth);
+    reached = Math.max(reached, l.depth);
+    dropFlying();
+    look(l);
+  };
+  /** The doors of level l hung, and everything in the way on it (the doors, Frau Weber, the stranger) put in the props' way. */
+  const hangDoors = (l: Level): void => {
     doorsMet = '';
     doorView.hang(doors.list);
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
     if (strangerHere()) view.props.blockers.set(STRANGER_KEY, stranger.blocker); else view.props.blockers.clear(STRANGER_KEY);
     for (const k of SHOPS) if (l.depth === 0) view.props.blockers.set(KEEPER_KEY[k], keepers[k].blocker); else view.props.blockers.clear(KEEPER_KEY[k]);
-    finds = findsOf(l);
-    tin.deepest = Math.max(tin.deepest, l.depth);
-    reached = Math.max(reached, l.depth);
+  };
+  /** What was thrown, sown, grown or puffed is gone (a level left behind). */
+  const dropFlying = (): void => {
     thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; radish.roots.length = 0; flour.clouds.length = 0;
-    look(l);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
   const look = (l: Level): void => {
-    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = keeperViews.hardware.people.level = keeperViews.pawn.people.level = tallView.level = l;
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = villagerView.level = strangerView.people.level = grandmaView.people.level = keeperViews.hardware.people.level = keeperViews.pawn.people.level = tallView.level = l;
     view.go(l);
     Rigged.kinOn(params.seed, l.depth);
     cam.level = l;
@@ -353,11 +373,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The stranger at Ilse's is in the town once the family has been below level 10. */
   const strangerHere = (): boolean => level.depth === 0 && Stranger.here({ deepest: tin.deepest, fallen: fallen.length });
   const weber = new Neighbour();
-  /** Kemal and Ilse behind their counters. */
+  /** The village's people out by day, walking its streets (the same people every game). */
+  const villagerView = await townsfolkPool();
+  const townsfolk = villagers();
+    /** Kemal and Ilse behind their counters. */
   const SHOPS = ['hardware', 'pawn'] as const;
   const keepers = { hardware: new Shopkeeper('hardware'), pawn: new Shopkeeper('pawn') };
   const keeperViews = { hardware: await NeighbourView.keeper('hardware'), pawn: await NeighbourView.keeper('pawn') };
-  scavengerView.people.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = keeperViews.hardware.people.level = keeperViews.pawn.people.level = level;
+  scavengerView.people.level = keeperViews.hardware.people.level = keeperViews.pawn.people.level = villagerView.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = level;
   const tallView = await TallOneView.create(params.seed);
   tallView.level = level;
   /** The grandchild kept from the last visit, where they were. */
@@ -373,10 +396,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart,
+      cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart, pet: pets.data ?? undefined,
     };
-    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made });
+    if (!family) family = { id: newFamily(params.seed, mode, Date.now()), seed: params.seed, mode, heir, depth: null, deepest: 0, savedAt: 0 };
+    writeFamily(family.id, params.seed, familyNow(child), Date.now());
   };
+  /** The family as it stands, with `child` the grandchild down there (null: none alive). */
+  const familyNow = (child: GrandchildData | null): SaveData => ({ v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made, mode });
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
   cam.follow(body.x, body.y + 1.6, body.z, 1);
@@ -401,9 +427,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
-  const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, ...keeperViews.hardware.people.figures, ...keeperViews.pawn.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp, ...petView.roots];
+  const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...villagerView.figures, ...strangerView.people.figures, ...grandmaView.people.figures, ...keeperViews.hardware.people.figures, ...keeperViews.pawn.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp, ...petView.roots];
   // Under the title screen only the nobody warms up now; everyone else warms while it plays.
-  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, strangerView.people.root, grandmaView.people.root, keeperViews.hardware.people.root, keeperViews.pawn.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root, ...petView.roots];
+  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, villagerView.root, strangerView.people.root, grandmaView.people.root, keeperViews.hardware.people.root, keeperViews.pawn.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root, ...petView.roots];
   await view.start(titled ? [nobody.root] : [nobody.root, ...figures], titled ? [...figures, ...roots] : []);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
@@ -431,6 +457,61 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const drift = new SaltDrift(params.seed);
   const thinView = new ThinView();
   await view.stage.add(thinView.mesh);
+  /**
+   * A stay in another world through a thin place (src/world/thinPlaces.ts), and what waits at home
+   * meanwhile (null: at home). Nothing there wakes (its creatures are never stepped), nothing hurts
+   * you, nothing of it is kept or counted as reached; you come back where you stepped in.
+   */
+  let pocket: { stay: Pocket; level: Level; fauna: Fauna; wisps: Wisps; finds: Finds; doors: Doors; campfire: Campfire; circle: typeof saltLine.circle; from: Body } | null = null;
+  /** The edges of sight as a pocket shakes loose: the veins' blue closing in. */
+  const rift = document.createElement('div');
+  rift.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(70,150,255,0.75) 100%)';
+  host.appendChild(rift);
+  /** Step through thin place p into the world it shows. */
+  const enterPocket = (p: ThinPlace): void => {
+    const there = new Level(params.seed, p.glimpse.depth, params.style), stay = new Pocket(level.depth, p, there);
+    pocket = { stay, level, fauna, wisps, finds, doors, campfire, circle: saltLine.circle, from: body };
+    thin.current = null;
+    level = there;
+    fauna = new Fauna(there);
+    wisps = new Wisps(there);
+    finds = findsOf(there);
+    campfire = new Campfire(there, MOVE.maxHealth, MOVE.stamina);
+    doors = new Doors(there.doors);
+    hangDoors(there);
+    saltLine.circle = null;
+    dropFlying();
+    pets.moveTo(there);
+    look(there);
+    land(stay.at[0], stay.at[1], stay.at[2], stay.facing);
+    sounds.play('thin_place', null, 0.9, 0.8);
+    say('You step through. The air is another world\'s, and it will not hold you long.', 4);
+  };
+  /** The pocket lets go (or you walk back through): home, where you stepped in. */
+  const leavePocket = (): void => {
+    const k = pocket!;
+    pocket = null;
+    ({ level, fauna, wisps, finds, doors, campfire } = k);
+    saltLine.circle = k.circle;
+    hangDoors(level);
+    dropFlying();
+    pets.moveTo(level);
+    look(level);
+    land(k.from.x, k.from.y, k.from.z, k.from.facing + Math.PI);
+    rift.style.opacity = '0';
+    view.renderer.domElement.style.transform = '';
+    sounds.play('thin_place', null, 0.9, 0.6);
+    say(k.stay.age >= THIN.stay ? 'The other world lets go of you. You are back where you stepped in.' : 'You step back through, home.', 3.5);
+  };
+  /** Stand at (x, y, z) facing `yaw` (health and breath kept), behind the black while the rock streams in. */
+  const land = (x: number, y: number, z: number, yaw: number): void => {
+    const hp = body.health, st = body.stamina;
+    body = new Body(x, y, z);
+    body.health = hp; body.stamina = st;
+    body.facing = cam.yaw = yaw;
+    arriving = true; arrivedAt = performance.now() / 1000;
+    fade.style.opacity = '1';
+  };
   const singing = new Singing(), sung: Sung[] = [];
   await view.stage.add(drift.root);
   const wispView = new WispView(view.lamps);
@@ -499,6 +580,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const pause = new PauseMenu(document.body, {
     resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), keys: () => keysOf(keyName, controls.byTouch),
     settings: () => { pause.hide(); settingsView.toggle(); },
+    mode: () => mode,
+    // Rogue like: the one save is kept as it stands, and back to the title. Adventure: saves by hand, gone back to at any time.
+    saveAndQuit: () => { keepGame(); restart(false); },
+    save: () => { keepGame(); if (family) saveByHand(family.id, params.seed, readFamily(family.id)!, Date.now()); },
+    saves: () => (family ? manualSaves(family.id) : []),
+    load: (at) => { if (family && loadByHand(family.id, at, Date.now())) restart(true); },
+    quit: () => { keepGame(); restart(false); },
+    canSave: () => keep && !body.dead,
   });
   let freedAt = -Infinity;
   document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement) pause.hide(); else freedAt = performance.now(); });
@@ -566,7 +655,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       // A few of its lengths ahead of you, facing you.
       const ahead = Math.max(2.5, sp.totalLength * 1.4 + 1.5), x = body.x - Math.sin(cam.yaw) * ahead, z = body.z - Math.cos(cam.yaw) * ahead;
       herdView.showSpecimen(sp, x, level.groundAt(x, z), z, Math.atan2(x - body.x, z - body.z));
-      return `${sp.role}, ${sp.plan}, ${sp.integument}: ${sp.totalLength.toFixed(2)} m long, ${sp.mass < 10 ? sp.mass.toFixed(1) : Math.round(sp.mass)} kg${sp.oddities.length ? `; ${sp.oddities.join(', ')}` : ''}.`;
+      return `${sp.role}, ${sp.plan}, ${sp.integument}: ${sp.totalLength.toFixed(2)} m long, ${sp.mass < 10 ? sp.mass.toFixed(1) : Math.round(sp.mass)} kg${sp.oddities.length ? `; ${sp.oddities.join(', ')}` : ''}.\n${temperLine(sp)}`;
     },
     styles: DEBUG_STYLES,
     toStyle: (s) => {
@@ -629,6 +718,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     setStill: (on) => { graphics = { ...graphics, still: on }; writeGraphicsSettings(graphics); document.documentElement.classList.toggle('ui-still', on); },
     qualityNotes: QUALITY_NOTES,
     opened: (open) => { controls.paused = open; },
+    modeLine: () => `This family plays ${MODE_NAMES[mode]} (chosen at New Game)`,
   });
   loading.step('Tuning the sounds', 0.6);
   await sounds.init();
@@ -752,7 +842,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -781,6 +871,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         if (s % 3 === 0) explored.see(level, x, level.groundAt(x, z), z);
       }
     },
+    /** Step through a thin place into the `k`-th world one here would show (the way into a pocket, for checks). */
+    stepThrough: (k = 0) => { if (!pocket) enterPocket({ x: body.x, y: body.y + THIN.over, z: body.z, yaw: body.facing, age: THIN.open, glimpse: glimpseOf(params.seed, level.depth, k) }); },
     /** Climb down the nearest way down (or up the way up) from wherever the nobody is. */
     descend: (up = false) => {
       const s = up ? level.ascent : level.descents.nearest(body.x, body.z, 5000);
@@ -885,7 +977,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     body = nextGrandchild();
     fauna = new Fauna(level); thin = new ThinPlaces(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
     pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
-    picking = null; saltLine.circle = null; homeTo = null; thrown.missiles.length = 0; thrown.sown.length = 0; thrown.burst.length = 0; garden.plants.length = 0; radish.roots.length = 0; pets.clear(); flour.clouds.length = 0;
+    picking = null; saltLine.circle = null; homeTo = null; dropFlying(); pets.clear();
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
     cam.distance = before;
@@ -925,8 +1017,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       stream: (now) => view.frame(body.x, body.y, body.z, now, false),
     });
     const choice = await titling!;
-    if (choice === 'new' && saved) freshFamily();
-    if (choice === 'new') {
+    // Another family: it is set up from its own save, as a new visit (straight past the title).
+    if (typeof choice === 'object' && 'load' in choice && choice.load !== family?.id) { setActiveFamily(choice.load); restart(true); return; }
+    if (typeof choice === 'object' && 'new' in choice) {
+      // A new family (the others stay kept), playing the mode chosen; it is kept from its first save.
+      if (saved) freshFamily();
+      family = null;
+      mode = choice.new;
       // The first grandchild is made (the rest of the shaders build meanwhile), then the introduction (src/game/prologue.ts).
       made = await makeGrandchild();
       beginIntro();
@@ -986,7 +1083,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (deathView.ready && (controls.tap('KeyR') || deathView.takeAsked())) { nextAt = timer.getElapsed(); deathView.putAway(); }
     }
     // Keep the game every few seconds (not mid-climb or mid-way home), and at once when the grandchild dies.
-    if (!climb.active && homeTo === null && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
+    if (!climb.active && homeTo === null && !pocket && (timer.getElapsed() - keptAt > 5 || body.dead !== keptDead)) { keptAt = timer.getElapsed(); keptDead = body.dead; keepGame(); }
     const [mx, my] = controls.takeLook();
     // With the map open the wheel brings it nearer or farther, not the camera.
     const wheel = controls.takeWheel();
@@ -1026,7 +1123,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       targetFull = target ? Math.max(1, target.health) : 1;
     }
     if (target && (!keeps(target, body.x, body.z) || body.dead || (!handsBusy && controls.held('Escape')))) target = null;
-    body.invulnerable = debug.invulnerable;
+    body.invulnerable = debug.invulnerable || !!pocket;
     if (debug.tireless) body.stamina = MOVE.stamina;
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
@@ -1069,7 +1166,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Grandma's Way Home: eyes shut, nothing after you; home to her armchair, or (rank 2, from her salt circle) back down.
     if (controls.tap(useOf('way-home')) && cooked.wayHome && homeTo === null && !busy && !handsBusy) {
       const back = level.depth === 0 && cooked.wayHome >= 2 && campfire.inHaven(body);
-      const why = fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : level.depth === 0 && !back ? (cooked.wayHome >= 2 && reached > 0 ? 'Stand in her salt circle to think of where you were.' : 'You are home.') : back && reached === 0 ? 'You have not been down yet.' : '';
+      const why = pocket ? 'Not from here: this world is holding you.' : fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : level.depth === 0 && !back ? (cooked.wayHome >= 2 && reached > 0 ? 'Stand in her salt circle to think of where you were.' : 'You are home.') : back && reached === 0 ? 'You have not been down yet.' : '';
       if (why) say(why, 2.5);
       else { homeAt = now; homeMote = now; homeTo = back ? reached : 0; say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', WAY_HOME.dur); }
     }
@@ -1142,7 +1239,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (why) say(why, 2.5);
       else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); }
     }
-    const nearLadder = climb.active ? null : atLadder();
+    const nearLadder = climb.active || pocket ? null : atLadder();
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
     const atShop = (shop: 'pawn' | 'hardware') => {
@@ -1449,7 +1546,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (view.carrier) [lamp.x, lamp.y, lamp.z] = [view.carrier.x, view.carrier.y, view.carrier.z];
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
       fauna.goblins.thief = snatch;
-      const struck = fauna.advance(dt, body, lamp, body.facing);
+      const struck = !pocket && fauna.advance(dt, body, lamp, body.facing);
       for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
       for (const f of fauna.fallen()) { gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now); tick('stab'); }
       if (body.health < health) {
@@ -1474,8 +1571,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       // First steps done by being somewhere or doing something (the rest tick where they happen).
       if (campfire.resting) tick(campfire.inHaven(body) ? 'circle' : 'fire');
       if (body.mode === 'climb') tick('climb');
-      if (level.depth >= 1) tick('down');
-      if (level.depth >= 2) tick('deeper');
+      if (level.depth >= 1 && !pocket) tick('down');
+      if (level.depth >= 2 && !pocket) tick('deeper');
       if (homeTo !== null) {
         const t = now - homeAt;
         if (threat || body.dead || body.health < health) { homeTo = null; fade.style.opacity = '0'; say('Something is coming. You cannot think of the armchair now.', 3); }
@@ -1514,6 +1611,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     spoken = fauna.ghosts.calls;
     if (level.depth === 0) weber.turn(body.x, body.z, dt);
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
+    if (level.depth === 0) for (const v of townsfolk) v.stroll(dt, now, body.x, body.z);
+    villagerView.draw(level.depth === 0 ? townsfolk : [], body.x, body.z, dt, now);
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
     strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
     for (const k of SHOPS) {
@@ -1554,8 +1653,23 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     for (const w of wisps.risen.splice(0)) sounds.play('wisp_rise', w, 0.5);
     for (const w of wisps.popped.splice(0)) sounds.play('wisp_pop', w, 0.7);
     wispView.draw(wisps);
-    thin.advance(dt, body.x, body.y + 1.6, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
-    thinView.draw(thin.current);
+    if (pocket) {
+      // In another world: the way back hangs open, then flickers; the edges of sight shake; then it lets go.
+      const k = pocket.stay, shake = k.instability;
+      if (!arriving && !body.dead && (k.advance(dt) || k.walksBack(body.x, body.y, body.z))) leavePocket();
+      else {
+        thinView.draw(k.way, k.open);
+        rift.style.opacity = String(shake * (0.55 + 0.35 * Math.sin(k.age * (4 + 9 * shake))));
+        const j = shake * 3;
+        view.renderer.domElement.style.transform = shake ? `translate(${(Math.sin(k.age * 31) * j).toFixed(1)}px,${(Math.sin(k.age * 23 + 1) * j).toFixed(1)}px)` : '';
+      }
+    } else {
+      thin.advance(dt, body.x, body.y + 1.6, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
+      thinView.draw(thin.current);
+      // Walk into one while it is open: through.
+      const t = thin.current;
+      if (t && !arriving && !body.dead && !climb.active && homeTo === null && steppedIn(t, body.x, body.y, body.z)) enterPocket(t);
+    }
     // Crystals singing in a geode: a note each, heard from afar, and their glow while they ring.
     for (const n of singing.advance(level, dt, body.x, body.y + 1.6, body.z, sung)) {
       const c = n.crystal;
@@ -1576,7 +1690,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     cam.room = shedOf();
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     // The map: mark the floor round the nobody seen, now and then; draw it while open.
-    if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
+    if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead && !pocket) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
     mapView.draw(level, explored, body.x, body.y, body.z, cam.yaw, campfire.burning(timer.getElapsed()) ? campfire.fire : null, timer.getElapsed());
     const lines: string[] = [];
     const E = keyName('KeyE');

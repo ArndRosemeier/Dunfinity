@@ -5,6 +5,7 @@
  */
 import { TOWN } from '../gen/town';
 import { BLOCKER_STRIDE } from './blockers';
+import { turnTowards } from '../creatures/creature';
 
 /** How near one must stand to talk; how near one must come for them to turn to you, and how fast they turn (radians a second); seconds they go on talking. */
 export interface Manner {
@@ -49,8 +50,7 @@ export class Townsperson {
   /** Turn by `dt` towards someone at (x, z) if they are near, else back to the street. */
   turn(x: number, z: number, dt: number): void {
     const M = this.manner, want = Math.hypot(x - this.x, z - this.z) < M.notice ? Math.atan2(-(x - this.x), -(z - this.z)) : this.street;
-    const d = Math.atan2(Math.sin(want - this.yaw), Math.cos(want - this.yaw));
-    this.yaw += Math.max(-M.turn * dt, Math.min(M.turn * dt, d));
+    this.yaw = turnTowards(this.yaw, want, M.turn * dt);
   }
 }
 

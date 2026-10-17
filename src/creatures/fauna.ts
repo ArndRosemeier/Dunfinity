@@ -103,7 +103,7 @@ export class Fauna {
     this.puffcaps.advance(dt, prey);
     this.goblins.advance(dt, prey);
     this.ghosts.advance(dt, prey);
-    this.critters.advance(dt, prey);
+    this.critters.advance(dt, prey, lamp);
     return struck;
   }
 

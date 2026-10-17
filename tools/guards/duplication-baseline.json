@@ -1,5 +1,13 @@
 [
   {
+    "key": "same name: dunfinity/creatures/pets.ts#data + dunfinity/loot/tin.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pets.ts#data + dunfinity/lore/key.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
     "key": "clone: core/noise.ts#cellular2 + core/noise.ts#cellular3",
     "reason": "2D and 3D variants of the same noise in one file; merging them would cost the hot path a dimension branch."
   },
@@ -3428,10 +3436,6 @@
     "reason": "every view's per-frame draw of its own thing; the things differ"
   },
   {
-    "key": "same name: dunfinity/render/props/watchers.ts#draw + dunfinity/render/thinView.ts#draw",
-    "reason": "every view's per-frame draw of its own thing; the things differ"
-  },
-  {
     "key": "same name: dunfinity/gen/dwarven.ts#put + dunfinity/loot/items.ts#put",
     "reason": "different things put: a dwarven hall piece on a level, an item on a grandchild (its slot, or grandma's knife in the belt)"
   },
@@ -3492,10 +3496,6 @@
     "reason": "the views' one verb: each draws its own things once a frame"
   },
   {
-    "key": "idiom: [.hypot .t .tx .tz .x .z Math] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts",
-    "reason": "each creature kind's own step on the Population and Steer seams (src/creatures/population.ts, steer.ts): moving, sliding, noticing and roaming through the seam, the numbers its own"
-  },
-  {
     "key": "idiom: [.mode .range .rng .t] in dunfinity/creatures/crickets.ts + dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
@@ -3524,31 +3524,7 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/eels.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/goblins.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/rats.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/scavengers.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/shrooms.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/slimes.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#act + dunfinity/creatures/tallOne.ts#act",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
@@ -3564,10 +3540,6 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/eels.ts#hatch",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/goblins.ts#hatch",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
@@ -3577,10 +3549,6 @@
   },
   {
     "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/critters.ts#hatch + dunfinity/creatures/touched.ts#hatch",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
@@ -3594,10 +3562,6 @@
   {
     "key": "clone: dunfinity/render/creatures/figures.ts#constructor + dunfinity/render/humans/thrownView.ts#pool + dunfinity/render/props/slotPool.ts#constructor",
     "reason": "building a fixed pool of meshes once: SlotPool for seeded things, figures and thrown missiles keep their own pools (different meshes per slot vs shared)"
-  },
-  {
-    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
-    "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
   },
   {
     "key": "idiom: [.cell .depth .level .seed] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
@@ -3692,10 +3656,6 @@
     "reason": "each view's things drawn now, read for their sounds; the things differ"
   },
   {
-    "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/thinView.ts#draw",
-    "reason": "every view's per-frame draw of its own thing; the things differ"
-  },
-  {
     "key": "clone: dunfinity/loot/recipes.ts#flour + dunfinity/loot/recipes.ts#pet",
     "reason": "two of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
   },
@@ -3746,10 +3706,6 @@
   {
     "key": "same name: dunfinity/render/creatures/ghostView.ts#roots + dunfinity/render/creatures/petView.ts#roots",
     "reason": "a view with several FigurePools hands their roots to the Stage: same getter, different pools"
-  },
-  {
-    "key": "idiom: [.slide .steer .t] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/pets.ts",
-    "reason": "walkers moving by their velocity through Steer.slide, the one way to move on the floor"
   },
   {
     "key": "idiom: [.slide .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
@@ -4726,5 +4682,21 @@
   {
     "key": "idiom: [.cx .cz] in dunfinity/gen/quarry.ts + dunfinity/gen/town.ts + dunfinity/gen/village.ts",
     "reason": "each passes its own record's centre (a working, a house, a building) to the one frame seam unlocal/local (src/gen/propMesh.ts); nothing more to share"
+  },
+  {
+    "key": "idiom: [.kind .pts .roads] in dunfinity/gen/townProps.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",
+    "reason": "each walks VILLAGE.roads for its own end (the layout lays houses, the props stand lamps, the walkers find their streets); the roads are the one seam"
+  },
+  {
+    "key": "idiom: [.things] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/goblin.ts",
+    "reason": "each style furnishes from its own constants' things table (T = STYLE.things): the shared shape is only the alias; found on main, not touched by the townsfolk PR"
+  },
+  {
+    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts + dunfinity/world/thinPlaces.ts",
+    "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
+  },
+  {
+    "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
   }
 ]
