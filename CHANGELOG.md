@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.255 — Hanging from a sun shows you
+
+- Hanging from a sun, your grandchild is drawn under it, arms up (the figure had stayed on the floor).
+- A sun's halo dims when you are close to it, so riding one no longer blinds the view.
+
 ## v0.254 — Way Home opens a door you walk through
 
 - Grandma's Way Home no longer fades to black: after the eyes-shut wait a window like a thin place's opens a few steps ahead, showing grandma's room with her armchair. Walk into it to go home.
