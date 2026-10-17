@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.265 — Blows you can feel
+
+- When your knife (or the handle, or any weapon) lands, the world holds still for a few hundredths of a second, a little longer for a heavy blow and longest for a kill, and the view gives a small jolt.
+- A blow you take jolts the view in proportion to how much it hurt, and the red at the edges of sight now grows with the size of the blow: a rat's nip is a hint of red, a pick to the chest is a wash of it.
+- Reduced motion (Settings, Graphics) keeps the hold and the red but never moves the view.
+
 ## v0.264 — Practice gets its own divider in the tin
 
 - The skills practised now sit after the cards under their own Practice divider, as tiles with the level, a bar towards the next and how many more uses that takes, instead of a list squeezed under the dividers.
