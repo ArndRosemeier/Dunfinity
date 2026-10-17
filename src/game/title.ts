@@ -14,8 +14,8 @@ import type { FamilyEntry } from '../persist/save';
 
 /** Seconds: the set warming up before the name and menu come; from the choice to black. */
 const TIMING = { reveal: 1.2, leave: 0.8 };
-/** The set's sound: the hiss (and how much louder a rough signal makes it), a slip's crackle, and how soon after it comes on its clunk still plays (s). */
-const SOUND = { hiss: 0.45, rough: 0.5, crackle: 0.8, clunk: 2, snow: 0.6 };
+/** The set's sound: the hiss (and how much louder a rough signal makes it), what is left of it once the melody has come up, a slip's crackle, and how soon after it comes on its clunk still plays (s). */
+const SOUND = { hiss: 0.45, rough: 0.5, faded: 0.08, crackle: 0.8, clunk: 2 };
 /** The title's melody (src/audio/music/Music.ts theme): its level under the report, once the report is over, and how fast it swells (its share a second). */
 const TUNE = { under: 0.25, after: 1, swell: 0.12 };
 /** Seconds: a voice is not begun this close to its end. */
@@ -79,12 +79,13 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
       const sound = cast.sound;
       // The sound, once the browser lets it start: the clunk if the set has only just come on, its hiss, a crackle when the picture slips.
       if (!hiss && chosen === null && sound.ctx && (hiss = sound.loop('tv_static')) && t - start < SOUND.clunk) sound.play('tv_on', null);
-      // The report airs once; then the set shows snow and hisses on, and the melody comes up from under it.
+      // The report airs once; then the set shows snow, and the melody comes up from under it as the hiss fades away.
       const over = !!tv.playing && tv.playing.shot < 0;
-      hiss?.set(0, 0, -1, ((over ? SOUND.snow : SOUND.hiss) + SOUND.rough * tv.trouble) * (1 - leaving));
       if (over) swell = Math.min(1, swell + dt * TUNE.swell);
+      const quiet = 1 - (1 - SOUND.faded) * swell; // (the set's own noises, crackles too)
+      hiss?.set(0, 0, -1, (SOUND.hiss + SOUND.rough * tv.trouble) * quiet * (1 - leaving));
       cast.tune(dt, (TUNE.under + (TUNE.after - TUNE.under) * swell) * (1 - leaving));
-      if (slipped) sound.play('tv_glitch', null, SOUND.crackle);
+      if (slipped) sound.play('tv_glitch', null, SOUND.crackle * quiet);
       // The presenter reads each shot's words. His clip begins as far in as the shot is (a set switched on
       // late, a sound started late, a slow frame), so he is never out of step; he is played at his own pitch.
       const air = tv.playing, voice = air && voiceOf(air);
