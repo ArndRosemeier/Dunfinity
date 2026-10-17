@@ -94,6 +94,7 @@ export class GameSounds {
   private bells = 0;
   private stares = 0;
   private fireLoop: SoundLoop | null = null;
+  private readonly hums: (SoundLoop | null)[] = [];
   private time = 0;
 
   constructor(seed: number, base: string) {
@@ -107,6 +108,13 @@ export class GameSounds {
   /** A one-shot the game decides on itself (null `at`: on the nobody, not placed). */
   play(id: string, at: { readonly x: number; readonly y: number; readonly z: number } | null = null, gain = 1, pitch = 1): void {
     this.engine.play(id, at, gain, pitch);
+  }
+
+  /** The low roar of sun `i` (src/creatures/suns.ts) at `at`, as loud as `gain` (null: silent). */
+  hum(i: number, at: { readonly x: number; readonly y: number; readonly z: number } | null, gain = 1): void {
+    if (!at) { this.hums[i]?.set(0, 0, 0, 0); return; }
+    this.hums[i] ??= this.engine.loop('sun_hum', 8);
+    this.hums[i]?.set(at.x, at.y, at.z, gain);
   }
 
   /** One of a sound's files in tune (its `variant`-th: a note of a scale), heard from `refDist` m. */

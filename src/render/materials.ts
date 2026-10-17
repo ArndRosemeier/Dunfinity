@@ -667,25 +667,46 @@ export const DUST = defineKind('dust', ['position', 'normal', 'color'], () => {
   return m;
 }, { cast: false, receive: false });
 
-/** The wisps' colour (linear rgb), the level's glow (src/creatures/wisps.ts `glowOf`): set by `WispView`. */
-export const WISP_TINT = uniform(new Vector3(0.25, 0.6, 1.0));
-
 /**
- * A wisp's light seen in the air (src/render/creatures/wispView.ts): a quad turned to the camera, a
- * white-hot core in a soft halo of the level's glow, additive. `position` carries the quad's corner
- * (x, y in -1..1); the mesh's scale carries its size (x, m) and brightness (y), so one material
- * serves every wisp. Pulled a little towards the camera, so a halo by the rock is not cut by it.
- * Same attributes as the solid kind.
+ * A light seen in the air (a wisp, a sun's halo, a burning drop: src/render/creatures/wispView.ts,
+ * sunView.ts): a quad turned to the camera, a white-hot core in a soft halo of its vertex colour,
+ * additive. `position` carries the quad's corner (x, y in -1..1); the mesh's scale carries its size
+ * (x, m) and brightness (y), so one material serves them all. Pulled a little towards the camera, so
+ * a halo by the rock is not cut by it; it fades out far off, later the bigger it is. Same attributes
+ * as the solid kind.
  */
 export const WISP = defineKind('wisp', ['position', 'normal', 'color'], () => {
   const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
   const size = modelScale.x, view = cameraViewMatrix.mul(vec4(modelPosition, 1));
   const toward = min(size.mul(0.6), view.z.negate().mul(0.5));
-  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(positionLocal.xy.mul(size)), view.z.add(toward), view.w));
+  // Pulled towards the eye along its line of sight (its centre stays where it is on the screen), so rock close behind it never cuts it.
+  const along = view.z.add(toward).div(view.z);
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.mul(along).add(positionLocal.xy.mul(size)), view.z.add(toward), view.w));
   const r = length(varying(positionLocal.xy, 'vWispCorner'));
   const core = smoothstep(0.2, 0.0, r), halo = float(1).sub(r).clamp(0, 1).pow(2.2);
-  const far = smoothstep(60, 25, length(view.xyz));
-  m.colorNode = mix(WISP_TINT, vec3(1, 1, 1), core.mul(0.8)).mul(halo.mul(0.7).add(core.mul(1.6))).mul(modelScale.y).mul(far);
+  const far = smoothstep(size.mul(120).add(40), size.mul(50).add(15), length(view.xyz));
+  m.colorNode = mix(vertexColor(), vec3(1, 1, 1), core.mul(0.8)).mul(halo.mul(0.7).add(core.mul(1.6))).mul(modelScale.y).mul(far);
+  return m;
+}, { cast: false, receive: false });
+
+/**
+ * A sun's burning body (src/render/creatures/sunView.ts), and its prominences: a sphere of unit
+ * radius whose surface the shader boils (pushed in and out by slow noise, so never quite round),
+ * unlit, white-gold where it faces one, deep orange at its rim, mottled with granules that churn.
+ * Opaque; its glow round it is a `WISP` halo. Same attributes as the solid kind.
+ */
+export const SUN = defineKind('sun', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ fog: false });
+  const n = normalize(positionLocal);
+  const flow = vec3(time.mul(0.07), time.mul(-0.05), time.mul(0.06));
+  const boil = mx_fractal_noise_float(n.mul(2.2).add(flow), 3, 2, 0.5);
+  const ripple = mx_noise_float(n.mul(7).add(time.mul(0.3)));
+  m.positionNode = n.mul(boil.mul(0.16).add(ripple.mul(0.04)).add(1));
+  const facing = abs(dot(normalize(normalView), vec3(0, 0, 1)));
+  const granule = float(1).sub(mx_worley_noise_float(n.mul(9).add(flow.mul(3))));
+  // Orange at the limb, a hot yellow in the middle; not so bright that it clips to white.
+  const hot = mix(vec3(1.0, 0.3, 0.04), vec3(1.0, 0.75, 0.32), facing.pow(0.8));
+  m.colorNode = hot.mul(granule.mul(0.7).add(0.75)).mul(vertexColor()).mul(1.1);
   return m;
 }, { cast: false, receive: false });
 

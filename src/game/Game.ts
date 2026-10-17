@@ -98,6 +98,8 @@ import { PetView } from '../render/creatures/petView';
 import { SaltDrift } from '../render/loot/saltDrift';
 import { WispView } from '../render/creatures/wispView';
 import { Wisps } from '../creatures/wisps';
+import { SunView } from '../render/creatures/sunView';
+import { SUN, Suns, hangOf, sizeOf, type Sun } from '../creatures/suns';
 import { THROW, Thrown } from '../combat/thrown';
 import { FLOUR, Flour } from '../combat/flour';
 import { GameSounds } from '../audio/gameSounds';
@@ -223,6 +225,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let fauna: Fauna;
   /** The lights rising out of the glowing rock (src/creatures/wisps.ts). */
   let wisps: Wisps;
+  /** The big burning lights that wander the glowing levels (src/creatures/suns.ts), and the one the nobody hangs from (null: none). */
+  let suns: Suns;
+  let riding: Sun | null = null;
   /** Grandma's Salt Pet: the one at the nobody's heel (and one crumbling), when the last was poured, and the dead ones already seen fall to salt. */
   const pets = new Pets(level);
   pets.restore(saved?.child?.pet);
@@ -256,7 +261,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let practice = saved?.child ? Practice.from(saved.child.practice) : new Practice();
   /** What this grandchild has seen of each level (the map, M). */
   let explored = saved?.child?.explored ? Explored.from(saved.child.explored) : new Explored();
-  let exploredAt = 0;
+  let exploredAt = 0, sunSeenAt = 0;
   /** Metres climbed not yet counted as practice, and the height the climb was at last frame. */
   let climbed = 0, climbY = 0, blockedAt = -Infinity;
   /** Waiting for a level's rock to stream in (since `arrivedAt`, seconds): the screen is black and nothing moves. */
@@ -273,6 +278,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     arrivedAt = performance.now() / 1000;
     fauna = new Fauna(l);
     wisps = new Wisps(l);
+    suns = new Suns(l);
+    riding = null;
     pets.moveTo(l);
     thin = new ThinPlaces(l);
     herdView?.stock(l, fauna.critters.species);
@@ -356,6 +363,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
   fauna = new Fauna(level);
   wisps = new Wisps(level);
+  suns = new Suns(level);
   thin = new ThinPlaces(level);
   /** The nobody's own fire to rest by (one at a time). */
   let campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
@@ -487,7 +495,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
    * meanwhile (null: at home). Nothing there wakes (its creatures are never stepped), nothing hurts
    * you, nothing of it is kept or counted as reached; you come back where you stepped in.
    */
-  let pocket: { stay: Pocket; level: Level; fauna: Fauna; wisps: Wisps; finds: Finds; doors: Doors; campfire: Campfire; circle: typeof saltLine.circle; from: Body } | null = null;
+  let pocket: { stay: Pocket; level: Level; fauna: Fauna; wisps: Wisps; suns: Suns; finds: Finds; doors: Doors; campfire: Campfire; circle: typeof saltLine.circle; from: Body } | null = null;
   /** The edges of sight as a pocket shakes loose: the veins' blue closing in. */
   const rift = document.createElement('div');
   rift.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(70,150,255,0.75) 100%)';
@@ -495,11 +503,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** Step through thin place p into the world it shows. */
   const enterPocket = (p: ThinPlace): void => {
     const there = new Level(params.seed, p.glimpse.depth, params.style), stay = new Pocket(level.depth, p, there);
-    pocket = { stay, level, fauna, wisps, finds, doors, campfire, circle: saltLine.circle, from: body };
+    pocket = { stay, level, fauna, wisps, suns, finds, doors, campfire, circle: saltLine.circle, from: body };
     thin.current = null;
     level = there;
     fauna = new Fauna(there);
     wisps = new Wisps(there);
+    suns = new Suns(there);
+    riding = null;
     finds = findsOf(there);
     campfire = new Campfire(there, MOVE.maxHealth, MOVE.stamina);
     doors = new Doors(there.doors);
@@ -516,7 +526,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const leavePocket = (): void => {
     const k = pocket!;
     pocket = null;
-    ({ level, fauna, wisps, finds, doors, campfire } = k);
+    ({ level, fauna, wisps, suns, finds, doors, campfire } = k);
+    riding = null;
     saltLine.circle = k.circle;
     hangDoors(level);
     dropFlying();
@@ -553,6 +564,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   await view.stage.add(drift.root);
   const wispView = new WispView(view.lamps);
   await view.stage.add(wispView.root);
+  const sunView = new SunView(view.lamps);
+  await view.stage.add(sunView.root);
   const spells = new SpellView(params.seed);
   await view.stage.add(spells.root);
   /** Grandma's salt-magic: when each was last cast, and the last cast (its pose, and which way it went). */
@@ -696,6 +709,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       herdView.showSpecimen(sp, x, level.groundAt(x, z), z, Math.atan2(x - body.x, z - body.z));
       return `${sp.role}, ${sp.plan}, ${sp.integument}: ${sp.totalLength.toFixed(2)} m long, ${sp.mass < 10 ? sp.mass.toFixed(1) : Math.round(sp.mass)} kg${sp.oddities.length ? `; ${sp.oddities.join(', ')}` : ''}.\n${temperLine(sp)}`;
     },
+    callSun: () => suns.call(body.x, body.y + 1.5, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw))
+      ? `A sun comes out of the rock, ${(suns.list.at(-1)!.r * 2).toFixed(1)} m across.` : suns.list.length >= SUN.most ? 'Two suns already burn here.' : 'No rock near enough with room for one.',
     styles: DEBUG_STYLES,
     toStyle: (s) => {
       if (!canGo()) return;
@@ -896,13 +911,21 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
   /** What to do when the climb in progress ends. */
   let onLanded: (() => void) | null = null;
+  /** Let go of the sun one hangs from: falling free with its drift (the landing is one's own lookout; `Body.featherfall` softens it). */
+  const hung: [number, number, number] = [0, 0, 0];
+  const dropFromSun = (): void => {
+    if (!riding) return;
+    body.vx = riding.vx; body.vy = Math.min(0, riding.vy); body.vz = riding.vz;
+    riding.ridden = false;
+    riding = null;
+  };
   /** Seconds left of a fade in from black (a climb that came out without a ladder). */
   let fadeIn = 0;
   /** The clock at the last frame, and a look to reuse, for the living stalagmites' drops. */
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get suns() { return suns; }, get riding() { return riding; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -1092,6 +1115,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     }
     fauna = new Fauna(level);
     wisps = new Wisps(level);
+    suns = new Suns(level);
+    riding = null;
     thin = new ThinPlaces(level);
     cam.yaw = body.facing; cam.pitch = -0.25; cam.distance = 4;
     cam.follow(body.x, body.y + 1.6, body.z, 1);
@@ -1308,6 +1333,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); }
     }
     const nearLadder = climb.active || pocket ? null : atLadder();
+    const nearSun = riding || climb.active || body.dead || body.mode !== 'walk' ? null : suns.reach(body.x, body.y, body.z);
     const nearGate = climb.active || pocket ? undefined : view.props.gates.find((g) => Math.hypot(g.stand[0] - body.x, g.stand[2] - body.z) < 2.5);
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
@@ -1420,6 +1446,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (letterView.open && (!nearNote || controls.tap('Escape'))) letterView.hide();
     if (controls.tap('KeyE') && !packView.open) {
       if (letterView.open) letterView.hide();
+      else if (riding) dropFromSun();
       else if (nearLadder) climbFrom(nearLadder);
       else if (nearFind && pack.full) say(`Your pack is full (${pack.room} things). ${keyName('KeyI')}: open it and leave something here.`, 3.5);
       else if (nearFind) pickUp(nearFind, now);
@@ -1459,8 +1486,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         else letterView.show('Grandma\'s handwriting, young and fast', NOTE.join('\n\n'), null,
           [found ? `Under the thermos, a card torn out of her tin: ${card('salt-line').title}. Cook it at a fire.` : '', runes ? RUBBING : ''].filter(Boolean));
         gained(tin.camp(level.depth), note[0], note[1], note[2], now);
+      } else if (nearSun) {
+        riding = nearSun;
+        riding.ridden = true;
+        say('You reach up into the light, and it takes your weight. It is warm, not hot.', 4);
       }
     }
+    // Hanging from a sun: let go when it fades, when you die, or when the rock scrapes you off.
+    if (riding && (body.dead || riding.age > riding.life - SUN.end * 0.6 || !suns.list.includes(riding))) dropFromSun();
     const kindling = campfire.kindling(now);
     if (controls.tap('KeyC') && !busy && body.grounded && kindling < 0) {
       const why = shedOf() ? 'Not in a wooden shed. Shut the door and rest.' : campfire.whyNot(body, body.facing, fauna.after(body), now);
@@ -1488,6 +1521,16 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     } else if (arriving) {
       fade.style.opacity = '1';
       input.jump = false;
+    } else if (riding) {
+      // Hanging from a sun: carried along under it, swinging nothing, feet in the air.
+      const [hx, hy, hz] = hangOf(riding, hung);
+      body.vx = riding.vx; body.vy = riding.vy; body.vz = riding.vz;
+      body.x = hx; body.y = hy; body.z = hz;
+      body.grounded = false;
+      body.time += dt;
+      if (input.forward || input.right) body.facing = cam.yaw;
+      input.jump = false;
+      if (level.sdf(body.x, body.y + MOVE.height * 0.5, body.z) < MOVE.radius) { dropFromSun(); say('The rock scrapes you off.', 2.5); }
     } else {
       meetDoors();
       doors.step(dt, now, body.x, body.y + MOVE.stepOver, body.y + MOVE.height, body.z, MOVE.radius, view.props.blockers);
@@ -1674,7 +1717,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
       const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'stoop' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : move.anim, t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
-      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
+      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, riding ? 'climb' : (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
@@ -1731,6 +1774,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     for (const w of wisps.risen.splice(0)) sounds.play('wisp_rise', w, 0.5);
     for (const w of wisps.popped.splice(0)) sounds.play('wisp_pop', w, 0.7);
     wispView.draw(wisps);
+    suns.advance(dt, body.x, body.y + 1.5, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
+    for (const sn of suns.risen.splice(0)) sounds.play('sun_rise', sn, 0.9);
+    for (const f of suns.splashed.splice(0)) sounds.play('sun_drip', f, 0.7);
+    for (let i = 0; i < SUN.most; i++) { const sn = suns.list[i]; sounds.hum(i, sn && sn.age < sn.life ? sn : null, sn ? Math.min(1.4, sizeOf(sn) / 1.25) : 0); }
+    sunView.draw(suns, view.camera.position.x, view.camera.position.y, view.camera.position.z);
     if (pocket) {
       // In another world: the way back hangs open, then flickers; the edges of sight shake; then it lets go.
       const k = pocket.stay, shake = k.instability;
@@ -1779,10 +1827,16 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     // The map: mark the floor round the nobody seen, now and then; draw it while open.
     if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead && !pocket) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
+    // A sun shows the halls round it: what it lights is on the map (once a second, the floor under it).
+    if (timer.getElapsed() - sunSeenAt > 1 && !pocket) {
+      sunSeenAt = timer.getElapsed();
+      for (const s of suns.list) if (s.age > SUN.rise && Math.hypot(s.x - body.x, s.z - body.z) < SUN.revealNear) explored.see(level, s.x, level.groundAt(s.x, s.z, s.y), s.z, SUN.reveal);
+    }
     mapView.draw(level, explored, body.x, body.y, body.z, cam.yaw, campfire.burning(timer.getElapsed()) ? campfire.fire : null, timer.getElapsed());
     const lines: string[] = [];
     const E = keyName('KeyE');
-    if (nearLadder) lines.push(nearLadder.up ? `${E}: climb up the ladder` : `${E}: climb down the ladder`);
+    if (riding) lines.push(`${E}: let go (${Math.max(0, Math.round(body.y - level.groundAt(body.x, body.z, body.y)))} m above the floor)`);
+    else if (nearLadder) lines.push(nearLadder.up ? `${E}: climb up the ladder` : `${E}: climb down the ladder`);
     else if (nearGate) lines.push(`A way ${nearGate.to > level.depth ? 'down' : 'up'}, held open in the rock: walk into it`);
     else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${FINDS[nearFind.kind].name}` : `${E}: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
@@ -1793,6 +1847,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
+    else if (nearSun) lines.push(`${E}: hang on to the sun`);
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : body.hidden ? 'in the miners\' shed, the door shut' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {

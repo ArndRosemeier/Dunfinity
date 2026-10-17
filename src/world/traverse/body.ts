@@ -123,6 +123,8 @@ export class Body {
   tiptoe: { readonly speed: number; readonly hush: number } | null = null;
   /** Tiptoeing this step. */
   sneaking = false;
+  /** Something worn that lets one float down (a featherfall item): the fastest it lets the body fall, m/s (null: none). Under `MOVE.safeImpact` no fall hurts. Set by the game from what is worn. */
+  featherfall: number | null = null;
   /** Grandma's pot lid (the Pot Lid card), if cooked: the share of a blow that gets through it, and the stamina a blocked blow costs. */
   lid: { readonly through: number; readonly cost: number } | null = null;
   /** Whether a blow from (x, z) is struck blind (grandma's flour: src/combat/flour.ts `blinds`): it finds no one. Set by the game. */
@@ -274,6 +276,7 @@ export class Body {
     this.vx += clampStep(mx * speed - this.vx, accel * dt);
     this.vz += clampStep(mz * speed - this.vz, accel * dt);
     this.vy -= MOVE.gravity * dt;
+    if (this.featherfall !== null && !this.grounded) this.vy = Math.max(this.vy, -this.featherfall);
     const spring = this.spring && this.stamina >= this.spring.cost ? this.spring : null;
     if (this.grounded) {
       this.airJumps = this.spring?.air ?? 0;
