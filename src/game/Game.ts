@@ -125,6 +125,9 @@ import { heard, tipOf, type DripLook } from '../gen/drips';
 import { BLOOM, crackles } from '../gen/blooms';
 import { ThinPlaces, Pocket, THIN, glimpseOf, steppedIn, type ThinPlace } from '../world/thinPlaces';
 import { GATE, walksInto, type Gate } from '../gen/gates';
+import { HOME_SHOT, WAY, WAY_LIFE, openWay, walksThrough, type Landing, type Shot, type WayDoor } from '../world/wayHome';
+import { WayView } from '../render/wayView';
+import { WAY_PICTURES } from '../render/materials';
 import { ThinView } from '../render/thinView';
 import { Singing, type Sung } from '../world/singing';
 
@@ -153,8 +156,8 @@ const POUND = { dur: 0.9, hit: 0.5, range: 1.15, arc: 1.1, low: -0.3, high: 1.3,
 const PICKUP = { dur: 1.0, at: 0.45, shown: 30 };
 /** Throwing a knife (grandma's Second Helpings): seconds the throw takes, and when the knife leaves the hand. */
 const THROWING = { dur: 0.55, release: 0.22 };
-/** Grandma's Way Home: seconds with eyes shut before one is there, the last of them fading to black; salt rises every `motes` seconds. */
-const WAY_HOME = { dur: 4, fade: 1, motes: 0.5 };
+/** Grandma's Way Home: seconds with eyes shut before the way opens (`sooner` at its second rank), the last of them dimming; salt rises every `motes` seconds; within `chair` m of her armchair it leads back down. */
+const WAY_HOME = { dur: 4, sooner: 2, fade: 1, motes: 0.5, chair: 4 };
 /** Grandma's pot lid: the block pose's length, seconds, and how far into it the lid is up (held by restarting it there). */
 const BLOCK = { dur: 0.6, held: 0.25, hold: 0.4 };
 /** Cooking a card at the fire: seconds the nobody stirs. */
@@ -231,6 +234,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   pets.restore(saved?.child?.pet);
   let petAt = -Infinity;
   const crumbled = new WeakSet<object>();
+  /**
+   * Grandma's Way Home as a door (src/world/wayHome.ts): the window open now (null: none); the place
+   * one last went home from and how the screen showed it there (the way back leads to it); the place
+   * of a Way Home under way, kept once one walks through.
+   */
+  let way: WayDoor | null = null, left: (Landing & { shot: Shot }) | null = null, leaving: (Landing & { shot: Shot }) | null = null;
   /** Glimpses of other worlds opening in the air (src/world/thinPlaces.ts). */
   let thin: ThinPlaces;
   const saltLine = new SaltLine();
@@ -280,6 +289,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     riding = null;
     pets.moveTo(l);
     thin = new ThinPlaces(l);
+    way = null;
     herdView?.stock(l, fauna.critters.species);
     saltLine.circle = null;
     campfire = new Campfire(l, MOVE.maxHealth, MOVE.stamina);
@@ -488,6 +498,32 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const drift = new SaltDrift(params.seed);
   const thinView = new ThinView();
   await view.stage.add(thinView.mesh);
+  const wayView = new WayView();
+  await view.stage.add(wayView.mesh);
+  /** Whether the next frame drawn is copied for Way Home's picture of the place one leaves (the nobody not in it). */
+  let snapping = false;
+  /** How the camera shows the place one stands: Way Home's picture of it is taken so. */
+  const shotNow = (): Shot => {
+    const c = view.camera;
+    return { tan: Math.tan((c.fov * Math.PI) / 360), aspect: c.aspect };
+  };
+  /** Walk through Way Home's door: there, health and breath kept. */
+  const throughWay = (w: WayDoor): void => {
+    way = null;
+    const to = w.to;
+    if (to.depth === 0 && w.picture === 'home') left = leaving;
+    show(new Level(params.seed, to.depth, params.style));
+    if (to.x !== undefined) land(to.x, to.y, to.z, to.yaw);
+    else {
+      const hp = body.health, st = body.stamina;
+      body = arrive(null);
+      body.health = hp; body.stamina = st;
+      if (to.depth === 0) body.facing = cam.yaw = CELLAR.start.yaw;
+    }
+    sounds.play('thin_place', null, 0.9, to.depth ? 0.7 : 0.9);
+    announce(level);
+    fadeIn = 0.8;
+  };
   /**
    * A stay in another world through a thin place (src/world/thinPlaces.ts), and what waits at home
    * meanwhile (null: at home). Nothing there wakes (its creatures are never stepped), nothing hurts
@@ -728,7 +764,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** When the last roll began (grandma's Duck card). */
   let rollAt = -9;
   /** Way Home under way: when it began, and the level it goes to (null: none). */
-  let homeAt = -Infinity, homeTo: number | null = null, homeMote = 0;
+  let homeAt = -Infinity, homeTo: number | null = null, homeMote = 0, homeBack = false;
+  /** Seconds with eyes shut before the way opens (sooner at the card's second rank). */
+  const homeDur = (): number => (cooked.wayHome >= 2 ? WAY_HOME.sooner : WAY_HOME.dur);
   /** When the lid's block pose (re)started. */
   let blockAt = -Infinity;
   /** The last salt gained (its HUD line), and until when it shows. */
@@ -946,6 +984,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     kinOn: (depth: number) => Rigged.kinOn(params.seed, depth),
     /** The Tab target (null: none), and the foes Tab would go through now (those seen). */
     get target() { return target; }, inView: () => inView(), foes: () => foes(),
+    /** Grandma's Way Home as its key would (the card cooked and on the bar if it is not); the door it opens; how the camera shows where one stands. */
+    wayHome: () => { if (!cooked.wayHome) { cooked = Cooked.from({ 'way-home': 1 }); mainBar.slotIn('way-home'); } controls.press(useOf('way-home')); },
+    get way() { return way; }, shot: () => shotNow(),
     /** Stab as the mouse button would. */
     stab: () => stab(timer.getElapsed()),
     /** Press a key (an action's own key, 'Mouse1'…) for the next frame, as the bar's click does. */
@@ -1072,7 +1113,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     body = nextGrandchild();
     fauna = new Fauna(level); thin = new ThinPlaces(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
     pack = new Pack(() => kit.room); kit = freshKit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
-    picking = null; saltLine.circle = null; homeTo = null; dropFlying(); pets.clear();
+    picking = null; saltLine.circle = null; homeTo = null; way = null; left = null; dropFlying(); pets.clear();
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
     cam.distance = before;
@@ -1266,12 +1307,19 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
       if (body.roll(dx, dz, duck.stamina * practice.less('footwork'), duck.safe)) { rollAt = now; practised('footwork'); }
     }
-    // Grandma's Way Home: eyes shut, nothing after you; home to her armchair, or (rank 2, from her salt circle) back down.
+    // Grandma's Way Home: eyes shut, nothing after you; a way opens home to her armchair, or (by her chair) back to where one left.
     if (controls.tap(useOf('way-home')) && cooked.wayHome && homeTo === null && !busy && !handsBusy) {
-      const back = level.depth === 0 && cooked.wayHome >= 2 && campfire.inHaven(body);
-      const why = pocket ? 'Not from here: this world is holding you.' : fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : level.depth === 0 && !back ? (cooked.wayHome >= 2 && reached > 0 ? 'Stand in her salt circle to think of where you were.' : 'You are home.') : back && reached === 0 ? 'You have not been down yet.' : '';
+      // At home it leads back down, to where one went home from (Arnd 2026-10-17: from her chair it should bring me back).
+      const back = level.depth === 0 && (campfire.inHaven(body) || Math.hypot(body.x - CELLAR.start.x, body.z - CELLAR.start.z) < WAY_HOME.chair);
+      const why = pocket ? 'Not from here: this world is holding you.' : fauna.after(body) ? 'Not with something after you.' : !body.grounded ? 'Not in mid-air.' : back && !left && reached === 0 ? 'You have not been down yet.' : '';
       if (why) say(why, 2.5);
-      else { homeAt = now; homeMote = now; homeTo = back ? reached : 0; say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', WAY_HOME.dur); }
+      else if (way) say('The way is open: walk into it.', 2.5);
+      else {
+        homeAt = now; homeMote = now; homeTo = back ? (left?.depth ?? reached) : 0; homeBack = back;
+        // The place one leaves, as the screen shows it now: the way back will show it.
+        if (!back) { snapping = true; leaving = { depth: level.depth, x: body.x, y: body.y, z: body.z, yaw: cam.yaw, shot: shotNow() }; }
+        say(back ? 'You shut your eyes and think of where you were.' : 'You shut your eyes and think of her armchair.', homeDur());
+      }
     }
     // Grandma's salt-magic (Fire & Frost, Force): a gout of flame, the larder's cold round you, a shove; at the Tab target, if any.
     const canCast = !busy && !handsBusy && !body.rolling && homeTo === null;
@@ -1713,18 +1761,20 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (homeTo !== null) {
         const t = now - homeAt;
         if (threat || body.dead || body.health < health) { homeTo = null; fade.style.opacity = '0'; say('Something is coming. You cannot think of the armchair now.', 3); }
-        else if (t >= WAY_HOME.dur) {
+        else if (t >= homeDur()) {
+          // Eyes open: a way stands open a few steps ahead, showing where it leads.
           const to = homeTo;
           homeTo = null;
-          show(new Level(params.seed, to, params.style));
-          const hp = body.health, st = body.stamina;
-          body = arrive(null);
-          body.health = hp; body.stamina = st;
-          if (to === 0) body.facing = cam.yaw = CELLAR.start.yaw;
-          announce(level);
-          fadeIn = 0.8;
+          way = !homeBack
+            ? openWay(level, body.x, body.y, body.z, cam.yaw, { depth: 0 }, 'home', HOME_SHOT)
+            : left && left.depth === to
+              ? openWay(level, body.x, body.y, body.z, cam.yaw, left, 'back', left.shot, WAY.cellar)
+              : openWay(level, body.x, body.y, body.z, cam.yaw, { depth: to }, null, HOME_SHOT, WAY.cellar);
+          sounds.play('thin_place', way, 0.9, homeBack ? 0.7 : 0.9);
+          fade.style.opacity = '0';
+          say(homeBack ? 'Where you were stands open in the cellar behind you. Walk into it.' : 'Her room stands open before you. Walk into it.', 4);
         } else {
-          fade.style.opacity = String(Math.max(0, (t - (WAY_HOME.dur - WAY_HOME.fade)) / WAY_HOME.fade));
+          fade.style.opacity = String(Math.max(0, (t - (homeDur() - WAY_HOME.fade)) / WAY_HOME.fade) * 0.5);
           // The salt in the floor rises round the nobody.
           if (now >= homeMote) { homeMote = now + WAY_HOME.motes; drift.burst(body.x, body.y + 0.05, body.z, 1, now); }
         }
@@ -1814,6 +1864,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       // Walk into a gate on a wall: up or down a level.
       const gate = arriving || body.dead || climb.active || homeTo !== null || timer.getElapsed() - gateAt < 2 ? undefined : view.props.gates.find((g) => walksInto(g, body.x, body.y, body.z));
       if (gate) throughGate(gate);
+      // Way Home's door: open a while, then shut; walk into it and you are where it shows.
+      if (way) {
+        way.age += dt;
+        if (way.age > WAY_LIFE) way = null;
+        else if (!arriving && !body.dead && !climb.active && walksThrough(way, body.x, body.y, body.z)) throughWay(way);
+      }
       // The nearest gate's other end is prepared too, so going through it is quick.
       let near: Gate | null = null, nd: number = GATE.prepare;
       for (const g of view.props.gates) { const d = Math.hypot(g.x - body.x, g.z - body.z); if (d < nd) { nd = d; near = g; } }
@@ -1898,7 +1954,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           const c = saltLine.circle;
           return { ready: c && saltLine.pouring(now) ? ready(c.at, SALT_LINE.pour) : 1, on: !!c && !saltLine.pouring(now), dim: false, count: c && !saltLine.pouring(now) ? `${Math.ceil(c.at + SALT_LINE.pour + c.keeps - now)} s` : '' };
         }
-        case 'way-home': return { ready: homeTo !== null ? ready(homeAt, WAY_HOME.dur) : 1, on: homeTo !== null, dim: false };
+        case 'way-home': return { ready: homeTo !== null ? ready(homeAt, homeDur()) : 1, on: homeTo !== null, dim: false };
         default: return { ready: 1, on: false, dim: false };
       }
     };
@@ -1920,7 +1976,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // body: standing and looking round, the figure would shade its own way).
     view.carrier!.set(body.x - Math.sin(cam.yaw) * 0.4, body.mode === 'swim' ? level.waterAt(body.x, body.z) + 0.25 : body.y + 1.85, body.z - Math.cos(cam.yaw) * 0.4);
     const dripNow = timer.getElapsed();
+    wayView.draw(way);
+    if (snapping) { view.capture(WAY_PICTURES.back); nobody.root.visible = false; }
     view.frame(body.x, body.y, body.z, dripNow, !loading.open && !(arriving && !climb.active));
+    if (snapping) { snapping = false; nobody.root.visible = true; }
     // A drop landing on each living stalagmite's tip (src/gen/drips.ts), heard close by.
     for (const s of view.drips.shown) {
       if ((s.x - body.x) ** 2 + (s.z - body.z) ** 2 > DRIP_HEARD ** 2) continue;
