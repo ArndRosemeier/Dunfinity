@@ -12,6 +12,7 @@ import { hash3f } from '@futuremagic/core';
 import { CELLAR } from './cellar';
 import { local, type PropBuilder, type Rgb } from './propMesh';
 import { furnishTown } from './townProps';
+import { propModel } from './models';
 
 /** What the tile builder lends the cellar to furnish with. */
 export interface Furnish {
@@ -28,7 +29,7 @@ export interface Furnish {
 }
 
 const WOOD: Rgb = [0.2, 0.13, 0.075], DARK: Rgb = [0.12, 0.08, 0.05], BRICK: Rgb = [0.4, 0.2, 0.14];
-const PLUSH: Rgb = [0.17, 0.21, 0.12], TIN: Rgb = [0.16, 0.24, 0.38], GOLD: Rgb = [0.55, 0.42, 0.18];
+const TIN: Rgb = [0.16, 0.24, 0.38], GOLD: Rgb = [0.55, 0.42, 0.18];
 const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], STEEL: Rgb = [0.55, 0.56, 0.58];
 const JARS: readonly Rgb[] = [[0.45, 0.28, 0.08], [0.2, 0.3, 0.12], [0.5, 0.12, 0.1], [0.55, 0.45, 0.2]];
 
@@ -40,9 +41,8 @@ export function furnishCellar(f: Furnish): void {
   if (at(-2, 2)) {
     // Shelves along the north wall, jars of things she put up, the jars catching the bulb.
     for (const x0 of [-3.9, -2.1]) {
-      for (const dx of [0, 1.5]) s.upright(x0 + dx, 0.95, 2.35, 0, 0.03, 0.95, 0.2, WOOD);
+      s.stamp(propModel('furn_cellar_shelf'), x0 + 0.75, 0, 2.35, Math.PI);
       for (const y of [0.35, 0.95, 1.55]) {
-        s.upright(x0 + 0.75, y, 2.35, 0, 0.78, 0.015, 0.21, WOOD);
         for (let k = 0; k < 6; k++) {
           if (h(x0, y, k) < 0.25) continue;
           const jx = x0 + 0.12 + k * 0.25, r = 0.045 + 0.02 * h(x0, y, k + 9);
@@ -86,23 +86,14 @@ export function furnishCellar(f: Furnish): void {
     // The circle of infused salt and the ward round it are drawn turning slowly by `HavenView` (src/render/props/havenView.ts).
     // Her armchair, the tin on its seat.
     const ch = C.chair, p = local(ch.x, ch.z, ch.yaw);
-    const box = (side: number, fwd: number, y: number, hx: number, hy: number, hz: number, c: Rgb) => {
-      const [x, z] = p(side, fwd);
-      s.upright(x, y, z, ch.yaw, hx, hy, hz, c);
-    };
-    box(0, 0, 0.22, 0.42, 0.22, 0.42, PLUSH);
-    box(0, -0.36, 0.7, 0.42, 0.42, 0.08, PLUSH);
-    for (const sd of [-1, 1]) box(sd * 0.38, 0.02, 0.55, 0.07, 0.12, 0.42, PLUSH);
-    for (const [sd, fw] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(sd * 0.36, fw * 0.36, 0.03, 0.03, 0.03, 0.03, DARK);
+    s.stamp(propModel('furn_armchair'), ch.x, 0, ch.z, ch.yaw);
     const [tx, tz] = p(0.05, 0.08);
     s.cylinder(tx, 0.52, tz, 0.11, 0.06, TIN, 14);
     s.cylinder(tx, 0.585, tz, 0.115, 0.008, TIN, 14);
     f.block(ch.x, ch.z, ch.yaw, 0.45, 0.45, 0, 1.1);
     // The side table: her lamp, the knife block.
     const [bx, bz] = p(0.85, 0.05);
-    s.cylinder(bx, 0.6, bz, 0.25, 0.02, WOOD, 14);
-    s.upright(bx, 0.3, bz, 0, 0.03, 0.3, 0.03, WOOD);
-    s.cylinder(bx, 0.02, bz, 0.16, 0.02, WOOD, 10);
+    s.stamp(propModel('furn_side_table'), bx, 0, bz, ch.yaw);
     s.cylinder(bx - 0.08, 0.66, bz + 0.05, 0.06, 0.04, DARK, 10);
     s.upright(bx - 0.08, 0.86, bz + 0.05, 0, 0.012, 0.18, 0.012, DARK);
     s.cylinder(bx - 0.08, 1.1, bz + 0.05, 0.17, 0.11, SHADE, 12, 0, -0.25);
@@ -129,7 +120,7 @@ export function furnishCellar(f: Furnish): void {
   }
 }
 
-const PAPER: Rgb = [0.42, 0.39, 0.28], CLOTH: Rgb = [0.35, 0.12, 0.1], LINEN: Rgb = [0.7, 0.68, 0.6], ENAMEL: Rgb = [0.72, 0.72, 0.66];
+const PAPER: Rgb = [0.42, 0.39, 0.28], CLOTH: Rgb = [0.35, 0.12, 0.1], ENAMEL: Rgb = [0.72, 0.72, 0.66];
 const NIGHT: Rgb = [0.05, 0.07, 0.13];
 const PHOTOS: readonly Rgb[] = [[0.42, 0.38, 0.3], [0.3, 0.28, 0.25], [0.5, 0.44, 0.34], [0.36, 0.33, 0.3]];
 
@@ -186,7 +177,7 @@ function furnishHouse(f: Furnish): void {
   // The hall: the front door at its west end (src/gen/doorways.ts), a coat stand, a bulb.
   if (at(H.x[0], 0)) {
     s.upright(H.x[0] + 0.5, F + 0.006, 0, 0, 0.3, 0.006, 0.45, CLOTH); // the mat
-    s.upright(H.x[0] + 0.6, F + 0.9, 0.85, 0, 0.025, 0.9, 0.025, WOOD); // the coat stand
+    s.stamp(propModel('furn_coat_stand'), H.x[0] + 0.6, F, 0.85, 0.4); // the coat stand
     s.ellipsoid(H.x[0] + 0.6, F + 1.45, 0.82, 0.16, 0.3, 0.12, [0.22, 0.2, 0.18], 8); // her coat
     f.block(H.x[0] + 0.6, 0.85, 0, 0.2, 0.2, F, F + 1.8);
     hangBulb(f, -12.5, top, 0);
@@ -194,17 +185,14 @@ function furnishHouse(f: Furnish): void {
 
   // The kitchen: the stove, the sink under the window, the table set for one.
   if (at(-9.5, 3)) {
-    s.upright(-8.0, F + 0.45, 3.6, 0, 0.32, 0.45, 0.32, ENAMEL); // the stove
-    s.upright(-8.0, F + 0.91, 3.6, 0, 0.3, 0.01, 0.3, DARK);
+    s.stamp(propModel('furn_stove'), -8.0, F, 3.6, Math.PI); // the stove
     f.block(-8.0, 3.6, 0, 0.34, 0.34, F, F + 0.95);
-    s.upright(-9.7, F + 0.45, 4.05, 0, 0.8, 0.45, 0.3, WOOD); // the sink cupboard
+    s.stamp(propModel('furn_sink_cupboard'), -9.7, F, 4.05, Math.PI); // the sink cupboard
     s.upright(-9.7, F + 0.92, 4.05, 0, 0.3, 0.02, 0.22, ENAMEL);
     f.block(-9.7, 4.05, 0, 0.82, 0.32, F, F + 0.95);
-    s.upright(-9.6, F + 0.74, 2.4, 0, 0.55, 0.03, 0.4, WOOD); // the table
-    for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) s.upright(-9.6 + dx * 0.5, F + 0.36, 2.4 + dz * 0.35, 0, 0.03, 0.36, 0.03, WOOD);
+    s.stamp(propModel('furn_kitchen_table'), -9.6, F, 2.4, 0); // the table
     s.cylinder(-9.4, F + 0.78, 2.3, 0.11, 0.01, ENAMEL, 12); // one plate
-    s.upright(-8.7, F + 0.23, 2.4, 0, 0.2, 0.02, 0.2, WOOD); // a chair
-    s.upright(-8.52, F + 0.6, 2.4, 0, 0.02, 0.35, 0.2, WOOD);
+    s.stamp(propModel('furn_chair'), -8.65, F, 2.4, -Math.PI / 2); // a chair, pulled up to it
     f.block(-9.6, 2.4, 0, 0.6, 0.45, F, F + 0.8);
     f.block(-8.65, 2.4, 0, 0.25, 0.25, F, F + 0.95);
     // Jars and a clock on the shelf over the table.
@@ -215,28 +203,23 @@ function furnishHouse(f: Furnish): void {
 
   // Her bedroom: the bed made, the wardrobe, a chair with her cardigan.
   if (at(-13.3, 3)) {
-    s.upright(-13.6, F + 0.25, 3.3, 0, 0.75, 0.25, 1.0, WOOD); // the bed
-    s.upright(-13.6, F + 0.53, 3.35, 0, 0.72, 0.05, 0.95, LINEN);
-    s.upright(-13.6, F + 0.6, 4.1, 0, 0.35, 0.06, 0.15, LINEN); // the pillow
-    s.upright(-13.6, F + 0.7, 4.32, 0, 0.75, 0.45, 0.04, WOOD); // the headboard
+    s.stamp(propModel('furn_bed'), -13.6, F, 3.3, 0); // the bed, its head to the wall
     f.block(-13.6, 3.3, 0, 0.78, 1.05, F, F + 0.7);
-    s.upright(-14.6, F + 1.0, 1.75, Math.PI / 2, 0.55, 1.0, 0.3, DARK); // the wardrobe
+    s.stamp(propModel('furn_wardrobe'), -14.6, F, 1.75, Math.PI / 2); // the wardrobe
     f.block(-14.6, 1.75, Math.PI / 2, 0.57, 0.32, F, F + 2);
-    s.upright(-12.2, F + 0.23, 3.9, 0, 0.2, 0.02, 0.2, WOOD);
-    s.upright(-12.2, F + 0.33, 3.9, 0, 0.18, 0.12, 0.17, [0.3, 0.32, 0.45]); // her cardigan
+    s.stamp(propModel('furn_chair'), -12.2, F, 3.9, Math.PI);
+    s.upright(-12.2, F + 0.5, 3.88, 0, 0.18, 0.05, 0.17, [0.3, 0.32, 0.45]); // her cardigan, over the seat
+    s.upright(-12.2, F + 0.78, 4.12, -0.1, 0.19, 0.12, 0.03, [0.3, 0.32, 0.45]); // and over the back
   }
 
   // The living room: the sofa, her other armchair, the sideboard and its photographs, a standard lamp.
   if (at(-11, -3)) {
     s.upright(-11.2, F + 0.003, -2.8, 0, 1.4, 0.003, 1.0, CLOTH); // the rug
-    s.upright(-11.2, F + 0.22, -4.0, 0, 1.0, 0.22, 0.38, PLUSH); // the sofa
-    s.upright(-11.2, F + 0.62, -4.3, 0, 1.0, 0.25, 0.1, PLUSH);
-    for (const sd of [-1, 1]) s.upright(-11.2 + sd * 0.95, F + 0.4, -4.0, 0, 0.08, 0.15, 0.38, PLUSH);
+    s.stamp(propModel('furn_sofa'), -11.2, F, -4.0, 0); // the sofa
     f.block(-11.2, -4.0, 0, 1.05, 0.42, F, F + 0.9);
-    s.upright(-13.4, F + 0.25, -2.6, Math.PI / 2, 0.38, 0.25, 0.38, PLUSH); // the armchair
-    s.upright(-13.75, F + 0.7, -2.6, Math.PI / 2, 0.38, 0.4, 0.08, PLUSH);
+    s.stamp(propModel('furn_armchair'), -13.4, F, -2.6, Math.PI / 2); // the armchair
     f.block(-13.4, -2.6, 0, 0.42, 0.42, F, F + 1.1);
-    s.upright(-8.0, F + 0.45, -2.8, Math.PI / 2, 0.9, 0.45, 0.25, WOOD); // the sideboard
+    s.stamp(propModel('furn_sideboard'), -8.0, F, -2.8, -Math.PI / 2); // the sideboard
     f.block(-8.0, -2.8, Math.PI / 2, 0.92, 0.27, F, F + 0.95);
     // Her photographs, on the sideboard and on the wall over it: the family, the mine, the old house.
     for (let k = 0; k < 7; k++) {
