@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.201 — The report sounds like 1966
+
+- The neighbour's line on the title screen's television no longer remarks on black-and-white sets, which were simply normal then. The blue light was gone before the camera came.
+
 ## v0.200 — Make your grandchild
 
 - New Game now opens a character creator before the introduction (Scale's, brought over): your first grandchild stands in grandma's cellar, lit by your lamp, and you shape their body, face, hair, skin and eyes. Drag to turn them, scroll to look at the face, or roll the dice for someone else.
