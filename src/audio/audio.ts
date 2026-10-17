@@ -47,9 +47,6 @@ export class SoundEngine {
 
   /** Read the clip list and start the context on the first gesture. */
   async init(): Promise<void> {
-    try {
-      this.manifest = await (await fetch(`${this.base}sounds/manifest.json`)).json();
-    } catch { this.manifest = {}; }
     const start = () => {
       if (this.ctx) { if (this.ctx.state === 'suspended') void this.ctx.resume().catch(() => {}); return; }
       const ctx = new AudioContext();
@@ -68,7 +65,11 @@ export class SoundEngine {
       }
     };
     // (iPad Safari only lets a touch's end start audio.)
+    // (Listening before the clip list is in: a touch made while it loads still starts the sound.)
     for (const ev of ['pointerdown', 'pointerup', 'touchend', 'keydown']) addEventListener(ev, start, { passive: true });
+    try {
+      this.manifest = await (await fetch(`${this.base}sounds/manifest.json`)).json();
+    } catch { this.manifest = {}; }
   }
 
   private get gain(): number { return this.settings.muted || this.forcedMute ? 0 : this.settings.volume; }
@@ -133,9 +134,9 @@ export class SoundEngine {
   /**
    * A one-shot at (x, y, z); `refDist`: the distance it plays at full gain. Null position: not placed
    * (the listener's own body). `variant`: which of its files, played in tune (none: a seeded one, a
-   * little detuned so repeats differ).
+   * little detuned so repeats differ). `from`: seconds into the clip to begin at.
    */
-  play(id: string, at: { readonly x: number; readonly y: number; readonly z: number } | null, gain = 1, pitch = 1, refDist = 3, variant?: number): void {
+  play(id: string, at: { readonly x: number; readonly y: number; readonly z: number } | null, gain = 1, pitch = 1, refDist = 3, variant?: number, from = 0): void {
     const ctx = this.ctx, m = this.manifest[id];
     if (!ctx || !m || this.voices >= VOICES) return;
     // (Chosen now, not when the clip has loaded: the same seed, the same sounds.)
@@ -159,10 +160,18 @@ export class SoundEngine {
         tail = tail.connect(pan);
       }
       tail.connect(this.cats.get('effects')!);
-      src.start();
+      src.start(0, from);
       this.voices++;
       src.onended = () => { this.voices--; g.disconnect(); pan?.disconnect(); };
     });
+  }
+
+  /** Seconds of the clip's first file once it is decoded (0 before: it starts decoding). */
+  length(id: string): number {
+    const bufs = this.buffers.get(id);
+    if (bufs?.length) { this.used.set(id, performance.now() / 1000); return bufs[0].duration; }
+    void this.load(id);
+    return 0;
   }
 
   /** A positioned loop (null until audio has started and the clip is decoded: ask again later). */

@@ -119,6 +119,7 @@ import type { LoadingScreen } from '../app/loadingScreen';
 import { heard, tipOf, type DripLook } from '../gen/drips';
 import { BLOOM, crackles } from '../gen/blooms';
 import { ThinPlaces, Pocket, THIN, glimpseOf, steppedIn, type ThinPlace } from '../world/thinPlaces';
+import { GATE, walksInto, type Gate } from '../gen/gates';
 import { ThinView } from '../render/thinView';
 import { Singing, type Sung } from '../world/singing';
 
@@ -175,10 +176,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The game opens on the title screen (src/game/title.ts), unless the last visit asked to go straight on (a load, Save and quit's way back). */
   const titled = !takeStraightIn() && titleWanted(location.search);
   // The title's television comes on at once; the game sets itself up behind it and joins it when ready (below).
+  /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. Made first: the title's set plays them. */
+  const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
+  const soundsIn = sounds.init();
   let joinTitle: (g: TitleGame) => void = () => {};
   const titling = titled ? playTitle(host, {
     seed: params.seed, canContinue: !!saved, families: keep ? families() : [], pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
-    game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
+    sound: sounds.engine, game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
     shown: () => { if (loading.open) loading.hide(); },
   }) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
@@ -292,6 +296,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const [ax, , az] = other.arrival;
     return up ? other.descents.nearest(ax, az, 5000) : other.ascent;
   };
+  /** Where the ladders would bring one out on the levels next to this one, and the gate whose other end is prepared too (its id; '': none). */
+  let ladderSpots: Spot[] = [], gateNext = '';
   /** Prepare the levels above and below l in the background, round where a climb would come out on them (src/render/prepared.ts). */
   const prepareNext = (l: Level): void => {
     const spots: Spot[] = [];
@@ -300,6 +306,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const other = new Level(params.seed, d, params.style), s = cameOut(other, d < l.depth);
       if (s) spots.push({ level: other.key, x: s.x, y: s.floor, z: s.z });
     }
+    ladderSpots = spots;
+    gateNext = '';
     view.prepared.want(spots);
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
@@ -521,6 +529,18 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     sounds.play('thin_place', null, 0.9, 0.6);
     say(k.stay.age >= THIN.stay ? 'The other world lets go of you. You are back where you stepped in.' : 'You step back through, home.', 3.5);
   };
+  /** When one last came out of a gate (s): its twin does not take one straight back. */
+  let gateAt = -Infinity;
+  /** Walk through gate g (src/gen/gates.ts): out of its twin on the level it leads to, its face behind you. */
+  const throughGate = (g: Gate): void => {
+    const down = g.to > level.depth, [x, y, z] = g.twin.stand;
+    show(new Level(params.seed, g.to, params.style));
+    land(x, y, z, g.twin.yaw + Math.PI);
+    gateAt = timer.getElapsed();
+    sounds.play('thin_place', null, 0.9, down ? 0.7 : 0.9);
+    announce(level);
+    if (down) gained(tin.reached(level.depth), x, y, z, timer.getElapsed());
+  };
   /** Stand at (x, y, z) facing `yaw` (health and breath kept), behind the black while the rock streams in. */
   const land = (x: number, y: number, z: number, yaw: number): void => {
     const hp = body.health, st = body.stamina;
@@ -722,8 +742,6 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const pain = document.createElement('div');
   pain.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,0,0,0.85) 100%)';
   host.appendChild(pain);
-  /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. */
-  const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
   const settingsView = new SettingsView(document.body, {
     sound: () => sounds.engine.settings,
     setSound: (s) => sounds.engine.set(s),
@@ -739,7 +757,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     modeLine: () => `This family plays ${MODE_NAMES[mode]} (chosen at New Game)`,
   });
   loading.step('Tuning the sounds', 0.6);
-  await sounds.init();
+  await soundsIn;
   const timer = new Timer();
   let acc = 0;
   const climb = new LadderClimb(nobody);
@@ -1028,7 +1046,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   // television plays while the game's level streams in and its shaders build, then hands over in the black.
   if (titled) {
     joinTitle({
-      ready: castWarm, sound: sounds.engine,
+      ready: castWarm,
       builds: () => view.stage.monitor.events.length,
       stream: (now) => view.frame(body.x, body.y, body.z, now, false),
     });
@@ -1256,6 +1274,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       else { saltLine.pour(level, body.x, body.z, line.r, line.keeps, now); say('You kneel and pour the salt round you, in one go, no gaps.', SALT_LINE.pour); }
     }
     const nearLadder = climb.active || pocket ? null : atLadder();
+    const nearGate = climb.active || pocket ? undefined : view.props.gates.find((g) => Math.hypot(g.stand[0] - body.x, g.stand[2] - body.z) < 2.5);
     const nearFind = busy || nearLadder || !body.grounded ? null : finds.inReach(body.x, body.y, body.z);
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
     const atShop = (shop: 'pawn' | 'hardware') => {
@@ -1685,6 +1704,16 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       // Walk into one while it is open: through.
       const t = thin.current;
       if (t && !arriving && !body.dead && !climb.active && homeTo === null && steppedIn(t, body.x, body.y, body.z)) enterPocket(t);
+      // Walk into a gate on a wall: up or down a level.
+      const gate = arriving || body.dead || climb.active || homeTo !== null || timer.getElapsed() - gateAt < 2 ? undefined : view.props.gates.find((g) => walksInto(g, body.x, body.y, body.z));
+      if (gate) throughGate(gate);
+      // The nearest gate's other end is prepared too, so going through it is quick.
+      let near: Gate | null = null, nd: number = GATE.prepare;
+      for (const g of view.props.gates) { const d = Math.hypot(g.x - body.x, g.z - body.z); if (d < nd) { nd = d; near = g; } }
+      if ((near?.id ?? '') !== gateNext) {
+        gateNext = near?.id ?? '';
+        view.prepared.want(near ? [{ level: { seed: level.seed, depth: near.to, style: level.style }, x: near.twin.stand[0], y: near.twin.stand[1], z: near.twin.stand[2] }, ...ladderSpots] : ladderSpots);
+      }
     }
     // Crystals singing in a geode: a note each, heard from afar, and their glow while they ring.
     for (const n of singing.advance(level, dt, body.x, body.y + 1.6, body.z, sung)) {
@@ -1711,6 +1740,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const lines: string[] = [];
     const E = keyName('KeyE');
     if (nearLadder) lines.push(nearLadder.up ? `${E}: climb up the ladder` : `${E}: climb down the ladder`);
+    else if (nearGate) lines.push(`A way ${nearGate.to > level.depth ? 'down' : 'up'}, held open in the rock: walk into it`);
     else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${FINDS[nearFind.kind].name}` : `${E}: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);

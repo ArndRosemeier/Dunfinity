@@ -23,6 +23,8 @@ const CLIPS: Record<string, ClipUse> = {
   Scurry: { loop: true, stride: 0.22 },
   Run: { loop: true, stride: 0.45 },
   Rear: { loop: true },
+  Graze: { loop: true },
+  Sleep: { loop: true },
   Bite: { loop: false },
   Die: { loop: false },
 };
@@ -34,16 +36,18 @@ const RUNNING = [2.2, 1.6] as const;
 class RatFigure extends RiggedFigure<Rat> {
   protected clipFor(r: Rat): string {
     const moving = this.faster('moving', MOVING), running = this.faster('run', RUNNING);
-    switch (r.mode) {
-      case 'dead': return 'Die';
-      case 'bite': return 'Bite';
-      case 'alert': return 'Rear';
-      default: return moving ? (running ? 'Run' : 'Scurry') : 'Sniff';
-    }
+    if (r.dead) return 'Die';
+    // Its bite, or rearing up at you (src/creatures/animals.ts).
+    if (r.action === 'rear') return 'Rear';
+    if (r.action) return 'Bite';
+    // Feeding, or asleep with its nest (src/creatures/life.ts).
+    if (r.pose === 'feed') return 'Graze';
+    if (r.pose === 'rest') return 'Sleep';
+    return moving ? (running ? 'Run' : 'Scurry') : 'Sniff';
   }
 
   protected travelled(r: Rat): number {
-    return r.gait * 0.09;
+    return r.walked / r.size;
   }
 }
 

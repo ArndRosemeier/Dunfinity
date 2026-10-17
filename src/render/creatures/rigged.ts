@@ -213,6 +213,8 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size?
   private readonly model: Object3D;
   /** Its eyes' glows (a beast's), and their size at rest: they go out as it dies. */
   private readonly halos: { readonly mesh: Object3D; readonly scale: Vector3 }[] = [];
+  /** How far its eyes' glow is dimmed in sleep (0..1, eased). */
+  private dim = 0;
   /** The bones a kin's head, tail and ears scale (src/creatures/kin.ts): each scales all that hangs from it. */
   private readonly parts: { readonly head: Object3D[]; readonly tail: Object3D[]; readonly ears: Object3D[] };
 
@@ -269,7 +271,10 @@ export abstract class RiggedFigure<T extends Creature<string> & { readonly size?
     for (const b of this.parts.tail) b.scale.multiplyScalar(kin.tail);
     for (const b of this.parts.ears) b.scale.multiplyScalar(kin.ears);
     // Dead, the light in its eyes goes out (over a second and a half).
-    const lit = c.dead ? Math.max(0, 1 - c.deadT / 1.5) : 1;
+    // Asleep (src/creatures/life.ts), it dims to a faint glow.
+    if (fresh) this.dim = c.pose === 'rest' ? 1 : 0;
+    this.dim = Math.max(0, Math.min(1, this.dim + (c.pose === 'rest' ? dt : -dt * 3)));
+    const lit = (c.dead ? Math.max(0, 1 - c.deadT / 1.5) : 1) * (1 - this.dim * 0.7);
     for (const h of this.halos) { h.mesh.visible = lit > 0; h.mesh.scale.copy(h.scale).multiplyScalar(lit); }
     this.posed(c, time);
   }

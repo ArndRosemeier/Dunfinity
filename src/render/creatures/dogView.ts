@@ -10,6 +10,7 @@
  */
 import { DOG_COAT } from '../materials';
 import type { Dog } from '../../creatures/dogs';
+import { CALM, HUNTING } from '../../creatures/animals';
 import { RiggedFigure, WildAndTame, type ClipUse } from './rigged';
 
 /** How many can be drawn at once: the deep's, and the town's. */
@@ -23,6 +24,7 @@ const CLIPS: Record<string, ClipUse> = {
   Stalk: { loop: true, stride: 0.55 },
   Lie: { loop: true },
   Crouch: { loop: true },
+  Graze: { loop: true },
   Lunge: { loop: false },
   Bite: { loop: false },
   Die: { loop: false },
@@ -35,19 +37,22 @@ const GALLOP = [3.4, 2.6] as const;
 class DogFigure extends RiggedFigure<Dog> {
   protected clipFor(g: Dog): string {
     const moving = this.faster('moving', MOVING), galloping = this.faster('gallop', GALLOP);
-    switch (g.mode) {
-      case 'dead': return 'Die';
-      case 'crouch': return 'Crouch';
-      case 'lunge': return 'Lunge';
-      case 'back': return 'Bite';
-      case 'circle': return galloping ? 'Gallop' : 'Stalk';
-      case 'rest': return moving ? 'Trot' : 'Lie';
-      default: return moving ? (galloping ? 'Gallop' : 'Trot') : 'Idle';
+    if (g.dead) return 'Die';
+    // Its bite (src/creatures/animals.ts): down on its haunches in the wind-up (the tell), the lunge, the snap.
+    if (g.action) {
+      const at = g.actionT * CALM.strike, windup = g.mode === 'fight' ? CALM.windup : HUNTING.windup[g.nature.temper.strategy];
+      return at < windup ? 'Crouch' : at < windup + 0.25 ? 'Lunge' : 'Bite';
     }
+    if (g.mode === 'back') return 'Bite';
+    if (g.mode === 'stalk') return galloping ? 'Gallop' : 'Stalk';
+    // Feeding, or lying down in its pack's hours of rest (src/creatures/life.ts).
+    if (g.pose === 'feed' && !moving) return 'Graze';
+    if (g.pose === 'rest' && !moving) return 'Lie';
+    return moving ? (galloping ? 'Gallop' : 'Trot') : 'Idle';
   }
 
   protected travelled(g: Dog): number {
-    return g.gait * 0.16;
+    return g.walked / g.size;
   }
 }
 

@@ -121,6 +121,28 @@ test('E3: between every two regions of different styles, a passage one can walk 
   }
 });
 
+test('E3: no passage drops out of the field where a point steps from one region into the next', () => {
+  const a = newColumn(), b = newColumn();
+  for (const d of MIXED) {
+    const l = new Level(1, d), field = l.field;
+    let borders = 0;
+    for (let k = 0; k < 3000 && borders < 400; k++) {
+      let x0 = (hash3f(15, k, d, 0) - 0.5) * 3000, x1 = x0 + 60;
+      const z = (hash3f(15, k, d, 1) - 0.5) * 3000, id = field.regions.regionAt(x0, z).id;
+      if (field.regions.regionAt(x1, z).id === id) continue;
+      // The border, to a centimetre: the two columns either side of it.
+      while (x1 - x0 > 0.01) { const m = (x0 + x1) / 2; if (field.regions.regionAt(m, z).id === id) x0 = m; else x1 = m; }
+      borders++;
+      field.column(x0, z, a); field.column(x1, z, b);
+      // (A passage further off than the field's limit is left out: the field is rock there either
+      // way. So is one hundreds of metres off, deep in the rock, where a jump makes no surface.)
+      const pa = Math.max(a.passage, -a.clamp), pb = Math.max(b.passage, -b.clamp);
+      if (Math.max(pa, pb) > -Math.min(a.clamp, b.clamp, 100)) assert.ok(Math.abs(pa - pb) < 0.1, `level ${d} at ${x0.toFixed(2)}, ${z.toFixed(2)}: ${pa.toFixed(2)} one side, ${pb.toFixed(2)} the other`);
+    }
+    assert.ok(borders > 100, `level ${d}: ${borders} borders`);
+  }
+});
+
 test('E5: the miners\' things stand only in the excavation\'s own ground', () => {
   for (const d of MIXED) {
     const l = new Level(1, d), share = l.field.excavation.share!;

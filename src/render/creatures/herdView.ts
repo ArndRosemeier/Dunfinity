@@ -33,7 +33,7 @@ export class HerdView {
   private pools = new Map<Species, Pool>();
   private shown: Level | null = null;
   private specimen: { readonly model: CritterModel; readonly figure: CritterFigure; readonly group: Group; readonly x: number; readonly y: number; readonly z: number; readonly yaw: number } | null = null;
-  private readonly input: { -readonly [K in keyof RigInput]: RigInput[K] } = { x: 0, y: 0, z: 0, yaw: 0, vx: 0, vz: 0, dead: false, action: '', actionT: 0, lookAt: null, running: false, time: 0, scale: 1 };
+  private readonly input: { -readonly [K in keyof RigInput]: RigInput[K] } = { x: 0, y: 0, z: 0, yaw: 0, vx: 0, vz: 0, dead: false, action: '', actionT: 0, lookAt: null, running: false, pose: '', time: 0, scale: 1 };
   private readonly eye: [number, number, number] = [0, 0, 0];
 
   constructor(private readonly stage: Stage) {
@@ -100,7 +100,7 @@ export class HerdView {
       seen.add(c.id);
       const i = this.input;
       i.x = c.x; i.y = c.y; i.z = c.z; i.yaw = c.yaw; i.vx = c.vx; i.vz = c.vz;
-      i.dead = c.dead; i.running = c.running; i.time = time; i.scale = c.size;
+      i.dead = c.dead; i.running = c.running; i.pose = c.pose; i.time = time; i.scale = c.size;
       i.lookAt = c.watching && !c.dead ? this.eye : null;
       // A hit shows: a flinch (unless it is striking) and a red flash.
       if (c.action) { i.action = c.action; i.actionT = c.actionT; } else if (c.hurtT < FLINCH && !c.dead) { i.action = 'flinch'; i.actionT = c.hurtT / FLINCH; } else { i.action = ''; i.actionT = 0; }
@@ -110,7 +110,7 @@ export class HerdView {
     if (s) {
       const i = this.input;
       i.x = s.x; i.y = s.y; i.z = s.z; i.yaw = s.yaw; i.vx = 0; i.vz = 0;
-      i.dead = false; i.running = false; i.time = time; i.scale = 1; i.action = ''; i.actionT = 0;
+      i.dead = false; i.running = false; i.pose = ''; i.time = time; i.scale = 1; i.action = ''; i.actionT = 0;
       i.lookAt = this.eye;
       s.figure.animate(i, dt);
     }

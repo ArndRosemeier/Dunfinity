@@ -1,5 +1,5 @@
 /**
- * The title screen in the built game, headless: wait for the set to come on, choose New Game, and see the
+ * The title screen in the built game, headless: wait for the set to come on, choose New Game (and a mode), and see the
  * game take over (its level in, the title gone). `node tools/shot/title-probe.mjs <outdir>` (run
  * `npm run build` first).
  */
@@ -19,6 +19,7 @@ await page.waitForFunction(() => window.__ready === true, null, { timeout: 90000
 await page.screenshot({ path: `${out}/title.png`, timeout: 900000 });
 await page.waitForSelector('#title .menu > button:not([disabled])', { state: 'attached', timeout: 900000 }); // greyed out until the game is warm
 await page.getByRole('button', { name: 'New Game' }).click({ force: true, timeout: 600000 }); // frames are slow in SwiftShader: no waiting for it to hold still
+await page.locator('#title .ask .mode button').first().click({ force: true, timeout: 600000 }); // New Game asks how the family will play: the first mode
 await page.waitForFunction(() => !document.getElementById('title') && window.__ready === true && window.__game, null, { timeout: 900000 });
 console.log('game:', await page.evaluate(() => { const g = window.__game, b = g.body; return `level ${g.depth} at ${[b.x, b.y, b.z].map((v) => v.toFixed(1)).join(' ')} ${b.mode}`; }));
 await page.screenshot({ path: `${out}/game.png`, timeout: 900000 });

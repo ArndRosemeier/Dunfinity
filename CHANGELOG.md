@@ -1,5 +1,50 @@
 # Changelog
 
+## v0.230 — Passages between styles never cut off nearby
+
+- The field looked for the passages between styles only among the regions of other styles up to 280 m (blend distance) from a point, and only for passages from the point's own region. So where a style carried a passage's end deep into its region, or where a point stepped from one region into the next of the same style, a passage's air dropped out of the field a few metres from it. Deep in the rock, but the field jumped there (and a mesh chunk next to it could have been skipped).
+- Now each region keeps a list of every passage near it, whichever regions it runs between (`Regions.regionsRound` finds the regions round a point), so a passage drops out only hundreds of metres off, deep in rock.
+
+## v0.229 — Rats and dogs on the one animal mind
+
+- Quarry rats, town rats, feral dogs and village dogs now act through the same animal mind as the strange creatures, on the same aggression scale, with tempers and fighting styles.
+- Quarry rats are a swarm that rears up when it spots you; town rats only ever flee.
+- The dogs' circling attack from behind is now the "flank" fighting style, which pack-living strange creatures can draw too.
+- Village dogs are curious about you, fight back when hit and calm down again; feral dogs go to the water to drink.
+
+## v0.228 — One mind for every animal (groundwork)
+
+- No change in play yet. The strange creatures' behaviour now lives in one shared place, ready for the rats, dogs and other animals to move onto it, so every animal follows the same rules for aggression, temper and fighting style.
+
+## v0.227 — Contact us opens the Futuremagic board
+
+- The title screen's Contact us button now opens https://board.futuremagic.de/ in a new tab instead of writing a mail.
+
+## v0.226 — Shader check follows New Game's mode question
+
+- The on-demand shader check (and the title probe) picks a game mode after New Game before it waits for the character creator, so its title part runs again.
+
+## v0.225 — Animals that feed and sleep
+
+- Every animal, the strange ones as well as the rats and dogs, now lives between fights instead of standing about: it walks off to feed, head down and chewing.
+- What it eats depends on the animal: some crop the floor, some lick the salt off the walls, some drink at the water's edge, some browse the salt blooms.
+- Each den keeps its own hours. Now and then the whole lot goes to a sheltered nook nearby and lies down to sleep, with one of a bigger group staying up as a sentry.
+- A sleeping animal notices you only when you come close, and a startled sentry wakes them all.
+- Rats and dogs have new animations for it: a rat nibbling and curled up asleep, a dog with its head down eating. The deep beasts' glowing eyes dim while they sleep.
+
+## v0.224 — The presenter speaks every shot again, in step
+
+- The title's presenter no longer skips shots or starts late: his next clip is decoded before its shot comes, and a clip begins as far into it as the shot already is (after a late start of the sound, a slow frame, or a set switched on partway).
+- He speaks at his own pitch: the random detune for repeated effects no longer touches his voice.
+- The first click or key on the title starts the sound even while the game is still setting up (it used to be lost, leaving the set silent until the next one).
+
+## v0.223 — Gates in the walls
+
+- Now and then a thin place hangs still, flat in a rock wall: a gate. Through it you see the world it leads to, the level above or the level below. A blue rim leads down, a green rim leads up.
+- Walk into it and you come out of its twin on that level, a few hundred metres from where its own ladder would bring you. The twin hangs behind you, so every gate has a way back.
+- The other end of the gate nearest you is prepared in the background, so going through is quick.
+- No gate leads into grandma's cellar.
+
 ## v0.222 — Walk-in shops for Kemal and Ilse
 
 - Kemal's hardware store and Ilse's pawn shop are open: their doors stand folded back and one walks in off the street into a small room.

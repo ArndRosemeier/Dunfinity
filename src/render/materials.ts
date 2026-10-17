@@ -858,49 +858,91 @@ export const THIN_STATE = {
 };
 
 /**
- * A thin place: a window in the air into a hall of another world, faked behind one quad (interior
- * mapping): the view ray, in the quad's own frame, is run into a long hall behind it (a flagged
- * floor, walls of pillars in bays, a ribbed roof, a glowing doorway at the far end), lit and hazed
- * in that world's colours. Its edge ripples and glows the veins' blue while it opens and closes.
- * `position` is the quad's corner (x, y in -1..1, the mesh scaled to its half size). Same
- * attributes as the solid kind.
+ * A thin place: a window in the air into a hall of another world (`hallThrough`), its rim the veins'
+ * blue. Same attributes as the solid kind.
  */
 export const THIN = defineKind('thin', ['position', 'normal', 'color'], () => {
   const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, fog: false });
-  const open = THIN_STATE.open.x, age = THIN_STATE.open.y, bay = THIN_STATE.open.z, high = THIN_STATE.open.w;
+  const o = THIN_STATE.open, hall = hallThrough({ open: o.x, age: o.y, bay: o.z, high: o.w, floor: THIN_STATE.floor, stone: THIN_STATE.stone, light: THIN_STATE.light, haze: THIN_STATE.haze, rim: VEIN_BLUE });
+  m.colorNode = hall.color;
+  m.opacityNode = hall.opacity;
+  return m;
+}, { cast: false, receive: false });
+
+/** What `hallThrough` draws: how open the window is, its ripples' clock, the hall's bays and height, its floor (in the quad's frame), its world's colours, its rim's. */
+interface Hall {
+  open: Node<'float'>;
+  age: Node<'float'>;
+  bay: Node<'float'>;
+  high: Node<'float'>;
+  floor: Node<'float'>;
+  stone: Node<'vec3'>;
+  light: Node<'vec3'>;
+  haze: Node<'vec3'>;
+  rim: Node<'vec3'>;
+}
+
+/**
+ * A window in a quad into a hall of another world, faked behind it (interior mapping): the view ray,
+ * in the quad's own frame, is run into a long hall behind it (a flagged floor, walls of pillars in
+ * bays, a ribbed roof, a glowing doorway at the far end), lit and hazed in that world's colours. Its
+ * edge ripples and glows `rim` while it opens and closes. `position` is the quad's corner (x, y in
+ * -1..1, the mesh scaled to its half size). The thin places and the gates both look through it.
+ */
+function hallThrough(h: Hall): { color: Node<'vec3'>; opacity: Node<'float'> } {
+  const { open, age, bay, high } = h;
   // The ray in the quad's frame (metres: the mesh is scaled to its size, so undo it).
   const scale = modelScale, uv = positionLocal.xy;
   const o = vec3(uv.mul(scale.xy), 0), cam = modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz.mul(scale);
   const shimmer = mx_noise_vec3(vec3(uv.mul(2.5), age.mul(0.7))).xy.mul(float(1).sub(open).mul(0.25).add(0.02));
   const d = normalize(o.sub(cam).add(vec3(shimmer, 0)));
-  // The hall: its floor level with ours (`THIN_STATE.open`'s floor under the middle), its roof `high` over it, 8 m wide, 32 m long.
-  const floorY = THIN_STATE.floor, roofY = floorY.add(high), halfW = float(4), back = float(-32);
+  // The hall: its floor level with ours (`floor` under the middle), its roof `high` over it, 8 m wide, 32 m long.
+  const floorY = h.floor, roofY = floorY.add(high), halfW = float(4), back = float(-32);
   const big = float(1e5);
   const tFloor = d.y.lessThan(0).select(floorY.sub(o.y).div(d.y), big), tRoof = d.y.greaterThan(0).select(roofY.sub(o.y).div(d.y), big);
   const tWall = halfW.mul(d.x.sign()).sub(o.x).div(d.x), tBack = back.sub(o.z).div(min(d.z, -1e-4));
-  const t = min(min(tFloor, tRoof), min(tWall, tBack)), h = o.add(d.mul(t));
+  const t = min(min(tFloor, tRoof), min(tWall, tBack)), p = o.add(d.mul(t));
   const isFloor = tFloor.lessThanEqual(t.add(1e-3)), isRoof = tRoof.lessThanEqual(t.add(1e-3)), isBack = tBack.lessThanEqual(t.add(1e-3));
   // Floor: flagstones. Walls: a pillar at each bay, arches between. Roof: a rib at each bay. Back: a doorway full of haze.
-  const flag = thinLine(min(h.x.fract(), h.z.mul(0.8).fract()).mul(1.2), float(0.03));
-  const inBay = h.z.div(bay).fract(), pillar = smoothstep(0.18, 0.12, abs(inBay.sub(0.5)).sub(0.32).abs());
+  const flag = thinLine(min(p.x.fract(), p.z.mul(0.8).fract()).mul(1.2), float(0.03));
+  const inBay = p.z.div(bay).fract(), pillar = smoothstep(0.18, 0.12, abs(inBay.sub(0.5)).sub(0.32).abs());
   const archTop = roofY.sub(abs(inBay.sub(0.5)).mul(bay).pow(2).mul(0.25)).sub(0.4);
-  const wall = mix(float(0.45), float(1), pillar).mul(h.y.greaterThan(archTop).select(float(0.6), float(1)));
+  const wall = mix(float(0.45), float(1), pillar).mul(p.y.greaterThan(archTop).select(float(0.6), float(1)));
   const rib = smoothstep(0.08, 0.0, abs(inBay.sub(0.5)).sub(0.45).abs());
-  const doorTop = floorY.add(high.mul(0.6)), door = smoothstep(1.0, 0.85, abs(h.x)).mul(smoothstep(0.1, -0.1, h.y.sub(doorTop.sub(h.x.mul(h.x).mul(0.6)))));
+  const doorTop = floorY.add(high.mul(0.6)), door = smoothstep(1.0, 0.85, abs(p.x)).mul(smoothstep(0.1, -0.1, p.y.sub(doorTop.sub(p.x.mul(p.x).mul(0.6)))));
   const shade = isBack.select(float(0.5), isFloor.select(float(0.7).sub(flag.mul(0.3)), isRoof.select(float(0.35).add(rib.mul(0.3)), wall)));
   // Lit from the doorway's glow down the hall and a little from that world's sky; then its haze with distance.
   // Corners darker (the walls meet the floor and the roof), so the hall reads as a room.
-  const corner = smoothstep(0.0, 1.4, min(halfW.sub(abs(h.x)), min(h.y.sub(floorY), roofY.sub(h.y))));
-  const glow = float(1).div(h.z.sub(back).abs().mul(0.12).add(1));
-  const lit = THIN_STATE.stone.mul(shade).mul(corner.mul(0.6).add(0.4)).mul(THIN_STATE.light.mul(1.6).add(THIN_STATE.haze.mul(glow.mul(2.5))));
-  const hazed = mix(lit, THIN_STATE.haze, float(1).sub(t.mul(-0.03).exp()).mul(0.6));
-  const inside = isBack.select(mix(hazed, THIN_STATE.haze.mul(1.8), door), hazed);
-  // Its edge: a ragged ellipse that ripples, a rim of the veins' blue; only as open as it is.
+  const corner = smoothstep(0.0, 1.4, min(halfW.sub(abs(p.x)), min(p.y.sub(floorY), roofY.sub(p.y))));
+  const glow = float(1).div(p.z.sub(back).abs().mul(0.12).add(1));
+  const lit = h.stone.mul(shade).mul(corner.mul(0.6).add(0.4)).mul(h.light.mul(1.6).add(h.haze.mul(glow.mul(2.5))));
+  const hazed = mix(lit, h.haze, float(1).sub(t.mul(-0.03).exp()).mul(0.6));
+  const inside = isBack.select(mix(hazed, h.haze.mul(1.8), door), hazed);
+  // Its edge: a ragged ellipse that ripples, a rim of `rim`; only as open as it is.
   const r = length(uv), ragged = mx_noise_float(vec3(uv.mul(3), age.mul(0.5))).mul(0.12);
   const edge = r.add(ragged).add(float(1).sub(open).mul(1.1));
   const mask = smoothstep(1.0, 0.8, edge);
   const rim = smoothstep(0.08, 0.0, abs(edge.sub(0.95))).mul(open.mul(0.6).add(0.4)).mul(smoothstep(0.0, 0.3, open));
-  m.colorNode = inside.mul(mask).add(VEIN_BLUE.mul(rim.mul(1.5)));
-  m.opacityNode = max(mask.mul(0.92), rim).mul(open.greaterThan(0.001).select(float(1), float(0)));
+  return { color: inside.mul(mask).add(h.rim.mul(rim.mul(1.5))), opacity: max(mask.mul(0.92), rim).mul(open.greaterThan(0.001).select(float(1), float(0))) };
+}
+
+/** Gates drawn at once (the nearest), and their state: four vec4 each (src/render/gateView.ts). */
+export const GATE_SLOTS = 4;
+/** Per slot: (open 0–1, ripples' clock s, bay m, height m), (stone rgb, floor m), (light rgb, 0), (haze rgb, 0), (rim rgb, 0). */
+export const GATE_STATE = uniformArray(Array.from({ length: GATE_SLOTS * 5 }, () => new Vector4()), 'vec4');
+
+/**
+ * A gate (src/gen/gates.ts): a thin place held still on a wall, the world it leads to seen through
+ * it (`hallThrough`), its rim the veins' blue (a way down) or green (a way up). One quad per slot,
+ * the slot in the colour's z; same attributes as the solid kind.
+ */
+export const GATE = defineKind('gate', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, fog: false });
+  const slot = attribute<'vec3'>('color', 'vec3').z.add(0.5).floor().mul(5).toInt();
+  const at = (k: number) => GATE_STATE.element(slot.add(k)) as unknown as Node<'vec4'>;
+  const A = at(0), B = at(1), C = at(2), D = at(3), E = at(4);
+  const hall = hallThrough({ open: A.x, age: A.y, bay: A.z, high: A.w, floor: B.w, stone: B.xyz, light: C.xyz, haze: D.xyz, rim: E.xyz });
+  m.colorNode = hall.color;
+  m.opacityNode = hall.opacity;
   return m;
 }, { cast: false, receive: false });

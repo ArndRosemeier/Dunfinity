@@ -20,8 +20,8 @@ export interface ReportShot {
   readonly strap?: string;
   /** What the still shows, for the painter (a 1966 press photograph; never any writing in it). */
   readonly shows?: string;
-  /** The presenter's voice for the shot (a sound id: the whole caption) and the line (`linesOf`) it starts with. */
-  readonly voice?: { readonly id: string; readonly line: number };
+  /** The presenter's voice for the shot (a sound id: him reading the whole caption, from the shot's start). */
+  readonly voice?: string;
 }
 
 /** The programme's name and the evening it went out. */
@@ -31,52 +31,52 @@ export const PROGRAMME = { name: 'THE UNEXPLAINED', date: 'Saturday 10 September
 export const REPORT: readonly ReportShot[] = [
   { still: null, seconds: 6, caption: '' },
   {
-    still: 'presenter', seconds: 10.0, voice: { id: 'report_1', line: 0 }, strap: 'Horst Weidner',
+    still: 'presenter', seconds: 10.0, voice: 'report_1', strap: 'Horst Weidner',
     caption: 'Good evening. Tonight, a small salt-mining town that has asked us not to say its name, and what walked down its streets eight nights ago.',
     shows: 'a television presenter in his forties in a dark suit and thin tie, sitting at a plain studio desk with a desk microphone, looking into the camera, a dark studio behind him',
   },
   {
-    still: 'street', seconds: 13.7, voice: { id: 'report_2', line: 0 }, strap: 'Lindenstraße, 3 September, 2 a.m.',
+    still: 'street', seconds: 13.7, voice: 'report_2', strap: 'Lindenstraße, 3 September, 2 a.m.',
     caption: 'A baker on his way to the ovens saw it under the last street lamp. "Taller than the lamp," he says. "Thin as a rake. It walked with its head bent, as if the sky was a ceiling."',
     shows: 'a narrow cobbled street of old stone houses at night, one street lamp, and far away at the end of the street, half in shadow, a very tall thin figure with its head bowed, much taller than the lamp post; motion blur, taken in a hurry',
   },
   {
-    still: 'dogs', seconds: 8.4, voice: { id: 'report_3', line: 0 },
+    still: 'dogs', seconds: 8.4, voice: 'report_3',
     caption: 'Every dog in the town howled until it was light. Two of them ran into the river and would not come out.',
     shows: 'two farm dogs standing in a shallow river at dawn, up to their chests in the water, staring back at the bank, mist on the water',
   },
   {
-    still: 'grating', seconds: 10.5, voice: { id: 'report_4', line: 0 }, strap: 'A neighbour',
+    still: 'grating', seconds: 10.5, voice: 'report_4', strap: 'A neighbour',
     caption: 'A light came up through a cellar grating, she says. Blue, like the hands of a watch in the dark. It was gone before our camera came.',
     shows: 'a low iron cellar grating in the wall of an old house at pavement level at night, a pale glow coming up through the bars and lighting the cobbles',
   },
   {
-    still: 'milk', seconds: 6.9, voice: { id: 'report_5', line: 0 },
+    still: 'milk', seconds: 6.9, voice: 'report_5',
     caption: 'On Sunday morning the milk on three doorsteps had turned to salt. The milkman is changing his round.',
     shows: 'three glass milk bottles on a stone doorstep in morning light, each one filled with coarse white salt crystals instead of milk, crystals crusting over the caps',
   },
   {
-    still: 'tracks', seconds: 9.8, voice: { id: 'report_6', line: 0 },
+    still: 'tracks', seconds: 9.8, voice: 'report_6',
     caption: 'In the salt dust by the old mine gate, footprints. Each one as long as a man\'s arm, and nineteen paces apart.',
     shows: 'very long narrow bare footprints pressed into a thin layer of pale dust on cobbles beside a closed iron gate, a man\'s hand laid next to one for scale, flash photograph at night',
   },
   {
-    still: 'mine', seconds: 11.4, voice: { id: 'report_7', line: 0 }, strap: 'The salt mine, closed since 1947',
+    still: 'mine', seconds: 11.4, voice: 'report_7', strap: 'The salt mine, closed since 1947',
     caption: 'The mine has been shut since 1947, when a whole shift went down and did not come up. The company\'s answer to our questions: no comment.',
     shows: 'the steel headframe of a small old salt mine against an overcast sky, a chain-link fence and a padlocked gate in front, weeds growing',
   },
   {
-    still: 'cellar', seconds: 10.4, voice: { id: 'report_8', line: 0 },
+    still: 'cellar', seconds: 10.4, voice: 'report_8',
     caption: 'At four in the morning a young woman was bricking up the arch in her cellar. She would not talk to us. She did not stop working while we were there.',
     shows: 'a young woman in her twenties in a headscarf and work apron, seen from behind and the side, laying bricks with a trowel to close an old arched opening in a stone cellar wall, a bucket of mortar at her feet, lit by one bare bulb, her face turned away from the camera',
   },
   {
-    still: 'police', seconds: 6.5, voice: { id: 'report_9', line: 0 }, strap: 'The mayor',
+    still: 'police', seconds: 6.5, voice: 'report_9', strap: 'The mayor',
     caption: 'The police found nothing. The mayor calls it a prank by students from the city.',
     shows: 'a portly small-town mayor in a suit and a policeman in a 1960s German police uniform and peaked cap standing on the steps of a small town hall, the mayor shrugging',
   },
   {
-    still: 'presenter', seconds: 9.1, voice: { id: 'report_10', line: 0 }, strap: 'Horst Weidner',
+    still: 'presenter', seconds: 9.1, voice: 'report_10', strap: 'Horst Weidner',
     caption: 'And yet, eight days on, no dog in that town will walk down Lindenstraße. Good night.',
   },
 ];
@@ -132,8 +132,7 @@ export function onAir(time: number): OnAir {
   return { shot: -1, t: u, line: '' };
 }
 
-/** The voice (a sound id) that begins with the line on the air, if one does. */
+/** The presenter's voice for the shot on the air (a sound id; `air.t` seconds into it), if it has one. */
 export function voiceOf(air: OnAir): string | null {
-  const v = REPORT[air.shot]?.voice;
-  return v && air.line && linesOf(REPORT[air.shot].caption)[v.line] === air.line ? v.id : null;
+  return REPORT[air.shot]?.voice ?? null;
 }

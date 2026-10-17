@@ -47,6 +47,7 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
   const critters = params.critters !== null ? new CritterLineup(params.seed, critterPick(params.critters), ground, params.critters && !/^\d+$/.test(params.critters) ? 3 : 2) : null;
   const floor = studio ? meshOf((b) => b.box(camera.position.x, floorY - 0.05, camera.position.z, [60, 0, 0], [0, 0.05, 0], [0, 0, 60], [0.32, 0.3, 0.28]), VERTEX_COLOR_SOLID) : null;
   if (critters) {
+    critters.pose = params.pose;
     critters.lineUp(camera.position.x, camera.position.z, fly.yaw, Math.max(0.5, critters.tallest * 1.3));
     // Look them over from a little above, unless the link names a place.
     if (!params.pos) { camera.position.y = floorY + Math.max(0.3, critters.tallest * 0.9); fly.pitch = -0.2; }

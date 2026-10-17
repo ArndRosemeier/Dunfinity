@@ -100,7 +100,7 @@ export class TitleScreen {
     child(card, 'div', 'alpha').innerHTML = `<b>Alpha ${VERSION}.</b> An early test: expect bugs, gaps and changes, and a family that may not survive an update. Tell us what you find.`;
     const menu = this.menu = child(card, 'div', 'menu');
     const contact = child(card, 'div', 'contact');
-    button(contact, 'Contact us', () => writeToUs(VERSION), 'ui-btn small');
+    button(contact, 'Contact us', () => writeToUs(), 'ui-btn small');
     this.black = child(this.root, 'div', 'black');
     let going = null as HTMLButtonElement | null;
     this.chosen = new Promise((resolve) => {

@@ -4,7 +4,7 @@
  * sleep, remembering the ones you killed on this visit, and stepping them all in small steps. A
  * kind says where its dens are (`denIn`), what lives in one (`hatch`) and how one acts (`act`).
  */
-import { Rng, deriveSeed, hash3f } from '@futuremagic/core';
+import { Rng, angleDiff, deriveSeed, hash3f } from '@futuremagic/core';
 import type { Blockers } from '../world/blockers';
 import type { Level } from '../gen/level';
 import type { SaltCircle } from '../gen/lair';
@@ -12,6 +12,9 @@ import { byYou, type Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
 import { Steer, brake, type Gait } from './steer';
 import { GRUDGE_HELD, type Creature } from './creature';
+import { LIFE } from './life';
+import { pastureOf, type Pasture } from './pasture';
+import type { Diet } from './temper';
 
 /** Where some of a kind live. */
 export interface Den {
@@ -49,6 +52,9 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   protected readonly placed: D[] = [];
   private readonly awake = new Map<D, C[]>();
   private readonly dead = new Set<number>();
+  /** The level's time, s (the dens' hours run on it), and each den's pasture once one of it needs it. */
+  private clock = 0;
+  private readonly pastures = new Map<number, Pasture>();
 
   constructor(protected readonly level: Level, readonly name: string, private readonly spread: Spread, gait: Gait) {
     this.seed = deriveSeed(level.seed, name, level.depth);
@@ -92,14 +98,20 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     const n = Math.ceil(dt * 60 - 1e-6), h = dt / Math.max(1, n);
     let hits = 0;
     for (let k = 0; k < n; k++) {
+      this.clock += h;
       for (const c of this.list) {
         c.hurtT += h;
         if (c.dead) c.deadT += h;
         // One with a grudge (bitten by a salt pet) goes for that one instead, while it lives and is near.
         const g = c.grudge, foe = g && !g.dead && Math.hypot(g.x - c.x, g.z - c.z) < GRUDGE_HELD ? g : prey;
         if (g && foe === prey) c.grudge = null;
+        const x0 = c.x, z0 = c.z;
         const n = this.act(c, foe, ctx, h);
+        c.walked += Math.hypot(c.x - x0, c.z - z0);
         if (foe === prey) hits += n;
+        // Its mind turned to something else: its feeding or rest is over.
+        if (!c.life.seen) c.life.stop();
+        c.life.seen = false;
       }
       this.settle();
     }
@@ -188,6 +200,99 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   protected roamFrom(den: Den, roam: number): [number, number] {
     const a = this.rng.range(0, Math.PI * 2), d = this.rng.range(0, roam);
     return [den.x + Math.cos(a) * d, den.z + Math.sin(a) * d];
+  }
+
+  // ------------------------------------------------------------------ life between fights (src/creatures/life.ts)
+
+  /** What its kind eats (src/creatures/pasture.ts); the procedural species say by their temper. */
+  protected dietOf(_den: D): Diet {
+    return 'floor';
+  }
+
+  /** Where den feeds and rests, for animals like `c` within `reach` metres (found once, the same every time). */
+  pasture(den: D & { readonly y: number }, c: C, reach: number): Pasture {
+    let p = this.pastures.get(den.key);
+    if (!p) this.pastures.set(den.key, (p = pastureOf(this.level, den, this.dietOf(den), reach, c.radius, c.height)));
+    return p;
+  }
+
+  /** Whether den is in its hours of rest now (each den its own hours, seeded by its key). */
+  resting(den: D): boolean {
+    const L = LIFE, hours = (k: number) => hash3f(this.seed, den.key, 1, 40 + k);
+    const awake = L.awake[0] + (L.awake[1] - L.awake[0]) * hours(0), day = awake + L.asleep[0] + (L.asleep[1] - L.asleep[0]) * hours(1);
+    return (this.clock + hours(2) * day) % day >= awake;
+  }
+
+  /** How much of its alertness it has: less lying asleep (`LIFE.doze`). Its kind multiplies how far it notices you by it. */
+  protected wakeful(c: C, asleep: number = LIFE.doze): number {
+    return c.pose === 'rest' ? asleep : 1;
+  }
+
+  /**
+   * Its life in its idle moments: called by its kind's mind every step it is about its own business.
+   * While its den rests it goes to its place in the nook and lies down (all but its sentry); on its
+   * way to food it walks there, and at it feeds, facing it. Returns whether its life moved it this
+   * step (else its kind's own idling goes on); `walk`: its pace, m/s; `reach`: its pasture's size.
+   */
+  protected live(c: C, den: D & { readonly y: number }, dt: number, walk: number, reach: number): boolean {
+    const L = c.life;
+    L.seen = true; L.moved = 0;
+    const len = c.radius * 2;
+    if (this.resting(den) && !this.sentry(c, den)) {
+      if (L.doing !== 'rest') {
+        // Its place round the nook's middle, by its place in the den.
+        const nook = this.pasture(den, c, reach).nook, k = Math.max(0, this.housed(den).indexOf(c)), r = (c.radius * 2.2 + 0.1) * Math.sqrt(k), a = k * 2.4;
+        L.stop(); L.doing = 'rest';
+        L.tx = nook.x + Math.cos(a) * r; L.tz = nook.z + Math.sin(a) * r;
+        L.t = 6 + Math.hypot(L.tx - c.x, L.tz - c.z) / Math.max(0.2, walk * 0.6);
+      }
+      L.t -= dt;
+      if (!L.down && (L.t <= 0 || Math.hypot(L.tx - c.x, L.tz - c.z) < Math.max(0.3, len * 0.3))) L.down = true;
+      if (L.down) { brake(c, 6, dt); L.moved = this.steer.slide(c, dt); }
+      else L.moved = this.steer.move(c, L.tx, L.tz, walk * 0.6, dt, null);
+      return true;
+    }
+    if (L.doing === 'rest') { L.stop(); return false; }
+    if (L.doing === 'going') {
+      L.t -= dt;
+      const d = Math.hypot(L.tx - c.x, L.tz - c.z), at = Math.max(0.3, len * 0.3);
+      // At its food (or near enough when it cannot get closer): it feeds; it gives up on one it cannot reach.
+      if (d < at || (L.t <= 0 && d < at + 1)) { L.doing = 'feed'; L.t = this.rng.range(LIFE.feedFor[0], LIFE.feedFor[1]); }
+      else if (L.t <= 0) { L.stop(); return false; }
+      else { L.moved = this.steer.move(c, L.tx, L.tz, walk, dt, null); return true; }
+    }
+    if (L.doing === 'feed') {
+      L.t -= dt;
+      brake(c, 6, dt);
+      L.moved = this.steer.slide(c, dt);
+      const face = L.spot?.face ?? NaN;
+      if (!Number.isNaN(face)) c.yaw += angleDiff(c.yaw, face) * Math.min(1, dt * 3);
+      if (L.t <= 0) { L.stop(); return false; }
+      return true;
+    }
+    return false;
+  }
+
+  /** Moving on from where it idled: now and then (`LIFE.feed`) it goes to feed instead. Returns whether it does (`live` takes it there). */
+  protected toFood(c: C, den: D & { readonly y: number }, walk: number, reach: number): boolean {
+    if (c.life.doing || !this.rng.chance(LIFE.feed)) return false;
+    const food = this.pasture(den, c, reach).food;
+    if (!food.length) return false;
+    const s = food[this.rng.int(0, food.length - 1)], L = c.life;
+    L.doing = 'going'; L.spot = s; L.tx = s.x; L.tz = s.z; L.seen = true;
+    L.t = 4 + Math.hypot(s.x - c.x, s.z - c.z) / Math.max(0.2, walk);
+    return true;
+  }
+
+  /** The one of its den that stays up while the rest sleep: the first living of a den of `LIFE.sentry` or more. */
+  protected sentry(c: C, den: D): boolean {
+    const h = this.housed(den);
+    return h.length >= LIFE.sentry && h[0] === c;
+  }
+
+  /** The living of den that are about. */
+  protected housed(den: D): C[] {
+    return (this.awake.get(den) ?? []).filter((o) => !o.dead);
   }
 
   /** How many live in the den of cell (i, j): seeded, lo to hi. */

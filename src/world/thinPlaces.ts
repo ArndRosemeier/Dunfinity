@@ -18,6 +18,7 @@ import { strangeness } from '../gen/genome';
 import { airOf } from '../gen/air';
 import { bandOf } from '../gen/bands';
 import { rockRecipesOf } from '../gen/rockTypes';
+import { inFrame } from '../gen/gates';
 
 export const THIN = {
   /** Seconds between two at strangeness 1 (min, max); a level of strangeness s waits these ÷ (0.4 + s). The first comes sooner. */
@@ -139,10 +140,7 @@ function openFloor(l: Level, rng: Rng): [number, number, number] {
 
 /** Whether feet at (x, y, z) are walking into thin place `p`: near its face, inside its frame, and it open enough. */
 export function steppedIn(p: ThinPlace, x: number, y: number, z: number, open = openness(p.age)): boolean {
-  if (open < THIN.enough) return false;
-  const dx = x - p.x, dz = z - p.z, s = Math.sin(p.yaw), c = Math.cos(p.yaw);
-  const across = dx * c - dz * s, off = dx * s + dz * c, up = y - p.y;
-  return Math.abs(off) < THIN.through && Math.abs(across) < THIN.half[0] * 0.85 && up > -THIN.half[1] - 0.6 && up < 0;
+  return open >= THIN.enough && inFrame(p, x, y, z, THIN.half[0], THIN.over, -THIN.through, THIN.through);
 }
 
 /**
