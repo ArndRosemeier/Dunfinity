@@ -25,6 +25,7 @@ import { Kit, findName, freshKit, isItem, itemWhat, packRows, rummage, withRucks
 import { foundGear } from '../loot/found';
 import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { DeathView, DEATH, NEXT } from '../app/deathView';
+import { Feel } from './feel';
 import { deathLine, hurtLine, runEnd } from './runEnd';
 import { Level } from '../gen/level';
 import { CAMP, NOTE, RUBBING } from '../gen/grandmasCamp';
@@ -847,7 +848,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     qualityNow: () => view.quality,
     setQuality: (q) => { view.quality = q; graphics = { ...graphics, quality: q }; writeGraphicsSettings(graphics); },
     still: () => graphics.still,
-    setStill: (on) => { graphics = { ...graphics, still: on }; writeGraphicsSettings(graphics); document.documentElement.classList.toggle('ui-still', on); },
+    setStill: (on) => { graphics = { ...graphics, still: on }; feel.still = on; writeGraphicsSettings(graphics); document.documentElement.classList.toggle('ui-still', on); },
     minimap: () => graphics.minimap,
     setMinimap: (on) => { graphics = { ...graphics, minimap: on }; writeGraphicsSettings(graphics); },
     qualityNotes: QUALITY_NOTES,
@@ -857,6 +858,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   loading.step('Tuning the sounds', 0.6);
   await soundsIn;
   const timer = new Timer();
+  /** How blows feel: the hit-stop, the camera's jolt, the red edge (src/game/feel.ts); the wall clock it counts in. */
+  const feel = new Feel(graphics.still);
+  let realThen = performance.now();
+  /** A blow of yours landed on `r`, which had `before` health. */
+  const landed = (r: Foe, before: number): void => feel.struck((before - r.health) / Math.max(1, r.full), r.dead);
   let acc = 0;
   const climb = new LadderClimb(nobody);
   const blows = new Rng(deriveSeed(params.seed, 'blows'));
@@ -1237,6 +1243,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   arriving = true;
   arrivedAt = performance.now() / 1000;
   view.renderer.setAnimationLoop(() => {
+    // A hit-stop slows the world a moment (counted on the wall clock, so it ends on time).
+    const realNow = performance.now();
+    timer.setTimescale(pause.open || prologue ? 1 : feel.frame(Math.min(0.1, (realNow - realThen) / 1000)));
+    realThen = realNow;
     timer.update();
     // (Only when nothing else is open that Escape would close: then it is theirs.)
     const others = tinView.open || packView.open || shopView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || settingsView.open || body.dead || !!prologue || !!document.querySelector('#whatsnew.open');
@@ -1808,11 +1818,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
           const struck = pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : [];
           for (const r of struck) sounds.play('pound', r);
-          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge, body.x, body.z, POUND.knock, 'knife');
+          for (const r of struck) { const before = r.health; damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge, body.x, body.z, POUND.knock, 'knife'); landed(r, before); }
           if (struck.length) practised('knife');
         } else {
           const r = nearestReached(blowFrom(body, stabYaw, move), foes());
-          if (r) { damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge, body.x, body.z, move.knock, 'knife'); practised('knife'); }
+          if (r) { const before = r.health; damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge, body.x, body.z, move.knock, 'knife'); landed(r, before); practised('knife'); }
           if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid || kit.move === 'mine' ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : kit.move === 'stab' ? 1.3 : 0.9); }
           if (r && 'took' in r && r.took < 1) say(kit.move === 'stab' ? 'The knife skids off the salt on his chest.' : 'Your blow skids off the salt on his chest.', 2);
         }
@@ -1827,6 +1837,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
       for (const f of fauna.fallen()) { gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now); tick('stab'); }
       if (body.health < health) {
+        feel.took((health - body.health) / body.maxHealth);
         // Flinch away from the nearest foe (thrown back by a pick).
         let near: Foe | undefined, nd = Infinity;
         for (const r of foes()) { const d = Math.hypot(r.x - body.x, r.z - body.z); if (!r.dead && d < nd) { nd = d; near = r; } }
@@ -1906,7 +1917,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
       const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'stoop' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : move.anim, t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
       nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
-      pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
+      pain.style.opacity = String(body.dead ? 0 : Math.max(Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.45, feel.red * 0.85));
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
 
@@ -2025,6 +2036,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     havenView.draw(level, now);
     nobody.shown = !cam.firstPerson;
     cam.room = shedOf();
+    cam.jolt.yaw = feel.yaw; cam.jolt.pitch = feel.pitch;
     cam.follow(body.x, body.y + 1.6, body.z, dt);
     // The map: mark the floor round the nobody seen, now and then; draw it while open.
     if (timer.getElapsed() - exploredAt > 0.3 && !climb.active && !body.dead && !pocket) { exploredAt = timer.getElapsed(); explored.see(level, body.x, body.y, body.z); }
