@@ -1,8 +1,8 @@
 {
   "title": "Dunfinity",
   "tagline": "An infinite roguelike dungeon crawler for the browser.",
-  "tags": ["game", "roguelike", "dungeon", "infinite", "procedural"],
+  "tags": ["game", "roguelike", "dungeon", "infinite", "3D"],
   "screenshot": "/shots/dunfinity.png",
-  "description": "Grandma left you her kitchen knife, and a way down that never ends. A vintage-feeling infinite roguelike crawler, lit by a CRT and built on hand-me-down hardware.",
+  "description": "Grandma left you her kitchen knife, and a way down that never ends. An infinite roguelike crawler with a CRT-lit title screen and a real 3D dungeon beneath it, so the browser needs WebGL to run it.",
   "cta": "Start the descent"
 }
