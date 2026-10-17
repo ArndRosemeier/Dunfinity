@@ -12,6 +12,7 @@ import { strangeLabel } from '../gen/genome';
 import { lawsOf } from '../gen/laws';
 import type { LoadingScreen } from '../app/loadingScreen';
 import { Lineup } from '../render/humans/lineup';
+import { Hands } from './hands';
 import { CritterLineup } from '../render/creatures/critterLineup';
 import type { CritterRole } from '../creatures/bestiary';
 import { meshOf } from '../render/meshes';
@@ -39,9 +40,11 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
     // One race: close up, at eye height.
     if (one) { camera.position.y = lineup.places[0].y + lineup.tallest * 0.9; fly.pitch = 0; }
   }
+  // The nobody close up with a weapon ready (?hands=<weapon>), on the studio floor with &studio.
+  const hands = params.hands ? await Hands.holding(params.seed, params.hands) : null;
   // Procedural creatures in a row (?critters; ?critters=<depth> that level's bestiary; ?critters=<role> three of a role).
   // In the studio (&studio) they stand on a plain floor at the spawn's height, the rock hidden.
-  const studio = params.critters !== null && params.studio;
+  const studio = (params.critters !== null || !!hands) && params.studio;
   const floorY = level.groundAt(camera.position.x, camera.position.z);
   const ground = studio ? () => floorY : (x: number, z: number) => level.groundAt(x, z);
   const critters = params.critters !== null ? new CritterLineup(params.seed, critterPick(params.critters), ground, params.critters && !/^\d+$/.test(params.critters) ? 3 : 2) : null;
@@ -52,9 +55,15 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
     // Look them over from a little above, unless the link names a place.
     if (!params.pos) { camera.position.y = floorY + Math.max(0.3, critters.tallest * 0.9); fly.pitch = -0.2; }
   }
+  if (hands) {
+    hands.pool.level = level;
+    hands.standBefore(camera.position.x, floorY, camera.position.z, fly.yaw, 1.2);
+    if (!params.pos) { camera.position.y = floorY + 1.2; fly.pitch = -0.2; }
+  }
   loading.step('Warming up the shaders', 0.15);
-  await view.start([...(lineup ? lineup.pool.figures : []), ...(critters ? critters.roots : [])]);
+  await view.start([...(lineup ? lineup.pool.figures : []), ...(hands ? hands.pool.figures : []), ...(critters ? critters.roots : [])]);
   if (lineup) await stage.add(lineup.pool.root);
+  if (hands) await stage.add(hands.pool.root);
   if (critters) for (const r of critters.roots) await stage.add(r);
   if (floor) { view.worldShown = false; await stage.add(floor); }
   const { terrain, props } = view;
@@ -71,12 +80,13 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
 
   const hud = document.getElementById('hud');
   const timer = new Timer();
-  (globalThis as { __lab?: unknown }).__lab = { view, camera, stage, fly, terrain, props, level };
+  (globalThis as { __lab?: unknown }).__lab = { view, camera, stage, fly, terrain, props, level, hands };
   view.renderer.setAnimationLoop(() => {
     timer.update();
     const dt = Math.min(0.1, timer.getDelta());
     fly.update(dt);
     lineup?.pool.draw(lineup.places, camera.position.x, camera.position.z, dt, timer.getElapsed());
+    hands?.poseAndFrame(camera, dt, timer.getElapsed());
     critters?.parade(dt, timer.getElapsed(), [camera.position.x, camera.position.y, camera.position.z]);
     const p = camera.position;
     const w = level.workingAt(p.x, p.z);
