@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { Critters, HERD, HUNT, fitSize, powerOf, type Critter, type Herd } from '../src/creatures/critters';
+import { Critters, HERD, HUNT, fitSize, powerOf, youthOf, type Critter, type Herd } from '../src/creatures/critters';
 import { damage, type Fighter } from '../src/combat/combat';
 import { temperOf } from '../src/creatures/temper';
+import { PEACEFUL, rolesOf, type CritterRole, type Species } from '../src/creatures/bestiary';
 
 type Prey = Fighter & { taken: number };
 const someone = (l: Level, x: number, z: number): Prey => ({
@@ -27,7 +28,7 @@ test('no animals in grandma\'s cellar; a few herds from level 1, more deeper, an
     const a = new Level(seed, 2), b = new Level(seed, 14);
     const ha = herds(new Critters(a), a), hb = herds(new Critters(b), b);
     for (const h of [...ha, ...hb]) {
-      if (h.species.peaceful) assert.equal(h.scale, 1);
+      if (h.species.peaceful) assert.equal(h.scale, youthOf(h.species, ha.includes(h) ? 2 : 14));
       else hunters++;
     }
     shallow += ha.filter((h) => h.species.peaceful).length; deep += hb.filter((h) => h.species.peaceful).length;
@@ -173,4 +174,17 @@ test('waiting their turn round you, hunters do not jitter', () => {
     for (const [id, f] of flips) assert.ok(f < 25, `${w.h.species.id} ${id} reversed ${f} times in 20 s while waiting (jitter)`);
   }
   assert.ok(n > 0);
+});
+
+test('every kind may live on any level: hunters and a third peaceful kind come near the top too, more often deeper', () => {
+  const at = (depth: number) => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((seed) => rolesOf(seed, depth));
+  const hunting = (rs: CritterRole[][]) => rs.filter((r) => r.some((x) => !PEACEFUL.includes(x))).length;
+  assert.ok(hunting(at(1)) > 0, 'some level 1 has hunters');
+  assert.ok(hunting(at(1)) < hunting(at(40)), `more often deep (${hunting(at(1))} vs ${hunting(at(40))})`);
+});
+
+test('a giant near the top is a young one, grown with depth', () => {
+  const giant = { role: 'giant' } as Species, grazer = { role: 'grazer' } as Species;
+  assert.ok(youthOf(giant, 1) < 0.5 && youthOf(giant, 30) > youthOf(giant, 1) && youthOf(giant, 61) === 1);
+  assert.equal(youthOf(grazer, 1), 1);
 });

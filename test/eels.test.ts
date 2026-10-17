@@ -42,11 +42,14 @@ function run(eels: Eels, me: Prey, seconds: number, dt = 1 / 60, each?: (t: numb
   }
 }
 
-test('brine eels lie in deep water, from level 5', () => {
-  const ps = pools(new Eels(level));
+test('brine eels lie in deep water, on any level: above level 5 rarer, and alone', () => {
+  const ps = pools(new Eels(level)), mobs = (p: Pool[]) => p.reduce((s, x) => s + x.count, 0);
   assert.ok(ps.length > 3, `${ps.length} on level 6`);
   for (const p of ps) assert.ok(depth(p.x, p.z) >= EEL.deep, 'in deep water');
-  for (const d of [1, 3, 4]) assert.equal(pools(new Eels(new Level(1, d)), new Level(1, d)).length, 0, `none on level ${d}`);
+  const top = pools(new Eels(new Level(1, 1)), new Level(1, 1));
+  assert.ok(top.length > 0, 'some on level 1');
+  assert.ok(mobs(top) < mobs(ps) / 4, `far fewer on level 1 (${mobs(top)} vs ${mobs(ps)})`);
+  assert.ok(top.every((p) => p.count === 1), 'alone on level 1');
 });
 
 test('one comes for you as you wade, rears up, then strikes', () => {

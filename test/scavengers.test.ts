@@ -47,11 +47,13 @@ function run(s: Scavengers, me: Prey, seconds: number, dt = 1 / 60, each?: (t: n
   }
 }
 
-test('scavengers camp from level 4, some of them robbers', () => {
+test('scavengers camp on any level, at home from level 4 (some of them robbers), rarer and fewer above it', () => {
   const all = [level, new Level(2, 4), new Level(1, 6)].flatMap((l) => camps(new Scavengers(l), l));
   assert.ok(all.length > 4, `${all.length} camps`);
   assert.ok(all.some((c) => c.robbers) && all.some((c) => !c.robbers), 'both kinds');
-  for (const d of [1, 2, 3]) assert.equal(camps(new Scavengers(new Level(1, d)), new Level(1, d)).length, 0, `none on level ${d}`);
+  const people = (l: Level) => camps(new Scavengers(l), l).reduce((s, c) => s + c.count, 0), home = people(new Level(1, 6));
+  for (const d of [1, 2]) assert.ok(people(new Level(1, d)) < home / 2, `fewer on level ${d} than on level 6`);
+  assert.ok(camps(new Scavengers(new Level(1, 1)), new Level(1, 1)).every((c) => c.count === 1), 'one alone at a camp on level 1');
 });
 
 test('a wary camp gets up and warns you off, but leaves you alone at a distance', () => {

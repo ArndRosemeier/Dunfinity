@@ -13,7 +13,7 @@ import { angleDiff, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { noticed, type Fighter } from '../combat/combat';
 import { Creature } from './creature';
-import { Population, type Den } from './population';
+import { Population, early, type Den } from './population';
 import { rockDistance } from '../gen/quarry';
 import { closeIn, pickSwing } from './pick';
 import { GOBLIN_FOLK } from './goblins';
@@ -40,7 +40,8 @@ export const SCAVENGER = {
   /** Below this share of its health it runs for it, this long. */
   fear: 0.35,
   fleeT: 6,
-  /** Camps: cell size, chance per cell (band.scavengers), none this close to the arrival, people per camp, the share of camps that are robbers; seats round the fire, metres. */
+  /** Camps: from this level (above it rarer and smaller: `early`), cell size, chance per cell (band.scavengers), none this close to the arrival, people per camp, the share of camps that are robbers; seats round the fire, metres. */
+  from: 4,
   cell: 80,
   quiet: 35,
   count: [2, 3] as const,
@@ -109,8 +110,8 @@ export class Scavengers extends Population<Camp, Scavenger> {
   }
 
   protected denIn(key: number, i: number, j: number): Camp | null {
-    if (this.level.depth < 4) return null;
-    for (const [x, z] of this.sites(i, j, this.level.band.scavengers, 6)) {
+    const { share } = early(this.level.depth, SCAVENGER.from);
+    for (const [x, z] of this.sites(i, j, this.level.band.scavengers * share, 6)) {
       const col = this.level.columnAt(x, z);
       if (rockDistance(col) < 3 || col.collapse > 0 || col.rubble > 0.05) continue;
       const y = this.floorFor(x, z, 2.2, 1.5);
@@ -123,7 +124,7 @@ export class Scavengers extends Population<Camp, Scavenger> {
         ok = this.level.dry(sx, sz, 0.05) && Math.abs(this.level.groundAt(sx, sz) - y) < 0.3;
       }
       if (!ok) continue;
-      return { key, x, z, y, count: this.countIn(i, j, SCAVENGER.count), robbers: this.rng0(i, j, 42) < SCAVENGER.robbers, turn, angry: false, warned: false };
+      return { key, x, z, y, count: this.countIn(i, j, SCAVENGER.count, share), robbers: this.rng0(i, j, 42) < SCAVENGER.robbers, turn, angry: false, warned: false };
     }
     return null;
   }

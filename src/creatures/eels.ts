@@ -12,7 +12,7 @@ import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { damage, type Fighter, noticed } from '../combat/combat';
 import { Creature, turnTowards } from './creature';
-import { Population, type Den } from './population';
+import { Population, early, type Den } from './population';
 
 export const EEL = {
   /** As a target: radius and height of the head end, metres; health. */
@@ -45,7 +45,8 @@ export const EEL = {
   /** Water it needs: to lie in (its den), and to swim at all, metres deep. */
   deep: 1.0,
   wet: 0.3,
-  /** Dens: cell size, chance per cell (band.eels), none this close to the arrival, eels per den, how far they roam. */
+  /** Dens: from this level (above it rarer, fewer and weaker: `early`), cell size, chance per cell (band.eels), none this close to the arrival, eels per den, how far they roam. */
+  from: 5,
   cell: 40,
   quiet: 20,
   count: [1, 3] as const,
@@ -92,6 +93,9 @@ export interface Pool extends Den {
 }
 
 export class Eels extends Population<Pool, Eel> {
+  /** How grown the level's eels are (`early`): a young one bites less. */
+  private readonly youth = early(this.level.depth, EEL.from).youth;
+
   constructor(level: Level) {
     super(level, 'eels', EEL, { arrive: 0.5, still: 0.1, step: 0, drop: 0, accel: 4, turn: EEL.turn, face: EEL.turn });
     this.apart = 1.5;
@@ -103,10 +107,10 @@ export class Eels extends Population<Pool, Eel> {
   }
 
   protected denIn(key: number, i: number, j: number): Pool | null {
-    if (this.level.depth < 5) return null;
-    for (const [x, z] of this.sites(i, j, this.level.band.eels, 6)) {
+    const { share } = early(this.level.depth, EEL.from);
+    for (const [x, z] of this.sites(i, j, this.level.band.eels * share, 6)) {
       if (this.depthAt(x, z) < EEL.deep || this.level.sdf(x, this.level.waterAt(x, z) + 0.5, z) < 0.6) continue;
-      return { key, x, z, y: this.level.waterAt(x, z) - EEL.under, count: this.countIn(i, j, EEL.count) };
+      return { key, x, z, y: this.level.waterAt(x, z) - EEL.under, count: this.countIn(i, j, EEL.count, share) };
     }
     return null;
   }
@@ -168,7 +172,7 @@ export class Eels extends Population<Pool, Eel> {
         this.swimStep(e, e.yaw, E.swim * 1.4, dt, true);
         rise = 1;
         if (!e.bit && d - prey.radius - e.radius < E.reach * 0.6 + 0.3) {
-          damage(prey, this.rng.range(E.damage[0], E.damage[1]), e.x, e.z, 1.5, 'eel');
+          damage(prey, this.rng.range(E.damage[0], E.damage[1]) * this.youth, e.x, e.z, 1.5, 'eel');
           e.bit = true;
           bit = 1;
         }
