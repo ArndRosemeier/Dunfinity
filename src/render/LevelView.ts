@@ -21,6 +21,7 @@ import { Watchers } from './props/watchers';
 import { DripView } from './props/dripView';
 import { BloomView } from './props/bloomView';
 import { HumView } from './humView';
+import { GateView } from './gateView';
 import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
 import { QUALITY } from './quality';
 import { Prepared } from './prepared';
@@ -66,6 +67,8 @@ export class LevelView {
   readonly hums = new HumView();
   /** The levels one may go to next, prepared in the background (`prepared.want(spots)`). */
   readonly prepared = new Prepared();
+  /** The gates on the walls near the viewer (src/gen/gates.ts), from the prop tiles. */
+  readonly gates = new GateView();
   private lastTime = 0;
   /** The pulse in the veins running now: when it started and where from. */
   private pulse: { start: number; at: [number, number] } | null = null;
@@ -138,6 +141,7 @@ export class LevelView {
     await this.stage.add(this.drips.root);
     await this.stage.add(this.blooms.root);
     await this.stage.add(this.hums.root);
+    await this.stage.add(this.gates.root);
     this.stream();
   }
 
@@ -287,6 +291,7 @@ export class LevelView {
     this.drips.draw(this.level_, x, z, time);
     this.blooms.draw(this.level_, x, z, time);
     this.hums.draw(time);
+    this.gates.draw(this.props.gates, this.level_, x, z, time);
     this.pulseVeins(x, z, time);
     this.follow(x, y, z, Math.max(0, Math.min(0.1, time - this.lastTime)));
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));

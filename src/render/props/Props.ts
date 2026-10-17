@@ -15,6 +15,7 @@ import type { LampLights } from './lamps';
 import { Blockers } from '../../world/blockers';
 import type { Inscription } from '../../gen/inscriptions';
 import type { Prepared } from '../prepared';
+import type { Gate } from '../../gen/gates';
 
 /** Props show within this distance of the viewer, metres. */
 export const PROPS_RADIUS = 200;
@@ -39,6 +40,7 @@ interface Tile {
   lamps: Float32Array;
   watchers: Float32Array;
   inscriptions: readonly Inscription[];
+  gates: readonly Gate[];
   triangles: number;
   done: boolean;
 }
@@ -52,6 +54,8 @@ export class Props {
   stats = { tiles: 0, triangles: 0, lamps: 0, pending: 0 };
   /** Writing in the old scripts on the built tiles (`PropTile.inscriptions`), for the game to read. */
   readonly inscriptions: Inscription[] = [];
+  /** The gates on the built tiles' walls (`PropTile.gates`), for the game to draw and walk through. */
+  readonly gates: Gate[] = [];
   /** The props in the way, for the tiles that are built (bodies and creatures ask it). */
   readonly blockers = new Blockers();
   /** Lights that belong to no tile (a Sunday candle on the floor): x, y, z each, set by the game every frame. */
@@ -76,6 +80,7 @@ export class Props {
     this.lampLists.length = 0;
     this.watcherLists.length = 0;
     this.inscriptions.length = 0;
+    this.gates.length = 0;
     let tiles = 0, triangles = 0, lamps = 0, pending = 0;
     for (const t of this.tiles.values()) {
       if (!t.done) { pending++; continue; }
@@ -83,6 +88,7 @@ export class Props {
       if (t.lamps.length) this.lampLists.push(t.lamps);
       if (t.watchers.length) this.watcherLists.push(t.watchers);
       this.inscriptions.push(...t.inscriptions);
+      this.gates.push(...t.gates);
     }
     this.stats = { tiles, triangles, lamps, pending };
     if (this.loose.length) this.lampLists.push(this.loose);
@@ -95,7 +101,7 @@ export class Props {
   }
 
   private request(id: string, tx: number, tz: number): void {
-    const tile: Tile = { tx, tz, group: null, lamps: new Float32Array(0), watchers: new Float32Array(0), inscriptions: [], triangles: 0, done: false };
+    const tile: Tile = { tx, tz, group: null, lamps: new Float32Array(0), watchers: new Float32Array(0), inscriptions: [], gates: [], triangles: 0, done: false };
     this.tiles.set(id, tile);
     const kept = this.prepared?.tile(this.level, tx, tz);
     const built = kept ? Promise.resolve(kept) : this.pool.run({ level: this.level, tx, tz }).then((t) => { this.prepared?.keepTile(this.level, tx, tz, t); return t; });
@@ -113,6 +119,7 @@ export class Props {
       tile.lamps = data.lamps;
       tile.watchers = data.watchers;
       tile.inscriptions = data.inscriptions;
+      tile.gates = data.gates;
       this.blockers.set(id, data.blockers);
       tile.done = true;
     }, (err: unknown) => {
