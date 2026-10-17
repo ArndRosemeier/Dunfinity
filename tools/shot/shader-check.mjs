@@ -95,10 +95,13 @@ try {
     title.on('pageerror', (e) => problems.push(`title page error: ${e.message}`));
     await title.goto(server.resolvedUrls.local[0] + '?title&seed=1&gl&fresh', { timeout: 120000 });
     const woke = Date.now();
-    // New Game wakes at once and opens the character creator; the figures warm behind both, and
+    // New Game wakes at once, asks the mode, then opens the character creator; the figures warm behind both, and
     // "Go down" wakes once they are warm. A change of look meanwhile builds nothing on the render path.
     await title.waitForSelector('#title .menu > button:not([disabled])', { state: 'attached', timeout: 900000 });
     await title.evaluate(() => document.querySelector('#title .menu > button').click());
+    // New Game first asks how the family will play (src/app/titleScreen.ts): take the first mode.
+    await title.waitForSelector('#title .ask .mode button', { state: 'attached', timeout: 60000 });
+    await title.evaluate(() => document.querySelector('#title .ask .mode button').click());
     await title.waitForSelector('#creator .side', { state: 'attached', timeout: 600000 });
     await title.evaluate(() => {
       const hair = () => [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'hair');
