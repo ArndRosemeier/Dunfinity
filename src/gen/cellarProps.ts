@@ -30,7 +30,7 @@ export interface Furnish {
 
 const WOOD: Rgb = [0.2, 0.13, 0.075], DARK: Rgb = [0.12, 0.08, 0.05], BRICK: Rgb = [0.4, 0.2, 0.14];
 const PLUSH: Rgb = [0.17, 0.21, 0.12], TIN: Rgb = [0.16, 0.24, 0.38], GOLD: Rgb = [0.55, 0.42, 0.18];
-const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], SALT: Rgb = [0.45, 0.8, 1.1], WARD: Rgb = [0.3, 0.55, 0.78], STEEL: Rgb = [0.55, 0.56, 0.58];
+const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], SALT: Rgb = [0.08, 0.13, 0.18], WARD: Rgb = [0.06, 0.1, 0.14], STEEL: Rgb = [0.55, 0.56, 0.58];
 const JARS: readonly Rgb[] = [[0.45, 0.28, 0.08], [0.2, 0.3, 0.12], [0.5, 0.12, 0.1], [0.55, 0.45, 0.2]];
 
 export function furnishCellar(f: Furnish): void {
@@ -84,11 +84,11 @@ export function furnishCellar(f: Furnish): void {
   }
 
   if (at(C.room.x, C.room.z)) {
-    // The circle of infused salt: a thin glowing ring on the flagstones.
+    // The circle of infused salt: a thin ring on the flagstones, glowing only faintly (Arnd: far more subtle).
     const ci = C.circle, n = 40;
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2, x = ci.x + Math.cos(a) * ci.r, z = ci.z + Math.sin(a) * ci.r;
-      f.glow.upright(x, 0.006, z, -a, 0.035, 0.006, (Math.PI * ci.r) / n + 0.01, SALT);
+      f.glow.upright(x, 0.006, z, -a, 0.022, 0.006, (Math.PI * ci.r) / n + 0.01, SALT);
     }
     // Round it, traced in the same salt, the ward she copied (src/gen/inscriptions.ts).
     for (const ins of inscriptionsAt(0)) inscribe(f.glow, ins, 0.022, 0.008, WARD);
