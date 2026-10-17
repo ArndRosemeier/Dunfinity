@@ -1,11 +1,11 @@
 /**
- * A fixed pool of drawn humans (the Salt-Touched, scavengers, the Foreman, goblins, ghosts): Scale's humans built before the
+ * A fixed pool of drawn humans (the Salt-Touched and the Foreman as skeletons, the scavengers, goblins, ghosts): Scale's humans built before the
  * warm-up (their materials compile with the rest) and added with the Stage once; each frame the
  * nearest of a list are drawn with them. Who is drawn keeps their human while they stay near, and
  * a newcomer takes the human of its own look where it can. A blow makes them flinch.
  */
 import { Group, type Object3D } from 'three/webgpu';
-import { Humanoid, type AnimState, type Ghost } from '@futuremagic/humanoid/three';
+import { Humanoid, type AnimState, type HumanoidOptions } from '@futuremagic/humanoid/three';
 import type { EquipmentVisuals, HumanoidAppearance } from '@futuremagic/humanoid';
 import { WARDROBE } from '../humans/wardrobe';
 import type { Level } from '../../gen/level';
@@ -25,11 +25,11 @@ export interface Drawn {
   readonly look?: number;
 }
 
-/** `n` humans for a pool: human k with `look(k)`, dressed in `clothes(k)` (from the WARDROBE); `ghost`: all of them ghosts in that tint. */
-export async function humans(n: number, look: (k: number) => HumanoidAppearance, clothes: (k: number) => EquipmentVisuals, ghost?: Ghost): Promise<Humanoid[]> {
+/** `n` humans for a pool: human k with `look(k)`, dressed in `clothes(k)` (from the WARDROBE); `as.ghost`: all of them ghosts in that tint; `as.bones`: all of them skeletons (only their bones, animated as the living). */
+export async function humans(n: number, look: (k: number) => HumanoidAppearance, clothes: (k: number) => EquipmentVisuals, as: Pick<HumanoidOptions, 'ghost' | 'bones'> = {}): Promise<Humanoid[]> {
   const out: Humanoid[] = [];
   for (let k = 0; k < n; k++) {
-    const h = await Humanoid.create(look(k), { wardrobe: WARDROBE, expressions: true, ghost });
+    const h = await Humanoid.create(look(k), { wardrobe: WARDROBE, expressions: !as.bones, ...as });
     h.dress(clothes(k));
     out.push(h);
   }

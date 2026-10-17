@@ -1,6 +1,6 @@
 /**
- * The Foreman (docs/design/town-and-first-strata.md §5: the boss of level 5): a huge Salt-Touched,
- * three metres tall, waiting in a salt cathedral beside the old mine bell. Rouse him and he rings
+ * The Foreman (docs/design/town-and-first-strata.md §5: the boss of level 5): a huge Salt-Touched
+ * skeleton, three metres tall, waiting in a salt cathedral beside the old mine bell. Rouse him and he rings
  * it, and every Salt-Touched within earshot comes for you, however far away you are. Then he comes
  * himself, slowly, and brings his pick down with a long wind-up and a terrible blow.
  *

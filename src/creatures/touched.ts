@@ -1,6 +1,7 @@
 /**
- * The Salt-Touched (docs/design/town-and-first-strata.md §5: levels 3–8): the lost miners, changed.
- * Salt has grown into them; they are slow, and they hit very hard. Alone, each one still works the
+ * The Salt-Touched (docs/design/town-and-first-strata.md §5: levels 3–8): the lost miners' skeletons.
+ * The infused salt has grown through their bones and keeps them at work; they are slow, and they
+ * hit very hard. Alone, each one still works the
  * rock where it stood, striking it with its pick now and then (you hear it before you see it). Come
  * close, or hurt one, and it turns, comes for you at a trudge and brings the pick down over its head:
  * a long, plain wind-up you can step out of. Get far enough away and it goes back to its rock.

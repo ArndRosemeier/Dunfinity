@@ -2028,10 +2028,6 @@
     "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
   },
   {
-    "key": "same name: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/loot/findView.ts#draw",
     "reason": "each view's own draw of its own things on screen; the same name for unrelated things"
   },
@@ -2992,7 +2988,7 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "clone: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
+    "key": "clone: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/scavengerView.ts#create",
     "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
   },
   {
@@ -3004,7 +3000,7 @@
     "reason": "each human view maps its creature's own modes to the animator's actions; the clocks differ per kind"
   },
   {
-    "key": "idiom: [.health .height .radius] in dunfinity/creatures/eels.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
+    "key": "idiom: [.health .height .radius] in dunfinity/creatures/eels.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/goblins.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
@@ -3301,10 +3297,6 @@
   },
   {
     "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
     "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
   },
   {

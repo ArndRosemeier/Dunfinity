@@ -157,7 +157,7 @@ const visual = (seed: number, primary: Rgb, secondary: Rgb, wear: number): ItemV
 
 /** An outfit: chest, legs and feet as (garment, primary, secondary, wear), and what is in the hand. */
 interface Outfit {
-  clothes: readonly (readonly ['chest' | 'legs' | 'feet', string, Rgb, Rgb, number])[];
+  clothes: readonly (readonly ['head' | 'chest' | 'legs' | 'feet', string, Rgb, Rgb, number])[];
   hand: readonly [string, Rgb, Rgb, number] | null;
 }
 
@@ -167,9 +167,9 @@ const RAGS: Outfit = {
   hand: ['knife', [0.6, 0.6, 0.62], [0.12, 0.07, 0.04], 0.3],
 };
 
-/** What a Salt-Touched still wears from the day it went down (salt-crusted work clothes), and its pick. */
+/** What a Salt-Touched's bones still wear from the day it went down (its hard hat, the salt-crusted work trousers rotting off them), and its pick. */
 const MINER: Outfit = {
-  clothes: [['chest', 'tunic', [0.2, 0.21, 0.22], [0.42, 0.44, 0.46], 0.9], ['legs', 'trousers', [0.14, 0.13, 0.13], [0.4, 0.41, 0.43], 0.85], ['feet', 'footwraps', [0.12, 0.1, 0.08], [0.35, 0.35, 0.36], 0.8]],
+  clothes: [['head', 'miners-helmet', [0.24, 0.28, 0.22], [0.1, 0.1, 0.09], 0.9], ['legs', 'trousers', [0.14, 0.13, 0.13], [0.4, 0.41, 0.43], 1]],
   hand: ['pick', [0.22, 0.21, 0.2], [0.3, 0.22, 0.14], 0.6],
 };
 

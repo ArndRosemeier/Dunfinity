@@ -45,7 +45,7 @@ export class NeighbourView<T extends Townsperson = Townsperson> {
   /** Grandma's ghost: Grete, born 1940, the same for every seed, her hair up in the bun she wore for sixty years. */
   static async grandma(): Promise<NeighbourView<Grandma>> {
     const seed = deriveSeed(1940, 'grete');
-    return new NeighbourView<Grandma>(await humans(1, () => ({ ...oldWoman(seed), hairStyle: 'bun' }), () => cardigan(seed), GRETE), GRANDMA.talk, 'sad', (g, time) => g.seen(time) * (0.88 + 0.12 * Math.sin(time * 1.3)));
+    return new NeighbourView<Grandma>(await humans(1, () => ({ ...oldWoman(seed), hairStyle: 'bun' }), () => cardigan(seed), { ghost: GRETE }), GRANDMA.talk, 'sad', (g, time) => g.seen(time) * (0.88 + 0.12 * Math.sin(time * 1.3)));
   }
 
   private constructor(h: Awaited<ReturnType<typeof humans>>, talk: number, mood: 'happy' | 'sad', fade?: (n: T, time: number) => number) {
