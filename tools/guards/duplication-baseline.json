@@ -4698,5 +4698,13 @@
   {
     "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
     "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
+    "reason": "async factories of the human views: each builds its own humans (the nobody in the saved look and clothes)"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/nobody.ts#wear + dunfinity/render/meshes.ts#wear",
+    "reason": "different things that share a word: the nobody puts on its kit; meshes.ts wears a material's look"
   }
 ]

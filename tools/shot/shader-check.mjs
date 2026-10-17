@@ -99,12 +99,18 @@ try {
     // "Go down" wakes once they are warm. A change of look meanwhile builds nothing on the render path.
     await title.waitForSelector('#title .menu > button:not([disabled])', { state: 'attached', timeout: 900000 });
     await title.evaluate(() => document.querySelector('#title .menu > button').click());
+    // New Game asks how the family will play: the first way (Rogue like).
+    await title.waitForSelector('#title .menu .ask .mode button', { state: 'attached', timeout: 60000 });
+    await title.evaluate(() => document.querySelector('#title .menu .ask .mode button').click());
     await title.waitForSelector('#creator .side', { state: 'attached', timeout: 600000 });
     await title.evaluate(() => {
       const hair = () => [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'hair');
       hair()?.click();
       const styles = [...document.querySelectorAll('#creator .chips button')];
       styles.find((b) => !b.classList.contains('on'))?.click();
+      // And other clothes: a dress and a cap (new garments, a rigid part on the head).
+      [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'clothes')?.click();
+      for (const t of ['Dress', 'Cap']) [...document.querySelectorAll('#creator .chips button')].find((b) => b.textContent === t)?.click();
     });
     await title.waitForSelector('#creator .go:not([disabled])', { state: 'attached', timeout: 900000 });
     await new Promise((r) => setTimeout(r, 3000)); // the new look's rebuild

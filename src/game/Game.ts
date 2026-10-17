@@ -419,15 +419,15 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     writeFamily(family.id, params.seed, familyNow(child), Date.now());
   };
   /** The family as it stands, with `child` the grandchild down there (null: none alive). */
-  const familyNow = (child: GrandchildData | null): SaveData => ({ v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made, mode });
+  const familyNow = (child: GrandchildData | null): SaveData => ({ v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made, outfit: worn, mode });
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
-  /** The grandchildren's look, made in the creator (src/game/creator.ts); none: the seed's. */
-  let made = saved?.look;
-  const nobody = await Nobody.create(params.seed, level, made);
+  /** The grandchildren's look and clothes, made in the creator (src/game/creator.ts); none: the seed's look, the rags. */
+  let made = saved?.look, worn = saved?.outfit;
+  const nobody = await Nobody.create(params.seed, level, made, worn);
   // The dogs too: skinned, their shaders are their own, so they compile in the warm-up with the humans.
   const dogView = await DogView.load();
   const ratView = await RatView.load();
@@ -1041,7 +1041,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       family = null;
       mode = choice.new;
       // The first grandchild is made (the rest of the shaders build meanwhile), then the introduction (src/game/prologue.ts).
-      made = await makeGrandchild();
+      ({ look: made, outfit: worn } = await makeGrandchild());
       beginIntro();
     }
     fauna = new Fauna(level);
@@ -1057,7 +1057,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   // The creator alone (?creator, for screenshots of it): played over the level, then on into the game.
   if (!titled && q.has('creator')) {
     if (loading.open) loading.hide();
-    made = await makeGrandchild();
+    ({ look: made, outfit: worn } = await makeGrandchild());
   }
   let frameMs = 16, frameShown = 16, frameShownAt = -Infinity;
   // The first level streams in behind the loading screen, as any later one behind the black.
