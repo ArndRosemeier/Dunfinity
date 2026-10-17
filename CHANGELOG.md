@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.235 — Passages between styles never cut off nearby
+
+- The field looked for the passages between styles only among the regions of other styles up to 280 m (blend distance) from a point, and only for passages from the point's own region. So where a style carried a passage's end deep into its region, or where a point stepped from one region into the next of the same style, a passage's air dropped out of the field a few metres from it. Deep in the rock, but the field jumped there (and a mesh chunk next to it could have been skipped).
+- Now each region keeps a list of every passage near it, whichever regions it runs between (`Regions.regionsRound` finds the regions round a point), so a passage drops out only hundreds of metres off, deep in rock.
+
+## v0.234 — Nothing kept for the deep
+
+- Every ten levels from level 1 are a region: each world draws its workings (the Quarry, the Salt Works, the Cisterns, the Threshold) and three to five styles from all of them, on any level (Arnd: most players never see what was kept for level 40).
+- Depth only shifts the odds: lava, geodes and the strange styles are rare near the top and common deep; fallen workings the other way round.
+- A region is named for what it is most made of: the Ossuaries, the Old Halls, the Root Hollows, the Geodes, the Burning Deep and more; plain caves keep their workings' name.
+- Level 1 stays easy to read, near the town: the workings round the ladder and one other style.
+- Root hollows cut through the Salt Works' tall workings stack a little (one burrow over another), which the goblin warrens' look test now compares against Threshold-cut levels only.
+
 ## v0.233 — Crickets, slimes and eels feed and rest
 
 - Cave crickets nibble the salt off their rock and sleep on it with their group, one staying up as a sentry.
