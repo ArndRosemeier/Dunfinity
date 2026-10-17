@@ -3188,10 +3188,6 @@
     "reason": "each is the FigurePool subclass idiom: a name, a pool size and a builder handing each figure its own parts; the pool itself is FigurePool"
   },
   {
-    "key": "clone: dunfinity/loot/recipes.ts#flame + dunfinity/loot/recipes.ts#horseradish + dunfinity/loot/recipes.ts#match + dunfinity/loot/recipes.ts#snapdragon",
-    "reason": "four of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
-  },
-  {
     "key": "clone: dunfinity/render/humans/thrownView.ts#bag + dunfinity/render/humans/thrownView.ts#match + dunfinity/render/humans/thrownView.ts#seed",
     "reason": "each builds one small thrown thing from meshOf parts (a solid part and a glowing one); the shared part is meshOf"
   },
@@ -3418,10 +3414,6 @@
   {
     "key": "same name: dunfinity/render/props/bloomView.ts#shown + dunfinity/render/props/dripView.ts#shown",
     "reason": "each view's things drawn now, read for their sounds; the things differ"
-  },
-  {
-    "key": "clone: dunfinity/loot/recipes.ts#flour + dunfinity/loot/recipes.ts#pet",
-    "reason": "two of Cooked's rank getters: each a one-line Cooked.at(id, ranks) with its own numbers; the shared part is Cooked.at"
   },
   {
     "key": "clone: dunfinity/render/creatures/petView.ts#load + dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
@@ -4834,5 +4826,21 @@
   {
     "key": "same name: dunfinity/world/hall.ts#walk + dunfinity/world/traverse/body.ts#walk",
     "reason": "the same verb for a different thing"
+  },
+  {
+    "key": "clone: dunfinity/loot/recipes.ts#flame + dunfinity/loot/recipes.ts#horseradish + dunfinity/loot/recipes.ts#snapdragon",
+    "reason": "three of Cooked's rank getters: each one Cooked.trainedAt(id, ranks, practice) call with its own numbers (damage grown, cooldown shortened); the shared part is Cooked.trainedAt"
+  },
+  {
+    "key": "clone: dunfinity/loot/recipes.ts#flour + dunfinity/loot/recipes.ts#larder + dunfinity/loot/recipes.ts#lid + dunfinity/loot/recipes.ts#pet + dunfinity/loot/recipes.ts#pin + dunfinity/loot/recipes.ts#spring + dunfinity/loot/recipes.ts#tiptoe",
+    "reason": "Cooked's rank getters: each one Cooked.trainedAt(id, ranks, practice) call with its own numbers and which of them practice grows or shrinks; the shared part is Cooked.trainedAt"
+  },
+  {
+    "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/tinView.ts#show",
+    "reason": "two different panels' drawing (the pack's slots and finds; grandma's cards and the skills practised), both on the one Modal (showHtml) and the theme's classes"
+  },
+  {
+    "key": "same name: dunfinity/loot/recipes.ts#match + dunfinity/render/humans/thrownView.ts#match",
+    "reason": "different things: the Matchstick card's numbers (Cooked.match) and the flying match's mesh (ThrownView.match)"
   }
 ]

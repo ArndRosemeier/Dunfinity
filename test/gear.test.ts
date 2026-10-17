@@ -15,10 +15,10 @@ test('gifts add up over what is worn, scaled by quality; skills only by whole ti
   const kit = new Kit([{ kind: 'moleskins', quality: 'fine' }, { kind: 'barbara-medal', quality: 'sound' }, { kind: 'leather-apron', quality: 'master' }]);
   assert.equal(kit.gift('stamina'), 3 * 1.25);
   assert.equal(kit.gift('health'), 12);
-  assert.equal(kit.gift('knife'), 1, 'a master apron is still one tier');
+  assert.equal(kit.gift('knife'), 4, 'a master apron: 3 × 1.5, in whole levels');
   assert.equal(kit.gift('pace'), 0);
   const p = new Practice();
-  assert.equal(p.tier('knife', kit.gift('knife')), 1);
+  assert.equal(p.level('knife', kit.gift('knife')), 4);
   assert.ok(p.more('knife', 1) > p.more('knife'));
 });
 

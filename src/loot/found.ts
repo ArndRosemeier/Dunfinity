@@ -21,6 +21,8 @@ export const FOUND_ODDS = {
   quality: { worn: [5, 1], sound: [4, 4], fine: [1, 3], master: [0.15, 1] } as Readonly<Record<Quality, readonly [number, number]>>,
   /** The chance of a property near the surface and deep down. */
   property: [0.04, 0.35] as const,
+  /** How much likelier a body gift (health, stamina, wind, pace, leap) is as a property than any one skill. */
+  body: 4,
 };
 
 /** The item `rng` draws, found `depth` levels down. */
@@ -28,7 +30,7 @@ export function foundGear(rng: Rng, depth: number): Item {
   const kind = rng.weighted(Object.keys(FOUND) as ItemKind[], (k) => FOUND[k]!);
   const quality = rng.weighted(Object.keys(FOUND_ODDS.quality) as Quality[], (q) => oddsAt(depth, FOUND_ODDS.quality[q]));
   if (!rng.chance(oddsAt(depth, FOUND_ODDS.property))) return { kind, quality };
-  // A property: any gift but one it has already.
+  // A property: any gift but one it has already; the body's own gifts as likely, all told, as the many skills.
   const own = Object.keys(ITEMS[kind].gifts ?? {});
-  return { kind, quality, of: rng.pick((Object.keys(GIFTS) as Gift[]).filter((g) => !own.includes(g))) };
+  return { kind, quality, of: rng.weighted((Object.keys(GIFTS) as Gift[]).filter((g) => !own.includes(g)), (g) => (GIFTS[g].whole ? 1 : FOUND_ODDS.body)) };
 }

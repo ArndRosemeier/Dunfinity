@@ -5,7 +5,7 @@
  * bought and carried goes down with them. The death screen (src/app/deathView.ts) shows it. Pure.
  */
 import { CARDS, type Cooked } from '../loot/recipes';
-import { SKILLS, type Practice, type Skill } from '../loot/practice';
+import { SKILLS, type Practice } from '../loot/practice';
 import { itemName, type Kit } from '../loot/items';
 import type { Pack } from '../loot/finds';
 import type { Tin } from '../loot/tin';
@@ -76,7 +76,7 @@ export function runEnd(s: RunState): RunEnd {
     s.taken ? `What the family took stays taken: ${plural(s.taken, 'find')}.` : '',
   ].filter(Boolean);
   const cards = CARDS.filter((c) => s.cooked.rank(c.id) > 0).map((c) => `${c.title}${s.cooked.rank(c.id) > 1 ? ` (rank ${s.cooked.rank(c.id)})` : ''}`);
-  const skills = (Object.keys(SKILLS) as Skill[]).filter((k) => s.practice.tier(k) > 0).map((k) => `${SKILLS[k].name} ${s.practice.tier(k)}`);
+  const skills = s.practice.practised.filter((k) => s.practice.level(k) > 0).map((k) => `${SKILLS[k].name} ${s.practice.level(k)}`);
   // (Not a plain kitchen knife: the block in her kitchen has an endless supply of them, D11.)
   const worn = s.kit.items.filter((i) => i.kind !== 'kitchen-knife' || i.quality !== 'sound');
   const lost = [

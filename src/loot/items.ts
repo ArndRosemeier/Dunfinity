@@ -8,7 +8,7 @@
  */
 import type { Move } from '../combat/combat';
 import { FINDS, PACK, type Find, type Pack } from './finds';
-import type { Skill } from './practice';
+import { SKILLS, type Skill } from './practice';
 
 /** Where an item is worn or held. */
 export type Slot = 'head' | 'body' | 'hands' | 'legs' | 'feet' | 'main' | 'off' | 'trinket' | 'back';
@@ -38,22 +38,31 @@ export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatc
  * A gift: one number the game already has, moved by what is worn (the plan's "gifts on gear": no
  * strength or agility under them). Health and stamina: more of it; wind: stamina back that much
  * faster (0.25: a quarter); pace and leap: a run and a jump that much quicker; a practice skill
- * (src/loot/practice.ts): that many tiers up while worn.
+ * (src/loot/practice.ts): that many levels up while worn (whole levels only).
  */
 export type Gift = 'health' | 'stamina' | 'wind' | 'pace' | 'leap' | Skill;
 
-/** Each gift: what a piece gives of it, sound, as a property (`Item.of`, below the surface: "... of the hare"), and how the pack says an amount. */
-export const GIFTS: Readonly<Record<Gift, { readonly step: number; readonly of: string; readonly say: (v: number) => string }>> = {
+export interface GiftDef {
+  /** What a piece gives of it, sound, as a property (`Item.of`, below the surface: "... of the hare"). */
+  readonly step: number;
+  readonly of: string;
+  /** How the pack says an amount. */
+  readonly say: (v: number) => string;
+  /** Counts in whole steps only (a skill's levels). */
+  readonly whole?: true;
+}
+
+/** Levels of a skill a sound property gives. */
+const SKILL_STEP = 3;
+
+/** Each gift (a skill's from its `SKILLS` line). */
+export const GIFTS: Readonly<Record<Gift, GiftDef>> = {
   health: { step: 12, of: 'of good bread', say: (v) => `+${Math.round(v)} health` },
   stamina: { step: 3, of: 'of the long shift', say: (v) => `+${Math.round(v)} stamina` },
   wind: { step: 0.25, of: 'of deep breaths', say: (v) => `stamina back ${Math.round(v * 100)}% faster` },
   pace: { step: 0.07, of: 'of the quick', say: (v) => `${Math.round(v * 100)}% quicker on your feet` },
   leap: { step: 0.1, of: 'of the hare', say: (v) => `jumps ${Math.round(v * 100)}% higher` },
-  knife: { step: 1, of: 'of the butcher', say: (v) => `Kitchen Work +${Math.floor(v)}` },
-  throwing: { step: 1, of: 'of the darts club', say: (v) => `Throwing +${Math.floor(v)}` },
-  footwork: { step: 1, of: 'of the dance hall', say: (v) => `Footwork +${Math.floor(v)}` },
-  climbing: { step: 1, of: 'of the chimney sweep', say: (v) => `Climbing +${Math.floor(v)}` },
-  guard: { step: 1, of: 'of the goalkeeper', say: (v) => `Guard +${Math.floor(v)}` },
+  ...(Object.fromEntries((Object.keys(SKILLS) as Skill[]).map((k) => [k, { step: SKILL_STEP, of: SKILLS[k].of, say: (v: number) => `${SKILLS[k].name} +${Math.floor(v)}`, whole: true }])) as Record<Skill, GiftDef>),
 };
 
 export interface ItemDef {
@@ -69,7 +78,7 @@ export interface ItemDef {
   readonly featherfall?: number;
   /** What climbing costs with it on (0.75: a quarter less). */
   readonly climb?: number;
-  /** Its gifts, sound (its quality scales them; a skill's tiers only by whole steps). */
+  /** Its gifts, sound (its quality scales them; a skill's levels only by whole steps). */
   readonly gifts?: Partial<Record<Gift, number>>;
   /** What Ilse pays for it, sound, if Kemal does not sell it new (then: half his price). */
   readonly worth?: number;
@@ -94,10 +103,10 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDef>> = {
   // What the miners left (the sheds, the Quarry floor) and, deeper, what others did.
   'hobnail-boots': { name: 'hobnail boots', slot: 'feet', gifts: { pace: 0.07 }, worth: 14, what: 'iron-studded soles' },
   'rope-soles': { name: 'rope-soled shoes', slot: 'feet', gifts: { leap: 0.12 }, worth: 12, what: 'light and springy' },
-  'knee-pads': { name: "a miner's knee pads", slot: 'legs', gifts: { footwork: 1 }, worth: 10, what: 'leather and felt: rolling comes easier' },
+  'knee-pads': { name: "a miner's knee pads", slot: 'legs', gifts: { footwork: 3 }, worth: 10, what: 'leather and felt: rolling comes easier' },
   moleskins: { name: 'moleskin trousers', slot: 'legs', gifts: { stamina: 3 }, worth: 12, what: 'thick and warm' },
-  'leather-apron': { name: 'a leather apron', slot: 'body', armour: 0.08, gifts: { knife: 1 }, worth: 15, what: "a butcher's, a little armour" },
-  sling: { name: 'a sling', slot: 'off', gifts: { throwing: 1 }, worth: 8, what: 'a boy\'s leather sling: your throws fly truer' },
+  'leather-apron': { name: 'a leather apron', slot: 'body', armour: 0.08, gifts: { knife: 3 }, worth: 15, what: "a butcher's, a little armour" },
+  sling: { name: 'a sling', slot: 'off', gifts: { throwing: 3 }, worth: 8, what: 'a boy\'s leather sling: your throws fly truer' },
   'snuff-tin': { name: 'a tin of snuff', slot: 'trinket', gifts: { wind: 0.25 }, worth: 9, what: 'one pinch and your head clears' },
   'barbara-medal': { name: "a St Barbara's medal", slot: 'trinket', gifts: { health: 12 }, worth: 20, what: "the miners' saint, worn thin" },
 };
@@ -227,11 +236,11 @@ export class Kit {
     return c;
   }
 
-  /** How much of `g` all that is worn gives (a skill: whole tiers only). */
+  /** How much of `g` all that is worn gives (a skill: whole levels only). */
   gift(g: Gift): number {
     let v = 0;
     for (const i of this.items) v += giftsOf(i)[g] ?? 0;
-    return GIFTS[g].step === 1 ? Math.floor(v + 1e-9) : v;
+    return GIFTS[g].whole ? Math.floor(v + 1e-9) : v;
   }
 
   get data(): Item[] {
