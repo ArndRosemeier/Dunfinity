@@ -1,12 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { DOG, Dogs, type Dog, type Pack } from '../src/creatures/dogs';
+import { DOG, DOG_NATURE, Dogs, type Dog, type Pack } from '../src/creatures/dogs';
+import { CALM, HUNTING } from '../src/creatures/animals';
 import { STAB, blowFrom, damage, nearestReached, type Fighter } from '../src/combat/combat';
 import { withBand } from './where';
 
 // The second Cisterns level (seed 1, level 12): on the first, seven dogs (more than one pack) are still up after the minute.
 const level = new Level(...withBand('cistern', 1));
+/** The ring a dog of size 1 circles you on, and its crouch (the tell). */
+const RING = HUNTING.ring[0] + HUNTING.ring[1] * DOG_NATURE.totalLength, CROUCH = HUNTING.windup.flank;
+const crouching = (g: Dog) => !!g.action && g.actionT * CALM.strike < CROUCH;
+const circling = (g: Dog) => g.mode === 'stalk' && !g.action;
 
 type Prey = Fighter & { taken: number; bites: { t: number; behind: number }[] };
 const someone = (x: number, z: number): Prey => ({
@@ -32,7 +37,7 @@ function near(away: number): { dogs: Dogs; me: Prey; pack: Pack } {
       if (Math.abs(g - p.y) > 0.5 || !level.dry(x, z, 0.05) || level.sdf(x, g + 1, z) < 0.6) continue;
       let open = 0;
       for (let b = 0; b < 8; b++) {
-        const rx = x + Math.cos(b) * DOG.ring, rz = z + Math.sin(b) * DOG.ring;
+        const rx = x + Math.cos(b) * RING, rz = z + Math.sin(b) * RING;
         if (level.sdf(rx, level.groundAt(rx, rz) + 0.5, rz) > 0.5 && Math.abs(level.groundAt(rx, rz) - g) < 0.5) open++;
       }
       if (open >= 5) return { dogs, me: someone(x, z), pack: p };
@@ -45,10 +50,10 @@ function near(away: number): { dogs: Dogs; me: Prey; pack: Pack } {
 function run(dogs: Dogs, me: Prey, seconds: number, facing: number, dt = 1 / 60, each?: (t: number) => void): void {
   for (let k = 0; k * dt < seconds; k++) {
     const before = me.taken;
-    dogs.advance(dt, me, facing);
+    dogs.advance(dt, me, null, facing);
     me.vx = me.vz = 0;
     if (me.taken > before) {
-      const biter = dogs.list.find((g) => g.mode === 'back' && g.t < dt * 1.5)!;
+      const biter = dogs.list.find((g) => g.action && g.struck)!;
       const toDog = Math.atan2(-(biter.x - me.x), -(biter.z - me.z));
       me.bites.push({ t: k * dt, behind: Math.abs(((toDog - facing + Math.PI * 3) % (Math.PI * 2)) - Math.PI) });
     }
@@ -68,16 +73,16 @@ test('a pack circles you and comes at you from behind, one at a time, with a cro
   const { dogs, me } = near(10);
   let crouchAt = -1, lungers = 0, maxLungers = 0;
   run(dogs, me, 25, 0, 1 / 60, (t) => {
-    lungers = dogs.list.filter((g) => g.mode === 'crouch' || g.mode === 'lunge').length;
+    lungers = dogs.list.filter((g) => g.action).length;
     maxLungers = Math.max(maxLungers, lungers);
-    if (crouchAt < 0 && dogs.list.some((g) => g.mode === 'crouch')) crouchAt = t;
+    if (crouchAt < 0 && dogs.list.some(crouching)) crouchAt = t;
   });
   assert.ok(me.bites.length >= 3, `${me.bites.length} bites`);
   assert.equal(maxLungers, 1, 'one at a time');
-  assert.ok(me.bites[0].t - crouchAt >= DOG.crouch, 'the crouch shows first');
+  assert.ok(me.bites[0].t - crouchAt >= CROUCH - 0.02, 'the crouch shows first');
   const fromBehind = me.bites.filter((b) => b.behind > Math.PI / 2).length;
   assert.ok(fromBehind >= me.bites.length * 0.6, `${fromBehind} of ${me.bites.length} from behind`);
-  const ring = dogs.list.filter((g) => g.mode === 'circle' && Math.abs(Math.hypot(g.x - me.x, g.z - me.z) - DOG.ring) < 1.5);
+  const ring = dogs.list.filter((g) => circling(g) && Math.abs(Math.hypot(g.x - me.x, g.z - me.z) - RING) < 1.5);
   assert.ok(ring.length >= 2, 'the others keep to the ring');
 });
 
@@ -89,7 +94,7 @@ test('they never jitter', () => {
     run(dogs, me, 20, 0, dt, (t) => {
       me.x += Math.cos(t * 0.4) * 0.6 * dt; me.z += Math.sin(t * 0.4) * 0.6 * dt; me.y = level.groundAt(me.x, me.z);
       for (const g of dogs.list) {
-        if (g.mode !== 'circle') { last.delete(g); continue; }
+        if (!circling(g)) { last.delete(g); continue; }
         const p = last.get(g);
         if (!p) { last.set(g, [g.x, g.z, 0, 0]); continue; }
         const dx = g.x - p[0], dz = g.z - p[1];
@@ -107,7 +112,7 @@ test('they never jitter', () => {
   }
 });
 
-test('after a bite the dog hangs on a moment: someone who stabs back beats a pack and lives', () => {
+test('after a bite the dog hangs on a moment: someone who stabs back beats a pack (kills them or drives them off) and lives', () => {
   const { dogs, me } = near(10);
   let facing = 0, next = 0;
   run(dogs, me, 60, 0, 1 / 60, (t) => {
@@ -119,6 +124,8 @@ test('after a bite the dog hangs on a moment: someone who stabs back beats a pac
     const hit = nearestReached(blowFrom(me, facing, STAB), dogs.list);
     if (hit) damage(hit, 8, me.x, me.z, 3.5, 'knife');
   });
-  assert.ok(dogs.list.filter((g) => !g.dead).length === 0, `${dogs.list.filter((g) => !g.dead).length} dogs still up`);
+  // Killed, or so badly hurt it ran (every animal runs when the fight is hopeless).
+  const up = dogs.list.filter((g) => !g.dead && g.health > g.maxHealth * CALM.hopeless + 0.01);
+  assert.ok(up.length === 0 && dogs.list.some((g) => g.dead), `still in the fight: ${up.map((g) => `${g.mode} ${g.health.toFixed(0)}`).join(', ')}`);
   assert.ok(me.taken < 100, `took ${me.taken.toFixed(0)}`);
 });

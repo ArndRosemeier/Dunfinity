@@ -35,11 +35,11 @@ test('rats that cannot get up to you give up and go home, and nothing counts as 
   for (let t = 0; t < 20; t += 1 / 60) {
     rats.advance(1 / 60, me);
     me.vx = me.vz = 0;
-    chased ||= rats.list.some((r) => r.mode === 'chase');
+    chased ||= rats.list.some((r) => r.mode === 'stalk');
   }
   assert.ok(chased, 'they came for you');
   assert.equal(me.taken, 0, 'none got at you');
-  assert.ok(!rats.list.some((r) => r.mode === 'chase' && r.balk === 0 && Math.hypot(r.vx, r.vz) < 0.05), 'no rat stands frozen mid-chase');
+  assert.ok(!rats.list.some((r) => r.mode === 'stalk' && !r.action && r.balk === 0 && Math.hypot(r.vx, r.vz) < 0.05), 'no rat stands frozen mid-chase');
   assert.equal(fauna.after(me), false, 'nothing after you (the fire would let you rest)');
 });
 
