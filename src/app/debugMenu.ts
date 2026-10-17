@@ -30,6 +30,8 @@ export interface DebugActions {
   goTo(text: string): string;
   /** Put a creature of `species` down in front of one, standing still (null: take it away); what to say about it. */
   spawnCreature(species: Species | null): string;
+  /** Call a sun (src/creatures/suns.ts) out of the rock nearby now; what to say about it. */
+  callSun(): string;
 }
 
 /** The levels with a button of their own (any other through the number box). */
@@ -107,6 +109,8 @@ export class DebugMenu {
     heading('Teleport to a level style');
     const styles = child(this.el, 'div');
     for (const id of act.styles) button(styles, id, () => { act.toStyle(id); if (this.open) this.toggle(); }).title = 'The nearest region of this style, here or on the nearest level that has one';
+    heading('Wonders');
+    button(child(this.el, 'div'), 'Call a sun', () => this.say(act.callSun())).title = 'A sun out of the rock nearby (it lives about five minutes; E under it to hang on)';
     heading('Make a creature');
     new CreatureMaker(this.el, (sp) => act.spawnCreature(sp), (text) => this.say(text));
     heading('Teleport on this level');

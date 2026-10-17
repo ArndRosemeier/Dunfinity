@@ -53,7 +53,7 @@ export class LevelView {
   /** The lamps' brightness on this level before the day dims them (its band's `lamplight`). */
   private lamplight = 1;
   private readonly dayFog = new Color();
-  /** The lamp pool; wisps borrow lights from it (`lamps.glows`). */
+  /** The lamp pool; wisps and suns borrow lights from it (`lamps.lend`). */
   readonly lamps: LampLights;
   private readonly rock = new Group();
   private readonly things = new Group();

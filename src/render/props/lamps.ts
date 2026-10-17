@@ -4,7 +4,7 @@
  * the viewer. Unused lights stay in the scene at intensity 0, so no shader ever changes.
  *
  * Other things that give light for a while (wisps, src/creatures/wisps.ts) borrow from the same pool
- * through `glows`: they are served first, up to `GLOW_SLOTS`, and the lamps get the rest.
+ * through `lend` each frame: the brightest near the viewer are served first, up to `GLOW_SLOTS`, and the lamps get the rest.
  */
 import { Color, PointLight, SRGBColorSpace, type Object3D } from 'three/webgpu';
 import { hash3f, smoothstep } from '@futuremagic/core';
@@ -16,8 +16,8 @@ const INTENSITY = 9;
 const DECAY = 1.2;
 /** A lamp light's reach, m. */
 const REACH = 26;
-/** At most this many of the pool's lights go to `glows`. */
-export const GLOW_SLOTS = 3;
+/** At most this many of the pool's lights are lent (`lend`). */
+export const GLOW_SLOTS = 4;
 
 /** A light borrowed from the pool for a frame: where, how bright, how far it reaches (m), its colour (linear rgb 0–1). */
 export interface Glow {
@@ -32,8 +32,9 @@ export class LampLights {
   private readonly near: { d: number; x: number; y: number; z: number }[] = [];
   /** How bright the lamps of this level are (its band's `lamplight`). */
   power = 1;
-  /** The lights others borrow this frame (served before the lamps); set by whoever gives them. */
-  glows: readonly Glow[] = [];
+  /** The lights lent (`lend`), by who lends them, served before the lamps; and all of them for a frame. */
+  private readonly lenders = new Map<string, readonly Glow[]>();
+  private readonly glows: Glow[] = [];
   private readonly flame = new Color(0xffbe80);
 
   constructor(parent: Object3D, count = 8) {
@@ -50,6 +51,11 @@ export class LampLights {
     for (const l of this.lights) l.color.copy(this.flame);
   }
 
+  /** Lend lights (a wisp's, a sun's) under `key`, until lent again under it: they are read at each `update`. */
+  lend(key: string, glows: readonly Glow[]): void {
+    this.lenders.set(key, glows);
+  }
+
   /** Light the lamps nearest (x, y, z). `lamps` lists x, y, z per burning lamp; `time` in seconds, for the flicker. */
   update(x: number, y: number, z: number, lamps: Iterable<Float32Array>, time: number): void {
     const near = this.near;
@@ -61,6 +67,11 @@ export class LampLights {
       }
     }
     near.sort((a, b) => a.d - b.d);
+    // The lent lights that matter most here: bright and near.
+    this.glows.length = 0;
+    for (const list of this.lenders.values()) this.glows.push(...list);
+    const worth = (g: Glow) => g.intensity / (1 + Math.hypot(g.x - x, g.y - y, g.z - z) / g.reach);
+    this.glows.sort((a, b) => worth(b) - worth(a));
     const lent = Math.min(GLOW_SLOTS, this.glows.length);
     for (let i = 0; i < lent; i++) {
       const l = this.lights[i], g = this.glows[i];

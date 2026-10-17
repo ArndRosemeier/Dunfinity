@@ -3260,10 +3260,6 @@
     "reason": "fixed pools of hidden meshes built once into a root for the Stage: three.js calls, each view shows its own"
   },
   {
-    "key": "idiom: [.vx .vy .vz .x .y .z] in dunfinity/combat/thrown.ts + dunfinity/creatures/spores.ts + dunfinity/creatures/wisps.ts",
-    "reason": "things moving through the air keep a position and a velocity; each moves by its own rule (flight, a lob, a drift along the rock)"
-  },
-  {
     "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/creatures/wisps.ts#advance",
     "reason": "the sims' one verb: a step of dt; a wisp is no Population (no dens, never hit, no death), and a climb plays a different thing"
   },
@@ -3996,14 +3992,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "idiom: [.depth .rng .seed] in dunfinity/creatures/wisps.ts + dunfinity/world/singing.ts + dunfinity/world/thinPlaces.ts",
-    "reason": "seeding a per-level Rng from the level's seed and depth: deriveSeed is the seam"
-  },
-  {
-    "key": "idiom: [.gap .range .rng] in dunfinity/creatures/wisps.ts + dunfinity/world/singing.ts + dunfinity/world/thinPlaces.ts",
-    "reason": "a seeded wait between two events: the Rng is the seam"
-  },
-  {
     "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/world/singing.ts#advance",
     "reason": "the per-frame step of a simulation, same verb (singing crystals vs a creature population)"
   },
@@ -4460,10 +4448,6 @@
     "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/gateView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
-    "reason": "placing an object at a thing's position: the three.js idiom"
-  },
-  {
     "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/gateView.ts#draw",
     "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
   },
@@ -4666,5 +4650,85 @@
   {
     "key": "idiom: [.damage .range] in dunfinity/combat/snapdragon.ts + dunfinity/combat/thrown.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
     "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
+  },
+  {
+    "key": "clone: dunfinity/creatures/suns.ts#constructor + dunfinity/creatures/wisps.ts#constructor",
+    "reason": "wisps and suns are two wonders over the glowing rock: both seed an Rng per level, wait a gap scaled by glowOf's strength (the one seam) and bear out of the rock; their births, motions and lives differ"
+  },
+  {
+    "key": "idiom: [.depth .rng .seed .wait] in dunfinity/creatures/suns.ts + dunfinity/creatures/wisps.ts + dunfinity/world/singing.ts",
+    "reason": "wisps and suns are two wonders over the glowing rock: both seed an Rng per level, wait a gap scaled by glowOf's strength (the one seam) and bear out of the rock; their births, motions and lives differ"
+  },
+  {
+    "key": "idiom: [.gap .range .rng] in dunfinity/creatures/suns.ts + dunfinity/creatures/wisps.ts + dunfinity/world/singing.ts + dunfinity/world/thinPlaces.ts",
+    "reason": "wisps and suns are two wonders over the glowing rock: both seed an Rng per level, wait a gap scaled by glowOf's strength (the one seam) and bear out of the rock; their births, motions and lives differ"
+  },
+  {
+    "key": "idiom: [.groundAt .x .y .z] in dunfinity/combat/thrown.ts + dunfinity/creatures/suns.ts + dunfinity/game/Game.ts",
+    "reason": "asking the level's field at a point (groundAt/sdf): the one seam is Level itself"
+  },
+  {
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/sunView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/gateView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
+    "reason": "placing pooled meshes at a sim's points each frame: three's own way, no helper is shorter"
+  },
+  {
+    "key": "idiom: [.sdf .x .y .z] in dunfinity/combat/thrown.ts + dunfinity/creatures/spores.ts + dunfinity/creatures/suns.ts",
+    "reason": "asking the level's field at a point (groundAt/sdf): the one seam is Level itself"
+  },
+  {
+    "key": "idiom: [.vx .vy .vz .x .y .z] in dunfinity/combat/thrown.ts + dunfinity/creatures/spores.ts + dunfinity/creatures/suns.ts + dunfinity/creatures/wisps.ts",
+    "reason": "a moving point's position and velocity; each sim moves its own kind of thing"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/sunView.ts#draw",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/creatures/sunView.ts#draw",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/creatures/sunView.ts#draw",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/sunView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/sunView.ts#draw + dunfinity/render/loot/findView.ts#draw",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/sunView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/sunView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/combat/combat.ts#reach + dunfinity/creatures/suns.ts#reach",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/creatures/suns.ts#advance + dunfinity/creatures/wisps.ts#advance",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/creatures/suns.ts#advance + dunfinity/world/thinPlaces.ts#advance",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/creatures/suns.ts#bear + dunfinity/creatures/wisps.ts#bear",
+    "reason": "wisps and suns are two wonders over the glowing rock: both seed an Rng per level, wait a gap scaled by glowOf's strength (the one seam) and bear out of the rock; their births, motions and lives differ"
+  },
+  {
+    "key": "same name: dunfinity/creatures/suns.ts#drift + dunfinity/creatures/wisps.ts#drift",
+    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
+  },
+  {
+    "key": "same name: dunfinity/creatures/suns.ts#gap + dunfinity/creatures/wisps.ts#gap",
+    "reason": "wisps and suns are two wonders over the glowing rock: both seed an Rng per level, wait a gap scaled by glowOf's strength (the one seam) and bear out of the rock; their births, motions and lives differ"
   }
 ]

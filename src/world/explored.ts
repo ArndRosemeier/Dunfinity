@@ -27,16 +27,16 @@ export function onStorey(level: Level, x: number, z: number, y: number): boolean
 export class Explored {
   private readonly seen = new Map<number, Set<number>>();
 
-  /** Mark the open floor within EXPLORE.radius of (x, y, z) on `level` seen. */
-  see(level: Level, x: number, y: number, z: number): void {
+  /** Mark the open floor within `radius` m (EXPLORE.radius: the nobody's own eyes) of (x, y, z) on `level` seen. */
+  see(level: Level, x: number, y: number, z: number, radius: number = EXPLORE.radius): void {
     let s = this.seen.get(level.depth);
     if (!s) this.seen.set(level.depth, (s = new Set()));
-    const c = EXPLORE.cell, n = Math.ceil(EXPLORE.radius / c), ci = Math.floor(x / c), cj = Math.floor(z / c);
+    const c = EXPLORE.cell, n = Math.ceil(radius / c), ci = Math.floor(x / c), cj = Math.floor(z / c);
     for (let j = cj - n; j <= cj + n; j++) for (let i = ci - n; i <= ci + n; i++) {
       const k = key(i, j);
       if (s.has(k)) continue;
       const px = (i + 0.5) * c, pz = (j + 0.5) * c;
-      if (Math.hypot(px - x, pz - z) > EXPLORE.radius) continue;
+      if (Math.hypot(px - x, pz - z) > radius) continue;
       if (onStorey(level, px, pz, y) || QUARTERS.some(([a, b]) => onStorey(level, px + a * c, pz + b * c, y))) s.add(k);
     }
   }
