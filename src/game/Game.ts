@@ -42,7 +42,9 @@ import { parseViewParams, titleWanted } from '../app/params';
 import { ladderOf, ladderTop, offersLadder, LADDER_REACH, type Shaft } from '../gen/descents';
 import type { Spot } from '../render/prepared';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
-import { DRAFT_RANGE, draftLine, homeLine } from './draft';
+import { DRAFT_RANGE, draftLine, homeLine, wayTo } from './draft';
+import { Leads, leadsOf } from './leads';
+import { LeadsView, type LeadLine } from '../app/leadsView';
 import { Fauna, mightOf, bodyLength, type Foe } from '../creatures/fauna';
 import { knowledgeOf, tierOf, wordOf, type Might } from '../combat/challenge';
 import { SaltSightView, ringColour, type Ringed } from '../app/saltSight';
@@ -1078,6 +1080,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** A first step done: ticked off with a pencil. */
   const tick = (id: StepId): void => { if (steps.tick(id)) sounds.play('pencil_tick', null, 0.8); };
   const stepsView = new StepsView(document.body);
+  /** What is worth walking to on this level (src/game/leads.ts), chalked by the ladder; worked out once the level is in. */
+  const leadsView = new LeadsView(document.body);
+  let leads: Leads | null = null, leadsFor: Level | null = null, leadsWayAt = -1;
+  let leadLines: LeadLine[] = [];
   /** The prologue playing (null: none), the shot the nobody was put into last, and its walk. */
   let prologue: Prologue | null = null, prologueShot = -1, walk = new Walk([]);
   const prologueView = new PrologueView(document.body, () => { prologue?.next(); sounds.play('paper', null, 0.5); });
@@ -2124,6 +2130,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead, tinView.open);
     touchPad.reflect(controls.byTouch && !body.dead && !pause.open, tinView.open || packView.open || shopView.open || readView.open || diaryView.open || letterView.open || mapView.open || settingsView.open, campfire.resting);
     stepsView.pin(steps, now);
+    // The leads: worked out once a level is in (not in another world), ticked off as one comes to them.
+    if (leadsFor !== level && !arriving && !pocket && !crossing) { leads = new Leads(leadsOf(level, fauna)); leadsFor = level; leadsWayAt = -1; }
+    if (leads && !body.dead) for (const l of leads.walk(body.x, body.z)) say(`You found it: ${l.what.split(/[;,]/)[0].toLowerCase()}.`, 3);
+    if (leads && now - leadsWayAt > 0.5) { leadsWayAt = now; leadLines = leads.list.map((lead) => ({ lead, way: wayTo(body.x, body.z, cam.yaw, lead.x, lead.z), found: leads!.found.has(lead.id) })); }
+    leadsView.chalk(leads && !pocket && !crossing && !mapView.open && !body.dead && !prologue && leadsFor === level ? leadLines : []);
     hudView.render({
       health: body.health, maxHealth: body.maxHealth, stamina: body.stamina, maxStamina: body.maxStamina,
       mode: body.mode === 'climb' ? 'climbing' : body.mode === 'swim' ? 'swimming' : '',

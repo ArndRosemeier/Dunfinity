@@ -32,6 +32,11 @@ export function draftLine(x: number, z: number, yaw: number, sx: number, sz: num
   return `${d < 150 ? 'A cold draft' : 'A faint draft'} from ${FROM[octant(x, z, yaw, sx, sz)]}.`;
 }
 
+/** Which way (tx, tz) lies for a viewer at (x, z) looking along `yaw`, as words ("ahead to the left"), and "a long way off" past `far` metres. */
+export function wayTo(x: number, z: number, yaw: number, tx: number, tz: number, far = 120): string {
+  return `${TO[octant(x, z, yaw, tx, tz)]}${Math.hypot(tx - x, tz - z) > far ? ', a long way off' : ''}`;
+}
+
 /** Closer than this (m) to her door one sees it; no line. */
 const HOME_NEAR = 6;
 
@@ -42,5 +47,5 @@ const HOME_NEAR = 6;
 export function homeLine(x: number, z: number, yaw: number, hx: number, hz: number): string | null {
   const d = Math.hypot(hx - x, hz - z);
   if (d < HOME_NEAR) return null;
-  return `Grandma's house is ${TO[octant(x, z, yaw, hx, hz)]}${d > 120 ? ', a long way off' : ''}.`;
+  return `Grandma's house is ${wayTo(x, z, yaw, hx, hz)}.`;
 }
