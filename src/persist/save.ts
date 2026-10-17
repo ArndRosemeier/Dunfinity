@@ -99,7 +99,7 @@ export interface ManualSave {
 /** How many saves by hand an Adventure family keeps (the oldest goes). */
 export const MANUAL_SAVES = 8;
 
-const INDEX = 'families', ACTIVE = 'active', STRAIGHT = 'straight-in';
+const INDEX = 'families', ACTIVE = 'active', STRAIGHT = 'straight-in', NEW_GAME = 'new-game';
 const familyKey = (id: string) => `family:${id}`;
 const savesKey = (id: string) => `family:${id}:saves`;
 
@@ -137,6 +137,14 @@ export function activeFamily(): FamilyEntry | null {
 
 /** Play `id` from now on (the next start goes on with it). */
 export function setActiveFamily(id: string): void { remember(ACTIVE, id); }
+
+/**
+ * The seed of a new family's world: each new family gets its own, kept in its save so a reload finds
+ * the same world. The one number in the game not drawn from a seed (everything else derives from this).
+ */
+export function freshWorldSeed(): number {
+  return crypto.getRandomValues(new Uint32Array(1))[0]!;
+}
 
 /** A new family playing `mode` on world `seed`, made the one played; its id. */
 export function newFamily(seed: number, mode: GameMode, now: number): string {
@@ -195,4 +203,14 @@ export function takeStraightIn(): boolean {
   const on = recall<boolean>(STRAIGHT) === true;
   if (on) remember(STRAIGHT, null);
   return on;
+}
+
+/** New Game over a kept family: the next start begins a new family playing `mode` on a world of its own, past the title. */
+export function goNewGame(mode: GameMode): void { remember(NEW_GAME, mode); goStraightIn(true); }
+
+/** Does this start begin a new family, and playing what? (Asked once: the wish is cleared.) */
+export function takeNewGame(): GameMode | null {
+  const m = recall<GameMode>(NEW_GAME);
+  if (m !== null) remember(NEW_GAME, null);
+  return m === 'rogue' || m === 'adventure' ? m : null;
 }
