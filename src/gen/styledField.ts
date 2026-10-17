@@ -16,7 +16,7 @@
  * - E6: all of it pure.
  */
 import { newColumn, type Column, type ColumnMix, type QuarryField } from './quarry';
-import { REGIONS, Regions, newShares, type Mix, type Shares } from './regions';
+import { REGIONS, Regions, newShares, type Mix, type Region, type Shares } from './regions';
 import { BARE, NATURAL, SHARE_OWN, type Style } from './style';
 import { putRocks, rockMix, type RockMix } from './rockTypes';
 import { segDist } from './shapes';
@@ -38,6 +38,12 @@ import { segDist } from './shapes';
 const CLAMP = 4, GROW = 1, MAX = CLAMP + GROW * (REGIONS.edge + REGIONS.far);
 /** The passages between styles' regions (E3): half width, height at the walls and in the middle, how far in from the border they start looking for open space, metres. */
 export const PASSAGE = { half: 5, wall: 3, crown: 5.5, into: 45 } as const;
+/**
+ * The passages a point is asked about: every one within NEAR metres of its region's feature point
+ * (all a point in the region can be anywhere near; a region is never more than about a region size
+ * across from its feature point), between regions within AROUND of it (all such passages can run between).
+ */
+const NEAR = 2 * REGIONS.size, AROUND = 3 * REGIONS.size;
 
 /** Styles' weights at a point: `n` of them, `styles[i]` an index into the mix (the owner's first), `w[i]` its weight (they add up to 1). */
 interface Weights {
@@ -46,11 +52,12 @@ interface Weights {
   w: number[];
 }
 
-/** A passage between two regions: from a (open space in one) through m (the middle of their border) to b (open space in the other). */
+/** A passage between two regions: from a (open space in one) through m (the middle of their border) to b (open space in the other), and the box round it. */
 interface Passage {
   ax: number; az: number;
   mx: number; mz: number;
   bx: number; bz: number;
+  x0: number; x1: number; z0: number; z1: number;
 }
 
 export class StyledField {
@@ -58,7 +65,8 @@ export class StyledField {
   private readonly shares = newShares();
   /** The styles' weights in the field (see `weigh`). */
   private readonly weights: Weights = { n: 0, styles: [], w: [] };
-  private readonly passages = new Map<string, Passage | null>();
+  /** The passages near each region (`passagesNear`), by its hash. */
+  private readonly passages = new Map<number, Passage[]>();
   /** Scratch for blending a colour, a surface or a rock mix over a mix of styles. */
   private readonly sum = new Float64Array(8);
   /** The band's rock, for styles that do not say theirs. */
@@ -92,8 +100,8 @@ export class StyledField {
       this.styles[wt.styles[0]].column(x, z, col);
       col.style = wt.styles[0];
       col.mix = null;
-      col.passage = this.inPassage(x, z, sh);
       col.clamp = this.clampAt(sh);
+      col.passage = this.inPassage(x, z, sh, col.clamp);
       return col;
     }
     const m: ColumnMix = col.mix ?? { n: 0, styles: [], w: [], cols: [] };
@@ -116,8 +124,8 @@ export class StyledField {
     col.cavern = cavern;
     col.style = m.styles[0];
     col.mix = m;
-    col.passage = this.inPassage(x, z, sh);
     col.clamp = this.clampAt(sh);
+    col.passage = this.inPassage(x, z, sh, col.clamp);
     return col;
   }
 
@@ -148,38 +156,53 @@ export class StyledField {
     return this.styles.length === 1 ? Infinity : Math.min(MAX, CLAMP + GROW * sh.edge);
   }
 
-  /** How far inside any passage between styles (x, z) is, metres (-Infinity: none near). */
-  private inPassage(x: number, z: number, sh: Shares): number {
+  /**
+   * How far inside any passage between styles (x, z) is, metres (-Infinity: none near). Every
+   * passage near the point's region counts, whichever regions it runs between (one of the same
+   * style as this one, or two others): the field never changes when a point steps from one region
+   * into the next. Those further than `clamp` outside are left out: there the field is rock
+   * anyway, at least as near air as they are.
+   */
+  private inPassage(x: number, z: number, sh: Shares, clamp: number): number {
     let best = -Infinity;
-    for (let i = 0; i < sh.others; i++) {
-      const p = this.passage(sh.id, sh.px, sh.pz, sh.styles[0], sh.oids[i], sh.opx[i], sh.opz[i], sh.ostyles[i]);
-      if (!p) continue;
+    const far = PASSAGE.half + clamp;
+    for (const p of this.passagesNear(sh)) {
+      if (x < p.x0 - far || x > p.x1 + far || z < p.z0 - far || z > p.z1 + far) continue;
       best = Math.max(best, PASSAGE.half - Math.min(segDist(x, z, p.ax, p.az, p.mx, p.mz), segDist(x, z, p.mx, p.mz, p.bx, p.bz)));
     }
     return best;
   }
 
-  /** The passage between regions a and b (the same asked from either), or null where they share no border. */
-  private passage(a: number, ax: number, az: number, as: number, b: number, bx: number, bz: number, bs: number): Passage | null {
-    if (a > b) return this.passage(b, bx, bz, bs, a, ax, az, as);
-    const key = `${a},${b}`;
-    let p = this.passages.get(key);
-    if (p === undefined) {
-      // The middle of their border: halfway between their feature points, if no other region is nearer there.
-      const mx = (ax + bx) / 2, mz = (az + bz) / 2, at = this.regions.regionAt(mx, mz);
-      if (at.id !== a && at.id !== b) p = null;
-      else {
-        const into = (px: number, pz: number, s: number) => {
-          const dx = px - mx, dz = pz - mz, d = Math.hypot(dx, dz) || 1, k = Math.min(PASSAGE.into, d * 0.8) / d;
-          return this.styles[s].portal(mx + dx * k, mz + dz * k);
-        };
-        const [pax, paz] = into(ax, az, as), [pbx, pbz] = into(bx, bz, bs);
-        p = { ax: pax, az: paz, mx, mz, bx: pbx, bz: pbz };
-      }
-      if (this.passages.size > 1024) this.passages.clear();
-      this.passages.set(key, p);
+  /** The passages within NEAR of the feature point of the region a point with these shares is in. */
+  private passagesNear(sh: Shares): Passage[] {
+    let list = this.passages.get(sh.id);
+    if (list) return list;
+    list = [];
+    const rs = this.regions.regionsRound(sh.px, sh.pz, AROUND);
+    for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+      const a = rs[i], b = rs[j];
+      // Only neighbours can share a border.
+      if (a.style === b.style || Math.hypot(a.px - b.px, a.pz - b.pz) > 2.5 * REGIONS.size) continue;
+      const p = this.passage(a, b);
+      if (p && Math.min(segDist(sh.px, sh.pz, p.ax, p.az, p.mx, p.mz), segDist(sh.px, sh.pz, p.mx, p.mz, p.bx, p.bz)) < NEAR) list.push(p);
     }
-    return p;
+    if (this.passages.size > 256) this.passages.clear();
+    this.passages.set(sh.id, list);
+    return list;
+  }
+
+  /** The passage between regions a and b (the same asked from either), or null where they share no border. */
+  private passage(a: Region, b: Region): Passage | null {
+    if (a.id > b.id) return this.passage(b, a);
+    // The middle of their border: halfway between their feature points, if no other region is nearer there.
+    const mx = (a.px + b.px) / 2, mz = (a.pz + b.pz) / 2, at = this.regions.regionAt(mx, mz);
+    if (at.id !== a.id && at.id !== b.id) return null;
+    const into = (r: Region) => {
+      const dx = r.px - mx, dz = r.pz - mz, d = Math.hypot(dx, dz) || 1, k = Math.min(PASSAGE.into, d * 0.8) / d;
+      return this.styles[r.style].portal(mx + dx * k, mz + dz * k);
+    };
+    const [ax, az] = into(a), [bx, bz] = into(b);
+    return { ax, az, mx, mz, bx, bz, x0: Math.min(ax, mx, bx), x1: Math.max(ax, mx, bx), z0: Math.min(az, mz, bz), z1: Math.max(az, mz, bz) };
   }
 
   /** Signed distance at height y in a column filled by `column`: positive in air. */
