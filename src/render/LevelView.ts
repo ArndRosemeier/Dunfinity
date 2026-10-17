@@ -4,7 +4,7 @@
  *
  * Lights are fixed before the warm-up: they are part of every shader's cache key (docs/SHADERS.md).
  */
-import { Scene, PerspectiveCamera, Color, SRGBColorSpace, Fog, HemisphereLight, DirectionalLight, PointLight, SpotLight, Group, Vector3, type Object3D, type WebGPURenderer } from 'three/webgpu';
+import { Scene, PerspectiveCamera, Color, SRGBColorSpace, Fog, HemisphereLight, DirectionalLight, PointLight, SpotLight, Group, Vector2, Vector3, type FramebufferTexture, type Object3D, type WebGPURenderer } from 'three/webgpu';
 import type { Level } from '../gen/level';
 import { airOf, type Air } from '../gen/air';
 import { daylightAt } from '../gen/cellar';
@@ -297,6 +297,20 @@ export class LevelView {
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;
     if (draw) this.renderer.render(this.scene, this.camera);
+    if (draw && this.snap) {
+      // What was just drawn, copied as it is (a copy, no shader): Way Home's picture of the place one left.
+      const t = this.snap, size = this.renderer.getDrawingBufferSize(new Vector2());
+      if (t.image.width !== size.x || t.image.height !== size.y) { t.image.width = size.x; t.image.height = size.y; t.needsUpdate = true; }
+      this.renderer.copyFramebufferToTexture(t);
+      this.snap = null;
+    }
+  }
+
+  private snap: FramebufferTexture | null = null;
+
+  /** Copy the next frame drawn into `t` (as it shows on screen, already lit). */
+  capture(t: FramebufferTexture): void {
+    this.snap = t;
   }
 
   /** The pulse in the veins (src/gen/veinPulse.ts): where it starts is latched when it starts; its ring goes to the rock's shader. */

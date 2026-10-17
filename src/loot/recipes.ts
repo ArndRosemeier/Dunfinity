@@ -111,7 +111,7 @@ export const CARDS: readonly Card[] = [
     method: 'For when you\'ve overstayed your welcome. Close your eyes, think of my armchair. Do NOT bring back anything that is still moving.',
     ranks: ['And back again, if you must. Think of where you were. Wrap up warm.'],
     cost: [12, 20],
-    does: ['after 4 s still, with nothing after you, you are back by her armchair', 'and H in her salt circle takes you back to the deepest level you reached'],
+    does: ['after 4 s still, with nothing after you, a way opens to her armchair; at home it opens back to where you left', 'the way opens after 2 s'],
   },
   {
     id: 'tenderising', title: 'Tenderising', chapter: 'Heavy Things',
@@ -320,7 +320,7 @@ export class Cooked {
     return this.at('tiptoe', [{ speed: 1.6, hush: 0.5 }, { speed: 2.2, hush: 0.33 }]);
   }
 
-  /** Grandma's Way Home: 0 not cooked, 1 home to the armchair, 2 and back down again. */
+  /** Grandma's Way Home: 0 not cooked, 1 home to the armchair and back, 2 the way opens sooner. */
   get wayHome(): number {
     return this.rank('way-home');
   }
