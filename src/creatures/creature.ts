@@ -27,6 +27,8 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   blind?: number;
   stumble?: number;
   health: number;
+  /** Its health when it was born (what a blow takes a share of; grandma's Salt Sight measures it by it). */
+  readonly full: number;
   /** How far it has walked over the floor, m (a drawn figure's gait follows it). */
   walked = 0;
   /** Seconds since it was last hurt, and since it died. */
@@ -42,7 +44,7 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
 
   /** At (x, y, z) facing `yaw` (forward is (-sin yaw, -cos yaw)). */
   constructor(public x: number, public y: number, public z: number, public yaw: number, readonly radius: number, readonly height: number, health: number, public mode: Mode) {
-    this.health = health;
+    this.health = this.full = health;
   }
 
   get dead(): boolean { return this.health <= 0; }

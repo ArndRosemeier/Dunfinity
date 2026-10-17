@@ -62,6 +62,11 @@ export class Tin {
     return this.add(a, k === 1 ? `The first ${name} you have killed.` : `Another ${name}.`);
   }
 
+  /** How many of `kind` the family has killed (what grandma's Salt Sight knows of the kind). */
+  killsOf(kind: string): number {
+    return this.times.get(`kill:${kind}`) ?? 0;
+  }
+
   /** Arriving at `depth`: salt only the first time anyone of the family gets there. */
   reached(depth: number): Gain | null {
     this.deepest = Math.max(this.deepest, depth);

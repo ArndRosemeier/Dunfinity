@@ -47,6 +47,10 @@ export const THEME = {
   stamina: '#c9b66a',
   /** Good news (practice gained, a letter learned). */
   good: '#9fc27d',
+  /** How tough a creature is for you (grandma's Salt Sight, src/combat/challenge.ts): easy, a fair fight, risky, run, deadly. */
+  challenge: ['#9fdcff', '#9cc46a', '#e9b85c', '#e07a3a', '#d63a2a'],
+  /** The rough read of a kind never fought, muted: looks harmless, looks dangerous, looks deadly. */
+  challengeRough: ['#8fb8a8', '#c9a25c', '#b8483a'],
   /** Paper and the ink on it. */
   paper: '#ebe1c8',
   paperDeep: '#ddcfae',

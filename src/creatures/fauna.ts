@@ -12,19 +12,21 @@ import type { Blockers } from '../world/blockers';
 import type { SaltCircle } from '../gen/lair';
 import { thwarted } from './steer';
 import { Rats, type Rat } from './rats';
-import { SaltTouched, type Touched } from './touched';
-import { Crickets, type Cricket, type Lamp } from './crickets';
-import { Slimes, type Slime } from './slimes';
-import { Foreman, FOREMAN, type Boss } from './foreman';
+import type { Might } from '../combat/challenge';
+import { SaltTouched, TOUCHED, Touched } from './touched';
+import { CRICKET, Cricket, Crickets, type Lamp } from './crickets';
+import { SLIME, Slime, Slimes } from './slimes';
+import { Boss, Foreman, FOREMAN } from './foreman';
 import { Dogs, type Dog } from './dogs';
-import { Eels, type Eel } from './eels';
-import { Scavengers, type Scavenger } from './scavengers';
-import { Goblins, type Goblin } from './goblins';
+import { EEL, Eel, Eels } from './eels';
+import { SCAVENGER, Scavenger, Scavengers } from './scavengers';
+import { GOBLIN_FOLK, Goblin, Goblins } from './goblins';
 import { Ghosts } from './ghosts';
-import { TALL, TallOnes, type TallOne } from './tallOne';
-import { Puffcaps, Toadstools, type Puffcap, type Toadstool } from './shrooms';
+import { TALL, TallOne, TallOnes } from './tallOne';
+import { PUFFCAP, Puffcap, Puffcaps, TOADSTOOL, Toadstool, Toadstools } from './shrooms';
+import { SPORES } from './spores';
 import { Critters, type Critter } from './critters';
-import { afterYou } from './animals';
+import { Animal, afterYou } from './animals';
 
 export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel | Scavenger | Goblin | TallOne | Toadstool | Puffcap | Critter;
 
@@ -113,6 +115,12 @@ export class Fauna {
     return [...this.rats.list, ...this.townRats.list, ...this.townDogs.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list, ...this.scavengers.list, ...this.goblins.list, ...this.tall.list, ...this.toadstools.list, ...this.puffcaps.list, ...this.critters.list];
   }
 
+  /** The kind `f` is (its population's name, as the tin counts kills: 'rats', 'critters', ...); null if none of these. */
+  kindOf(f: Foe): string | null {
+    for (const p of this.all) if ((p.list as readonly unknown[]).includes(f)) return p.name;
+    return null;
+  }
+
   /** The ones you killed since the last call, by kind (a population's name) and where they fell. */
   fallen(): { kind: string; x: number; y: number; z: number }[] {
     const out: { kind: string; x: number; y: number; z: number }[] = [];
@@ -178,4 +186,29 @@ export class Fauna {
     if (t && !t.dead && t.hunting) return { name: 'The Tall One', left: t.health / TALL.health };
     return null;
   }
+}
+
+/** The mean of a damage range. */
+const mean = (r: readonly [number, number]): number => (r[0] + r[1]) / 2;
+
+/** A foe's whole length nose to tail, metres (its body's footprint along its yaw, for drawing round it). */
+export function bodyLength(f: Foe): number {
+  return f instanceof Animal ? f.nature.totalLength * f.size : 2 * f.radius;
+}
+
+/** How a foe fights (grandma's Salt Sight, src/combat/challenge.ts): its full health, a mean blow and the seconds between blows, as its kind's numbers say. */
+export function mightOf(f: Foe): Might {
+  const health = f.full;
+  if (f instanceof Animal) return { health, blow: f.nature.power(f.size).blow, every: 1.4 };
+  if (f instanceof Boss) return { health, blow: mean(FOREMAN.swing.damage), every: FOREMAN.swing.dur + FOREMAN.swing.rest };
+  if (f instanceof Touched) return { health, blow: mean(TOUCHED.swing.damage), every: TOUCHED.swing.dur + TOUCHED.swing.rest };
+  if (f instanceof Scavenger) return { health, blow: mean(SCAVENGER.swing.damage), every: SCAVENGER.swing.dur + SCAVENGER.swing.rest };
+  if (f instanceof Goblin) return { health, blow: mean(GOBLIN_FOLK.swing.damage), every: GOBLIN_FOLK.swing.dur + GOBLIN_FOLK.swing.rest };
+  if (f instanceof TallOne) return { health, blow: mean(TALL.reach.damage), every: TALL.reach.dur + TALL.reach.rest };
+  if (f instanceof Cricket) return { health, blow: mean(CRICKET.biteDamage), every: CRICKET.biteEvery };
+  if (f instanceof Slime) return { health, blow: mean(SLIME.damage[f.faction]) * f.size, every: SLIME.every };
+  if (f instanceof Toadstool) return { health, blow: mean(TOADSTOOL.damage) * f.size, every: TOADSTOOL.every };
+  if (f instanceof Puffcap) return { health, blow: mean(SPORES.hit), every: PUFFCAP.every };
+  if (f instanceof Eel) return { health, blow: mean(EEL.damage), every: 1.6 };
+  return { health, blow: 5, every: 1.5 };
 }
