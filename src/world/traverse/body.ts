@@ -111,6 +111,8 @@ export class Body {
   leap = 1;
   /** What climbing costs in stamina, a share of the plain cost (grandma's Kneading card lowers it). */
   climbCost = 1;
+  /** Stamina does not come back while set (grandma's Salt Sight held open, src/game/Game.ts). */
+  breathless = false;
   /** What share of a blow hurts (a miner's helmet from Kemal's, src/loot/hardware.ts). */
   armour = 1;
   /** The debug menu's invulnerability: blows (`combat.damage`) and falls do nothing at all: no health lost, no flash, flinch or cry. */
@@ -251,7 +253,7 @@ export class Body {
 
     // Stamina comes back after a moment's rest on the floor.
     if (this.mode === 'climb' || (input.sprint && ml > 0.1 && this.grounded)) this.restSince = this.time;
-    else if (this.grounded && this.time - this.restSince > 0.8) this.stamina = Math.min(this.maxStamina, this.stamina + 3 * this.wind * dt);
+    else if (this.grounded && !this.breathless && this.time - this.restSince > 0.8) this.stamina = Math.min(this.maxStamina, this.stamina + 3 * this.wind * dt);
     if (ml > 0.1 && this.mode !== 'climb' && !this.rolling) this.facing = Math.atan2(-mx, -mz);
     input.jump = false;
   }

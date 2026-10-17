@@ -52,10 +52,6 @@
     "reason": "styles stamp their prop models into the tile's solid builder (d.solid.stamp, PropBuilder.stamp): the one way to place a model, called from each style's props"
   },
   {
-    "key": "idiom: [.add .push .root] in dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/props/hearth.ts",
-    "reason": "keep a made object in a list and hang it under the view's root: two lines each view needs for its own things; nothing to fold"
-  },
-  {
     "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/shopView.ts#show",
     "reason": "two different panels' drawing (the pack's slots and finds; a merchant's goods and offers), both on the one Modal (showHtml) and the theme's classes"
   },
@@ -4416,10 +4412,6 @@
     "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
   },
   {
-    "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
-    "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
-  },
-  {
     "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
     "reason": "async factories of the human views: each builds its own humans (the nobody in the saved look and clothes)"
   },
@@ -4782,6 +4774,22 @@
   {
     "key": "same name: dunfinity/app/minimap.ts#show + dunfinity/render/props/saltLine.ts#show",
     "reason": "each view draws or shows its own thing; the minimap paints the map small in the HUD corner"
+  },
+  {
+    "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/minimap.ts#constructor + dunfinity/app/targetMark.ts#constructor",
+    "reason": "each DOM view builds its own elements the one way (panel, child, growOn for the salt on its frame); the parts and their names differ"
+  },
+  {
+    "key": "idiom: [.dead .hypot .x .z Math] in dunfinity/combat/thrown.ts + dunfinity/creatures/pets.ts + dunfinity/game/Game.ts",
+    "reason": "a living foe within some distance of a point: one line each, each its own distance and purpose (a knife's flight, a pet's quarry, what Salt Sight rings)"
+  },
+  {
+    "key": "idiom: [.setTransform] in dunfinity/app/mapView.ts + dunfinity/app/saltSight.ts + dunfinity/app/tvSet.ts",
+    "reason": "the canvas API's own reset before clearing and drawing at the device's pixel ratio; each canvas draws something else"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#paint + dunfinity/app/saltSight.ts#paint",
+    "reason": "the views' convention: `paint` draws a view's current state each frame; different views"
   },
   {
     "key": "same name: dunfinity/app/minimap.ts#draw + dunfinity/render/thinView.ts#draw",
