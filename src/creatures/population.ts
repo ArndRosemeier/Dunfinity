@@ -8,7 +8,7 @@ import { Rng, deriveSeed, hash3f } from '@futuremagic/core';
 import type { Blockers } from '../world/blockers';
 import type { Level } from '../gen/level';
 import type { SaltCircle } from '../gen/lair';
-import type { Fighter } from '../combat/combat';
+import { byYou, type Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
 import { Steer, brake, type Gait } from './steer';
 import { GRUDGE_HELD, type Creature } from './creature';
@@ -103,7 +103,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
       }
       this.settle();
     }
-    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (c.cause === 'knife') { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z }); } }
+    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (byYou(c.cause)) { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z }); } }
     return hits;
   }
 

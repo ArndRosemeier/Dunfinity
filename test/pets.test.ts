@@ -5,7 +5,8 @@ import { Level } from '../src/gen/level';
 import { PET, PETS, Pets } from '../src/creatures/pets';
 import { Rats } from '../src/creatures/rats';
 import { Cooked } from '../src/loot/recipes';
-import type { Fighter } from '../src/combat/combat';
+import { byYou, type Fighter } from '../src/combat/combat';
+import { GRUDGE } from '../src/creatures/creature';
 
 const DT = 1 / 60;
 const level = new Level(1, 1);
@@ -93,4 +94,18 @@ test('down (or up) a level it comes along, as hurt as it was, and stands up at y
   assert.equal(p.mode, 'form');
   assert.ok(Math.abs(p.health - (PETS.dog.health - 30)) < 0.01, `kept its health (${p.health})`);
   assert.ok(Math.hypot(you.x - p.x, you.z - p.z) < 3, 'at your side');
+});
+
+test('what your pet (or a card) kills counts as yours, for the tally and the salt; what another creature kills does not', () => {
+  const rats = new Rats(level), nest = rats.nearestDen(ax, az)!, you = dummy(nest.x + 40, nest.z);
+  rats.advance(DT, dummy(nest.x, nest.z)); // wake the nest
+  const [a, b] = rats.list;
+  assert.ok(a && b, 'two rats');
+  a.hurt(999, GRUDGE);
+  b.hurt(999, 'dog');
+  rats.advance(DT, you);
+  assert.equal(rats.killed, 1);
+  assert.equal(rats.fallen.length, 1, 'one to give salt for');
+  for (const c of ['knife', 'fire', 'force', 'flour', 'match', 'snapdragon', 'horseradish', GRUDGE]) assert.ok(byYou(c), c);
+  assert.ok(!byYou('dog') && !byYou('spores'));
 });

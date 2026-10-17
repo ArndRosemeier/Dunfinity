@@ -173,6 +173,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Does a creature notice the nobody? (closer when it tiptoes: `Fighter.hush`, `Body.tiptoe`) | `noticed(prey, d, notice)`; never compare against a `notice` range directly | `src/combat/combat.ts` |
 | Does a guard (grandma's pot lid) stop part of a blow? | `Fighter.shield(fromX, fromZ)`, asked by `damage` (`Body.shield` with `Body.lid`, `Body.guarding`); never scale damage at the attacker | `src/combat/combat.ts`, `src/world/traverse/body.ts` |
 | Does a blow, blast or effect reach someone? Who does it hit? (the knife's stab: `STAB`; each weapon's swing: `MOVES[kit.move]`, its `anim` the humanoid action that shows it) | `reach(blow, fighter)`, `nearestReached(blow, fighters)` then `damage(...)`; never write health elsewhere. Anyone hittable is a `Fighter` | `src/combat/combat.ts` |
+| Was a creature's death the grandchild's doing (the kill tally, salt for the kill)? Knife, card spells, the salt pet | `byYou(cause)`; never compare a `cause` with `'knife'` to decide it | `src/combat/combat.ts` |
 | Rats: nests, waking, chasing, biting | `Rats` (a `Population`: `advance(dt, prey)`, `list`, `denAt`) and its numbers `RAT` | `src/creatures/rats.ts` |
 | Place a drawn creature's figure (at its feet, turned, scaled) | `placeFigure(root, creature)` | `src/render/creatures/figures.ts` |
 | Draw the rats | `RatView` (a `FigurePool` added once with the Stage; `draw(rats, time)`) | `src/render/creatures/ratView.ts` |
