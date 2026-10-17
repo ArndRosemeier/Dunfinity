@@ -126,9 +126,7 @@ test('hunters come for you: a tell, then the blow; then they spring back and com
       w.c.advance(1 / 30, w.me);
       if (w.me.taken > before) {
         hits++;
-        // (One its warning drove to fight back bites as any animal does, after the calm tell.)
-        const tell = (a: Critter) => a.mode === 'fight' ? HERD.windup : HUNT.windup[temperOf(a.species).strategy];
-        if (!pack.some((a) => a.action && a.actionT * HERD.strike >= tell(a))) struckBeforeTell = true;
+        if (!pack.some((a) => a.action && a.actionT * HERD.strike >= HUNT.windup[temperOf(a.species).strategy])) struckBeforeTell = true;
       }
       if (pack.some((a) => a.mode === 'back')) backs++;
     }

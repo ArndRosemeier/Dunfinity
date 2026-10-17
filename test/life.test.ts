@@ -110,8 +110,7 @@ test('village dogs feed and lie down to rest too', () => {
 
 test('the strange animals live the same life: a herd feeds and rests', () => {
   let found = false;
-  // (Not seed 1, level 14: its first grazers' food lies out of their reach, so they give up on it and never feed.)
-  for (const [seed, depth] of [[2, 14], [3, 20], [4, 12]] as const) {
+  for (const [seed, depth] of [[1, 14], [2, 14], [3, 20], [4, 12]] as const) {
     const l = new Level(seed, depth), c = new Critters(l);
     const herd = dens<Herd>(c, HERD.cell, l.arrival[0], l.arrival[2], 6).find((h) => h.species.peaceful && h.count >= 2 && h.species.altitude === 0);
     if (!herd) continue;
