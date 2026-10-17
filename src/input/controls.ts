@@ -31,7 +31,7 @@ export class Controls {
   /** `touch`: start with touch hands (a coarse-pointer screen, or `?touch`). */
   constructor(private readonly el: HTMLElement, touch = false) {
     this.touch_ = touch;
-    el.addEventListener('click', () => { if (!this.paused_ && !this.touch_) el.requestPointerLock?.(); });
+    el.addEventListener('click', () => { if (!this.paused_) this.capture(); });
     window.addEventListener('pointerdown', (e) => { this.byTouch = e.pointerType !== 'mouse'; }, { capture: true, passive: true });
     window.addEventListener('keydown', (e) => {
       if (!e.repeat && e.code !== 'Escape') this.byTouch = false;
@@ -70,6 +70,20 @@ export class Controls {
     this.touch_ = on;
     if (!on) this.stick.forward = this.stick.right = 0;
     this.onTouch(on);
+  }
+
+  /**
+   * Capture the mouse for looking (nothing by touch). The browser grants it only right after a click or key
+   * (not Escape) and not just after the lock was let go; a refusal is quiet, and the next click on the game captures.
+   */
+  capture(): void {
+    if (this.touch_ || document.pointerLockElement === this.el || !this.el.requestPointerLock) return;
+    const act = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+    if (act && !act.isActive) return;
+    try {
+      const p = this.el.requestPointerLock() as unknown as Promise<void> | undefined;
+      p?.catch?.(() => {});
+    } catch { /* refused: the next click captures */ }
   }
 
   /** Turn as a mouse would by (dx, dy) pixels (a finger dragged); nothing while paused. */

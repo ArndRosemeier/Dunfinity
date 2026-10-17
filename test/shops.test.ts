@@ -6,6 +6,9 @@ import { HOUSES, SHOP, TOWN, shopAir, shopDoor, shopKeeper, shopRoom, type Shop 
 import { PropBuilder, local } from '../src/gen/propMesh';
 import { furnishTown } from '../src/gen/townProps';
 import { KEEPER, Shopkeeper } from '../src/world/shopkeeper';
+import { quarryProps } from '../src/gen/quarryProps';
+import { Blockers } from '../src/world/blockers';
+import { Body } from '../src/world/traverse/body';
 
 const SHOPS: readonly Shop[] = ['hardware', 'pawn'];
 const level = new Level(1, 0);
@@ -57,5 +60,19 @@ test('keepers talk in turn when called on, and with their hands over a deal', ()
     assert.ok(k.talking(40 + KEEPER.talk - 0.1) && !k.talking(40 + KEEPER.talk + 0.1));
     k.deal(100);
     assert.ok(k.talking(100.5));
+  }
+});
+
+test('a body walks in off the street, through the door, up to the counter (no invisible wall at the threshold)', () => {
+  const blockers = new Blockers();
+  for (let tz = -2; tz <= 1; tz++) for (let tx = -2; tx <= 0; tx++) blockers.set(`${tx},${tz}`, quarryProps(level, tx, tz).blockers);
+  for (const shop of SHOPS) {
+    const H = house(shop), R = shopRoom(H), [sx, sz] = at(shop, H.door, H.hv + 2), want = R.v0 + SHOP.counter.at + SHOP.counter.deep + 0.45;
+    const [tx, tz] = at(shop, H.door, want);
+    const b = new Body(sx, TOWN.ground, sz), dt = 1 / 120;
+    for (let t = 0; t < 10 && Math.hypot(tx - b.x, tz - b.z) > 0.15; t += dt) {
+      b.step(level, { forward: 1, right: 0, yaw: Math.atan2(-(tx - b.x), -(tz - b.z)), sprint: false, jump: false }, dt, blockers);
+    }
+    assert.ok(Math.hypot(tx - b.x, tz - b.z) < 0.3, `${shop}: stopped ${Math.hypot(tx - b.x, tz - b.z).toFixed(2)} m short of the counter`);
   }
 });

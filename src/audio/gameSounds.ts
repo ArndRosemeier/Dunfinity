@@ -1,6 +1,6 @@
 /**
  * What the game sounds like: everything heard follows from what the world is doing, read once a
- * frame (`update`), the way Scale's music reads its signals. Footsteps from the distance walked,
+ * frame (`update`), the way Scale's music reads its signals. Footsteps on the figure's heel strikes,
  * landings, getting hurt and dying from the body; growls, squeaks, swings and deaths from each
  * creature's mode changing; the ambience bed and the music from where one is. The few things only
  * the game knows (a stab, a door, a pickup) it plays itself through `play`.
@@ -28,6 +28,9 @@ export interface SoundScene {
   /** The fire burning, if any. */
   readonly fire: { readonly x: number; readonly y: number; readonly z: number } | null;
   readonly resting: boolean;
+  /** The figure's gait phase 0..1 (the animator's `gaitPhase`: heel strikes at 0.25 and 0.75), so
+   *  steps land with its feet; null where no figure walks (then steps go by distance). */
+  readonly gait?: number | null;
   /** Climbing a ladder (played out, not walked). */
   readonly ladder: boolean;
   /** The camera: where one hears from, and which way it looks. */
@@ -59,8 +62,21 @@ export const VOICES: Record<string, Voice> = {
   tall: {},
 };
 
-/** Metres between footsteps, walking and running. */
+/** Metres between footsteps, walking and running, where there is no gait phase to follow. */
 const STRIDE = { walk: 0.75, run: 1.05 };
+
+/** Where the gait cycle puts a heel down (left, right). */
+export const HEEL_STRIKES = [0.25, 0.75] as const;
+
+/** How many heel strikes the gait phase passed going from `from` to `to` (either way round the cycle). */
+export function footfalls(from: number, to: number): number {
+  const d = (to - from + 1) % 1;
+  if (d === 0) return 0;
+  const [a, span] = d < 0.5 ? [from, d] : [to, 1 - d]; // backpedalling runs the cycle backwards
+  let n = 0;
+  for (const h of HEEL_STRIKES) { const u = (h - a + 1) % 1; if (u > 0 && u <= span) n++; }
+  return n;
+}
 
 export class GameSounds {
   readonly engine: SoundEngine;
@@ -69,6 +85,7 @@ export class GameSounds {
   private seen = new WeakMap<object, { mode: string; hurtT: number; idleAt: number }>();
   private doorWant = new WeakMap<object, number>();
   private walked = 0;
+  private gaitWas: number | null = null;
   private wasGrounded = true;
   private fallSpeed = 0;
   private hurtAt = -Infinity;
@@ -151,13 +168,18 @@ export class GameSounds {
     if (b.grounded && !this.wasGrounded && this.fallSpeed > 6) this.play('land', feet, Math.min(1, this.fallSpeed / 12));
     if (!b.grounded) this.fallSpeed = Math.max(0, -b.vy);
     this.wasGrounded = b.grounded;
-    // Footsteps: one per stride walked on the ground; soft when sneaking.
+    // Footsteps: on each heel strike of the figure's gait (one per stride walked where there is no
+    // figure, and when climbing rock); soft when sneaking.
     const v = Math.hypot(b.vx, b.vz);
+    const gait = s.gait ?? null, was = this.gaitWas;
+    this.gaitWas = gait;
+    let steps = 0;
     if (b.mode === 'climb') this.walked += Math.abs(b.vy) * s.dt * 1.5;
+    else if (gait !== null) { this.walked = 0; if (b.grounded && b.mode === 'walk' && v > 0.3 && was !== null) steps = footfalls(was, gait); }
     else if (b.grounded && b.mode === 'walk') this.walked += v * s.dt;
     const stride = v > 5 ? STRIDE.run : STRIDE.walk;
-    if (this.walked >= stride) {
-      this.walked = 0;
+    if (this.walked >= stride) { this.walked = 0; steps = 1; }
+    if (steps > 0) {
       const wet = s.level.waterAt(b.x, b.z) > b.y + 0.05;
       const soft = b.sneaking || b.tiptoe ? 0.35 : 1;
       this.play(wet ? 'step_water' : 'step_stone', feet, soft * (v > 5 ? 1.2 : 0.9));

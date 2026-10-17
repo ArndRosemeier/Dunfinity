@@ -614,7 +614,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   touchMode();
   const letterView = new LetterView(document.body);
   /** The pause menu: Escape once the mouse is free (not the Escape that freed it), or its button; the game's clock stands still while it is open. */
-  const goOn = (): void => { pause.hide(); if (!controls.byTouch) canvas.requestPointerLock?.(); };
+  const goOn = (): void => { pause.hide(); controls.capture(); };
   const pause = new PauseMenu(document.body, {
     resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), keys: () => keysOf(keyName, controls.byTouch),
     settings: () => { pause.hide(); settingsView.toggle(); },
@@ -979,7 +979,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
     sounds.update({
-      dt, body, level, fauna, doors: doors.list, fire: null, resting: false, ladder: false,
+      dt, body, level, fauna, doors: doors.list, fire: null, resting: false, ladder: false, gait: nobody.human.animator.gaitPhase,
       ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
     (globalThis as { __ready?: boolean }).__ready = view.settled;
@@ -1301,7 +1301,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const acts = tinView.take();
       if (controls.tap('KeyT') || controls.tap('Escape') || acts.some((a) => a.kind === 'close') || !campfire.resting || body.dead) {
         tinView.hide();
-        if (!body.dead && !controls.byTouch) canvas.requestPointerLock?.();
+        if (!body.dead) controls.capture();
       } else {
         const order = TinView.order(cooked), at = order.indexOf(tinSel);
         let why: string | null = null, redraw = false, cookNow = controls.tap('KeyE');
@@ -1335,7 +1335,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
             const r = cooked.cook(tinSel, tin), c = card(tinSel), at = r === 1 ? mainBar.slotIn(tinSel) : -1, fire = campfire.fire ?? (campfire.inHaven(body) ? level.haven : null);
             cookAt = now;
             tinView.hide();
-            if (!controls.byTouch) canvas.requestPointerLock?.();
+            controls.capture();
             tick('cook');
             say(r === 1 ? `${c.title}, cooked${at >= 0 ? `, on your bar (${keyName(SLOT_KEYS[at])})` : ''}.\n${c.method}` : `${c.title}, rank ${r}.\n${c.ranks[r - 2]}`, 6);
             if (fire) drift.burst(fire.x, fire.y + 0.3, fire.z, 2, now);
@@ -1824,7 +1824,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const ear = view.camera.position;
     sounds.update({
       dt, body, level, fauna, doors: doors.list, fire: campfire.burning(timer.getElapsed()) ? campfire.fire : null,
-      resting: campfire.resting, ladder: climb.active, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
+      resting: campfire.resting, ladder: climb.active, gait: nobody.human.animator.gaitPhase, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
     fadeLine.style.opacity = arriving && !loading.open && Number(fade.style.opacity) > 0.9 ? '1' : '0';
     (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone && !arriving;
