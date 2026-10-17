@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.213 — Kills by your salt pet and grandma's cards count as yours
+
+- What your salt pet, a Matchstick's fire, a Flour Bag's burst, Flame, Pin, Snapdragons or Horseradish kills now gives salt and counts in your kill tally, like a knife kill. Kills by other creatures still don't.
+
 ## v0.212 — The village by day
 
 - Out in the village it is now day: a pale blue sky with haze over the far fields, the sun from the south-west, and bright light from the sky. The street lamps and lanterns are out and the windows show glass, not lamplight.
