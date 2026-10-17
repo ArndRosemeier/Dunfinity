@@ -22,8 +22,6 @@ export const REGIONS = {
   jitter: 0.85,
   /** The edge band between styles, metres (blend distance) on each side. */
   edge: 80,
-  /** Regions of other styles this much further off (blend distance) are listed too (`Shares.others`): the passages between styles reach that far in. */
-  reach: 200,
   /** How far off (blend distance, beyond the band) the nearest region of another style is still told (`Shares.edge`). */
   far: 900,
   /** Regions whose feature point is this near the origin are the mix's first style: the home ground round the arrival, metres. */
@@ -50,7 +48,12 @@ export interface Shares {
   id: number;
   px: number;
   pz: number;
-  /** Regions of other styles within `edge + reach`: `others` of them, their hash, feature point (metres) and style. */
+  /**
+   * Regions of other styles within `edge + far` (all that are told): `others` of them, their hash,
+   * feature point (metres) and style. The passages between styles are looked for among these, so a
+   * passage drops out of the field only where it is hundreds of metres off (a style's portal can
+   * carry its end well into the region, and a nearer cut would make the field jump there).
+   */
   others: number;
   oids: number[];
   opx: number[];
@@ -128,10 +131,8 @@ export class Regions {
       sum += k;
       if (s === own) { out.w[0] += k; continue; } // (regions of one style run into each other seamlessly)
       out.edge = Math.min(out.edge, r.blends[i]);
-      if (r.blends[i] < S.edge + S.reach) {
-        const o = out.others++;
-        out.oids[o] = r.ids[i]; out.opx[o] = r.pxs[i] * S.size; out.opz[o] = r.pzs[i] * S.size; out.ostyles[o] = s;
-      }
+      const o = out.others++;
+      out.oids[o] = r.ids[i]; out.opx[o] = r.pxs[i] * S.size; out.opz[o] = r.pzs[i] * S.size; out.ostyles[o] = s;
       if (k === 0) continue;
       let j = 1;
       while (j < out.n && out.styles[j] !== s) j++;
