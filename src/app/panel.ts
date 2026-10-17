@@ -87,3 +87,33 @@ export class Modal {
     this.toggled?.(false);
   }
 }
+
+/**
+ * A `Modal` the mouse (or a finger) works too: a click inside it is read as one of the game's asks
+ * (`read`), which waits in `take()` for the game to do, the same as a key would (the pack, the tin, a
+ * shop's counter).
+ */
+export abstract class AskingModal<A> extends Modal {
+  private readonly asks: A[] = [];
+
+  constructor(host: HTMLElement, id: string, css: string, surface: 'paper' | 'dark' = 'paper', toggled?: (open: boolean) => void) {
+    super(host, id, css, surface, toggled);
+    this.el.addEventListener('click', (e) => {
+      const a = this.read(e.target as HTMLElement);
+      if (a !== null) this.asks.push(a);
+    });
+  }
+
+  /** What a click on `t` asks (null: nothing). */
+  protected abstract read(t: HTMLElement): A | null;
+
+  /** Something asked from elsewhere (a drop, the bar), in line with the clicks. */
+  protected push(a: A): void {
+    this.asks.push(a);
+  }
+
+  /** The asks since the last call, in order. */
+  take(): A[] {
+    return this.asks.splice(0);
+  }
+}

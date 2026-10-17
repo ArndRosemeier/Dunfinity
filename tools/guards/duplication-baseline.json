@@ -52,6 +52,14 @@
     "reason": "styles stamp their prop models into the tile's solid builder (d.solid.stamp, PropBuilder.stamp): the one way to place a model, called from each style's props"
   },
   {
+    "key": "idiom: [.add .push .root] in dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/props/hearth.ts",
+    "reason": "keep a made object in a list and hang it under the view's root: two lines each view needs for its own things; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/shopView.ts#show",
+    "reason": "two different panels' drawing (the pack's slots and finds; a merchant's goods and offers), both on the one Modal (showHtml) and the theme's classes"
+  },
+  {
     "key": "same name: dunfinity/gen/level.ts#trace + dunfinity/world/blockers.ts#trace",
     "reason": "the same question (how far a ray gets, kept a skin clear) of two different things: the rock field (sphere tracing) and the props' boxes (slab test); OrbitCamera takes the nearer"
   },

@@ -15,7 +15,7 @@ import { SKILLS, type Practice, type Skill } from '../loot/practice';
 import { BAR, SLOT_KEYS, abilityOf, type MainBar } from '../game/abilities';
 import { CARDS, CHAPTERS, card, type CardId, type Cooked } from '../loot/recipes';
 import type { Tin } from '../loot/tin';
-import { Modal, esc, keycap } from './panel';
+import { AskingModal, esc, keycap } from './panel';
 
 /** What the mouse asked of the tin: choose a card, cook the chosen one, close it, or put a card in (or take one off) a bar slot. */
 export type TinAct = { kind: 'choose'; id: CardId } | { kind: 'cook' } | { kind: 'close' } | { kind: 'slot'; i: number; id: CardId | null } | { kind: 'tap'; i: number };
@@ -90,24 +90,10 @@ const STYLE = `
   #tin .hint { margin-top: 10px; font: 13px/1.6 var(--ui-font); color: var(--ui-paper-dim); }
   #tin.drop-off { outline: 2px dashed var(--ui-vein-glow); outline-offset: -6px; }`;
 
-export class TinView extends Modal {
-  private readonly acts: TinAct[] = [];
-
+export class TinView extends AskingModal<TinAct> {
   constructor(host: HTMLElement) {
     super(host, 'tin', STYLE);
     const frame = this.el.parentElement!;
-    this.el.addEventListener('click', (e) => {
-      const t = e.target as HTMLElement;
-      const tile = t.closest<HTMLElement>('[data-id]'), tab = t.closest<HTMLElement>('[data-ch]'), act = t.closest<HTMLElement>('[data-act]');
-      if (act?.dataset.act === 'cook' && !(act as HTMLButtonElement).disabled) this.acts.push({ kind: 'cook' });
-      else if (act?.dataset.act === 'close') this.acts.push({ kind: 'close' });
-      else if (tile) this.acts.push({ kind: 'choose', id: tile.dataset.id as CardId });
-      else if (tab) {
-        const first = TinView.chapterCards(tab.dataset.ch!, this.cooked)[0];
-        if (first) this.acts.push({ kind: 'choose', id: first });
-      }
-      if (act) (act as HTMLButtonElement).blur();
-    });
     // A card dragged from the tin onto a bar slot (the bar takes the drop); a slot's card dragged back in here comes off the bar.
     this.el.addEventListener('dragstart', (e) => {
       const tile = (e.target as HTMLElement).closest<HTMLElement>('[data-id][draggable="true"]');
@@ -128,7 +114,7 @@ export class TinView extends Modal {
       const d = e.dataTransfer?.getData(DRAG.type) ?? '';
       if (!d.startsWith(DRAG.slot)) return;
       e.preventDefault();
-      this.acts.push({ kind: 'slot', i: Number(d.slice(DRAG.slot.length)), id: null });
+      this.push({ kind: 'slot', i: Number(d.slice(DRAG.slot.length)), id: null });
     });
   }
 
@@ -140,13 +126,19 @@ export class TinView extends Modal {
   private chapter = '';
 
   /** What the mouse asked for since the last call (oldest first); the bar's drops come in here too (`ask`). */
-  take(): TinAct[] {
-    return this.acts.splice(0);
+  protected read(t: HTMLElement): TinAct | null {
+    const tile = t.closest<HTMLElement>('[data-id]'), tab = t.closest<HTMLElement>('[data-ch]'), act = t.closest<HTMLElement>('[data-act]');
+    if (act) (act as HTMLButtonElement).blur();
+    if (act?.dataset.act === 'cook') return (act as HTMLButtonElement).disabled ? null : { kind: 'cook' };
+    if (act?.dataset.act === 'close') return { kind: 'close' };
+    if (tile) return { kind: 'choose', id: tile.dataset.id as CardId };
+    const first = tab ? TinView.chapterCards(tab.dataset.ch!, this.cooked)[0] : undefined;
+    return first ? { kind: 'choose', id: first } : null;
   }
 
   /** Something asked of the tin from outside it (a card dropped on a bar slot). */
   ask(a: TinAct): void {
-    this.acts.push(a);
+    this.push(a);
   }
 
   /** The cards the tin shows, in its order (only chapters that have cards; lost cards once found). */
