@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.232 — Steadier shadow warm-up under the title
+
+- The shader warm-up waits half a second before drawing its shadow frames. The first shadow build no longer runs over the 100 ms budget while the title plays (it took 40 to 125 ms before, 37 to 53 ms now, measured in software GL).
+
 ## v0.231 — Clothes for your grandchild
 
 - The character creator has a Clothes tab: a top (T-shirt, shirt, sweater, hoodie or dress), something over it (jacket, rain jacket, blazer or coat), jeans, chinos, shorts or a skirt, trainers, shoes or boots, and a cap or a beanie.
