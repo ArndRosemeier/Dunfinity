@@ -340,6 +340,76 @@
   "loop": false,
   "gain": 0.5
  },
+ "report_1": {
+  "files": [
+   "report_1_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_10": {
+  "files": [
+   "report_10_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_2": {
+  "files": [
+   "report_2_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_3": {
+  "files": [
+   "report_3_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_4": {
+  "files": [
+   "report_4_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_5": {
+  "files": [
+   "report_5_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_6": {
+  "files": [
+   "report_6_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_7": {
+  "files": [
+   "report_7_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_8": {
+  "files": [
+   "report_8_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
+ "report_9": {
+  "files": [
+   "report_9_1.ogg"
+  ],
+  "loop": false,
+  "gain": 0.9
+ },
  "salt_gain": {
   "files": [
    "salt_gain_1.ogg"
