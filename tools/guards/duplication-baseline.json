@@ -1952,10 +1952,6 @@
     "reason": "async factories of the human views (humans load their assets first)"
   },
   {
-    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/humans/nobody.ts#create",
-    "reason": "async factories of the human views (humans load their assets first): the nobody, the Salt-Touched pool, the Foreman"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/creatures/humanPool.ts#draw",
     "reason": "each view draws its own thing per frame; the human pools share HumanPool.draw (src/render/creatures/humanPool.ts)"
   },
@@ -4734,5 +4730,41 @@
   {
     "key": "idiom: [.addEventListener .remove] in dunfinity/app/abilityBar.ts + dunfinity/app/tinView.ts + dunfinity/app/touchPad.ts",
     "reason": "DOM listeners that drop a highlight class when a drag or a finger leaves an element; one line each on its own element, nothing to fold"
+  },
+  {
+    "key": "idiom: [.__ready .settled globalThis] in dunfinity/game/Game.ts + dunfinity/game/creator.ts + dunfinity/lab/Lab.ts",
+    "reason": "each screen that draws the level tells the shot tools it is ready (globalThis.__ready) once the view has settled; one line each, its own condition"
+  },
+  {
+    "key": "idiom: [.addEventListener .preventDefault] in dunfinity/app/creatorView.ts + dunfinity/app/mapView.ts + dunfinity/app/touchPad.ts",
+    "reason": "DOM listeners that keep the browser's own scroll or gesture: the creator's wheel, the map's wheel, the touch pad's touches"
+  },
+  {
+    "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
+    "reason": "each kind turns to face where it goes (atan2 of its heading) at its own rate; the shared turning is already damp/angleDiff in core"
+  },
+  {
+    "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/creator.ts + dunfinity/lab/Lab.ts",
+    "reason": "calls of the one seam view.frame(x, y, z, time) from each screen that draws the level"
+  },
+  {
+    "key": "same name: dunfinity/app/creatorView.ts#dark + dunfinity/app/titleScreen.ts#dark",
+    "reason": "each full-screen overlay's own black to fade in from and out to: one setter of one line each"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/cricketView.ts#create + dunfinity/render/humans/nobody.ts#create",
+    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/dogView.ts#create + dunfinity/render/humans/nobody.ts#create",
+    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/eelView.ts#create + dunfinity/render/humans/nobody.ts#create",
+    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ratView.ts#create + dunfinity/render/humans/nobody.ts#create",
+    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
   }
 ]

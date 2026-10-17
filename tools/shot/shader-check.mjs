@@ -7,9 +7,9 @@
  *     apart and at most 5 per second, each under 100 ms of blocking.
  *  3. The game: after its warm-up, the first seconds of play (figure, rats, finds, shadows) build
  *     no new shader.
- *  4. The title: the figures warm while it plays, each build under the cap (the Stage's shadow
- *     warm-up marks its own); once the menu wakes, nothing more is built, through New Game and the
- *     first seconds of play.
+ *  4. The title: the figures warm while it plays and while the character creator after New Game
+ *     shows (a change of look there too), each build under the cap (the Stage's shadow warm-up marks
+ *     its own); once "Go down" wakes, nothing more is built through the first seconds of play.
  *
  * `-- lab` runs only 1 and 2, `-- game` only 3, `-- title` only 4: the Shaders workflow runs them as parallel jobs.
  * `--no-cap` leaves out 2, the slowest part, when the Stage and the shader hooks are untouched.
@@ -95,23 +95,35 @@ try {
     title.on('pageerror', (e) => problems.push(`title page error: ${e.message}`));
     await title.goto(server.resolvedUrls.local[0] + '?title&seed=1&gl&fresh', { timeout: 120000 });
     const woke = Date.now();
+    // New Game wakes at once and opens the character creator; the figures warm behind both, and
+    // "Go down" wakes once they are warm. A change of look meanwhile builds nothing on the render path.
     await title.waitForSelector('#title .menu > button:not([disabled])', { state: 'attached', timeout: 900000 });
+    await title.evaluate(() => document.querySelector('#title .menu > button').click());
+    await title.waitForSelector('#creator .side', { state: 'attached', timeout: 600000 });
+    await title.evaluate(() => {
+      const hair = () => [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'hair');
+      hair()?.click();
+      const styles = [...document.querySelectorAll('#creator .chips button')];
+      styles.find((b) => !b.classList.contains('on'))?.click();
+    });
+    await title.waitForSelector('#creator .go:not([disabled])', { state: 'attached', timeout: 900000 });
+    await new Promise((r) => setTimeout(r, 3000)); // the new look's rebuild
     const warm = await title.evaluate(() => {
       // The Stage's shadow warm-up builds on the render path on purpose, in cap slots, and marks them.
       const sync = window.shaders.events.filter((e) => e.kind === 'node-sync' && e.phase === 'run' && !e.what.endsWith('(shadow warm-up)'));
       return { at: window.shaders.events.length, sync: sync.length, what: sync.map((e) => `${e.what} at ${e.t.toFixed(0)} ms`) };
     });
-    console.log(`title: menu awake after ${((Date.now() - woke) / 1000).toFixed(0)} s, ${warm.sync} synchronous builds while warming`);
-    if (warm.sync) problems.push(`title: ${warm.sync} shaders built synchronously on the render path while the title warmed: ${warm.what.join(', ')}`);
-    await title.evaluate(() => document.querySelector('#title .menu > button').click());
-    await title.waitForFunction(() => !document.querySelector('#title') && window.__ready === true, null, { timeout: 600000 });
+    console.log(`title: ready to go down after ${((Date.now() - woke) / 1000).toFixed(0)} s, ${warm.sync} synchronous builds while warming`);
+    if (warm.sync) problems.push(`title: ${warm.sync} shaders built synchronously on the render path while the title and the creator warmed: ${warm.what.join(', ')}`);
+    await title.evaluate(() => document.querySelector('#creator .go').click());
+    await title.waitForFunction(() => !document.querySelector('#title') && !document.querySelector('#creator') && window.__ready === true, null, { timeout: 600000 });
     const after = await title.evaluate(async (at) => {
       const g = window.__game;
       for (let t = 0; t < 20; t++) { g.cam.yaw += 0.3; await new Promise((r) => setTimeout(r, 150)); }
       return { built: window.shaders.events.slice(at).filter((e) => e.kind === 'node-async' || e.kind === 'node-sync').length, violations: window.shaders.violations() };
     }, warm.at);
-    console.log(`title: ${after.built} shaders built after the menu woke`);
-    if (after.built) problems.push(`title: ${after.built} shaders built after the menu woke (something play draws was not warmed under the title)`);
+    console.log(`title: ${after.built} shaders built after going down`);
+    if (after.built) problems.push(`title: ${after.built} shaders built after going down (something play draws was not warmed under the title and the creator)`);
     problems.push(...after.violations.map((v) => `title: ${v}`));
   }
 } catch (e) {

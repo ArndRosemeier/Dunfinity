@@ -22,7 +22,7 @@ export interface TitleCast {
   readonly canContinue: boolean;
   /** Hold on this shot of the report (`?title&shot=<n>`, for screenshots), or null. */
   readonly pinned: number | null;
-  /** Resolves once everything play needs is compiled (src/render/stage.ts warmLater); the menu waits for it. */
+  /** Resolves once everything play needs is compiled (src/render/stage.ts warmLater); Continue waits for it (New Game goes to the creator, which waits too). */
   readonly ready: Promise<void>;
   /** The game's sound (it starts on the first touch or key: then the set hisses). */
   readonly sound: SoundEngine;
