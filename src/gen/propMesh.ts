@@ -96,12 +96,13 @@ export class PropBuilder {
   /**
    * A smooth ellipsoid centred at (x, y, z) with radii (rx, ry, rz) along x, y, z, tilted by `pitch`
    * about x (nose down for positive pitch): `seg` around, `seg / 2` rings. For creatures and round things.
+   * `cut` below 1 keeps only the top of it, down that share of the way (a dome, open below: 0.5 a half).
    */
-  ellipsoid(x: number, y: number, z: number, rx: number, ry: number, rz: number, color: Rgb, seg = 10, pitch = 0): void {
+  ellipsoid(x: number, y: number, z: number, rx: number, ry: number, rz: number, color: Rgb, seg = 10, pitch = 0, cut = 1): void {
     const base = this.p.length / 3, rings = Math.max(2, seg >> 1);
     const cp = Math.cos(pitch), sp = Math.sin(pitch);
     for (let v = 0; v <= rings; v++) {
-      const ph = (v / rings) * Math.PI, sy = Math.cos(ph), sr = Math.sin(ph);
+      const ph = (v / rings) * Math.PI * cut, sy = Math.cos(ph), sr = Math.sin(ph);
       for (let u = 0; u <= seg; u++) {
         const th = (u / seg) * Math.PI * 2, ux = Math.cos(th) * sr, uz = Math.sin(th) * sr;
         const px = ux * rx, py = sy * ry, pz = uz * rz;

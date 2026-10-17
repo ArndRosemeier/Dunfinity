@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.232 — Steadier shadow warm-up under the title
+
+- The shader warm-up waits half a second before drawing its shadow frames. The first shadow build no longer runs over the 100 ms budget while the title plays (it took 40 to 125 ms before, 37 to 53 ms now, measured in software GL).
+
+## v0.231 — Clothes for your grandchild
+
+- The character creator has a Clothes tab: a top (T-shirt, shirt, sweater, hoodie or dress), something over it (jacket, rain jacket, blazer or coat), jeans, chinos, shorts or a skirt, trainers, shoes or boots, and a cap or a beanie.
+- Each garment takes a colour; tops and coats can be plain, striped or checked, a jacket can be leather.
+- Today's clothes, brought over from Scale's wardrobe (no superhero tights).
+- "Someone else" also picks a new everyday outfit; the clothes are saved with the family.
+- A hard hat found below replaces the cap or beanie.
+
+## v0.230 — Passages between styles never cut off nearby
+
+- The field looked for the passages between styles only among the regions of other styles up to 280 m (blend distance) from a point, and only for passages from the point's own region. So where a style carried a passage's end deep into its region, or where a point stepped from one region into the next of the same style, a passage's air dropped out of the field a few metres from it. Deep in the rock, but the field jumped there (and a mesh chunk next to it could have been skipped).
+- Now each region keeps a list of every passage near it, whichever regions it runs between (`Regions.regionsRound` finds the regions round a point), so a passage drops out only hundreds of metres off, deep in rock.
+
+## v0.229 — Rats and dogs on the one animal mind
+
+- Quarry rats, town rats, feral dogs and village dogs now act through the same animal mind as the strange creatures, on the same aggression scale, with tempers and fighting styles.
+- Quarry rats are a swarm that rears up when it spots you; town rats only ever flee.
+- The dogs' circling attack from behind is now the "flank" fighting style, which pack-living strange creatures can draw too.
+- Village dogs are curious about you, fight back when hit and calm down again; feral dogs go to the water to drink.
+
 ## v0.228 — One mind for every animal (groundwork)
 
 - No change in play yet. The strange creatures' behaviour now lives in one shared place, ready for the rats, dogs and other animals to move onto it, so every animal follows the same rules for aggression, temper and fighting style.

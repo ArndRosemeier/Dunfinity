@@ -22,8 +22,6 @@ export const REGIONS = {
   jitter: 0.85,
   /** The edge band between styles, metres (blend distance) on each side. */
   edge: 80,
-  /** Regions of other styles this much further off (blend distance) are listed too (`Shares.others`): the passages between styles reach that far in. */
-  reach: 200,
   /** How far off (blend distance, beyond the band) the nearest region of another style is still told (`Shares.edge`). */
   far: 900,
   /** Regions whose feature point is this near the origin are the mix's first style: the home ground round the arrival, metres. */
@@ -50,15 +48,17 @@ export interface Shares {
   id: number;
   px: number;
   pz: number;
-  /** Regions of other styles within `edge + reach`: `others` of them, their hash, feature point (metres) and style. */
-  others: number;
-  oids: number[];
-  opx: number[];
-  opz: number[];
-  ostyles: number[];
 }
 
-export const newShares = (): Shares => ({ n: 0, styles: [], w: [], edge: Infinity, id: 0, px: 0, pz: 0, others: 0, oids: [], opx: [], opz: [], ostyles: [] });
+/** A region: its hash, feature point (metres) and style (an index into the mix). */
+export interface Region {
+  id: number;
+  px: number;
+  pz: number;
+  style: number;
+}
+
+export const newShares = (): Shares => ({ n: 0, styles: [], w: [], edge: Infinity, id: 0, px: 0, pz: 0 });
 
 export class Regions {
   private readonly seed: number;
@@ -112,9 +112,25 @@ export class Regions {
     return { id: r.id, px: r.px * S.size, pz: r.pz * S.size };
   }
 
+  /** Every region whose feature point is within `reach` metres of (x, z) (up to four region sizes). */
+  regionsRound(x: number, z: number, reach: number): Region[] {
+    const S = REGIONS, out: Region[] = [], seen = new Set<number>(), probe = newNear();
+    // Each look sees the 5 by 5 cells round it: four looks two cells apart see 9 by 9.
+    for (const dz of [-2, 2]) for (const dx of [-2, 2]) {
+      const r = voronoiNear(this.seed, x / S.size + dx, z / S.size + dz, S.size, S.jitter, Infinity, probe);
+      for (let i = -1; i < r.count; i++) {
+        const id = i < 0 ? r.id : r.ids[i], px = (i < 0 ? r.px : r.pxs[i]) * S.size, pz = (i < 0 ? r.pz : r.pzs[i]) * S.size;
+        if (seen.has(id) || Math.hypot(px - x, pz - z) > reach) continue;
+        seen.add(id);
+        out.push({ id, px, pz, style: this.styleOf(id) });
+      }
+    }
+    return out;
+  }
+
   /** The styles' shares at (x, z), into `out`. */
   sharesAt(x: number, z: number, out: Shares): Shares {
-    out.n = 1; out.styles[0] = 0; out.w[0] = 1; out.edge = Infinity; out.others = 0;
+    out.n = 1; out.styles[0] = 0; out.w[0] = 1; out.edge = Infinity;
     if (this.mix.length === 1) return out;
     const S = REGIONS, r = voronoiNear(this.seed, x / S.size, z / S.size, S.size, S.jitter, S.edge + S.far, this.near);
     const own = this.styleOf(r.id);
@@ -128,10 +144,6 @@ export class Regions {
       sum += k;
       if (s === own) { out.w[0] += k; continue; } // (regions of one style run into each other seamlessly)
       out.edge = Math.min(out.edge, r.blends[i]);
-      if (r.blends[i] < S.edge + S.reach) {
-        const o = out.others++;
-        out.oids[o] = r.ids[i]; out.opx[o] = r.pxs[i] * S.size; out.opz[o] = r.pzs[i] * S.size; out.ostyles[o] = s;
-      }
       if (k === 0) continue;
       let j = 1;
       while (j < out.n && out.styles[j] !== s) j++;
