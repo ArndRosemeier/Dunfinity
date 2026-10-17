@@ -979,7 +979,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
     sounds.update({
-      dt, body, level, fauna, doors: doors.list, fire: null, resting: false, ladder: false,
+      dt, body, level, fauna, doors: doors.list, fire: null, resting: false, ladder: false, gait: nobody.human.animator.gaitPhase,
       ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
     (globalThis as { __ready?: boolean }).__ready = view.settled;
@@ -1824,7 +1824,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const ear = view.camera.position;
     sounds.update({
       dt, body, level, fauna, doors: doors.list, fire: campfire.burning(timer.getElapsed()) ? campfire.fire : null,
-      resting: campfire.resting, ladder: climb.active, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
+      resting: campfire.resting, ladder: climb.active, gait: nobody.human.animator.gaitPhase, ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
     fadeLine.style.opacity = arriving && !loading.open && Number(fade.style.opacity) > 0.9 ? '1' : '0';
     (globalThis as { __ready?: boolean }).__ready = view.settled && loading.gone && !arriving;
