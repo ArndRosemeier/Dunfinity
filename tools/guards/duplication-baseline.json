@@ -4694,5 +4694,9 @@
   {
     "key": "idiom: [.kind .pts .roads] in dunfinity/gen/townProps.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",
     "reason": "each walks VILLAGE.roads for its own end (the layout lays houses, the props stand lamps, the walkers find their streets); the roads are the one seam"
+  },
+  {
+    "key": "idiom: [.things] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/goblin.ts",
+    "reason": "each style furnishes from its own constants' things table (T = STYLE.things): the shared shape is only the alias; found on main, not touched by the townsfolk PR"
   }
 ]

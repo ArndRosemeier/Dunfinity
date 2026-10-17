@@ -4,6 +4,12 @@ Status: **draft 2, decided by Arnd 2026-10-15 (LO1–LO4 below), no in-game text
 
 Arnd's ask (2026-10-15): *the dungeon is a rift to the first world, and the deeper the player gets the clearer this becomes. Dwarven runes and elven script visible in game.*
 
+## 0. Timeline (Arnd, 2026-10-17)
+
+- **The game happens today (2026).** The player is grandma Grete's grandchild, come to her town after her death this year.
+- **The town is a present-day town:** its people dress and live as people do now, and its shops take euros. Nothing in the town is staged as the 1960s.
+- **The past shows only through what is left of it:** grandma's diary (1959–1971, a few later pages), the 1966 TV report on the title screen, the old mine, its relics and its dead.
+
 ---
 
 ## 1. The truth (for us; never stated in one place in game)
