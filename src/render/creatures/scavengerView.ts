@@ -1,6 +1,6 @@
 /**
- * The scavengers on screen (src/creatures/scavengers.ts): Scale's humans, living people, younger
- * and weathered (below level 10 the peoples of the deep, Norgo's races), in patched clothes, with crowbars. They sit round their fire on crates, get up and
+ * The scavengers on screen (src/creatures/scavengers.ts): goblins (Norgo's goblin race on Scale's
+ * bodies; below level 10 the peoples of the deep, Norgo's races), in the miners' patched cast-offs, with crowbars. They sit round their fire on crates, get up and
  * turn to you, come at you swinging the crowbar, flinch when stabbed, and fall when they die. Their
  * camps: a `Hearth` (src/render/props/hearth.ts) and a crate to sit on at each seat.
  *
@@ -22,16 +22,16 @@ import { scavengersClothes } from '../humans/wardrobe';
 import { HumanPool, humans } from './humanPool';
 import { FigurePool, type Figure } from './figures';
 
-/** How many people and camps can be drawn at once, and how far off the people are drawn, metres: four of ours, three of each people of the deep (`lookOf`). */
+/** How many people and camps can be drawn at once, and how far off the people are drawn, metres: four goblins, three of each people of the deep (`lookOf`). */
 const PEOPLE = 4 + 2 * 3;
 const CAMPS = 3;
 const SHOWN = 60;
 
 const CRATE: Rgb = [0.34, 0.26, 0.17], SLAT: Rgb = [0.25, 0.19, 0.12];
 
-/** A scavenger's look: a living person, weathered by the dark; from the fifth body on, one of the game's peoples of the deep (src/creatures/folk.ts). */
+/** A scavenger's look: a goblin; from the fifth body on, one of the game's peoples of the deep (src/creatures/folk.ts). */
 function scavengerLook(seed: number, k: number): HumanoidAppearance {
-  const race = k < 4 ? 'human' : deepFolk(seed)[Math.floor((k - 4) / 3)], j = k < 4 ? k : (k - 4) % 3;
+  const race = k < 4 ? 'goblin' : deepFolk(seed)[Math.floor((k - 4) / 3)], j = k < 4 ? k : (k - 4) % 3;
   return randomAppearance(race, deriveSeed(seed, 'scavenger', k), { age: 0.3 + 0.12 * j, gender: j === 1 ? 0.15 : 0.85 });
 }
 

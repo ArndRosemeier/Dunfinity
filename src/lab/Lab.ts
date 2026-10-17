@@ -29,9 +29,10 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
   const fly = new FlyCamera(camera, new Controls(canvas));
   if (params.look) [fly.yaw, fly.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
-  // Every race side by side (?races), or one close up (?races=<race>): built before the warm-up, which compiles the humans.
-  const one = params.races && (RACE_IDS as readonly string[]).includes(params.races) ? (params.races as RaceId) : undefined;
-  const lineup = params.races !== null ? await Lineup.create(params.seed, one) : null;
+  // Every race side by side (?races), or one close up (?races=<race>), as skeletons with `bones` (?races=bones, ?races=<race>-bones): built before the warm-up, which compiles the humans.
+  const bones = !!params.races?.endsWith('bones'), race = params.races?.replace(/-?bones$/, '');
+  const one = race && (RACE_IDS as readonly string[]).includes(race) ? (race as RaceId) : undefined;
+  const lineup = params.races !== null ? await Lineup.create(params.seed, one, bones) : null;
   if (lineup) {
     lineup.pool.level = level;
     lineup.stand(camera.position.x, camera.position.z, fly.yaw, one ? 1.6 : 4, (x, z) => level.groundAt(x, z));

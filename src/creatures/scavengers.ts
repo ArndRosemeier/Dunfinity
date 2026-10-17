@@ -1,13 +1,14 @@
 /**
- * Scavengers (docs/design/town-and-first-strata.md §5: levels 4–10, "people living down there; some
- * trade, some rob"): living people, camped in twos and threes round a fire in the dark. Most camps
+ * Scavengers (docs/design/town-and-first-strata.md §5: levels 4–10, "some trade, some rob"): goblins
+ * come up the rift to pick over what the miners left (no people of ours live down there), camped in
+ * twos and threes round a fire in the dark, with crowbars. Most camps
  * want to be left alone: they get up as you come near, one warns you off, and they only come for you
  * if you walk into their camp or stab one of them. Some camps are robbers: they come for you with
  * crowbars as soon as they see you. A badly hurt scavenger runs for it.
  *
  * Pure: floor walking with src/creatures/steer.ts, the crowbar through src/creatures/pick.ts.
  * Camps are fixed by the seed; the dead stay dead on this visit. Below level 10 they are the
- * peoples of the buried worlds (src/creatures/folk.ts), not ours.
+ * peoples of the buried worlds (src/creatures/folk.ts).
  */
 import { angleDiff, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
@@ -17,6 +18,7 @@ import { Population, type Den } from './population';
 import { rockDistance } from '../gen/quarry';
 import { closeIn, pickSwing } from './pick';
 import { folkAt } from './folk';
+import { GOBLIN_FOLK } from './goblins';
 
 export const SCAVENGER = {
   radius: 0.3,
@@ -62,7 +64,9 @@ export class Scavenger extends Creature<ScavengerMode> {
 
   constructor(readonly id: number, readonly camp: Camp, readonly k: number, readonly look: number) {
     const a = camp.turn + (k / camp.count) * Math.PI * 2, x = camp.x + Math.sin(a) * SCAVENGER.seat, z = camp.z + Math.cos(a) * SCAVENGER.seat;
-    super(x, camp.y, z, a, SCAVENGER.radius, SCAVENGER.height, SCAVENGER.health, 'sit');
+    // A goblin's body is a goblin's (as small as in the warrens); the peoples of the deep stand a person's height.
+    const goblin = camp.folk < 0;
+    super(x, camp.y, z, a, goblin ? GOBLIN_FOLK.radius : SCAVENGER.radius, goblin ? GOBLIN_FOLK.height : SCAVENGER.height, SCAVENGER.health, 'sit');
     this.seatX = x; this.seatZ = z; this.seatYaw = a;
   }
 
@@ -84,18 +88,18 @@ export interface Camp extends Den {
   angry: boolean;
   /** One of them has warned you off (once per visit to the camp). */
   warned: boolean;
-  /** Whose people they are: -1 ours (humans), else which of the game's peoples of the deep (src/creatures/folk.ts). */
+  /** Whose people they are: -1 goblins (levels 4–10), else which of the game's peoples of the deep (src/creatures/folk.ts). */
   readonly folk: -1 | 0 | 1;
 }
 
-/** Which of the view's bodies a scavenger of camp `key` (its k-th) wears: 0–2 ours, then three for each people of the deep. */
+/** Which of the view's bodies a scavenger of camp `key` (its k-th) wears: 0–2 goblins, then three for each people of the deep. */
 export function lookOf(folk: -1 | 0 | 1, key: number, k: number): number {
   return folk < 0 ? (key + k) % 3 : 4 + folk * 3 + (k % 3);
 }
 
 /** What a wary camp calls out to warn you off, and what robbers call as they come for you. */
-const WARN = ['"Keep away from our fire."', '"That\'s close enough. Go round."', '"Nothing here for you. Move on."'];
-const ROB = ['"Your pack. Put it down."', '"Look, one of the grandchildren. Get it."', '"Nice and slow now. Give us the pack."'];
+const WARN = ['"Ours! Our fire! Go round, go round."', '"Nothing here. Nothing for you. Shoo, shoo."', 'A goblin hisses at you and hunches over the fire, its crowbar across its knees.'];
+const ROB = ['"Pack! Pack! Give us the pack!"', '"A grandchild. A fresh one. Get it!"', '"Put it down, the bag, slow, slow..." They giggle and come for you.'];
 /** The same from the peoples of the deep: words almost like ours, an older tongue (lore.md §3: each world a copy of the one below). */
 const WARN_DEEP = ['Words almost like yours, too old to catch. The meaning is plain: keep away from the fire.', '"Go... round." They point the crowbar the way you came.', 'One of them spits a word at you, and stands between you and the fire.'];
 const ROB_DEEP = ['"Pak. Down." They come for you with crowbars.', 'A word you nearly know, and the crowbars come up: they want your pack.', '"Grand... child." They grin and come for you.'];

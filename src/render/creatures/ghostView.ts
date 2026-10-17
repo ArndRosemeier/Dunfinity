@@ -41,7 +41,7 @@ class GhostPool extends HumanPool<Ghost> {
 
 export class GhostView {
   static async create(seed: number): Promise<GhostView> {
-    const pool = async (race: GhostRace) => new GhostPool(await humans(POOL, (k) => ghostLook(seed, race, k), (k) => ghostsClothes(deriveSeed(seed, 'ghost', 'clothes', k), race), LOOK[race]));
+    const pool = async (race: GhostRace) => new GhostPool(await humans(POOL, (k) => ghostLook(seed, race, k), (k) => ghostsClothes(deriveSeed(seed, 'ghost', 'clothes', k), race), { ghost: LOOK[race] }));
     return new GhostView(await pool('dwarf'), await pool('elf'));
   }
 

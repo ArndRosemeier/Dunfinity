@@ -81,11 +81,11 @@ Human-made and huge, getting stranger level by level (L2). In generator terms, t
 | **Rats** | 1–4 | Swarms. Individually pathetic, together not | Scale Brood swarm sim |
 | **Cave crickets** (dog-sized) | 1–5 | Leap from walls and ceilings, scatter in light | Norgo creature genome (hexapod) |
 | **Slimes** (Lumen and Murk) | 2–8 | Two factions at war with each other; Lumen may tolerate you | Scale `deep` factions, nearly as is |
-| **The Salt-Touched** | 3–8 | The lost miners, changed: crystal growths, slow, hits very hard, carries old mining tools. Infused salt grows on them | Scale humans + crystal shells; Norgo AI |
+| **The Salt-Touched** | 3–8 | The lost miners' skeletons, the infused salt grown through their bones keeping them at work: slow, hits very hard, carries old mining tools (2026-10-17, Arnd: no people of ours below the town) | Scale's skeletons (`bones`) + salt crystals; Norgo AI |
 | **Brine things** | 5–8 | Eels and worse in the flooded halls | Norgo genome (serpentine, finned) |
 | **Feral dogs** | 6–8 | Packs in the bunker, flank | Scale DogPack |
-| **Scavengers** | 4–10 | People living down there; some trade, some rob. Loot your corpse | Scale humans |
-| **The Foreman** (boss) | 5 | A huge Salt-Touched in the salt cathedral, with a mine bell he rings to call the others | Scale threat zones / weak spots, Caster tells |
+| **Scavengers** | 4–10 | Goblins come up the rift to pick over what the miners left; some camps want to be left alone, some rob. Loot your corpse (2026-10-17, Arnd: other people down there make no sense) | Norgo's goblins on Scale's bodies |
+| **The Foreman** (boss) | 5 | A huge Salt-Touched skeleton in the salt cathedral, with a mine bell he rings to call the others | Scale threat zones / weak spots, Caster tells |
 | **The Tall One** (boss) | 10 | Gaunt, four metres, quiet. Does not cross infused salt (grandma's Salt Line). Guards the Threshold | Caster, Norgo genome (biped) |
 
 Quaternius Ultimate Monsters from AssetGenerator can stand in for the genome creatures while those are built.

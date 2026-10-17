@@ -20,7 +20,7 @@ This one idea explains what the game already does:
 | Deeper is older, then stranger (D6, "depth is time") | Older worlds are earlier copies: rougher, then made under other rules |
 | The Ossuaries hold a buried medieval town | It is *this* town, one world down. Same river, same street. A house where grandma's stands, with a bricked arch in its cellar |
 | Infused (blue) salt seeps out of the rock and powers the recipes | It is what is left of the first world's sea, rising up the crack. First-world stuff: it makes things happen |
-| The Salt-Touched | Miners soaked in it for eighty years |
+| The Salt-Touched | Miners who died down there: the salt has grown through their bones for eighty years and keeps them working |
 | The Tall One will not cross infused salt | See the climbers below: a line of first-world salt is a line they were told never to cross |
 | "Steps cut for someone twice my height" (grandma's note, level 9) | The climbers' stair |
 | Nothing ends | The first world is at the bottom of an infinite stair. You get closer; you never arrive |

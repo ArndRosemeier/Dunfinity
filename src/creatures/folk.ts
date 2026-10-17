@@ -1,10 +1,11 @@
 /**
  * Who the living people of a level are (docs/design/lore.md §3: the worlds are stacked like strata,
- * so each buried world has its own people). Down to level 10 they are ours: humans. Below, each
- * game's dark has two peoples of Norgo's races (seeded per game, so a new game meets others), and
- * each stratum belongs to one of the two. Dwarves and elves are not among them (only their ghosts
- * are left, src/creatures/ghosts.ts), nor goblins (the warrens' own, src/creatures/goblins.ts), nor
- * giantkin (too big for a camp).
+ * so each buried world has its own people). Down to level 10 no people of ours live below the town
+ * (only grandma ever went down and came back): the camps there are goblins', come up the rift to
+ * pick over what the miners left. Below, each game's dark has two peoples of Norgo's races (seeded
+ * per game, so a new game meets others), and each stratum belongs to one of the two. Dwarves and
+ * elves are not among them (only their ghosts are left, src/creatures/ghosts.ts), nor giantkin (too
+ * big for a camp).
  *
  * Pure.
  */
@@ -22,7 +23,7 @@ export function deepFolk(seed: number): readonly [RaceId, RaceId] {
   return [DEEP_FOLK[a], DEEP_FOLK[b]];
 }
 
-/** Which of `deepFolk(seed)` lives at `depth` (0 or 1), or -1 where the people are ours (humans). */
+/** Which of `deepFolk(seed)` lives at `depth` (0 or 1), or -1 above the buried worlds, where the camps are goblins'. */
 export function folkAt(seed: number, depth: number): -1 | 0 | 1 {
   const s = stratumOf(depth);
   if (!s) return -1;

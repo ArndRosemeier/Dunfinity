@@ -1,12 +1,14 @@
 /**
  * Every race side by side, for looking them over (the Lab's `?lab&races`): Norgo's ten races on
  * Scale's bodies, a man of each in front and a woman behind, standing idle in a row across the view,
- * all in the same plain clothes. A `HumanPool` with one human per place.
+ * all in the same plain clothes (`?lab&races=bones`, `?lab&races=<race>-bones`: as the Salt-Touched's
+ * skeletons, in a miner's hat and trousers). A `HumanPool` with one human per place.
  */
 import { RACE_IDS, randomAppearance, type RaceId } from '@futuremagic/humanoid';
 import { deriveSeed } from '@futuremagic/core';
 import { HumanPool, humans, type Drawn } from '../creatures/humanPool';
-import { travellersClothes } from './wardrobe';
+import { minersClothes, travellersClothes } from './wardrobe';
+import { minersBones } from '../creatures/touchedView';
 
 /** Metres between them along the row, and between the rows. */
 const GAP = 1.15;
@@ -17,11 +19,12 @@ export class Lineup {
   /** Where each stands (fixed once by `stand`). */
   readonly places: Drawn[] = [];
 
-  /** `only`: just that race, a man and a woman side by side (for a close look). */
-  static async create(seed: number, only?: RaceId): Promise<Lineup> {
+  /** `only`: just that race, a man and a woman side by side (for a close look); `bones`: as skeletons. */
+  static async create(seed: number, only?: RaceId, bones = false): Promise<Lineup> {
     const races = only ? [only] : RACE_IDS, n = races.length;
     const look = (k: number) => randomAppearance(races[k % n], deriveSeed(seed, 'lineup', k), { age: 0.5, gender: k < n ? 0.95 : 0.05 });
-    return new Lineup(await humans(n * 2, look, (k) => travellersClothes(deriveSeed(seed, 'lineup', 'clothes', k))), races);
+    const clothes = (k: number) => (bones ? minersClothes : travellersClothes)(deriveSeed(seed, 'lineup', 'clothes', k));
+    return new Lineup(await humans(n * 2, look, clothes, bones ? { bones: minersBones(0.6) } : {}), races);
   }
 
   /** The tallest of them, metres (the Lab looks one race in the eye). */

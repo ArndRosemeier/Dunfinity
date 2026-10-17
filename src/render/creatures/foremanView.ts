@@ -1,7 +1,7 @@
 /**
- * The Foreman on screen (src/creatures/foreman.ts): one of Scale's humans built three metres tall,
- * the Salt-Touched look on him (grey skin crusted with crystals, pale glowing eyes), in a miner's
- * clothes with his pick. Beside him the old mine bell on its timber frame. He strikes the bell
+ * The Foreman on screen (src/creatures/foreman.ts): the skeleton of a man three metres tall, his
+ * bones thick with salt (the Salt-Touched's look, heavier: his crust turns a knife), in a miner's
+ * hard hat and trousers with his pick. Beside him the old mine bell on its timber frame. He strikes the bell
  * with the pick to ring it, and it swings and goes on swinging; he brings the pick down over his
  * head on you, flinches when stabbed and falls when he dies.
  *
@@ -18,7 +18,7 @@ import { groundSpeed } from '../../creatures/creature';
 import type { Level } from '../../gen/level';
 import { minersClothes } from '../humans/wardrobe';
 import { HumanPool, humans } from './humanPool';
-import { touchedLook } from './touchedView';
+import { minersBones, touchedLook } from './touchedView';
 
 const WOOD: Rgb = [0.3, 0.22, 0.15], BRONZE: Rgb = [0.42, 0.3, 0.14];
 /** One strike of the bell, seconds (he strikes it twice in a ringing). */
@@ -45,7 +45,7 @@ export class ForemanView {
   private readonly swing = new Group();
 
   static async create(seed: number): Promise<ForemanView> {
-    return new ForemanView(await humans(1, () => ({ ...touchedLook(seed, 0), scale: FOREMAN.height / 1.78, muscle: 1, weight: 0.85 }), () => minersClothes(deriveSeed(seed, 'foreman', 'clothes'))));
+    return new ForemanView(await humans(1, () => ({ ...touchedLook(seed, 0), scale: FOREMAN.height / 1.78, muscle: 1, weight: 0.85 }), () => minersClothes(deriveSeed(seed, 'foreman', 'clothes')), { bones: minersBones(1) }));
   }
 
   private constructor(man: Humanoid[]) {
