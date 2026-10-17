@@ -3,9 +3,11 @@
  * plan grown from a seed, not a model. `speciesOf(seed, depth, slot)` draws one species' genome: its
  * body plan (four legs, two, six, eight, a crab's, a centipede's, a snake's, a slug's, a star's, a
  * drifting bell), its proportions, its head (snout, jaws, eyes, horns, feelers), its skin (fur, hide,
- * scales, chitin, slime, stone) and colours, how it moves, and its place in the cave's life: the
- * peaceful ones that are there to be watched (grazers, scuttlers, floaters, giants, watchers) and the
- * ones that hunt you.
+ * scales, chitin, slime, stone) and colours, how it moves, and its place in the cave's life (its
+ * `role`: the body it grows, a grazer's, a giant's, a hunter's lean frame), and its aggression: a
+ * dial every species has (Arnd 2026-10-17: no kind is a hunter by type). The most passive only ever
+ * run; a little less passive, they fight back when hurt; from `AGGRESSION.attack` on they come for
+ * you, from further off the higher it is. A hunter's body leans aggressive, a grazer's passive.
  *
  * Every species is first a believable animal: legs scaled to the weight they carry (a heavy body
  * stands on pillars, a light one on threads), the gait its legs allow, speeds from its leg length,
@@ -20,9 +22,26 @@ import { strangeness, stratumOf } from '../gen/genome';
 
 export type Rgb = [number, number, number];
 
-/** What it is in the cave's life. The first five are peaceful (there to be watched, they flee or ignore you); the rest hunt you. */
+/** The body it grows for its place in the cave's life. The first five lean passive (there to be watched); the rest lean aggressive (see `AGGRESSION`). */
 export type CritterRole = 'scuttler' | 'grazer' | 'floater' | 'giant' | 'watcher' | 'hunter' | 'lurker' | 'swarmer' | 'brute';
 export const PEACEFUL: readonly CritterRole[] = ['scuttler', 'grazer', 'floater', 'giant', 'watcher'];
+
+/**
+ * The aggression dial (0..1): below `retaliate` it only ever runs, even when hurt; below `attack` it
+ * fights back when hurt (if it has the weight and the nerve: src/creatures/temper.ts); from `attack`
+ * on it comes for you once you are within its range, which grows with the dial from `near` metres
+ * (beyond its own length) to `far`.
+ */
+export const AGGRESSION = { retaliate: 0.25, attack: 0.55, near: 1.5, far: 24 } as const;
+
+/** How each role's body leans on the dial. */
+const LEAN: Readonly<Record<CritterRole, number>> = { scuttler: -0.2, grazer: -0.1, floater: -0.15, giant: -0.05, watcher: 0, hunter: 0.5, lurker: 0.4, swarmer: 0.4, brute: 0.45 };
+
+/** A species' aggression: its role's lean and its own draw, now and then a mean one whatever its body (a stream of its own, so the body is not changed by it). */
+export function aggressionOf(id: string, role: CritterRole): number {
+  const rng = new Rng(deriveSeed(0xa66, 'aggression', id));
+  return clamp(0.3 + LEAN[role] + rng.range(-0.3, 0.3) + (rng.chance(0.1) ? 0.35 : 0), 0, 1);
+}
 
 export type BodyPlan = 'quadruped' | 'biped' | 'hexapod' | 'octopod' | 'crab' | 'myriapod' | 'serpent' | 'slug' | 'radial' | 'floater';
 export type Integument = 'fur' | 'hide' | 'scales' | 'chitin' | 'slime' | 'stone';
@@ -130,6 +149,8 @@ export interface Species {
   readonly id: string;
   readonly seed: number;
   readonly role: CritterRole;
+  /** The aggression dial (`AGGRESSION`), and whether it leaves you be unless hurt (below `AGGRESSION.attack`). */
+  readonly aggression: number;
   readonly peaceful: boolean;
   readonly plan: BodyPlan;
   readonly integument: Integument;
@@ -252,7 +273,7 @@ export function bestiaryOf(seed: number, depth: number): Species[] {
 /** Grow one species (its plan and skin may be given: the debug menu's creature maker). */
 export function grow(rng: Rng, role: CritterRole, strange: number, id: string, force: { plan?: BodyPlan; integument?: Integument } = {}): Species {
   const spec = ROLE_PLANS[role];
-  const peaceful = PEACEFUL.includes(role);
+  const aggression = aggressionOf(id, role), peaceful = aggression < AGGRESSION.attack;
   const drawn = rng.weighted(spec.plans, (p) => p[1])[0];
   let plan = force.plan ?? drawn;
 
@@ -392,7 +413,7 @@ export function grow(rng: Rng, role: CritterRole, strange: number, id: string, f
   const spineSegs = plan === 'serpent' ? rng.int(9, 13) : plan === 'myriapod' ? pairs + 1 : plan === 'slug' ? 5 : plan === 'radial' || plan === 'floater' ? 1 : rng.int(3, 5);
 
   return settle({
-    id, seed: rng.nextU32(), role, peaceful, plan, integument: integ,
+    id, seed: rng.nextU32(), role, aggression, peaceful, plan, integument: integ,
     length, girth,
     bodyWidth: plan === 'radial' || plan === 'floater' ? 1 : plan === 'crab' ? rng.range(1.4, 1.9) : plan === 'slug' ? rng.range(0.9, 1.2) : rng.range(0.82, 1.15),
     bodyHeight: plan === 'floater' ? rng.range(0.7, 1.1) : plan === 'radial' ? rng.range(0.3, 0.5) : plan === 'crab' ? rng.range(0.45, 0.6) : plan === 'slug' ? rng.range(0.7, 0.95) : rng.range(0.9, 1.2),
@@ -435,6 +456,7 @@ export function settle(sp: Species): Species {
   const vol = length * Math.PI * (length * girth) ** 2;
   return {
     ...sp, tail,
+    peaceful: sp.aggression < AGGRESSION.attack,
     neckSegs: clamp(Math.round(1 + neckLen * 5), 1, 6),
     walkSpeed, runSpeed,
     mass: Math.max(0.005, vol * 1000 * 1.6),

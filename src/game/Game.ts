@@ -16,6 +16,7 @@ import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
 import { CELLAR } from '../gen/cellar';
 import { TOWN, shopDoor } from '../gen/town';
+import { temperLine } from '../creatures/temper';
 import { PAWN, sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
 import { Kit, isItem, packRows, rummage } from '../loot/items';
@@ -557,7 +558,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       // A few of its lengths ahead of you, facing you.
       const ahead = Math.max(2.5, sp.totalLength * 1.4 + 1.5), x = body.x - Math.sin(cam.yaw) * ahead, z = body.z - Math.cos(cam.yaw) * ahead;
       herdView.showSpecimen(sp, x, level.groundAt(x, z), z, Math.atan2(x - body.x, z - body.z));
-      return `${sp.role}, ${sp.plan}, ${sp.integument}: ${sp.totalLength.toFixed(2)} m long, ${sp.mass < 10 ? sp.mass.toFixed(1) : Math.round(sp.mass)} kg${sp.oddities.length ? `; ${sp.oddities.join(', ')}` : ''}.`;
+      return `${sp.role}, ${sp.plan}, ${sp.integument}: ${sp.totalLength.toFixed(2)} m long, ${sp.mass < 10 ? sp.mass.toFixed(1) : Math.round(sp.mass)} kg${sp.oddities.length ? `; ${sp.oddities.join(', ')}` : ''}.\n${temperLine(sp)}`;
     },
     styles: DEBUG_STYLES,
     toStyle: (s) => {
