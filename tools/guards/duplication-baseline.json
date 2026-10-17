@@ -3572,10 +3572,6 @@
     "reason": "a slow sine sway by phase in unrelated things (wisps, plants)"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
-    "reason": "placing an object at a thing's position: the three.js idiom"
-  },
-  {
     "key": "idiom: [.range .tries] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
     "reason": "a few seeded tries at a spot in a cell: the Rng is the seam"
   },
@@ -4244,14 +4240,6 @@
     "reason": "a seeded wait between two events: the Rng is the seam"
   },
   {
-    "key": "idiom: [.pool .root] in dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
-    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
-  },
-  {
-    "key": "idiom: [.pool .slots] in dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
-    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
-  },
-  {
     "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/world/singing.ts#advance",
     "reason": "the per-frame step of a simulation, same verb (singing crystals vs a creature population)"
   },
@@ -4692,11 +4680,67 @@
     "reason": "each style furnishes from its own constants' things table (T = STYLE.things): the shared shape is only the alias; found on main, not touched by the townsfolk PR"
   },
   {
-    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts + dunfinity/world/thinPlaces.ts",
+    "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
+  },
+  {
+    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/gates.ts + dunfinity/gen/glowworms.ts + dunfinity/world/thinPlaces.ts",
     "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
   },
   {
-    "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
-    "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
+    "key": "idiom: [.array .pool .slots] in dunfinity/render/gateView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
+    "reason": "the same verb for a different thing"
+  },
+  {
+    "key": "idiom: [.pool .root] in dunfinity/render/gateView.ts + dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
+    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
+  },
+  {
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/gateView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
+    "reason": "placing an object at a thing's position: the three.js idiom"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellMemo.ts#near + dunfinity/gen/gates.ts#near",
+    "reason": "the field query \"what is near (x, z)\", the same verb across seeded fields"
+  },
+  {
+    "key": "same name: dunfinity/gen/gates.ts#near + dunfinity/loot/finds.ts#near",
+    "reason": "the field query \"what is near (x, z)\", the same verb across seeded fields"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/loot/findView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
   }
 ]
