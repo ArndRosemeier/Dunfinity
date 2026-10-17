@@ -1530,6 +1530,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       body.time += dt;
       if (input.forward || input.right) body.facing = cam.yaw;
       input.jump = false;
+      nobody.pose(body, dt, now, undefined, false, 'climb'); // arms up, hanging
       if (level.sdf(body.x, body.y + MOVE.height * 0.5, body.z) < MOVE.radius) { dropFromSun(); say('The rock scrapes you off.', 2.5); }
     } else {
       meetDoors();
@@ -1718,7 +1719,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const blocking = now - blockAt < BLOCK.dur;
       const ready = body.mode === 'walk' && !body.dead && (threat || now - stabAt < 4 || blocking);
       const action = lighting >= 0 ? { id: 'harvest', t0: now - lighting, dur: FIRE.kindle } : saltLine.pouring(now) ? { id: 'harvest', t0: saltLine.circle!.at, dur: SALT_LINE.pour } : stirring ? { id: 'harvest', t0: cookAt, dur: COOK.dur } : body.rolling ? { id: 'roll', t0: rollAt, dur: MOVE.roll.dur } : now - castAt < CAST.dur ? { id: casting === 'pin' ? 'swing_1h' : casting === 'larder' ? 'block' : casting === 'stoop' ? 'pickup' : 'throw', t0: castAt, dur: CAST.dur } : throwing ? { id: 'throw', t0: throwAt, dur: THROWING.dur } : stooping ? { id: 'pickup', t0: reading ? readAt : pickAt, dur: PICKUP.dur } : stabbing ? { id: striking === 'pound' ? 'slam' : move.anim, t0: stabAt, dur: stabDur } : blocking ? { id: 'block', t0: blockAt, dur: BLOCK.dur } : undefined;
-      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, riding ? 'climb' : (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
+      nobody.pose(body, dt, now, action, ready && !stooping && lighting < 0, (campfire.mending || homeTo !== null) && !stabbing ? 'crouch' : undefined);
       pain.style.opacity = String(body.dead ? 0 : Math.max(0, 1 - (body.time - body.hurtAt) / 0.45) * 0.8);
       if (fadeIn > 0) { fadeIn = Math.max(0, fadeIn - dt); fade.style.opacity = String(fadeIn / 0.8); }
     }
