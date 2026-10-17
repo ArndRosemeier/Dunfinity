@@ -18,6 +18,8 @@ const STYLE = `
   #game-hud .vitals .ui-label { font-size: 10px; }
   #game-hud .vitals .ui-meter { height: 9px; }
   #game-hud .vitals .num { font: 700 13px var(--ui-font); min-width: 24px; text-align: right; }
+  #game-hud .vitals .pet { display: none; }
+  #game-hud .vitals .pet .ui-label { color: var(--ui-vein-glow); }
   #game-hud .vitals .mode { grid-column: 1 / -1; font-size: 12px; color: var(--ui-ink-dim); display: none; }
   #game-hud .hurt { padding-left: 2px; min-height: 18px; color: #ff8a70; font: 700 14px var(--ui-font); opacity: 0; transition: opacity .3s; }
   #game-hud .hurt.on { opacity: 1; transition: none; }
@@ -112,6 +114,8 @@ export interface HudState {
   mode: string;
   /** What hurt just now, and how much ('a rat bites: -4'), or ''. */
   hurt: string;
+  /** The salt pet with you: what it is ('Salt rat') and its health (null: none). */
+  pet: { name: string; health: number; maxHealth: number } | null;
   /** A boss after you: its name and the share of health it has left. */
   boss: { name: string; left: number } | null;
   /** The notice of the moment, and the salt just gained (or ''). */
@@ -137,7 +141,7 @@ export interface HudState {
 
 export class Hud {
   private readonly el: HTMLDivElement;
-  private readonly parts: Record<'health' | 'stamina' | 'hn' | 'mode' | 'hurt' | 'tally' | 'purse' | 'boss' | 'bossName' | 'bossBar' | 'banner' | 'bannerLabel' | 'bannerName' | 'notice' | 'gain' | 'prompt' | 'flags' | 'dev' | 'help', HTMLDivElement>;
+  private readonly parts: Record<'health' | 'stamina' | 'hn' | 'mode' | 'pet' | 'petName' | 'petBar' | 'petNum' | 'hurt' | 'tally' | 'purse' | 'boss' | 'bossName' | 'bossBar' | 'banner' | 'bannerLabel' | 'bannerName' | 'notice' | 'gain' | 'prompt' | 'flags' | 'dev' | 'help', HTMLDivElement>;
   private readonly text = document.getElementById('hud');
   /** What each part shows now, so the DOM changes only when it does. */
   private readonly shown = new Map<string, string>();
@@ -157,6 +161,10 @@ export class Hud {
     stamina.style.setProperty('--c', 'var(--ui-stamina)');
     child(vitals, 'div');
     const mode = child(vitals, 'div', 'mode');
+    // The salt pet's health under yours, while one is with you.
+    const pet = child(vitals, 'div', 'pet');
+    const petName = child(pet, 'div', 'ui-label'), petBar = child(pet, 'div', 'ui-meter'), petNum = child(pet, 'div', 'num');
+    petBar.style.setProperty('--c', 'var(--ui-vein-glow)');
     growOn(vitals, 'vitals', { amount: 0.6 });
     const purse = child(this.el, 'div', 'purse ui-panel ui-grown');
     const purseText = child(purse, 'div');
@@ -172,7 +180,7 @@ export class Hud {
     child(help, 'div', 'foot', 'The help goes once you are below the cellar.');
     growOn(help, 'help', { amount: 0.5, moss: false });
     const parts = {
-      health, stamina, hn, mode, purse: purseText, boss, bossName, bossBar, banner, bannerLabel, bannerName, help,
+      health, stamina, hn, mode, pet, petName, petBar, petNum, purse: purseText, boss, bossName, bossBar, banner, bannerLabel, bannerName, help,
       hurt: child(left, 'div', 'hurt'), tally: child(left, 'div', 'tally'),
       notice: child(this.el, 'div', 'notice ui-grown'), gain: child(this.el, 'div', 'gain'), prompt: child(this.el, 'div', 'prompt ui-grown'),
       flags: child(this.el, 'div', 'flags'), dev: child(this.el, 'div', 'dev'),
@@ -201,6 +209,13 @@ export class Hud {
     this.set('stamina', String(Math.max(0, s.stamina / s.maxStamina)), (v) => p.stamina.style.setProperty('--v', v));
     this.set('hn', s.health.toFixed(0), (v) => (p.hn.textContent = v));
     this.set('mode', s.mode, (v) => { p.mode.textContent = v; p.mode.style.display = v ? 'block' : 'none'; });
+    this.set('pet', s.pet ? `${s.pet.name}|${s.pet.health.toFixed(0)}|${s.pet.maxHealth}` : '', () => {
+      p.pet.style.display = s.pet ? 'contents' : 'none';
+      if (!s.pet) return;
+      p.petName.textContent = s.pet.name;
+      p.petBar.style.setProperty('--v', String(Math.max(0, s.pet.health / s.pet.maxHealth)));
+      p.petNum.textContent = s.pet.health.toFixed(0);
+    });
     this.set('hurt', s.hurt, (v) => { if (v) p.hurt.textContent = v; p.hurt.classList.toggle('on', !!v); });
     this.set('tally', s.tally.join('\n'), (v) => (p.tally.textContent = v));
     this.set('purse', `${s.salt}|${s.euros}|${s.pack?.count}|${s.pack?.room}|${s.pack?.worth}`, () => {
@@ -233,7 +248,7 @@ export class Hud {
   private lines(s: HudState): string[] {
     return [`health ${s.health.toFixed(0)}`, `stamina ${s.stamina.toFixed(0)}${s.mode ? `  ${s.mode}` : ''}`, s.hurt, s.dev, '', s.boss ? s.boss.name : '', s.notice, s.gain, s.prompt,
       s.flags, ...s.tally, `infused salt in grandma's tin: ${s.salt}`, s.euros ? `euros in grandma's purse: €${s.euros}` : '',
-      s.pack ? `pack: ${s.pack.count} of ${s.pack.room} finds, worth about €${s.pack.worth}` : '', s.dead ? 'dead' : ''].filter((l, i) => i < 5 || l);
+      s.pack ? `pack: ${s.pack.count} of ${s.pack.room} finds, worth about €${s.pack.worth}` : '', s.pet ? `${s.pet.name.toLowerCase()}: health ${s.pet.health.toFixed(0)}` : '', s.dead ? 'dead' : ''].filter((l, i) => i < 5 || l);
   }
 
   /** Run `apply(value)` when part `key` is to show something new. */

@@ -89,7 +89,7 @@ export function placesOn(level: Level, fauna: Fauna, x: number, z: number): Plac
   const dens: [string, { nearestDen(x: number, z: number, rings?: number): { x: number; z: number } | null }][] = [
     ['A rat nest', fauna.rats], ['Salt-Touched at work', fauna.touched], ['Cave crickets', fauna.crickets],
     ['A Lumen slime colony', fauna.lumen], ['A Murk slime colony', fauna.murk], ['A feral dog pack', fauna.dogs],
-    ['Brine eels', fauna.eels], ['A scavenger camp', fauna.scavengers], ['A goblin den', fauna.goblins], ['A ghost', fauna.ghosts], ['Toadstools', fauna.toadstools], ['Puffcaps', fauna.puffcaps],
+    ['Town rats', fauna.townRats], ['Village dogs', fauna.townDogs], ['Brine eels', fauna.eels], ['A scavenger camp', fauna.scavengers], ['A goblin den', fauna.goblins], ['A ghost', fauna.ghosts], ['Toadstools', fauna.toadstools], ['Puffcaps', fauna.puffcaps],
   ];
   const drip = level.drips.nearest(x, z);
   if (drip) out.push(standBy(level, `A living stalagmite (${Math.round(Math.hypot(drip.x - x, drip.z - z))} m)`, drip.x, drip.z, 2.5, 5));

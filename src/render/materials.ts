@@ -381,6 +381,21 @@ export const GLOW = defineKind('glow', ['position', 'normal', 'color'], () => {
 }, { cast: false, receive: false });
 
 /**
+ * Grandma's salt circle and the ward round it (src/render/props/havenView.ts): infused salt glowing
+ * softly, light added to the floor under it, breathing slowly with a shimmer that drifts through the
+ * salt (in the mesh's own frame, so it turns with the circle). Its vertex colour is the glow at rest.
+ * Same attributes as the solid kind.
+ */
+export const SALT_GLOW = defineKind('saltGlow', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending });
+  const p = positionLocal;
+  const breath = sin(time.mul(0.6)).mul(0.2).add(0.8);
+  const shimmer = mx_noise_float(vec3(p.x.mul(2.5), time.mul(0.15), p.z.mul(2.5))).mul(0.4).add(0.8);
+  m.colorNode = vertexColor().mul(breath.mul(shimmer));
+  return m;
+}, { cast: false, receive: false });
+
+/**
  * Standing water: clear over the shallows (the floor shows through, tinted), dark and green-black
  * where it is deep, its surface stirred by slow ripples so the lamps and the headlamp glint and
  * wobble on it. Its vertex colour is the props' depth shade (pale shallow, near black deep). Same attributes as the solid kind.
@@ -563,6 +578,43 @@ export const CRITTER = defineKind('critter', ['position', 'normal', 'color', 'lo
   m.emissiveNode = vertexColor().mul(look.z.mul(pulse).mul(2.2).add(look.w.mul(rim).mul(0.9))).add(VEIN_BLUE.mul(outline)).add(vec3(0.7, 0.04, 0.02).mul(hurt));
   return m;
 });
+
+/** A beast's eyes flicker by up to `by`, each animal on its own beat (from where its part stands). */
+const beastFlicker = (by: number) => sin(time.mul(2.3).add(modelPosition.x.mul(1.7)).add(modelPosition.z.mul(1.3))).mul(by).add(1 - by);
+
+/**
+ * The eyes of the deep's rats and dogs (Arnd 2026-10-17: so they read as no ordinary animals): the
+ * salt is in them, a hot blue-white core in the veins' blue, flickering a little, each animal on its
+ * own beat (from where it stands). Unlit. Its glow round the eye is `EYE_HALO`.
+ */
+export const BEAST_EYE = defineKind('beastEye', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ vertexColors: true });
+  m.colorNode = mix(VEIN_BLUE.mul(1.6), vec3(0.85, 0.95, 1.0), float(0.35)).mul(beastFlicker(0.12));
+  return m;
+}, { cast: false, receive: false });
+
+/**
+ * The glow round a beast's eye: a ball a few times the eye's size, drawn additively and brightest
+ * where it faces you (a soft disc from any side), in the veins' blue; it hides behind the head where
+ * the head is in front. Same attributes as the solid kind (the colour unused).
+ */
+export const EYE_HALO = defineKind('eyeHalo', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending });
+  const facing = dot(normalView, positionView.normalize().negate()).clamp(0, 1);
+  m.colorNode = VEIN_BLUE.mul(facing.pow(3).mul(0.55).mul(beastFlicker(0.15)));
+  return m;
+}, { cast: false, receive: false });
+
+/**
+ * An ordinary animal's eyes (the town's rats and dogs): dark and wet, lit, with a glint of the
+ * light and only a faint shine of the vertex colour back from the dark.
+ */
+export const ANIMAL_EYE = defineKind('animalEye', ['position', 'normal', 'color'], () => {
+  const m = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.05, metalness: 0 });
+  m.colorNode = vec3(0.02, 0.016, 0.012);
+  m.emissiveNode = vertexColor().mul(0.04);
+  return m;
+}, { cast: false, receive: true });
 
 /** How many bones every procedural creature's skeleton has (padded): the skinning shader is keyed by the count. */
 export const CRITTER_BONES = 96;

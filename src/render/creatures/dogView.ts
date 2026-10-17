@@ -3,17 +3,17 @@
  * and animated in Blender (AssetGenerator spec `creature_feral_dog`, see src/render/creatures/rigged.ts).
  * Its clips: lying up at the den, standing, a trot, a gallop round you, the low stalk as it circles,
  * down on its haunches before a lunge (the tell), the lunge with the jaw wide, the snap, a flinch when
- * stabbed, and the fall onto its side when it dies. Eyes in the glow kind throw the headlamp back.
+ * stabbed, and the fall onto its side when it dies. The deep's have the salt in their eyes, glowing
+ * blue (`BEAST_EYE`, `EYE_HALO`); the town's village dogs have ordinary dark ones.
  *
- * A fixed pool, built once and added with the Stage before play.
+ * Two fixed pools, built once and added with the Stage before play.
  */
-import { FigurePool } from './figures';
 import { DOG_COAT } from '../materials';
 import type { Dog } from '../../creatures/dogs';
-import { Rigged, RiggedFigure, type ClipUse } from './rigged';
+import { RiggedFigure, WildAndTame, type ClipUse } from './rigged';
 
-/** How many can be drawn at once. */
-const POOL = 16;
+/** How many can be drawn at once: the deep's, and the town's. */
+const POOL = { wild: 16, tame: 8 } as const;
 
 /** The clips (AssetGenerator's quadruped clips.py; strides there as STRIDES). */
 const CLIPS: Record<string, ClipUse> = {
@@ -51,13 +51,9 @@ class DogFigure extends RiggedFigure<Dog> {
   }
 }
 
-export class DogView extends FigurePool<Dog> {
-  private constructor(rig: Rigged) {
-    super('dogs', POOL, () => new DogFigure(rig, CLIPS));
-  }
+/** The deep's and the town's, drawn (`DogView.draw(wild, town, time, from)`). */
+export type DogView = WildAndTame<Dog>;
 
-  /** Load the model (before the warm-up, so its coat's maps are there when the shaders build). */
-  static async create(): Promise<DogView> {
-    return new DogView(await Rigged.fetch('feral_dog.glb', DOG_COAT));
-  }
-}
+export const DogView = {
+  load: (): Promise<DogView> => WildAndTame.load('feral_dog.glb', DOG_COAT, 'dogs', POOL, (rig) => new DogFigure(rig, CLIPS)),
+};

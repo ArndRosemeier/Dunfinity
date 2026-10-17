@@ -21,10 +21,10 @@ import { RAT } from './rats';
 import { DOG } from './dogs';
 import type { PetKind } from '../loot/recipes';
 
-/** Each kind: its size (on its kind's body), health, speeds, m/s (you walk 4.2 and sprint 7), and its bite (damage, seconds between, the wind-up before the snap, reach beyond touching). */
+/** Each kind: its name, its size (on its kind's body), health, speeds, m/s (you walk 4.2 and sprint 7), and its bite (damage, seconds between, the wind-up before the snap, reach beyond touching). */
 export const PETS = {
-  rat: { size: 1.35, health: 45, walk: 3.6, run: 7.4, bite: [6, 9] as const, every: 1.1, windup: 0.25, reach: 0.35, rear: 0.6, lunge: 2.6 },
-  dog: { size: 1.05, health: 90, walk: 4, run: 8, bite: [11, 16] as const, every: 1.3, windup: 0.3, reach: 0.45, rear: 0.8, lunge: 4 },
+  rat: { name: 'Salt rat', size: 1.35, health: 45, walk: 3.6, run: 7.4, bite: [6, 9] as const, every: 1.1, windup: 0.25, reach: 0.35, rear: 0.6, lunge: 2.6 },
+  dog: { name: 'Salt dog', size: 1.05, health: 90, walk: 4, run: 8, bite: [11, 16] as const, every: 1.3, windup: 0.3, reach: 0.45, rear: 0.8, lunge: 4 },
 } as const;
 
 export const PET = {
@@ -63,12 +63,15 @@ export class Pet extends Creature<PetMode> {
   lost = 0;
   readonly maxHealth: number;
   readonly size: number;
+  /** What it is called ('Salt rat'). */
+  readonly name: string;
 
   constructor(readonly kind: PetKind, x: number, y: number, z: number, yaw: number) {
     const k = PETS[kind], body = kind === 'rat' ? RAT : DOG;
     super(x, y, z, yaw, body.radius * k.size, body.height * k.size, k.health, 'form');
     this.maxHealth = k.health;
     this.size = k.size;
+    this.name = k.name;
   }
 }
 
