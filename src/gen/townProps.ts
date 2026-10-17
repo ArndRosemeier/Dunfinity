@@ -262,8 +262,9 @@ function shopFront(f: Furnish, H: House, out: number): void {
     inFrame(s, H, u, out + 0.01, G + 1.45, 0.04, 0.7, 0.02, FRAME);
     inFrame(s, H, u, out + 0.06, G + 0.72, 0.92, 0.04, 0.1, STONE);
   }
+  // The painted panel stands proud of the board (its face 2 cm in front), never flush: flush faces flicker.
   inFrame(s, H, H.door, out + 0.1, G + 2.75, 1.1, 0.28, 0.04, SIGN);
-  inFrame(s, H, H.door, out + 0.12, G + 2.75, 1.0, 0.2, 0.02, H.role === 'pawn' ? BRASS : PAINT);
+  inFrame(s, H, H.door, out + 0.16, G + 2.75, 1.0, 0.2, 0.02, H.role === 'pawn' ? BRASS : PAINT);
   if (H.role === 'pawn') {
     // The three brass balls, hung from an iron arm.
     inFrame(s, H, H.door, out + 0.55, G + 3.25, 0.02, 0.02, 0.5, IRON);
