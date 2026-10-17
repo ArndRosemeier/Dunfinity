@@ -57,7 +57,7 @@ test('a creature with a grudge goes for the pet, not for you', () => {
   const rats = new Rats(level), nest = rats.nearestDen(ax, az)!;
   const you = dummy(nest.x + 40, nest.z), pet = dummy(nest.x, nest.z + 5);
   rats.advance(DT, dummy(nest.x, nest.z)); // wake the nest
-  const r = rats.list[0];
+  const r = rats.list.find((x) => x.nest === nest)!;
   assert.ok(r, 'a rat');
   r.grudge = pet;
   const start = Math.hypot(pet.x - r.x, pet.z - r.z);

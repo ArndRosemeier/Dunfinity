@@ -4,6 +4,7 @@ import { Level } from '../src/gen/level';
 import { Body, type BodyInput } from '../src/world/traverse/body';
 import { noticed, type Fighter } from '../src/combat/combat';
 import { RAT, Rats } from '../src/creatures/rats';
+import { afterYou } from '../src/creatures/animals';
 import { Cooked } from '../src/loot/recipes';
 import { Tin } from '../src/loot/tin';
 
@@ -48,7 +49,7 @@ test('rats that would come for you leave a tiptoeing nobody be', () => {
     const r = new Rats(level), x = nest!.x + 6, z = nest!.z;
     const me = { x, y: level.groundAt(x, z), z, vx: 0, vz: 0, radius: 0.35, height: 1.75, hush, get dead() { return false; }, hurt() {} };
     let n = 0;
-    for (let k = 0; k < 300; k++) { r.advance(1 / 60, me); me.vx = me.vz = 0; n = Math.max(n, r.list.filter((x) => x.mode === 'chase' || x.mode === 'bite').length); }
+    for (let k = 0; k < 300; k++) { r.advance(1 / 60, me); me.vx = me.vz = 0; n = Math.max(n, r.list.filter((x) => afterYou(x)).length); }
     return n;
   };
   assert.ok(RAT.notice > 6);

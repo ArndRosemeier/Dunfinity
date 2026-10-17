@@ -6,6 +6,7 @@ import { Dogs, TOWN_DOG, type Pack } from '../src/creatures/dogs';
 import { Critters, HERD, type Herd } from '../src/creatures/critters';
 import { pastureOf } from '../src/creatures/pasture';
 import { LIFE } from '../src/creatures/life';
+import { afterYou } from '../src/creatures/animals';
 import { VILLAGE, townGround } from '../src/gen/town';
 import type { Fighter } from '../src/combat/combat';
 import type { Creature } from '../src/creatures/creature';
@@ -75,7 +76,7 @@ test('quarry rats feed, keep still at it, then sleep together with one up as sen
   const me = off(l, nest, 30);
   const w = watch(() => { r.advance(1 / 15, me); me.vx = me.vz = 0; }, () => r.list, (x) => x.nest === nest, 320, 1 / 15);
   assert.ok(r.list.some((x) => x.nest === nest), 'the nest woke');
-  assert.ok(!nest.alarmed && me.taken === 0, 'they never saw you');
+  assert.ok(!r.list.some((x) => x.nest === nest && afterYou(x)) && me.taken === 0, 'they never saw you');
   assert.ok(w.fed.size >= 2, `they fed (${w.fed.size})`);
   assert.ok(w.maxFeedSpeed < 0.3, `still while feeding (${w.maxFeedSpeed.toFixed(2)} m/s)`);
   assert.ok(w.restFrames > 100, `the nest rested (${w.restFrames} frames)`);
@@ -86,8 +87,9 @@ test('quarry rats feed, keep still at it, then sleep together with one up as sen
   const sleeper = r.list.find((x) => x.nest === nest && x.pose === 'rest')!;
   assert.ok(sleeper, 'one asleep');
   const close = off(l, { x: sleeper.x, y: sleeper.y, z: sleeper.z }, 2.5);
-  for (let k = 0; k < 30; k++) r.advance(1 / 15, close);
-  assert.ok(nest.alarmed, 'you woke them');
+  let woke = false;
+  for (let k = 0; k < 30; k++) { r.advance(1 / 15, close); woke ||= r.list.some((x) => x.nest === nest && afterYou(x)); }
+  assert.ok(woke, 'you woke them');
   assert.ok(r.list.filter((x) => x.nest === nest).every((x) => x.pose !== 'rest'), 'all up');
 });
 

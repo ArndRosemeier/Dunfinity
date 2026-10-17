@@ -32,7 +32,7 @@ function reversals(seconds: number, dt: number, walk = 0, level = home, nest: Ne
     rats.advance(dt, me);
     me.vx = me.vz = 0;
     for (const r of rats.list) {
-      if (r.dead || r.mode !== 'chase') { last.delete(r); continue; }
+      if (r.dead || r.mode !== 'stalk') { last.delete(r); continue; }
       const p = last.get(r);
       if (p) {
         const dx = r.x - p[0], dz = r.z - p[1];

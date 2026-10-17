@@ -24,6 +24,7 @@ import { Ghosts } from './ghosts';
 import { TALL, TallOnes, type TallOne } from './tallOne';
 import { Puffcaps, Toadstools, type Puffcap, type Toadstool } from './shrooms';
 import { Critters, type Critter } from './critters';
+import { afterYou } from './animals';
 
 export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel | Scavenger | Goblin | TallOne | Toadstool | Puffcap | Critter;
 
@@ -137,7 +138,7 @@ export class Fauna {
   threats(prey: Fighter): Foe[] {
     const near = (c: Foe) => !c.dead && !thwarted(c) && Math.hypot(c.x - prey.x, c.z - prey.z) < THREAT;
     return [
-      ...this.rats.list.filter((r) => (r.mode === 'chase' || r.mode === 'bite') && near(r)),
+      ...[...this.rats.list, ...this.critters.list].filter((a) => afterYou(a) && near(a)),
       ...[...this.touched.list, ...this.foreman.list].filter((t) => t.angry && near(t)),
       ...this.crickets.list.filter((c) => c.angry && c.mode !== 'perch' && near(c)),
       ...[...this.dogs.list, ...this.townDogs.list].filter((g) => g.hunting && g.mode !== 'flee' && near(g)),
@@ -147,7 +148,6 @@ export class Fauna {
       ...this.scavengers.list.filter((s) => (s.hostile || s.mode === 'stand') && near(s)),
       ...this.goblins.list.filter((g) => g.hostile && g.mode !== 'flee' && near(g)),
       ...this.tall.list.filter((t) => t.hunting && !t.dead && Math.hypot(t.x - prey.x, t.z - prey.z) < TALL.notice),
-      ...this.critters.list.filter((c) => (c.mode === 'fight' || c.mode === 'stalk' || c.mode === 'back') && near(c)),
       ...[...this.lumen.list, ...this.murk.list].filter((s) => s.foe === prey && near(s)),
     ];
   }
