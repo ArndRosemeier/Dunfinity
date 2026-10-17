@@ -6,7 +6,7 @@
  */
 import { Timer, Vector3 } from 'three/webgpu';
 import { Practice, SKILLS, type Skill } from '../loot/practice';
-import { readSave, writeSave, type GrandchildData } from '../persist/save';
+import { activeFamily, families, goStraightIn, loadByHand, manualSaves, newFamily, readFamily, saveByHand, setActiveFamily, takeStraightIn, writeFamily, MODE_NAMES, type GameMode, type GrandchildData, type SaveData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
 import { ReadView } from '../app/readView';
@@ -158,13 +158,21 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   loading.step('Laying out the level', 0.03);
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
-  const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
-  /** The game opens on the title screen (src/game/title.ts). */
-  const titled = titleWanted(location.search);
+  // The family played last (a link with a seed: the last family on that world), unless a fresh start is asked for.
+  const bySeed = q.has('seed');
+  let family = keep && !q.has('fresh') ? (bySeed ? families().find((f) => f.seed === params.seed) ?? null : activeFamily()) : null;
+  if (family && !bySeed) params.seed = family.seed;
+  const saved = family ? readFamily(family.id) : null;
+  /** Start the game again from what is kept (the title, or `straight` on past it into the family played). */
+  const restart = (straight: boolean): void => { goStraightIn(straight); location.reload(); };
+  /** How this family plays (src/persist/save.ts GameMode; a new one asks on New Game). */
+  let mode: GameMode = saved?.mode ?? family?.mode ?? 'rogue';
+  /** The game opens on the title screen (src/game/title.ts), unless the last visit asked to go straight on (a load, Save and quit's way back). */
+  const titled = !takeStraightIn() && titleWanted(location.search);
   // The title's television comes on at once; the game sets itself up behind it and joins it when ready (below).
   let joinTitle: (g: TitleGame) => void = () => {};
   const titling = titled ? playTitle(host, {
-    seed: params.seed, canContinue: !!saved, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
+    seed: params.seed, canContinue: !!saved, families: keep ? families() : [], pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
     game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
     shown: () => { if (loading.open) loading.hide(); },
   }) : null;
@@ -369,8 +377,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
       cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart,
     };
-    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made });
+    if (!family) family = { id: newFamily(params.seed, mode, Date.now()), seed: params.seed, mode, heir, depth: null, deepest: 0, savedAt: 0 };
+    writeFamily(family.id, params.seed, familyNow(child), Date.now());
   };
+  /** The family as it stands, with `child` the grandchild down there (null: none alive). */
+  const familyNow = (child: GrandchildData | null): SaveData => ({ v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made, mode });
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
   cam.follow(body.x, body.y + 1.6, body.z, 1);
@@ -490,6 +501,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const pause = new PauseMenu(document.body, {
     resume: goOn, paused: (on) => timer.setTimescale(on ? 0 : 1), keys: () => keysOf(keyName, controls.byTouch),
     settings: () => { pause.hide(); settingsView.toggle(); },
+    mode: () => mode,
+    // Rogue like: the one save is kept as it stands, and back to the title. Adventure: saves by hand, gone back to at any time.
+    saveAndQuit: () => { keepGame(); restart(false); },
+    save: () => { keepGame(); if (family) saveByHand(family.id, params.seed, readFamily(family.id)!, Date.now()); },
+    saves: () => (family ? manualSaves(family.id) : []),
+    load: (at) => { if (family && loadByHand(family.id, at, Date.now())) restart(true); },
+    quit: () => { keepGame(); restart(false); },
+    canSave: () => keep && !body.dead,
   });
   let freedAt = -Infinity;
   document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement) pause.hide(); else freedAt = performance.now(); });
@@ -620,6 +639,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     setStill: (on) => { graphics = { ...graphics, still: on }; writeGraphicsSettings(graphics); document.documentElement.classList.toggle('ui-still', on); },
     qualityNotes: QUALITY_NOTES,
     opened: (open) => { controls.paused = open; },
+    modeLine: () => `This family plays ${MODE_NAMES[mode]} (chosen at New Game)`,
   });
   loading.step('Tuning the sounds', 0.6);
   await sounds.init();
@@ -916,8 +936,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       stream: (now) => view.frame(body.x, body.y, body.z, now, false),
     });
     const choice = await titling!;
-    if (choice === 'new' && saved) freshFamily();
-    if (choice === 'new') {
+    // Another family: it is set up from its own save, as a new visit (straight past the title).
+    if (typeof choice === 'object' && 'load' in choice && choice.load !== family?.id) { setActiveFamily(choice.load); restart(true); return; }
+    if (typeof choice === 'object' && 'new' in choice) {
+      // A new family (the others stay kept), playing the mode chosen; it is kept from its first save.
+      if (saved) freshFamily();
+      family = null;
+      mode = choice.new;
       // The first grandchild is made (the rest of the shaders build meanwhile), then the introduction (src/game/prologue.ts).
       made = await makeGrandchild();
       beginIntro();
