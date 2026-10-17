@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.203 — Goblin camps all the way down
+
+- Below level 10 the scavenger camps are goblins too, no longer the old peoples of the buried worlds: the only living people in the dark are goblins.
+- The stranger at Ilse's pawn shop is still there in town.
+
 ## v0.202 — Goblins and skeletons instead of people below
 
 - No people of ours live down there any more. The scavenger camps on levels 4 to 10 are goblins now, come up the rift to pick over what the miners left: small, hissing, with crowbars, and some camps still only want you to keep away from their fire.
