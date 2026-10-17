@@ -11,6 +11,7 @@ Rows marked *planned* name the seam we will build; do not invent a different one
 | Question | The one way | Where |
 |---|---|---|
 | I need a random number | `new Rng(deriveSeed(seed, 'path', ...))`. Never `Math.random` (guarded). | `@futuremagic/core` rng.ts |
+| A new family's world seed (the one number not drawn from a seed; kept in the family's save, so a reload finds the same world) | `freshWorldSeed()`, used by `startGame` when no family is kept or New Game was chosen (`goNewGame(mode)` / `takeNewGame()` carry New Game over a kept family across one restart) | `src/persist/save.ts` |
 | A stable hash of ints, floats or a string | `hash2i`, `hash3i`, `hash2f`, `hash3f`, `hashString`, `hashCombine` | `@futuremagic/core` rng.ts |
 | Smooth noise, fbm, ridged, domain warp | `Noise` | `@futuremagic/core` noise.ts |
 | Cells, Voronoi distances, nearest and second nearest feature point | `cellular2`, `cellular3` | `@futuremagic/core` noise.ts |

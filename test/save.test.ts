@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Tin } from '../src/loot/tin';
 import { Cooked } from '../src/loot/recipes';
 import { Practice } from '../src/loot/practice';
-import { activeFamily, deleteFamily, families, goStraightIn, loadByHand, manualSaves, MANUAL_SAVES, newFamily, readFamily, saveByHand, takeStraightIn, writeFamily, type SaveData } from '../src/persist/save';
+import { activeFamily, deleteFamily, families, freshWorldSeed, goNewGame, goStraightIn, loadByHand, manualSaves, MANUAL_SAVES, newFamily, readFamily, saveByHand, takeNewGame, takeStraightIn, writeFamily, type SaveData } from '../src/persist/save';
 
 test('the tin, the cards and the practice come back as they were kept (through JSON)', () => {
   const tin = new Tin();
@@ -97,5 +97,18 @@ test('Adventure: saves by hand, newest first, at most MANUAL_SAVES; loading one 
     goStraightIn(true);
     assert.equal(takeStraightIn(), true);
     assert.equal(takeStraightIn(), false, 'asked once');
+  });
+});
+
+test('each new family gets a world of its own; New Game over a kept one is asked once, past the title', () => {
+  const seeds = new Set(Array.from({ length: 20 }, () => freshWorldSeed()));
+  assert.ok(seeds.size > 15, 'fresh world seeds differ');
+  for (const s of seeds) assert.ok(Number.isInteger(s) && s >= 0 && s < 2 ** 32);
+  withStorage(() => {
+    assert.equal(takeNewGame(), null);
+    goNewGame('adventure');
+    assert.equal(takeNewGame(), 'adventure');
+    assert.equal(takeNewGame(), null, 'asked once');
+    assert.equal(takeStraightIn(), true, 'the restart skips the title');
   });
 });

@@ -4696,10 +4696,6 @@
     "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
   },
   {
-    "key": "same name: dunfinity/render/creatures/sunView.ts#draw + dunfinity/render/loot/findView.ts#draw",
-    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/sunView.ts#draw + dunfinity/render/props/dripView.ts#draw",
     "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
   },

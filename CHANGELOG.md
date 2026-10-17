@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.250 — Suns over the glowing rock
+
+- Now and then a sun rises out of glowing rock: a boiling ball of light 1 to 4 m across, not quite round, with a wide warm halo.
+- It wanders the level for about five minutes at varying speeds, bobbing up and down, and keeps clear of the rock. At the end it sinks low and shrinks to nothing.
+- Prominences swell on it, break off and fall as burning drops that splash on the floor.
+- It lights the halls far around it (bigger suns farther) and puts what it lights on the map.
+- Stand under one and press E to hang on and fly along. It climbs high with you. Press E to let go; when it fades you fall. The fall can kill you.
+- New `Body.featherfall` hook for worn items that let you float down.
+- Debug menu: "Call a sun".
+- Sounds: a warm swell as one rises, a hiss where a drop splashes, a low roar near a sun.
+
+## v0.249 — Every new game gets its own world
+
+- Each new family now plays a dungeon of its own: a fresh random world seed is drawn when a family begins (first visit, or New Game in Rogue like or Adventure) and kept in its save, so Continue and Load bring back the same world.
+- Before, every game without a seed in the link played world 1.
+- New Game over a kept family restarts the page once onto the new world, then opens the character creator and the introduction.
+- Unchanged on purpose: the village and grandma's cellar look the same in every game, and links with `?seed=` (and test views) keep the world they name.
+
 ## v0.248 — Weapons held in a closed fist
 
 - Grandma's knife sits in a fist closed round its handle, the thumb wrapped over, instead of lying across the top of a half-open hand.

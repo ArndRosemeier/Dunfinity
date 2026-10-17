@@ -5,6 +5,7 @@
  * Stage; their light is borrowed from the lamp pool (`LampLights.lend`): no new light, no new shader.
  */
 import { Group, type Mesh } from 'three/webgpu';
+import { smoothstep } from '@futuremagic/core';
 import { SUN as SUN_KIND } from '../materials';
 import { meshOf } from '../meshes';
 import type { Glow, LampLights } from '../props/lamps';
@@ -40,8 +41,8 @@ export class SunView {
     }
   }
 
-  /** Place the suns and lend them their lights (once a frame, before the view's frame). */
-  draw(suns: Suns): void {
+  /** Place the suns and lend them their lights (once a frame, before the view's frame); the eye at (ex, ey, ez). */
+  draw(suns: Suns, ex: number, ey: number, ez: number): void {
     this.lit.length = 0;
     for (let i = 0; i < this.pools.length; i++) {
       const p = this.pools[i], s = suns.list[i];
@@ -53,7 +54,9 @@ export class SunView {
         // A slow turn, so its boiling face rolls (smooth: never a flicker).
         p.body.rotation.set(0.3 * Math.sin(s.phase * 6.283), s.age * 0.06 + s.phase * 6.283, 0);
         p.halo.position.set(s.x, s.y, s.z);
-        p.halo.scale.set(r * 4.5, 1.8 + 0.2 * Math.sin(s.age * 0.9 + s.phase * 9), 1);
+        // Its glare dims close up (hanging from it, the eye is inside its halo).
+        const near = smoothstep(r * 2, r * 9, Math.hypot(s.x - ex, s.y - ey, s.z - ez));
+        p.halo.scale.set(r * 4.5, (1.8 + 0.2 * Math.sin(s.age * 0.9 + s.phase * 9)) * (0.15 + 0.85 * near), 1);
         const l = lightOf(s), g = p.glow;
         g.x = s.x; g.y = s.y; g.z = s.z; g.intensity = l.intensity; g.reach = l.reach;
         this.lit.push(g);

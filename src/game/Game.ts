@@ -6,7 +6,7 @@
  */
 import { Timer, Vector3 } from 'three/webgpu';
 import { Practice, SKILLS, type Skill } from '../loot/practice';
-import { activeFamily, families, goStraightIn, loadByHand, manualSaves, newFamily, readFamily, saveByHand, setActiveFamily, takeStraightIn, writeFamily, MODE_NAMES, type GameMode, type GrandchildData, type SaveData } from '../persist/save';
+import { activeFamily, families, freshWorldSeed, goNewGame, goStraightIn, loadByHand, manualSaves, newFamily, readFamily, saveByHand, setActiveFamily, takeNewGame, takeStraightIn, writeFamily, MODE_NAMES, type GameMode, type GrandchildData, type SaveData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
 import { inVillage } from '../app/villageMap';
@@ -171,13 +171,17 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   // The family played last (a link with a seed: the last family on that world), unless a fresh start is asked for.
   const bySeed = q.has('seed');
-  let family = keep && !q.has('fresh') ? (bySeed ? families().find((f) => f.seed === params.seed) ?? null : activeFamily()) : null;
+  /** New Game was chosen over a kept family last visit: a new family begins now (the creator, then the introduction). */
+  const newGame = takeNewGame();
+  let family = keep && !q.has('fresh') && !newGame ? (bySeed ? families().find((f) => f.seed === params.seed) ?? null : activeFamily()) : null;
   if (family && !bySeed) params.seed = family.seed;
+  // A new family (none kept, or New Game) plays a world of its own; a link with a seed, or a test view, keeps the one it names.
+  if (!family && keep && !bySeed) params.seed = freshWorldSeed();
   const saved = family ? readFamily(family.id) : null;
   /** Start the game again from what is kept (the title, or `straight` on past it into the family played). */
   const restart = (straight: boolean): void => { goStraightIn(straight); location.reload(); };
   /** How this family plays (src/persist/save.ts GameMode; a new one asks on New Game). */
-  let mode: GameMode = saved?.mode ?? family?.mode ?? 'rogue';
+  let mode: GameMode = newGame ?? saved?.mode ?? family?.mode ?? 'rogue';
   /** The game opens on the title screen (src/game/title.ts), unless the last visit asked to go straight on (a load, Save and quit's way back). */
   const titled = !takeStraightIn() && titleWanted(location.search);
   // The title's television comes on at once; the game sets itself up behind it and joins it when ready (below).
@@ -356,16 +360,6 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // In grandma's cellar: by her armchair, facing the broken arch.
     if (level.depth === 0 && !params.pos) b.facing = cam.yaw = CELLAR.start.yaw;
     return b;
-  };
-  /** A new family (New Game over a kept one): everything kept is forgotten, the first grandchild goes down. */
-  const freshFamily = (): void => {
-    taken.clear();
-    tin = new Tin(); key = new Key();
-    pack = new Pack(() => kit.room); kit = freshKit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
-    heir = 0; reached = 0; euros = 0; sales = 0; saltAtStart = 0;
-    fallen.length = 0;
-    body = nextGrandchild();
-    finds = findsOf(level);
   };
   fauna = new Fauna(level);
   wisps = new Wisps(level);
@@ -1042,7 +1036,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     (globalThis as { __ready?: boolean }).__ready = view.settled;
     controls.endFrame();
   };
-  if (introduce && !titled) beginIntro(); // under the title, New Game begins it
+  if (introduce && !titled && !newGame) beginIntro(); // under the title (or after New Game's restart), New Game begins it
   const deathView = new DeathView(document.body);
   /** When this grandchild died, and when the next was asked for (null: not yet); the camera's distance before death pulled it back. */
   let diedAt = 0, nextAt: number | null = null, before = cam.distance;
@@ -1111,9 +1105,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     // Another family: it is set up from its own save, as a new visit (straight past the title).
     if (typeof choice === 'object' && 'load' in choice && choice.load !== family?.id) { setActiveFamily(choice.load); restart(true); return; }
     if (typeof choice === 'object' && 'new' in choice) {
-      // A new family (the others stay kept), playing the mode chosen; it is kept from its first save.
-      if (saved) freshFamily();
-      family = null;
+      // A new family (the others stay kept), playing the mode chosen, on a world of its own; it is kept from its first save.
+      // Over a kept family the game was built on that family's world: start again on a fresh one.
+      if (family) { goNewGame(choice.new); location.reload(); return; }
       mode = choice.new;
       // The first grandchild is made (the rest of the shaders build meanwhile), then the introduction (src/game/prologue.ts).
       ({ look: made, outfit: worn } = await makeGrandchild());
@@ -1131,10 +1125,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     timer.update();
     noticeUntil = timer.getElapsed() + 5;
   }
-  // The creator alone (?creator, for screenshots of it): played over the level, then on into the game.
-  if (!titled && q.has('creator')) {
+  // The creator alone (?creator, for screenshots of it), or New Game's new family after its restart: played over the level, then on into the game.
+  if (!titled && (q.has('creator') || newGame)) {
     if (loading.open) loading.hide();
     ({ look: made, outfit: worn } = await makeGrandchild());
+    if (newGame) beginIntro();
   }
   let frameMs = 16, frameShown = 16, frameShownAt = -Infinity;
   // The first level streams in behind the loading screen, as any later one behind the black.
@@ -1784,7 +1779,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     for (const sn of suns.risen.splice(0)) sounds.play('sun_rise', sn, 0.9);
     for (const f of suns.splashed.splice(0)) sounds.play('sun_drip', f, 0.7);
     for (let i = 0; i < SUN.most; i++) { const sn = suns.list[i]; sounds.hum(i, sn && sn.age < sn.life ? sn : null, sn ? Math.min(1.4, sizeOf(sn) / 1.25) : 0); }
-    sunView.draw(suns);
+    sunView.draw(suns, view.camera.position.x, view.camera.position.y, view.camera.position.z);
     if (pocket) {
       // In another world: the way back hangs open, then flickers; the edges of sight shake; then it lets go.
       const k = pocket.stay, shake = k.instability;
