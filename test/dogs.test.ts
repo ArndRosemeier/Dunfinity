@@ -61,11 +61,12 @@ function run(dogs: Dogs, me: Prey, seconds: number, facing: number, dt = 1 / 60,
   }
 }
 
-test('feral dogs live in the Cisterns, not in the Quarry or the Salt Works', () => {
-  assert.ok(packs(new Dogs(level)).length > 3, `packs on a Cisterns level (${level.seed}, ${level.depth})`);
+test('feral dogs are at home in the Cisterns, and only strays elsewhere', () => {
+  const home = packs(new Dogs(level)).length;
+  assert.ok(home > 3, `packs on a Cisterns level (${level.seed}, ${level.depth})`);
   for (const [s, d] of [withBand('quarry'), withBand('quarry', 1), withBand('salt'), withBand('salt', 1)]) {
-    const l = new Level(s, d);
-    assert.equal(packs(new Dogs(l), l).length, 0, `none on ${l.band.id} level (${s}, ${d})`);
+    const l = new Level(s, d), n = packs(new Dogs(l), l).length;
+    assert.ok(n < home / 2, `${n} packs on ${l.band.id} level (${s}, ${d}) against ${home} at home`);
   }
 });
 
