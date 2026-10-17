@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.231 — Clothes for your grandchild
+
+- The character creator has a Clothes tab: a top (T-shirt, shirt, sweater, hoodie or dress), something over it (jacket, rain jacket, blazer or coat), jeans, chinos, shorts or a skirt, trainers, shoes or boots, and a cap or a beanie.
+- Each garment takes a colour; tops and coats can be plain, striped or checked, a jacket can be leather.
+- Today's clothes, brought over from Scale's wardrobe (no superhero tights).
+- "Someone else" also picks a new everyday outfit; the clothes are saved with the family.
+- A hard hat found below replaces the cap or beanie.
+
 ## v0.230 — Passages between styles never cut off nearby
 
 - The field looked for the passages between styles only among the regions of other styles up to 280 m (blend distance) from a point, and only for passages from the point's own region. So where a style carried a passage's end deep into its region, or where a point stepped from one region into the next of the same style, a passage's air dropped out of the field a few metres from it. Deep in the rock, but the field jumped there (and a mesh chunk next to it could have been skipped).
