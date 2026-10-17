@@ -1613,6 +1613,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,
       mode: body.mode === 'climb' ? 'climbing' : body.mode === 'swim' ? 'swimming' : '',
       hurt: body.time - body.hurtAt < 2 && !body.dead ? `${hurtLine(body.lastCause)}: -${body.lastHurt.toFixed(0)}` : '',
+      pet: pets.alive && { name: pets.alive.name, health: pets.alive.health, maxHealth: pets.alive.maxHealth },
       boss: fauna.boss(body), notice: timer.getElapsed() < noticeUntil ? notice : '', gain: now < gainUntil ? gainLine : '',
       prompt: lines.filter(Boolean).join(' · '), tally: fauna.tally(), flags,
       salt: tin.salt, euros, pack: pack.items.length ? { count: pack.items.length, room: PACK.room, worth: pack.worth } : null,
