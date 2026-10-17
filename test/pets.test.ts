@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Rng } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
-import { PET, PETS, Pets } from '../src/creatures/pets';
+import { PET, PETS, Pets, type PetData } from '../src/creatures/pets';
 import { Rats } from '../src/creatures/rats';
 import { Cooked } from '../src/loot/recipes';
 import { byYou, type Fighter } from '../src/combat/combat';
@@ -114,7 +114,7 @@ test('a pet that is out is kept in the save and comes back as hurt as it was, at
   const pets = new Pets(level), owner = dummy(ax, az), p = pets.summon('dog', along(1), owner.y, az, 0);
   p.mode = 'heel';
   p.hurt(25, 'rat');
-  const kept = JSON.parse(JSON.stringify(pets.data));
+  const kept: PetData = JSON.parse(JSON.stringify(pets.data));
   assert.deepEqual(kept, { kind: 'dog', health: PETS.dog.health - 25 });
   const back = new Pets(level);
   back.restore(kept);
