@@ -75,6 +75,7 @@ export class LoadingScreen {
     clearTimeout(this.removing);
     if (!this.root.isConnected) document.body.appendChild(this.root);
     this.root.classList.add('failed');
+    this.root.style.zIndex = '30'; // over the title's television, which comes on before the game is set up
     this.root.style.transition = '';
     this.root.style.opacity = '1';
     this.root.style.pointerEvents = 'auto';

@@ -74,7 +74,7 @@ import { DEBUG_STYLES, depthWithStyle, placesOn, styleSpot, type Place } from '.
 import type { StyleId } from '../gen/style';
 import { positionReport, readPosition } from './report';
 import { VERSION } from '../app/whatsNew';
-import { playTitle } from './title';
+import { playTitle, type TitleGame } from './title';
 import { playCreator } from './creator';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
@@ -160,6 +160,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const saved = keep && !q.has('fresh') ? readSave(params.seed) : null;
   /** The game opens on the title screen (src/game/title.ts). */
   const titled = titleWanted(location.search);
+  // The title's television comes on at once; the game sets itself up behind it and joins it when ready (below).
+  let joinTitle: (g: TitleGame) => void = () => {};
+  const titling = titled ? playTitle(host, {
+    seed: params.seed, canContinue: !!saved, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
+    game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
+    shown: () => { if (loading.open) loading.hide(); },
+  }) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
   setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
@@ -899,13 +906,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): the
   // television plays while the game's level streams in and its shaders build, then hands over in the black.
   if (titled) {
-    const choice = await playTitle(host, {
-      seed: params.seed, canContinue: !!saved, ready: castWarm, pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
-      sound: sounds.engine,
+    joinTitle({
+      ready: castWarm, sound: sounds.engine,
       builds: () => view.stage.monitor.events.length,
-      shown: () => { if (loading.open) loading.hide(); },
       stream: (now) => view.frame(body.x, body.y, body.z, now, false),
     });
+    const choice = await titling!;
     if (choice === 'new' && saved) freshFamily();
     if (choice === 'new') {
       // The first grandchild is made (the rest of the shaders build meanwhile), then the introduction (src/game/prologue.ts).

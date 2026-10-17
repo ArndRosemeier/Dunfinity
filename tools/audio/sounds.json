@@ -424,54 +424,6 @@
   "sound": "soft static of an old television with a 50 Hz mains hum",
   "seed": "synthesized: seeded noise and mains hum (see the hand-cuts note in the PR)"
  },
- "news_1": {
-  "kind": "shot",
-  "max": 15.0,
-  "files": 1,
-  "gain": 0.9,
-  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: Good evening. Tonight, a small salt-mining town that has asked us not to say its name, and what walked down its streets eight nights ago.",
-  "seed": "cut from one take of all six lines (one voice); see the hand-cuts note in the PR"
- },
- "news_2": {
-  "kind": "shot",
-  "max": 15.0,
-  "files": 1,
-  "gain": 0.9,
-  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: A baker on his way to the ovens saw it under the last street lamp. Taller than the lamp, he says. Thin as a rake.",
-  "seed": "cut from one take of all six lines (one voice); see the hand-cuts note in the PR"
- },
- "news_3": {
-  "kind": "shot",
-  "max": 15.0,
-  "files": 1,
-  "gain": 0.9,
-  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: Every dog in the town howled until it was light.",
-  "seed": "cut from one take of all six lines (one voice); see the hand-cuts note in the PR"
- },
- "news_4": {
-  "kind": "shot",
-  "max": 15.0,
-  "files": 1,
-  "gain": 0.9,
-  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: On Sunday morning the milk on three doorsteps had turned to salt.",
-  "seed": "cut from one take of all six lines (one voice); see the hand-cuts note in the PR"
- },
- "news_5": {
-  "kind": "shot",
-  "max": 15.0,
-  "files": 1,
-  "gain": 0.9,
-  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: The company's answer to our questions: no comment.",
-  "seed": "cut from one take of all six lines (one voice); see the hand-cuts note in the PR"
- },
- "news_6": {
-  "kind": "shot",
-  "max": 15.0,
-  "files": 1,
-  "gain": 0.9,
-  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: And yet, eight days on, no dog in that town will walk down Lindenstrasse. Good night.",
-  "seed": "cut from one take of all six lines (one voice); see the hand-cuts note in the PR"
- },
  "report_1": {
   "kind": "shot",
   "max": 15.0,
