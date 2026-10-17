@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.216 — Your salt pet is kept in the save
+
+- A salt pet that is out when you leave comes back when you return, as hurt as it was, standing up out of salt at your side.
+
 ## v0.215 — Creatures with tempers of their own
 
 - Every strange creature now has a temper grown with its body. Some plod and graze for ages, some dart and freeze like lizards, some never settle. Herds keep together, walk in single file behind a leader, spread out, or live alone.
