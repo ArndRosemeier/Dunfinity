@@ -21,6 +21,8 @@ const POOL = 12;
 /** The head's clips (AssetGenerator's quadruped eel_clips.py); the body is laid along the chain here. */
 const CLIPS: Record<string, ClipUse> = {
   Swim: { loop: true },
+  Graze: { loop: true },
+  Rest: { loop: true },
   Rise: { loop: false },
   Strike: { loop: false },
   Die: { loop: false },
@@ -54,6 +56,7 @@ class EelFigure extends RiggedFigure<Eel> {
   }
 
   protected clipFor(e: Eel): string {
+    if (e.mode === 'cruise' && e.pose) return e.pose === 'feed' ? 'Graze' : 'Rest'; // nosing along the bottom, or still (src/creatures/life.ts)
     return e.mode === 'dead' ? 'Die' : e.mode === 'rise' ? 'Rise' : e.mode === 'strike' ? 'Strike' : 'Swim';
   }
 

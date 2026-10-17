@@ -21,6 +21,8 @@ const POOL = 16;
 const CLIPS: Record<string, ClipUse> = {
   Rest: { loop: true },
   Ooze: { loop: true, stride: 1 },
+  Feed: { loop: true },
+  Sleep: { loop: true },
   Blow: { loop: false },
   Die: { loop: false },
 };
@@ -30,6 +32,9 @@ const POUR = 0.45;
 
 class SlimeFigure extends RiggedFigure<Slime> {
   protected clipFor(s: Slime): string {
+    // Spread over its food, or asleep with its colony (src/creatures/life.ts).
+    if (s.pose === 'feed') return 'Feed';
+    if (s.pose === 'rest') return 'Sleep';
     switch (s.mode) {
       case 'dead': return 'Die';
       case 'blow': return 'Blow';

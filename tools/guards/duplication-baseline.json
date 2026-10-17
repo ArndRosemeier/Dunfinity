@@ -36,10 +36,6 @@
     "reason": "the swing mode's two lines: the blow itself is pickSwing and the approach closeIn (src/creatures/pick.ts); what each kind does after a swing (chase on, go home, wait by the bell) is its own"
   },
   {
-    "key": "idiom: [.angry .dead] in dunfinity/creatures/crickets.ts + dunfinity/creatures/foreman.ts + dunfinity/creatures/touched.ts",
-    "reason": "each creature's own state flags; surfaced when new files shifted the idiom finder's corpus"
-  },
-  {
     "key": "idiom: [.dry .groundAt] in dunfinity/creatures/crickets.ts + dunfinity/creatures/touched.ts + dunfinity/gen/diaryPages.ts",
     "reason": "asking the level whether a spot is dry and how high its floor is, through the level's own seams; unrelated callers"
   },
@@ -138,10 +134,6 @@
   {
     "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/eels.ts#act",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/scavengers.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
     "key": "same name: dunfinity/creatures/crickets.ts#act + dunfinity/creatures/tallOne.ts#act",
@@ -1737,10 +1729,6 @@
   },
   {
     "key": "same name: dunfinity/render/creatures/cricketView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
-    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#clipFor + dunfinity/render/creatures/shroomView.ts#clipFor",
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
@@ -4642,5 +4630,49 @@
   {
     "key": "same name: dunfinity/render/creatures/dogView.ts#travelled + dunfinity/render/creatures/shroomView.ts#travelled",
     "reason": "each species turns its own gait phase into metres for RiggedFigure (rigged.ts), the seam these override"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/eelView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/eelView.ts#clipFor + dunfinity/render/creatures/slimeView.ts#clipFor",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ratView.ts#clipFor + dunfinity/render/creatures/slimeView.ts#clipFor",
+    "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
+  },
+  {
+    "key": "idiom: [.move .steer] in dunfinity/creatures/animals.ts + dunfinity/creatures/population.ts + dunfinity/creatures/tallOne.ts",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/bestiary.ts#settle + dunfinity/creatures/population.ts#settle",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/life.ts#stop + dunfinity/render/humans/ladderClimb.ts#stop",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#at + dunfinity/gen/surfaceNets.ts#at",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/gen/cellMemo.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/gen/gates.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/loot/finds.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/world/doors.ts#near",
+    "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
   }
 ]

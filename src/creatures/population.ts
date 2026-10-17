@@ -10,7 +10,7 @@ import type { Level } from '../gen/level';
 import type { SaltCircle } from '../gen/lair';
 import { byYou, type Fighter } from '../combat/combat';
 import { CellMemo } from '../gen/cellMemo';
-import { Steer, brake, type Gait } from './steer';
+import { Steer, brake, thwarted, type Gait, type Walker } from './steer';
 import { GRUDGE_HELD, type Creature } from './creature';
 import { LIFE } from './life';
 import { pastureOf, type Pasture } from './pasture';
@@ -141,9 +141,12 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
         if (L[b].dead) continue;
         const dx = L[b].x - L[a].x, dz = L[b].z - L[a].z, d = Math.hypot(dx, dz), min = (L[a].radius + L[b].radius) * k;
         if (d >= min || d < 1e-4) continue;
-        const push = (min - d) / 2 / d;
-        L[a].x -= dx * push; L[a].z -= dz * push;
-        L[b].x += dx * push; L[b].z += dz * push;
+        // Each gives way half; one standing a moment (getting nowhere) holds its ground and the other
+        // gives way for both; one about its life never into the rock or the water.
+        const A = L[a], B = L[b], sa = (A.aim?.wait ?? 0) > 0, sb = (B.aim?.wait ?? 0) > 0;
+        const half = (min - d) / 2 / d, pa = sa === sb ? half : sa ? 0 : half * 2, pb = half * 2 - pa;
+        if (pa && this.free(A, A.x - dx * pa, A.z - dz * pa)) { A.x -= dx * pa; A.z -= dz * pa; }
+        if (pb && this.free(B, B.x + dx * pb, B.z + dz * pb)) { B.x += dx * pb; B.z += dz * pb; }
       }
     }
   }
@@ -169,15 +172,20 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     return l.dry(x, z, 0.05) && l.sdf(x, y + head, z) >= room && !l.descents.at(x, z, 4) ? y : null;
   }
 
+  /** Whether c, about its life (feeding, resting), would be clear of the rock and out of the water at (x, z); one in a fight is shoved anyway. */
+  private free(c: C, x: number, z: number): boolean {
+    return !c.life.doing || (this.level.dry(x, z, 0) && this.level.sdf(x, c.y + c.height * 0.5625, z) > c.radius * 0.5);
+  }
+
   /**
-   * A seeded spot `near`–`far` metres round a den on the floor at `y`, on the den's own floor and
-   * clear of the rock by `room` at `lift` up (a spot over a ledge or under a step is drawn again; none:
-   * the den itself).
+   * A seeded spot `near`–`far` metres round a den on the floor at `y`, on the den's own floor, out of
+   * the water and clear of the rock by `room` at `lift` up (a spot over a ledge, under a step or in a
+   * pool is drawn again; none: the den itself).
    */
   protected around(den: D & { readonly y: number }, rng: Rng, near: number, far: number, room = 0.15, lift = 0.3): [number, number, number] {
     for (let k = 0; k < 6; k++) {
       const a = rng.range(0, Math.PI * 2), d = rng.range(near, far), x = den.x + Math.cos(a) * d, z = den.z + Math.sin(a) * d, y = this.level.groundAt(x, z);
-      if (Math.abs(y - den.y) < 1 && this.level.sdf(x, y + lift, z) > room) return [x, y, z];
+      if (Math.abs(y - den.y) < 1 && this.level.dry(x, z, 0) && this.level.sdf(x, y + lift, z) > room) return [x, y, z];
     }
     return [den.x, den.y, den.z];
   }
@@ -212,7 +220,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   /** Where den feeds and rests, for animals like `c` within `reach` metres (found once, the same every time). */
   pasture(den: D & { readonly y: number }, c: C, reach: number): Pasture {
     let p = this.pastures.get(den.key);
-    if (!p) this.pastures.set(den.key, (p = pastureOf(this.level, den, this.dietOf(den), reach, c.radius, c.height)));
+    if (!p) this.pastures.set(den.key, (p = pastureOf(this.level, den, this.dietOf(den), reach, c.radius, c.height, (f, x, z) => this.steer.walkable({ x: f.x, y: f.y, z: f.z, radius: c.radius, height: c.height } as Walker, x, z))));
     return p;
   }
 
@@ -256,10 +264,18 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     if (L.doing === 'going') {
       L.t -= dt;
       const d = Math.hypot(L.tx - c.x, L.tz - c.z), at = Math.max(0.3, len * 0.3);
-      // At its food (or near enough when it cannot get closer): it feeds; it gives up on one it cannot reach.
-      if (d < at || (L.t <= 0 && d < at + 1)) { L.doing = 'feed'; L.t = this.rng.range(LIFE.feedFor[0], LIFE.feedFor[1]); }
-      else if (L.t <= 0) { L.stop(); return false; }
-      else { L.moved = this.steer.move(c, L.tx, L.tz, walk, dt, null); return true; }
+      // At its food (or near enough when it cannot get closer): it feeds; it gives up on one it cannot
+      // reach in time, or when it is stuck on the way.
+      const stuck = L.round && thwarted(c);
+      if (d < at || ((L.t <= 0 || stuck) && d < at + 1)) { L.doing = 'feed'; L.t = this.rng.range(LIFE.feedFor[0], LIFE.feedFor[1]); }
+      else if (L.t <= 0 || stuck) { L.stop(); return false; }
+      else {
+        // Straight at it; once that gets it nowhere, round the rock on its den's walk.
+        if (!L.round && L.spot && (c.aim?.stuck ?? 0) > LIFE.round) L.round = true;
+        const [wx, wz] = L.round && L.spot ? this.pasture(den, c, reach).way(L.spot, c.x, c.z) : [L.tx, L.tz];
+        L.moved = this.steer.move(c, wx, wz, walk, dt, null);
+        return true;
+      }
     }
     if (L.doing === 'feed') {
       L.t -= dt;
@@ -270,6 +286,32 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
       if (L.t <= 0) { L.stop(); return false; }
       return true;
     }
+    return false;
+  }
+
+  /**
+   * The life of one that feeds and rests where it is (a cricket on its wall, an eel in its pool),
+   * called every step it is about its own business: in its den's hours of rest it lies still (all
+   * but its sentry); else now and then it feeds there. Its kind keeps it still, or slow, meanwhile
+   * (by its pose). Returns whether its life holds it this step.
+   */
+  protected liveInPlace(c: C, den: D, dt: number): boolean {
+    const L = c.life, range = ([lo, hi]: readonly [number, number]) => this.rng.range(lo, hi);
+    L.seen = true; L.moved = 0;
+    if (this.resting(den) && !this.sentry(c, den)) {
+      if (L.doing !== 'rest') { L.stop(); L.doing = 'rest'; }
+      L.down = true;
+      return true;
+    }
+    if (L.doing === 'rest') { L.stop(); L.t = range(LIFE.between); }
+    if (L.doing === 'feed') {
+      if ((L.t -= dt) > 0) return true;
+      L.stop(); L.t = range(LIFE.between);
+      return false;
+    }
+    if ((L.t -= dt) > 0) return false;
+    if (this.rng.chance(LIFE.feed)) { L.doing = 'feed'; L.t = range(LIFE.feedFor); return true; }
+    L.t = range(LIFE.between);
     return false;
   }
 
