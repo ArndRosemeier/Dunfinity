@@ -15,7 +15,7 @@ import { GRANDMA_KERF, Key } from '../lore/key';
 import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
 import { CELLAR } from '../gen/cellar';
-import { shopDoor } from '../gen/town';
+import { TOWN, shopDoor } from '../gen/town';
 import { PAWN, sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
 import { Kit, isItem, packRows, rummage } from '../loot/items';
@@ -36,7 +36,7 @@ import { SettingsView } from '../app/settingsView';
 import { parseViewParams, titleWanted } from '../app/params';
 import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
-import { DRAFT_RANGE, draftLine } from './draft';
+import { DRAFT_RANGE, draftLine, homeLine } from './draft';
 import { Fauna, type Foe } from '../creatures/fauna';
 import { RatView } from '../render/creatures/ratView';
 import { TouchedView } from '../render/creatures/touchedView';
@@ -1559,9 +1559,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : body.hidden ? 'in the miners\' shed, the door shut' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {
-      const s = level.descents.nearest(body.x, body.z, DRAFT_RANGE);
-      const draft = s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
-      if (draft) lines.push(draft);
+      // Out in the village no draft is felt: the line points the way home instead.
+      const out = level.depth === 0 && GameSounds.place(level, body) === 'town';
+      const s = out ? null : level.descents.nearest(body.x, body.z, DRAFT_RANGE);
+      const hint = out ? homeLine(body.x, body.z, cam.yaw, TOWN.door.x[0], 0) : s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
+      if (hint) lines.push(hint);
     }
     const flags = debug.invulnerable || debug.tireless ? `debug: ${[debug.invulnerable && 'invulnerable', debug.tireless && 'tireless'].filter(Boolean).join(', ')}` : '';
     // The main bar: how soon each slot is ready again, and what is on.
