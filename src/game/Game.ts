@@ -15,8 +15,8 @@ import { GRANDMA_KERF, Key } from '../lore/key';
 import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
 import { CELLAR, daylightAt } from '../gen/cellar';
-import { TOWN, shopDoor } from '../gen/town';
-import { PAWN, sell } from '../loot/pawn';
+import { TOWN } from '../gen/town';
+import { sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
 import { Kit, isItem, packRows, rummage } from '../loot/items';
 import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
@@ -55,6 +55,7 @@ import { GhostView } from '../render/creatures/ghostView';
 import { NeighbourView } from '../render/humans/neighbourView';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { Stranger, STRANGER_KEY } from '../world/stranger';
+import { KEEPER_KEY, Shopkeeper } from '../world/shopkeeper';
 import { Grandma, GRANDMA, GLIMPSES, NAMES_NEAR, RING_SIGHT } from '../world/grandma';
 import { TallOneView } from '../render/creatures/tallOneView';
 import { Hearth, hearthParts } from '../render/props/hearth';
@@ -257,6 +258,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     doors.into(view.props.blockers);
     if (l.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker); else view.props.blockers.clear(WEBER_KEY);
     if (strangerHere()) view.props.blockers.set(STRANGER_KEY, stranger.blocker); else view.props.blockers.clear(STRANGER_KEY);
+    for (const k of SHOPS) if (l.depth === 0) view.props.blockers.set(KEEPER_KEY[k], keepers[k].blocker); else view.props.blockers.clear(KEEPER_KEY[k]);
     finds = findsOf(l);
     tin.deepest = Math.max(tin.deepest, l.depth);
     reached = Math.max(reached, l.depth);
@@ -265,7 +267,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
   const look = (l: Level): void => {
-    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = tallView.level = l;
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = keeperViews.hardware.people.level = keeperViews.pawn.people.level = tallView.level = l;
     view.go(l);
     Rigged.kinOn(params.seed, l.depth);
     cam.level = l;
@@ -351,7 +353,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The stranger at Ilse's is in the town once the family has been below level 10. */
   const strangerHere = (): boolean => level.depth === 0 && Stranger.here({ deepest: tin.deepest, fallen: fallen.length });
   const weber = new Neighbour();
-  scavengerView.people.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = level;
+  /** Kemal and Ilse behind their counters. */
+  const SHOPS = ['hardware', 'pawn'] as const;
+  const keepers = { hardware: new Shopkeeper('hardware'), pawn: new Shopkeeper('pawn') };
+  const keeperViews = { hardware: await NeighbourView.keeper('hardware'), pawn: await NeighbourView.keeper('pawn') };
+  scavengerView.people.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = keeperViews.hardware.people.level = keeperViews.pawn.people.level = level;
   const tallView = await TallOneView.create(params.seed);
   tallView.level = level;
   /** The grandchild kept from the last visit, where they were. */
@@ -395,9 +401,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
-  const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp, ...petView.roots];
+  const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, ...keeperViews.hardware.people.figures, ...keeperViews.pawn.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp, ...petView.roots];
   // Under the title screen only the nobody warms up now; everyone else warms while it plays.
-  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, strangerView.people.root, grandmaView.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root, ...petView.roots];
+  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, strangerView.people.root, grandmaView.people.root, keeperViews.hardware.people.root, keeperViews.pawn.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root, ...petView.roots];
   await view.start(titled ? [nobody.root] : [nobody.root, ...figures], titled ? [...figures, ...roots] : []);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
@@ -419,6 +425,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   doors.into(view.props.blockers);
   if (level.depth === 0) view.props.blockers.set(WEBER_KEY, weber.blocker);
   if (strangerHere()) view.props.blockers.set(STRANGER_KEY, stranger.blocker);
+  if (level.depth === 0) for (const k of SHOPS) view.props.blockers.set(KEEPER_KEY[k], keepers[k].blocker);
   const findView = new FindView();
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
@@ -1140,8 +1147,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const writing = level.writing, note = writing?.at, nearNote = !busy && !nearLadder && !nearFind && !!note && Math.hypot(note[0] - body.x, note[2] - body.z) < CAMP.reach && Math.abs(note[1] - body.y) < 1.5;
     const atShop = (shop: 'pawn' | 'hardware') => {
       if (level.depth !== 0 || busy || nearLadder || nearFind || nearNote || !body.grounded) return false;
-      const d = shopDoor(shop);
-      return Math.hypot(d.x - body.x, d.z - body.z) < PAWN.reach;
+      return keepers[shop].canHear(body.x, body.y, body.z); // (at the counter)
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
     atCounter = nearKemal;
@@ -1154,7 +1160,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (nearKemal) GEAR_ORDER.forEach((k, i) => {
       if (!controls.tap(`Digit${i + 1}`)) return;
       const r = buyGear(kit, k, euros);
-      if (r.euros !== euros) readAt = now; // (stooping over his counter)
+      if (r.euros !== euros) { readAt = now; keepers.hardware.deal(now); } // (stooping over his counter)
       euros = r.euros;
       say(r.line, 6);
     });
@@ -1253,9 +1259,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       else if (nearPawn && pack.items.length) {
         const r = sell(pack, sales++);
         euros += r.paid; readAt = now; // (stooping over her counter)
+        keepers.pawn.deal(now);
         sounds.play('coins');
         say(r.line, 6);
-      } else if (nearDoor) {
+      } else if (nearPawn) say(keepers.pawn.talk(now), 6);
+      else if (nearKemal) say(keepers.hardware.talk(now), 6);
+      else if (nearDoor) {
         const line = doors.toggle(nearDoor, now);
         if (line) say(line, 4);
       } else if (nearMarks && readView.open) readView.hide();
@@ -1507,6 +1516,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
     strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
+    for (const k of SHOPS) {
+      if (level.depth === 0) keepers[k].turn(body.x, body.z, dt);
+      keeperViews[k].people.draw(level.depth === 0 ? [keepers[k]] : [], body.x, body.z, dt, now);
+    }
     // Not while the level streams in behind the black, nor through the prologue.
     // On 18, far off where she laid her first ring, as one comes in sight of it (once for the family).
     const ring = level.depth === GLIMPSES.ring.depth && !below ? level.page : null, off = ring ? Math.hypot(ring.x - body.x, ring.z - body.z) : 0;
@@ -1571,8 +1584,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${FINDS[nearFind.kind].name}` : `${E}: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
-    else if (nearKemal) lines.push(`Kemal's hardware store (purse €${euros}): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(' · '));
-    else if (nearPawn) lines.push(pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : 'Ilse\'s pawn shop. You have nothing to sell her yet.');
+    else if (nearKemal) lines.push(`Kemal's counter (purse €${euros}, ${E}: talk): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(' · '));
+    else if (nearPawn) lines.push(pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : `${E}: talk to Ilse (you have nothing to sell her yet)`);
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);

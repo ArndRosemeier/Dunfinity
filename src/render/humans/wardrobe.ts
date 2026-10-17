@@ -219,6 +219,12 @@ const CARDIGAN: Outfit = {
   hand: null,
 };
 
+/** The shopkeepers: Kemal's brown shop coat over grey work trousers; Ilse's bottle-green cardigan over a dark skirt. Nothing in their hands. */
+const KEEPERS: Readonly<Record<'hardware' | 'pawn', Outfit>> = {
+  hardware: { clothes: [['chest', 'tunic', [0.34, 0.24, 0.14], [0.2, 0.15, 0.1], 0.35], ['legs', 'trousers', [0.24, 0.24, 0.25], [0.16, 0.16, 0.17], 0.4], ['feet', 'footwraps', [0.12, 0.09, 0.07], [0.08, 0.06, 0.05], 0.3]], hand: null },
+  pawn: { clothes: [['chest', 'tunic', [0.14, 0.26, 0.18], [0.1, 0.18, 0.13], 0.3], ['legs', 'trousers', [0.13, 0.11, 0.12], [0.1, 0.08, 0.09], 0.3], ['feet', 'footwraps', [0.16, 0.08, 0.06], [0.1, 0.05, 0.04], 0.3]], hand: null },
+};
+
 /** The Tall One's shroud: a long, dark, worn cloth, and nothing in the hand. */
 const SHROUD: Outfit = {
   clothes: [['chest', 'tunic', [0.06, 0.06, 0.07], [0.04, 0.04, 0.05], 0.95], ['legs', 'trousers', [0.05, 0.05, 0.06], [0.04, 0.04, 0.05], 0.95]],
@@ -258,3 +264,4 @@ export const ghostsClothes = (seed: number, race: 'dwarf' | 'elf'): EquipmentVis
 export const travellersClothes = (seed: number): EquipmentVisuals => dressIn(TRAVELLER, seed);
 export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);
 export const cardigan = (seed: number): EquipmentVisuals => dressIn(CARDIGAN, seed);
+export const keepersClothes = (seed: number, shop: 'hardware' | 'pawn'): EquipmentVisuals => dressIn(KEEPERS[shop], seed);
