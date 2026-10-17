@@ -7,6 +7,7 @@
 import { angleDiff } from '@futuremagic/core';
 import type { Fighter } from '../combat/combat';
 import type { Walker } from './steer';
+import { Life, type Pose } from './life';
 
 /** The cause of a blow that leaves a grudge (a salt pet's bite): the one bitten turns on the biter, not on whoever its kind is after. */
 export const GRUDGE = 'salt-pet';
@@ -32,6 +33,8 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   cause = '';
   /** Who it turned on, other than the one its kind is after (a salt pet that bit it: src/creatures/pets.ts); let go once anyone else hurts it. */
   grudge: Fighter | null = null;
+  /** An animal's life between fights: feeding, resting (src/creatures/life.ts). */
+  readonly life = new Life();
 
   /** At (x, y, z) facing `yaw` (forward is (-sin yaw, -cos yaw)). */
   constructor(public x: number, public y: number, public z: number, public yaw: number, readonly radius: number, readonly height: number, health: number, public mode: Mode) {
@@ -39,6 +42,9 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   }
 
   get dead(): boolean { return this.health <= 0; }
+
+  /** Feeding, lying at rest, or neither (the rig poses it). */
+  get pose(): Pose { return this.dead ? '' : this.life.pose; }
 
   hurt(amount: number, cause: string): void {
     this.health = Math.max(0, this.health - amount);

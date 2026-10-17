@@ -37,6 +37,8 @@ interface Place {
 export class CritterLineup {
   readonly figures: CritterFigure[] = [];
   private readonly places: Place[] = [];
+  /** All held in one pose (feeding, lying at rest; src/creatures/life.ts) instead of the parade. */
+  pose: '' | 'feed' | 'rest' = '';
 
   /** `pick`: a depth (that level's bestiary), a role (`count` of it, strangeness rising along the row), or null (the sampler: `count` of every role). */
   constructor(seed: number, pick: number | CritterRole | null, private readonly ground: GroundAt, count = 2) {
@@ -84,7 +86,11 @@ export class CritterLineup {
       i.lookAt = null;
       i.action = '';
       i.vx = i.vz = 0;
-      if (t < 7) {
+      i.pose = this.pose;
+      if (this.pose) {
+        i.running = false;
+        i.yaw = p.face + 0.9;
+      } else if (t < 7) {
         // A ring: forward is (-sin yaw, -cos yaw), going round anticlockwise.
         const speed = p.sp.walkSpeed * (t > 4 ? 1.8 : 1);
         i.running = t > 4 && t < 6.5;
