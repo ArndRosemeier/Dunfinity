@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.229 — Rats and dogs on the one animal mind
+
+- Quarry rats, town rats, feral dogs and village dogs now act through the same animal mind as the strange creatures, on the same aggression scale, with tempers and fighting styles.
+- Quarry rats are a swarm that rears up when it spots you; town rats only ever flee.
+- The dogs' circling attack from behind is now the "flank" fighting style, which pack-living strange creatures can draw too.
+- Village dogs are curious about you, fight back when hit and calm down again; feral dogs go to the water to drink.
+
 ## v0.228 — One mind for every animal (groundwork)
 
 - No change in play yet. The strange creatures' behaviour now lives in one shared place, ready for the rats, dogs and other animals to move onto it, so every animal follows the same rules for aggression, temper and fighting style.
