@@ -47,7 +47,7 @@ export const REPORT: readonly ReportShot[] = [
   },
   {
     still: 'grating', seconds: 8, strap: 'A neighbour',
-    caption: 'A light came up through a cellar grating, she says. Blue, like a watch face. On a black-and-white set you will have to take her word for it.',
+    caption: 'A light came up through a cellar grating, she says. Blue, like the hands of a watch in the dark. It was gone before our camera came.',
     shows: 'a low iron cellar grating in the wall of an old house at pavement level at night, a pale glow coming up through the bars and lighting the cobbles',
   },
   {
