@@ -23,7 +23,8 @@ const LEDGE_DUR = 1.5;
 
 /** One part of a climb. Heights are the feet's, world y. */
 export type ClimbStep =
-  | { kind: 'walk'; ladder: Ladder }
+  /** `around`: the hole of a way down (x, z, radius), walked round rather than over. */
+  | { kind: 'walk'; ladder: Ladder; around?: Hole }
   | { kind: 'rim'; ladder: Ladder; dir: 'on' | 'off' }
   | { kind: 'foot'; ladder: Ladder; dir: 'on' | 'off' }
   | { kind: 'climb'; ladder: Ladder; from: number; to: number; fade?: 'in' | 'out' }
@@ -43,6 +44,32 @@ interface Segment {
 }
 
 const _v = new Vector3(), _w = new Vector3();
+
+/** A shaft's opening, as a walk to its ladder must go round it: centre (x, z) and radius. */
+export type Hole = readonly [number, number, number];
+
+/** How far from a hole's rim a walk round it keeps, metres. */
+const RIM_KEEP = 0.45;
+
+/**
+ * The way on foot from (x0, z0) to (x1, z1), round `around` (a hole) rather than over it: the angle
+ * round its centre and the distance from it eased from start to end, never nearer than RIM_KEEP to
+ * the rim. Returns its length, and puts the point a fraction f along it in `out` (x, z).
+ */
+export function rimWalk(x0: number, z0: number, x1: number, z1: number, around: Hole | undefined, f: number, out: [number, number]): number {
+  if (!around) {
+    out[0] = x0 + (x1 - x0) * f; out[1] = z0 + (z1 - z0) * f;
+    return Math.hypot(x1 - x0, z1 - z0);
+  }
+  const [cx, cz, r] = around, keep = r + RIM_KEEP;
+  const a0 = Math.atan2(z0 - cz, x0 - cx), d0 = Math.max(keep, Math.hypot(x0 - cx, z0 - cz));
+  let da = Math.atan2(z1 - cz, x1 - cx) - a0;
+  da -= Math.round(da / (2 * Math.PI)) * 2 * Math.PI; // the short way round
+  const d1 = Math.max(keep, Math.hypot(x1 - cx, z1 - cz));
+  const a = a0 + da * f, d = d0 + (d1 - d0) * f;
+  out[0] = cx + Math.cos(a) * d; out[1] = cz + Math.sin(a) * d;
+  return Math.abs(da) * (d0 + d1) / 2 + Math.abs(d1 - d0);
+}
 
 export class LadderClimb {
   /** Feet position and facing of the puppet this frame. */
@@ -132,7 +159,7 @@ export class LadderClimb {
 
   private plan(s: ClimbStep): Segment {
     switch (s.kind) {
-      case 'walk': return this.walkTo(s.ladder);
+      case 'walk': return this.walkTo(s.ladder, s.around);
       case 'rim': return { dur: 1.9, pose: (u) => this.rim(s.ladder, s.dir === 'off' ? u : 1 - u) };
       case 'ledge': {
         // A rim with no ladder under it: the feet start one step over the "lowest rung", where the pull-up starts.
@@ -164,31 +191,42 @@ export class LadderClimb {
     }
   }
 
-  /** Walk to where one gets on the ladder, then turn to face the wall. */
-  private walkTo(l: Ladder): Segment {
+  /** Walk to where one gets on the ladder (round the hole of a way down, never over it), then turn to face the wall. */
+  private walkTo(l: Ladder, around?: Hole): Segment {
     const d0 = this.rimLadder(l) ? 0.62 : -0.75;
-    let from: Vector3 | null = null, fromYaw = 0, walkT = 0, heading = 0;
-    const to = new Vector3(), v = 1.3 * Math.sqrt(this.k);
+    let from: Vector3 | null = null, fromYaw = 0, walkT = 0, heading = 0, speed = 0;
+    const to = new Vector3(), v = 1.3 * Math.sqrt(this.k), p: [number, number] = [0, 0], q: [number, number] = [0, 0];
     const face = faceYaw(l);
-    const dur = 1.6; // (long enough for the few steps from where the game lets the climb start)
-    return {
-      dur, pose: (u) => {
+    const seg: Segment = {
+      dur: 1.6, // (at least: long enough for the few steps beside the ladder; a walk round a shaft takes longer)
+      pose: (u) => {
         if (!from) {
           from = this.pos.clone();
           fromYaw = this.yaw;
           this.at(l, d0, 0, l.floor, to);
-          walkT = Math.min(dur - 0.5, Math.hypot(to.x - from.x, to.z - from.z) / v);
-          heading = Math.atan2(-(to.x - from.x), -(to.z - from.z));
+          const len = rimWalk(from.x, from.z, to.x, to.z, around, 0, p);
+          // Never more than a few seconds of being walked about: a long way round goes briskly.
+          speed = Math.max(v, len / 3.2);
+          walkT = len / speed;
+          seg.dur = Math.max(1.6, walkT + 0.5);
+          rimWalk(from.x, from.z, to.x, to.z, around, Math.min(1, 0.05 / Math.max(len, 0.05)), q);
+          heading = Math.atan2(-(q[0] - from.x), -(q[1] - from.z));
         }
-        const t = u * dur, f = walkT > 0 ? clamp(t / walkT, 0, 1) : 1;
-        this.pos.lerpVectors(from, to, f);
+        const t = u * seg.dur, f = walkT > 0 ? clamp(t / walkT, 0, 1) : 1;
+        rimWalk(from.x, from.z, to.x, to.z, around, f, p);
+        this.pos.set(p[0], from.y + (to.y - from.y) * f, p[1]);
         if (f < 1) {
           this.walking = true;
-          this.vel[0] = (to.x - from.x) / walkT; this.vel[2] = (to.z - from.z) / walkT;
-          this.yaw = lerpAngle(fromYaw, heading, smooth(0, 0.25, t));
-        } else this.yaw = lerpAngle(walkT > 0.05 ? heading : fromYaw, face, smooth(walkT, dur, t));
+          // Heading along the way (round a hole it turns as it goes).
+          rimWalk(from.x, from.z, to.x, to.z, around, Math.min(1, f + 0.02), q);
+          const dx = q[0] - p[0], dz = q[1] - p[1], n = Math.hypot(dx, dz);
+          if (n > 1e-4) heading = Math.atan2(-dx, -dz);
+          this.vel[0] = n > 1e-4 ? (dx / n) * speed : 0; this.vel[2] = n > 1e-4 ? (dz / n) * speed : 0;
+          this.yaw = t < 0.25 ? lerpAngle(fromYaw, heading, smooth(0, 0.25, t)) : heading;
+        } else this.yaw = lerpAngle(walkT > 0.05 ? heading : fromYaw, face, smooth(walkT, seg.dur, t));
       },
     };
+    return seg;
   }
 
   /**
