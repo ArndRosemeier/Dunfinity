@@ -4740,10 +4740,6 @@
     "reason": "DOM listeners that keep the browser's own scroll or gesture: the creator's wheel, the map's wheel, the touch pad's touches"
   },
   {
-    "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each kind turns to face where it goes (atan2 of its heading) at its own rate; the shared turning is already damp/angleDiff in core"
-  },
-  {
     "key": "idiom: [.frame .x .y .z] in dunfinity/game/Game.ts + dunfinity/game/creator.ts + dunfinity/lab/Lab.ts",
     "reason": "calls of the one seam view.frame(x, y, z, time) from each screen that draws the level"
   },
