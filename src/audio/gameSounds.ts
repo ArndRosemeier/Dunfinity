@@ -46,9 +46,9 @@ export interface Voice {
 }
 
 export const VOICES: Record<string, Voice> = {
-  rats: { enter: { chase: ['rat_squeak', 0.7], bite: ['rat_bite'], alert: ['rat_squeak', 0.4] }, hurt: 'rat_squeak', die: 'rat_die' },
+  rats: { enter: { stalk: ['rat_squeak', 0.7], bite: ['rat_bite'], rear: ['rat_squeak', 0.4] }, hurt: 'rat_squeak', die: 'rat_die' },
   crickets: { enter: { leap: ['cricket_leap'], bite: ['cricket_chirp'] }, hurt: 'cricket_chirp', die: 'cricket_chirp', idle: ['perch', 'cricket_chirp', 5, 14, 18], gain: 0.8 },
-  dogs: { enter: { circle: ['dog_growl', 0.8], lunge: ['dog_bark'] }, hurt: 'dog_die', die: 'dog_die' },
+  dogs: { enter: { stalk: ['dog_growl', 0.8], bite: ['dog_bark'] }, hurt: 'dog_die', die: 'dog_die' },
   eels: { enter: { strike: ['eel_strike'], rise: ['eel_strike', 0.5] }, die: 'eel_strike' },
   lumen: { enter: { go: ['slime', 0.5], blow: ['slime'] }, hurt: 'slime', die: 'slime', pitch: 1.2 },
   murk: { enter: { go: ['slime', 0.5], blow: ['slime'] }, hurt: 'slime', die: 'slime', pitch: 0.75 },
@@ -166,7 +166,7 @@ export class GameSounds {
 
   private creatures(s: SoundScene): void {
     const f = s.fauna, b = s.body;
-    const pops: [string, readonly { x: number; y: number; z: number; mode: string; hurtT: number; dead: boolean }[]][] = [
+    const pops: [string, readonly { x: number; y: number; z: number; mode: string; cue: string; hurtT: number; dead: boolean }[]][] = [
       ['rats', [...f.rats.list, ...f.townRats.list]], ['crickets', f.crickets.list], ['dogs', [...f.dogs.list, ...f.townDogs.list]], ['eels', f.eels.list], ['lumen', f.lumen.list],
       ['murk', f.murk.list], ['touched', f.touched.list], ['foreman', f.foreman.list], ['scavengers', f.scavengers.list], ['goblins', f.goblins.list], ['tall', f.tall.list],
     ];
@@ -177,14 +177,14 @@ export class GameSounds {
         if (d > 60) continue;
         const at = { x: c.x, y: c.y + 0.3, z: c.z };
         let m = this.seen.get(c);
-        if (!m) { this.seen.set(c, { mode: c.mode, hurtT: c.hurtT, idleAt: this.time + this.rng.range(0, 4) }); continue; }
-        if (c.mode !== m.mode) {
+        if (!m) { this.seen.set(c, { mode: c.cue, hurtT: c.hurtT, idleAt: this.time + this.rng.range(0, 4) }); continue; }
+        if (c.cue !== m.mode) {
           if (c.dead) { if (v.die) this.play(v.die, at, v.gain ?? 1, (v.pitch ?? 1) * 0.9); }
           else {
-            const say = v.enter?.[c.mode];
+            const say = v.enter?.[c.cue];
             if (say && this.rng.chance(say[1] ?? 1)) this.play(say[0], at, v.gain ?? 1, v.pitch ?? 1);
           }
-          m.mode = c.mode;
+          m.mode = c.cue;
         }
         if (c.hurtT < m.hurtT && !c.dead && v.hurt) this.play(v.hurt, at, v.gain ?? 1, (v.pitch ?? 1) * 1.15);
         m.hurtT = c.hurtT;

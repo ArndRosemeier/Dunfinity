@@ -105,7 +105,9 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
         // One with a grudge (bitten by a salt pet) goes for that one instead, while it lives and is near.
         const g = c.grudge, foe = g && !g.dead && Math.hypot(g.x - c.x, g.z - c.z) < GRUDGE_HELD ? g : prey;
         if (g && foe === prey) c.grudge = null;
+        const x0 = c.x, z0 = c.z;
         const n = this.act(c, foe, ctx, h);
+        c.walked += Math.hypot(c.x - x0, c.z - z0);
         if (foe === prey) hits += n;
         // Its mind turned to something else: its feeding or rest is over.
         if (!c.life.seen) c.life.stop();

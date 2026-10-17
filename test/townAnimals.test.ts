@@ -4,6 +4,7 @@ import { Level } from '../src/gen/level';
 import { VILLAGE, townGround } from '../src/gen/town';
 import { Rats, TOWN_RAT, type Nest } from '../src/creatures/rats';
 import { Dogs, TOWN_DOG, type Pack } from '../src/creatures/dogs';
+import { afterYou } from '../src/creatures/animals';
 import { damage, type Fighter } from '../src/combat/combat';
 import { Tin } from '../src/loot/tin';
 
@@ -32,8 +33,12 @@ function by(d: { x: number; z: number }, away: number): Prey {
   throw new Error('no room by the den');
 }
 
+/** Its lot is after you; they have calmed down well within this, s. */
+const angryOf = (dogs: Dogs, pack: Pack) => dogs.list.some((d) => d.pack === pack && afterYou(d));
+const CALM_DOWN = 18;
+
 function step(p: Rats | Dogs, me: Prey, seconds: number, each?: () => void): void {
-  for (let t = 0; t < seconds; t += 1 / 30) { if (p instanceof Dogs) p.advance(1 / 30, me, 0); else p.advance(1 / 30, me); me.vx = me.vz = 0; each?.(); }
+  for (let t = 0; t < seconds; t += 1 / 30) { if (p instanceof Dogs) p.advance(1 / 30, me, null, 0); else p.advance(1 / 30, me); me.vx = me.vz = 0; each?.(); }
 }
 
 test('the town has ordinary rats and dogs; the deep has none of them, and the town none of the feral ones', () => {
@@ -50,15 +55,15 @@ test('a village dog lets you be until you hit it, then its lot bites, then calms
   step(dogs, me, 20);
   assert.ok(dogs.list.length > 0, 'they woke');
   assert.equal(me.taken, 0, 'no bites unprovoked');
-  assert.ok(!pack.hunting);
+  assert.ok(!angryOf(dogs, pack));
   const g = dogs.list.find((d) => d.pack === pack)!;
   damage(g, 2, me.x, me.z, 0, 'knife');
   let angry = 0;
-  step(dogs, me, 10, () => { if (pack.hunting) angry++; });
+  step(dogs, me, 10, () => { if (angryOf(dogs, pack)) angry++; });
   assert.ok(angry > 0, 'its lot turns on you');
   assert.ok(me.taken > 0, 'and bites');
-  step(dogs, me, TOWN_DOG.calm + 5);
-  assert.ok(!pack.hunting, 'calmed down');
+  step(dogs, me, CALM_DOWN);
+  assert.ok(!angryOf(dogs, pack), 'calmed down');
   const bitten = me.taken;
   step(dogs, me, 10);
   assert.equal(me.taken, bitten, 'and lets you be again');

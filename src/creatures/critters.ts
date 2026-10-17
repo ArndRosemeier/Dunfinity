@@ -54,7 +54,7 @@ export const HUNT = {
   /** One that comes for you: its fair health on level d, base + per·d, times its strategy's share (one charger is a pack's worth). */
   base: 12,
   per: 2.5,
-  strategy: { pack: 1, swarm: 0.35, ambush: 1.4, charge: 3 } as Readonly<Record<Strategy, number>>,
+  strategy: { pack: 1, swarm: 0.35, ambush: 1.4, charge: 3, flank: 1.2 } as Readonly<Record<Strategy, number>>,
   /** Sizes it may be grown to. */
   size: [0.25, 3] as const,
 } as const;

@@ -17,6 +17,8 @@ export const GRUDGE_HELD = 18;
 export abstract class Creature<Mode extends string> implements Fighter, Walker {
   vx = 0;
   vz = 0;
+  /** How it is getting on towards its goal (src/creatures/steer.ts: what `thwarted` reads). */
+  aim?: Walker['aim'];
   /** Which way it last went round something in its way (+1 / -1): it keeps to it, not dithering. */
   side = 1;
   /** Chilled (grandma's Cold Larder): seconds left, and the share of its pace it keeps (src/creatures/steer.ts). */
@@ -25,6 +27,8 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   blind?: number;
   stumble?: number;
   health: number;
+  /** How far it has walked over the floor, m (a drawn figure's gait follows it). */
+  walked = 0;
   /** Seconds since it was last hurt, and since it died. */
   hurtT = 9;
   deadT = 0;
@@ -42,6 +46,9 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
   }
 
   get dead(): boolean { return this.health <= 0; }
+
+  /** What it is doing, as a sound would tell it (src/audio/gameSounds.ts): its mode. */
+  get cue(): string { return this.mode; }
 
   /** Feeding, lying at rest, or neither (the rig poses it). */
   get pose(): Pose { return this.dead ? '' : this.life.pose; }
