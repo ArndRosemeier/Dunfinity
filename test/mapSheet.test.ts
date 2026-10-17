@@ -21,3 +21,16 @@ test("the map's shapes: only seen cells, smooth walls along them, contours on th
   const k = sheet.contours;
   for (let i = 0; i < k.length; i += 2) assert.ok(seen.has(0, Math.round(k[i] / c - 0.5), Math.round(k[i + 1] / c - 0.5)) || near(k[i], k[i + 1], true), 'contours only on the seen floor');
 });
+
+test('up in the village the map shows all of it, buildings as walls, and names the shops and grandma\'s house', async () => {
+  const { VILLAGE_KNOWN, VILLAGE_MARKS, inVillage } = await import('../src/app/villageMap');
+  const { TOWN } = await import('../src/gen/town');
+  const level = new Level(1, 0);
+  assert.ok(inVillage(level, TOWN.ground) && !inVillage(level, 0) && !inVillage(new Level(1, 3), TOWN.ground), 'the village is up at street level of depth 0 only');
+  const sheet = sheetOf(new MapCells(level, VILLAGE_KNOWN), new Explored(), -60, -40, 20, 40);
+  const at = (x: number, z: number) => sheet.cells[(Math.floor(z) - sheet.j0) * sheet.nx + (Math.floor(x) - sheet.i0)];
+  assert.ok(at(-19, 0), 'her street, never walked');
+  assert.equal(at(-11, 0), null, "grandma's house is a building");
+  assert.ok(sheet.walls.length > 10, 'the houses outlined');
+  assert.deepEqual(VILLAGE_MARKS.map((m) => m.name).sort(), ["Frau Weber", "Grandma's house", "Ilse's pawn shop", "Kemal's hardware store"]);
+});
