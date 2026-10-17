@@ -16,6 +16,7 @@ import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
+import type { Diet } from './temper';
 
 export type Faction = 'lumen' | 'murk';
 
@@ -107,6 +108,11 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
   }
 
 
+  /** What they live on: Lumen lick the glowing salt off the rock, Murk feed at the water's edge. */
+  protected override dietOf(c: Colony): Diet {
+    return c.faction === 'lumen' ? 'wall' : 'water';
+  }
+
   /** Lumen calm down again while you are away. */
   protected sleep(c: Colony): void {
     c.angry = false;
@@ -129,11 +135,14 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
     if (f && sl.mode !== 'blow') sl.mode = 'go';
     if (!f && (sl.mode === 'go')) { sl.mode = 'rest'; sl.t = this.rng.range(0.5, 2); }
     const flow = 0.35 + 0.65 * Math.max(0, Math.sin(sl.phase)); // the pulse: slower, never backwards
+    // Its life between it all: oozing off to feed, sleeping with its colony (src/creatures/life.ts).
+    if (!f && (sl.mode === 'rest' || sl.mode === 'ooze') && this.live(sl, sl.colony, dt, C.ooze * flow, C.roam * 2.5)) return 0;
     switch (sl.mode) {
       case 'rest':
         brake(sl, 4, dt);
         this.steer.slide(sl, dt);
         if ((sl.t -= dt) <= 0) {
+          if (this.toFood(sl, sl.colony, C.ooze * 0.5, C.roam * 2.5)) { sl.t = this.rng.range(1, 3); break; }
           [sl.tx, sl.tz] = this.roamFrom(sl.colony, C.roam);
           sl.mode = 'ooze'; sl.t = 6;
         }
@@ -180,7 +189,7 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
       const d = dist(e);
       if (!e.dead && d < C.enemies && d < bd) { best = e; bd = d; }
     }
-    if (hostile && !prey.dead && noticed(prey, dist(prey), C.notice) && dist(prey) < bd) best = prey;
+    if (hostile && !prey.dead && noticed(prey, dist(prey), C.notice * this.wakeful(sl)) && dist(prey) < bd) best = prey;
     return best;
   }
 }

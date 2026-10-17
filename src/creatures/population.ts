@@ -273,6 +273,32 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     return false;
   }
 
+  /**
+   * The life of one that feeds and rests where it is (a cricket on its wall, an eel in its pool),
+   * called every step it is about its own business: in its den's hours of rest it lies still (all
+   * but its sentry); else now and then it feeds there. Its kind keeps it still, or slow, meanwhile
+   * (by its pose). Returns whether its life holds it this step.
+   */
+  protected liveInPlace(c: C, den: D, dt: number): boolean {
+    const L = c.life, range = ([lo, hi]: readonly [number, number]) => this.rng.range(lo, hi);
+    L.seen = true; L.moved = 0;
+    if (this.resting(den) && !this.sentry(c, den)) {
+      if (L.doing !== 'rest') { L.stop(); L.doing = 'rest'; }
+      L.down = true;
+      return true;
+    }
+    if (L.doing === 'rest') { L.stop(); L.t = range(LIFE.between); }
+    if (L.doing === 'feed') {
+      if ((L.t -= dt) > 0) return true;
+      L.stop(); L.t = range(LIFE.between);
+      return false;
+    }
+    if ((L.t -= dt) > 0) return false;
+    if (this.rng.chance(LIFE.feed)) { L.doing = 'feed'; L.t = range(LIFE.feedFor); return true; }
+    L.t = range(LIFE.between);
+    return false;
+  }
+
   /** Moving on from where it idled: now and then (`LIFE.feed`) it goes to feed instead. Returns whether it does (`live` takes it there). */
   protected toFood(c: C, den: D & { readonly y: number }, walk: number, reach: number): boolean {
     if (c.life.doing || !this.rng.chance(LIFE.feed)) return false;

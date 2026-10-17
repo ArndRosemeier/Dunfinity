@@ -92,7 +92,7 @@ export class Cricket extends Creature<CricketMode> {
   /** Leaping away from the light (no knock on landing). */
   fleeing = false;
 
-  constructor(readonly id: number, x: number, y: number, z: number, yaw: number, readonly size: number) {
+  constructor(readonly id: number, readonly group: Group, x: number, y: number, z: number, yaw: number, readonly size: number) {
     super(x, y, z, yaw, CRICKET.radius * size, CRICKET.height * size, CRICKET.health, 'perch');
   }
 
@@ -101,7 +101,7 @@ export class Cricket extends Creature<CricketMode> {
 }
 
 /** A group: its perches (x, y, z and the rock's normal there, each). */
-interface Group extends Den {
+export interface Group extends Den {
   readonly perches: number[][];
 }
 
@@ -117,7 +117,7 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
     g.perches.forEach((p, k) => {
       const id = g.key * 8 + k, yaw = rng.range(0, Math.PI * 2), size = rng.range(0.85, 1.2), wait = rng.range(0, 0.9);
       if (killed(id)) return;
-      const c = new Cricket(id, p[0], p[1], p[2], yaw, size);
+      const c = new Cricket(id, g, p[0], p[1], p[2], yaw, size);
       c.up[0] = p[3]; c.up[1] = p[4]; c.up[2] = p[5];
       c.t = wait; // each takes its own moment to drop
       born.push(c);
@@ -183,7 +183,9 @@ export class Crickets extends Population<Group, Cricket, Lamp | null> {
     if (c.provoked) { c.provoked = false; c.angry = true; }
     if (c.dead) return this.fall(c, dt);
     const dx = prey.x - c.x, dz = prey.z - c.z, d = Math.hypot(dx, dz);
-    if (!prey.dead && noticed(prey, d, C.notice) && prey.y < c.y + 1.5 && prey.y > c.y - 7) c.angry = true;
+    if (!prey.dead && noticed(prey, d, C.notice * this.wakeful(c)) && prey.y < c.y + 1.5 && prey.y > c.y - 7) c.angry = true;
+    // Its life between it all, where it is: nibbling the salt off its rock, asleep on it with its group (src/creatures/life.ts).
+    if (!c.angry && (c.mode === 'perch' || c.mode === 'ground') && this.liveInPlace(c, c.group, dt) && c.mode === 'ground') { brake(c, 8, dt); this.steer.slide(c, dt); return 0; }
     if (c.angry && (prey.dead || d > C.forget)) c.angry = false;
     const lit = this.lit(c, lamp);
     let hurt = 0;

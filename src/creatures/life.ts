@@ -8,7 +8,8 @@
  * you are close (`LIFE.doze`; an attacker notices you from `LIFE.wake` of its range).
  *
  * The state is the animal's own (`Creature.life`); the steps are `Population.live` and `toFood`,
- * which every kind of animal calls from its own idle moments. When its mind turns to something else
+ * which every kind of animal calls from its own idle moments (or `liveInPlace`, for one that feeds
+ * and rests where it is: a cricket on its wall, an eel in its pool). When its mind turns to something else
  * (a fright, a fight) and stops calling them, its life stops on its own.
  */
 import type { Spot } from './pasture';
@@ -17,6 +18,8 @@ export const LIFE = {
   /** The share of the times it moves on that it goes to feed; how long it feeds there, s. */
   feed: 0.6,
   feedFor: [4, 12] as const,
+  /** One that feeds where it is (`Population.liveInPlace`): seconds between its meals' chances. */
+  between: [3, 8] as const,
   /** A den's hours: awake, then at rest, s (each den its own, seeded). */
   awake: [60, 140] as const,
   asleep: [25, 60] as const,
