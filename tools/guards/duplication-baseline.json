@@ -3436,10 +3436,6 @@
     "reason": "every view's per-frame draw of its own thing; the things differ"
   },
   {
-    "key": "same name: dunfinity/render/props/watchers.ts#draw + dunfinity/render/thinView.ts#draw",
-    "reason": "every view's per-frame draw of its own thing; the things differ"
-  },
-  {
     "key": "same name: dunfinity/gen/dwarven.ts#put + dunfinity/loot/items.ts#put",
     "reason": "different things put: a dwarven hall piece on a level, an item on a grandchild (its slot, or grandma's knife in the belt)"
   },
@@ -3568,10 +3564,6 @@
     "reason": "building a fixed pool of meshes once: SlotPool for seeded things, figures and thrown missiles keep their own pools (different meshes per slot vs shared)"
   },
   {
-    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
-    "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
-  },
-  {
     "key": "idiom: [.cell .depth .level .seed] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
     "reason": "each SiteField seeds itself from its level and its cell size (one line in each constructor)"
   },
@@ -3662,10 +3654,6 @@
   {
     "key": "same name: dunfinity/render/props/bloomView.ts#shown + dunfinity/render/props/dripView.ts#shown",
     "reason": "each view's things drawn now, read for their sounds; the things differ"
-  },
-  {
-    "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/thinView.ts#draw",
-    "reason": "every view's per-frame draw of its own thing; the things differ"
   },
   {
     "key": "clone: dunfinity/loot/recipes.ts#flour + dunfinity/loot/recipes.ts#pet",
@@ -4698,5 +4686,13 @@
   {
     "key": "idiom: [.things] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/goblin.ts",
     "reason": "each style furnishes from its own constants' things table (T = STYLE.things): the shared shape is only the alias; found on main, not touched by the townsfolk PR"
+  },
+  {
+    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts + dunfinity/world/thinPlaces.ts",
+    "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
+  },
+  {
+    "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
   }
 ]
