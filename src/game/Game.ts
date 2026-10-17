@@ -19,8 +19,8 @@ import { CELLAR, daylightAt } from '../gen/cellar';
 import { TOWN } from '../gen/town';
 import { temperLine } from '../creatures/temper';
 import { sell } from '../loot/pawn';
-import { GEAR, GEAR_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
-import { Kit, isItem, packRows, rummage } from '../loot/items';
+import { GEAR, GEAR_ORDER, ILSE_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
+import { Kit, freshKit, isItem, packRows, rummage, withRucksack } from '../loot/items';
 import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { DeathView, DEATH, NEXT } from '../app/deathView';
 import { deathLine, hurtLine, runEnd } from './runEnd';
@@ -71,7 +71,7 @@ import { PROPS_RADIUS } from '../render/props/Props';
 import { PROP_TILE } from '../gen/propGrid';
 import { MOVES, STAB, blowFrom, damage, nearestReached, reach } from '../combat/combat';
 import { Rng, angleDiff, deriveSeed } from '@futuremagic/core';
-import { Finds, Pack, FINDS, PACK, type Find } from '../loot/finds';
+import { Finds, Pack, FINDS, type Find } from '../loot/finds';
 import { FindView } from '../render/loot/findView';
 import { Tin, type Gain } from '../loot/tin';
 import { CARDS, Cooked, SALT_RINGS, card, type CardId } from '../loot/recipes';
@@ -239,11 +239,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!taken.has(l.depth)) taken.set(l.depth, new Set());
     return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!);
   };
-  let pack = new Pack();
   /** What the grandchild wears and holds (src/loot/items.ts; an older save: what they bought at Kemal's). */
   let kit = saved?.child?.kit ? new Kit(saved.child.kit) : kitFromGear(saved?.child?.gear ?? []);
-  for (const f of saved?.child?.pack ?? []) pack.add(f);
-  for (const it of saved?.child?.spare ?? []) if (isItem(it)) pack.stow(it);
+  /** What they carry: as much as the rucksack on their back holds. */
+  let pack = new Pack(() => kit.room);
+  for (const it of saved?.child?.spare ?? []) if (isItem(it)) pack.spare.push(it);
+  kit = withRucksack(kit, pack);
+  for (const f of saved?.child?.pack ?? []) pack.items.push(f);
   /** Grandma's tin: the infused salt outlives every grandchild. */
   let tin = saved ? Tin.from(saved.tin) : new Tin();
   tin.deepest = Math.max(tin.deepest, level.depth);
@@ -359,7 +361,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const freshFamily = (): void => {
     taken.clear();
     tin = new Tin(); key = new Key();
-    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
+    pack = new Pack(() => kit.room); kit = freshKit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
     heir = 0; reached = 0; euros = 0; sales = 0; saltAtStart = 0;
     fallen.length = 0;
     body = nextGrandchild();
@@ -1065,7 +1067,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const sendNextDown = (): void => {
     body = nextGrandchild();
     fauna = new Fauna(level); thin = new ThinPlaces(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
-    pack = new Pack(); kit = new Kit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
+    pack = new Pack(() => kit.room); kit = freshKit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
     picking = null; saltLine.circle = null; homeTo = null; dropFlying(); pets.clear();
     tinSel = TinView.order(cooked)[0];
     saltAtStart = tin.salt;
@@ -1345,17 +1347,20 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       return keepers[shop].canHear(body.x, body.y, body.z); // (at the counter)
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
-    atCounter = nearKemal;
+    /** Ilse has the satchel once the stranger from below is in town. */
+    const ilseSells = Stranger.here({ deepest: tin.deepest, fallen: fallen.length }) ? ILSE_ORDER : [];
+    const counter = nearKemal ? { order: GEAR_ORDER, keeper: keepers.hardware } : nearPawn && ilseSells.length ? { order: ilseSells, keeper: keepers.pawn } : null;
+    atCounter = !!counter;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
     const nearStranger = strangerHere() && !busy && !nearLadder && !nearFind && !nearNote && !nearWeber && body.grounded && stranger.canHear(body.x, body.y, body.z);
     const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : [...level.inscriptions, ...view.props.inscriptions].find((i) => canRead(i, body.x, body.y, body.z));
     if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
     const nearDoor = busy || nearLadder || nearFind || nearNote || nearMarks || !body.grounded ? null : doors.near(body.x, body.y, body.z);
-    // Kemal's counter: 1, 2, 3 buy what is on it.
-    if (nearKemal) GEAR_ORDER.forEach((k, i) => {
+    // A shop counter: 1, 2, 3 ... buy what is on it.
+    if (counter) counter.order.forEach((k, i) => {
       if (!controls.tap(`Digit${i + 1}`)) return;
       const r = buyGear(kit, k, euros);
-      if (r.euros !== euros) { readAt = now; keepers.hardware.deal(now); } // (stooping over his counter)
+      if (r.euros !== euros) { readAt = now; counter.keeper.deal(now); } // (stooping over the counter)
       euros = r.euros;
       say(r.line, 6);
     });
@@ -1448,7 +1453,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (letterView.open) letterView.hide();
       else if (riding) dropFromSun();
       else if (nearLadder) climbFrom(nearLadder);
-      else if (nearFind && pack.full) say(`Your pack is full (${PACK.room} finds). ${keyName('KeyI')}: open it and leave something here.`, 3.5);
+      else if (nearFind && pack.full) say(`Your pack is full (${pack.room} things). ${keyName('KeyI')}: open it and leave something here.`, 3.5);
       else if (nearFind) pickUp(nearFind, now);
       else if (nearWeber) say(weber.talk({ deepest: tin.deepest, fallen: fallen.length }, now), 7);
       else if (nearStranger) say(stranger.talk(now), 6);
@@ -1842,7 +1847,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
     else if (nearKemal) lines.push(`Kemal's counter (purse €${euros}, ${E}: talk): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(' · '));
-    else if (nearPawn) lines.push(pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : `${E}: talk to Ilse (you have nothing to sell her yet)`);
+    else if (nearPawn) lines.push((pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : `${E}: talk to Ilse (you have nothing to sell her yet)`)
+      + ilseSells.map((k, i) => ` · ${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(''));
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
@@ -1896,7 +1902,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       pet: pets.alive && { name: pets.alive.name, health: pets.alive.health, maxHealth: pets.alive.maxHealth },
       boss: fauna.boss(body), notice: timer.getElapsed() < noticeUntil ? notice : '', gain: now < gainUntil ? gainLine : '',
       prompt: lines.filter(Boolean).join(' · '), tally: fauna.tally(), flags,
-      salt: tin.salt, euros, pack: pack.items.length ? { count: pack.items.length, room: PACK.room, worth: pack.worth } : null,
+      salt: tin.salt, euros, pack: pack.items.length ? { count: pack.count, room: pack.room, worth: pack.worth } : null,
       dead: body.dead, dev: `${backend} · ${frameShown} ms a frame · ${view.stage.hudLine()}`, help: !beenDown && steps.over,
     }, timer.getElapsed());
     // The headlamp: above the head and a little towards where one looks (the camera, not the

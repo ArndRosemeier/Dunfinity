@@ -5,7 +5,7 @@
  * W/S choose, E use, I or Escape close; by touch a line tapped is chosen, tapped again used (`take()`). It all goes down with the grandchild; the purse and the
  * tin stay with the family.
  */
-import { FINDS, PACK, type Pack } from '../loot/finds';
+import { FINDS, type Pack } from '../loot/finds';
 import { ITEMS, SLOT_NAME, itemName, packRows, rowUse, type Kit } from '../loot/items';
 import { Modal, esc, keycap } from './panel';
 
@@ -57,7 +57,7 @@ export class PackView extends Modal {
 
   /** Open (or redraw) the pack with line `sel` of `packRows(pack)` chosen; `said`: what was just done. */
   show(pack: Pack, kit: Kit, sel: number, keys: PackKeys, said = ''): void {
-    const rows = packRows(pack), n = pack.items.length + pack.spare.length;
+    const rows = packRows(pack), n = pack.count;
     const line = (i: number, cls: string, inner: string) => `<div class="row${i === sel ? ' sel' : ''}${cls}" data-row="${i}">${inner}</div>`;
     let worn = '', finds = '', spare = '';
     rows.forEach((r, i) => {
@@ -73,7 +73,7 @@ export class PackView extends Modal {
       }
     });
     const use = rows[sel] ? rowUse(rows[sel], kit) : '';
-    let html = `<h2 class="ui-title">Your pack <span class="room${pack.full ? ' full' : ''}">${n} of ${PACK.room}${pack.full ? ' · full' : ''}</span></h2><div class="cols">`;
+    let html = `<h2 class="ui-title">Your pack <span class="room${pack.full ? ' full' : ''}">${n} of ${pack.room}${pack.full ? ' · full' : ''}</span></h2><div class="cols">`;
     html += `<div><div class="ui-label">Worn and held</div>${worn}</div><div>`;
     html += `<div class="ui-label">Finds${pack.items.length ? ` · Ilse might give about €${pack.worth}` : ''}</div>`
       + (finds || '<div class="empty">Nothing yet. What the miners left lies about down there.</div>');
