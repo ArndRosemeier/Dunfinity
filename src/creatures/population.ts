@@ -55,7 +55,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   /** Whether they keep out of poured salt (`salt`); the Salt-Touched and people do not. */
   protected heedsSalt = true;
   /** Where the ones you killed fell, since the game last took them (`Fauna.fallen`). */
-  readonly fallen: { x: number; y: number; z: number }[] = [];
+  readonly fallen: { x: number; y: number; z: number; who: C }[] = [];
   protected readonly seed: number;
   protected readonly rng: Rng;
   protected readonly steer: Steer;
@@ -129,7 +129,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
       }
       this.settle();
     }
-    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (byYou(c.cause)) { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z }); } }
+    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (byYou(c.cause)) { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z, who: c }); } }
     return hits;
   }
 

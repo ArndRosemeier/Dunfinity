@@ -1835,7 +1835,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       fauna.goblins.thief = snatch;
       const struck = !pocket && !crossing && fauna.advance(dt, body, lamp, body.facing);
       for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
-      for (const f of fauna.fallen()) { gained(tin.killed(f.kind), f.x, f.y + 0.2, f.z, now); tick('stab'); }
+      for (const f of fauna.fallen()) { gained(tin.killed(f.kind, f.name, f.base), f.x, f.y + 0.2, f.z, now); tick('stab'); }
       if (body.health < health) {
         feel.took((health - body.health) / body.maxHealth);
         // Flinch away from the nearest foe (thrown back by a pick).

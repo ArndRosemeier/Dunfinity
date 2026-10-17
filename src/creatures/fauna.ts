@@ -25,7 +25,8 @@ import { Ghosts } from './ghosts';
 import { TALL, TallOne, TallOnes } from './tallOne';
 import { PUFFCAP, Puffcap, Puffcaps, TOADSTOOL, Toadstool, Toadstools } from './shrooms';
 import { SPORES } from './spores';
-import { Critters, type Critter } from './critters';
+import { Critter, Critters } from './critters';
+import { SPECIES_SALT, speciesKind, speciesName } from './bestiary';
 import { Animal, afterYou } from './animals';
 
 export type Foe = Rat | Touched | Cricket | Slime | Boss | Dog | Eel | Scavenger | Goblin | TallOne | Toadstool | Puffcap | Critter;
@@ -117,15 +118,22 @@ export class Fauna {
 
   /** The kind `f` is (its population's name, as the tin counts kills: 'rats', 'critters', ...); null if none of these. */
   kindOf(f: Foe): string | null {
+    if (f instanceof Critter) return speciesKind(f.species);
     for (const p of this.all) if ((p.list as readonly unknown[]).includes(f)) return p.name;
     return null;
   }
 
-  /** The ones you killed since the last call, by kind (a population's name) and where they fell. */
-  fallen(): { kind: string; x: number; y: number; z: number }[] {
-    const out: { kind: string; x: number; y: number; z: number }[] = [];
+  /**
+   * The ones you killed since the last call, by kind (a population's name; a cave animal's own
+   * species, `speciesKind`, with its field-notes name) and where they fell.
+   */
+  fallen(): { kind: string; name?: string; base?: number; x: number; y: number; z: number }[] {
+    const out: { kind: string; name?: string; base?: number; x: number; y: number; z: number }[] = [];
     for (const p of this.all) {
-      for (const f of p.fallen.splice(0)) out.push({ kind: p.name, ...f });
+      for (const { who, x, y, z } of p.fallen.splice(0)) {
+        if (who instanceof Critter) out.push({ kind: speciesKind(who.species), name: speciesName(who.species), base: SPECIES_SALT[who.species.role], x, y, z });
+        else out.push({ kind: p.name, x, y, z });
+      }
     }
     return out;
   }

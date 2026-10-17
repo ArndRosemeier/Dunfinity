@@ -56,9 +56,9 @@ export class Tin {
   deepest = 0;
   private readonly times = new Map<string, number>();
 
-  /** A kill of `kind` (a population name). */
-  killed(kind: string): Gain | null {
-    const k = this.nth(`kill:${kind}`), a = pinches(k, SALT.kills[kind] ?? 1), name = KIND[kind] ?? kind;
+  /** A kill of `kind` (a population name, or a cave animal's species: `speciesKind`), `called` that on the HUD, worth `worth` the first time (else the kind's own). */
+  killed(kind: string, called?: string, worth?: number): Gain | null {
+    const k = this.nth(`kill:${kind}`), a = pinches(k, worth ?? SALT.kills[kind] ?? 1), name = called ?? KIND[kind] ?? kind;
     return this.add(a, k === 1 ? `The first ${name} you have killed.` : `Another ${name}.`);
   }
 
