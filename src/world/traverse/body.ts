@@ -103,6 +103,12 @@ export class Body {
   grounded = false;
   stamina: number = MOVE.stamina;
   health: number = MOVE.maxHealth;
+  /** The most health and stamina there can be, how much faster stamina comes back (1: as plain), and how much quicker a run and a jump are (1: plain): what is worn moves them (src/loot/items.ts `Kit.gift`), set by the game. */
+  maxHealth: number = MOVE.maxHealth;
+  maxStamina: number = MOVE.stamina;
+  wind = 1;
+  pace = 1;
+  leap = 1;
   /** What climbing costs in stamina, a share of the plain cost (grandma's Kneading card lowers it). */
   climbCost = 1;
   /** What share of a blow hurts (a miner's helmet from Kemal's, src/loot/hardware.ts). */
@@ -209,7 +215,7 @@ export class Body {
   step(level: Level, input: BodyInput, dt: number, blockers?: Blockers): void {
     this.time += dt;
     this.rollT += dt;
-    if (!this.dead && this.time - this.hurtAt > MOVE.healAfter) this.health = Math.min(MOVE.maxHealth, this.health + MOVE.healRate * dt);
+    if (!this.dead && this.time - this.hurtAt > MOVE.healAfter) this.health = Math.min(this.maxHealth, this.health + MOVE.healRate * dt);
     if (this.dead) { input.jump = false; return; }
     const fx = -Math.sin(input.yaw), fz = -Math.cos(input.yaw);
     const rx = Math.cos(input.yaw), rz = -Math.sin(input.yaw);
@@ -245,7 +251,7 @@ export class Body {
 
     // Stamina comes back after a moment's rest on the floor.
     if (this.mode === 'climb' || (input.sprint && ml > 0.1 && this.grounded)) this.restSince = this.time;
-    else if (this.grounded && this.time - this.restSince > 0.8) this.stamina = Math.min(MOVE.stamina, this.stamina + 3 * dt);
+    else if (this.grounded && this.time - this.restSince > 0.8) this.stamina = Math.min(this.maxStamina, this.stamina + 3 * this.wind * dt);
     if (ml > 0.1 && this.mode !== 'climb' && !this.rolling) this.facing = Math.atan2(-mx, -mz);
     input.jump = false;
   }
@@ -270,7 +276,7 @@ export class Body {
     }
     const sprint = input.sprint && this.stamina > 0;
     this.sneaking = !!input.sneak && !!this.tiptoe && !sprint && depth <= 0.5 && this.grounded;
-    const speed = depth > 0.5 ? MOVE.wade : sprint && !this.guarding ? MOVE.sprint : this.guarding ? MOVE.guarded : this.sneaking ? this.tiptoe!.speed : MOVE.walk;
+    const speed = (depth > 0.5 ? MOVE.wade : sprint && !this.guarding ? MOVE.sprint : this.guarding ? MOVE.guarded : this.sneaking ? this.tiptoe!.speed : MOVE.walk) * this.pace;
     if (sprint && this.grounded && Math.hypot(mx, mz) > 0.1) this.stamina = Math.max(0, this.stamina - 0.5 * dt);
     const accel = this.grounded ? 30 : 5;
     this.vx += clampStep(mx * speed - this.vx, accel * dt);
@@ -280,8 +286,8 @@ export class Body {
     const spring = this.spring && this.stamina >= this.spring.cost ? this.spring : null;
     if (this.grounded) {
       this.airJumps = this.spring?.air ?? 0;
-      if (input.jump && spring) { this.vy = spring.jump; this.stamina -= spring.cost; this.sprangAt = this.time; }
-      else if (input.jump) this.vy = MOVE.jump;
+      if (input.jump && spring) { this.vy = spring.jump * this.leap; this.stamina -= spring.cost; this.sprangAt = this.time; }
+      else if (input.jump) this.vy = MOVE.jump * this.leap;
       else this.vy = Math.min(this.vy, -2); // stick to the floor walking downhill
     } else if (input.jump && spring && this.airJumps > 0) {
       // Grandma's Spring, rank 2: once more off nothing at all.

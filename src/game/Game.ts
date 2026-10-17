@@ -21,7 +21,8 @@ import { TOWN } from '../gen/town';
 import { temperLine } from '../creatures/temper';
 import { sellFinds, shopRows, townMerchant, trade, type Merchant } from '../loot/shop';
 import { GEAR_ORDER, kitFromGear } from '../loot/hardware';
-import { Kit, freshKit, isItem, packRows, rummage, withRucksack } from '../loot/items';
+import { Kit, findName, freshKit, isItem, itemWhat, packRows, rummage, withRucksack } from '../loot/items';
+import { foundGear } from '../loot/found';
 import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { DeathView, DEATH, NEXT } from '../app/deathView';
 import { deathLine, hurtLine, runEnd } from './runEnd';
@@ -252,7 +253,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let finds: Finds;
   const findsOf = (l: Level): Finds => {
     if (!taken.has(l.depth)) taken.set(l.depth, new Set());
-    return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!);
+    return new Finds(l, (i, j) => fauna.rats.denAt(i, j), taken.get(l.depth)!, foundGear);
   };
   /** What the grandchild wears and holds (src/loot/items.ts; an older save: what they bought at Kemal's). */
   let kit = saved?.child?.kit ? new Kit(saved.child.kit) : kitFromGear(saved?.child?.gear ?? []);
@@ -1303,7 +1304,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     }
     if (target && (!keeps(target, body.x, body.z) || body.dead || (!handsBusy && controls.held('Escape')))) aimAt(null);
     body.invulnerable = debug.invulnerable || !!pocket;
-    if (debug.tireless) body.stamina = MOVE.stamina;
+    if (debug.tireless) body.stamina = body.maxStamina;
     const now = timer.getElapsed();
     const busy = climb.active || body.dead || body.mode !== 'walk' || picking !== null;
     // The weapon in hand (grandma's knife, or what was put on in the pack) and how it swings; her knife cards work with any of them.
@@ -1344,7 +1345,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (controls.tap(useOf('duck')) && duck && !busy && !handsBusy && !body.rolling) {
       const f = input.forward || input.right ? input.forward : -1, rt = input.right;
       const dx = -Math.sin(cam.yaw) * f + Math.cos(cam.yaw) * rt, dz = -Math.cos(cam.yaw) * f - Math.sin(cam.yaw) * rt;
-      if (body.roll(dx, dz, duck.stamina * practice.less('footwork'), duck.safe)) { rollAt = now; practised('footwork'); }
+      if (body.roll(dx, dz, duck.stamina * practice.less('footwork', kit.gift('footwork')), duck.safe)) { rollAt = now; practised('footwork'); }
     }
     // Grandma's Way Home: eyes shut, nothing after you; a way opens home to her armchair, or (by her chair) back to where one left.
     if (controls.tap(useOf('way-home')) && cooked.wayHome && homeTo === null && !busy && !handsBusy) {
@@ -1619,7 +1620,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (picking || now - readAt < PICKUP.dur || campfire.kindling(now) >= 0 || handsBusy || stirring || homeTo !== null) input.forward = input.right = 0; // stooping or kneeling, not walking
     // Grandma's Pot Lid: hold its slot to keep it up between you and whatever it is.
     const lid = cooked.lid;
-    body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard') };
+    body.lid = lid && { through: lid.through, cost: lid.cost * practice.less('guard', kit.gift('guard')) };
     nobody.wear(!!cooked.lid, kit.items);
     body.guarding = !!cooked.lid && controls.held(useOf('pot-lid')) && !busy && !handsBusy && !body.rolling && homeTo === null && now - stabAt > stabDur;
     if (body.guarding) blockAt = now - blockAt > BLOCK.dur ? now : now - blockAt > BLOCK.hold ? now - BLOCK.held : blockAt;
@@ -1699,7 +1700,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           thrown.throw(hx, hy, hz, aim, foes(), 'match', c ? { x: c.x, y: c.y + 1, z: c.z } : undefined);
         } else thrown.toss(hx, hy, hz, aim, tossing);
       }
-      thrown.power = practice.more('throwing');
+      thrown.power = practice.more('throwing', kit.gift('throwing'));
       // A match flown into a cloud of flour sets it off (and every cloud touching it): the nobody too, if in it.
       const hit = thrown.fly(level, foes(), blows, dt, (m) => {
         const c = match && flour.cloudAt(m.x, m.y, m.z);
@@ -1766,7 +1767,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         sounds.play('pickup');
         pack.add(picking);
         tick('pickup');
-        say(`You pick up ${FINDS[picking.kind].name}.`, 3);
+        say(picking.item ? `You pick up ${findName(picking)}: ${itemWhat(picking.item)}. ${keyName('KeyI')}: put it on.` : `You pick up ${findName(picking)}.`, picking.item ? 5 : 3);
       }
       const reading = now - readAt < PICKUP.dur, stooping = picking !== null || reading;
       if (picking && (now - pickAt >= PICKUP.dur || body.dead)) picking = null;
@@ -1776,11 +1777,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           const b = blowFrom(body, stabYaw, POUND), near = nearestReached(b, foes());
           const struck = pound.all ? foes().filter((f) => reach(b, f)) : near ? [near] : [];
           for (const r of struck) sounds.play('pound', r);
-          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, POUND.knock, 'knife');
+          for (const r of struck) damage(r, blows.range(pound.damage[0], pound.damage[1]) * knife.damage * kit.edge * practice.more('knife', kit.gift('knife')), body.x, body.z, POUND.knock, 'knife');
           if (struck.length) practised('knife');
         } else {
           const r = nearestReached(blowFrom(body, stabYaw, move), foes());
-          if (r) { damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge * practice.more('knife'), body.x, body.z, move.knock, 'knife'); practised('knife'); }
+          if (r) { damage(r, blows.range(move.damage[0], move.damage[1]) * knife.damage * kit.edge * practice.more('knife', kit.gift('knife')), body.x, body.z, move.knock, 'knife'); practised('knife'); }
           if (r) { const skid = 'took' in r && r.took < 1; sounds.play(skid || kit.move === 'mine' ? 'pick_work' : 'pound', r, skid ? 0.6 : 0.8, skid ? 1.4 : kit.move === 'stab' ? 1.3 : 0.9); }
           if (r && 'took' in r && r.took < 1) say(kit.move === 'stab' ? 'The knife skids off the salt on his chest.' : 'Your blow skids off the salt on his chest.', 2);
         }
@@ -1808,9 +1809,16 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       }
       // The knife comes out when something is after the nobody or it is used, and goes back after a while.
       const threat = fauna.after(body);
-      body.climbCost = cooked.climbing * practice.less('climbing') * kit.climb;
+      body.climbCost = cooked.climbing * practice.less('climbing', kit.gift('climbing')) * kit.climb;
       body.armour = kit.armour;
       body.featherfall = kit.featherfall;
+      body.maxHealth = MOVE.maxHealth + kit.gift('health');
+      body.maxStamina = MOVE.stamina + kit.gift('stamina');
+      body.health = Math.min(body.health, body.maxHealth);
+      body.stamina = Math.min(body.stamina, body.maxStamina);
+      body.wind = 1 + kit.gift('wind');
+      body.pace = 1 + kit.gift('pace');
+      body.leap = 1 + kit.gift('leap');
       // Practice: metres climbed, and blows the lid stopped.
       if (body.mode === 'climb') climbed += Math.max(0, body.y - climbY);
       climbY = body.y;
@@ -1986,7 +1994,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (riding) lines.push(`${E}: let go (${Math.max(0, Math.round(body.y - level.groundAt(body.x, body.z, body.y)))} m above the floor)`);
     else if (nearLadder) lines.push(nearLadder.up ? `${E}: climb up the ladder` : `${E}: climb down the ladder`);
     else if (nearGate) lines.push(`A way ${nearGate.to > level.depth ? 'down' : 'up'}, held open in the rock: walk into it`);
-    else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${FINDS[nearFind.kind].name}` : `${E}: pick up ${FINDS[nearFind.kind].name}`);
+    else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${findName(nearFind)}` : `${E}: pick up ${findName(nearFind)}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
     else if (shopView.open) lines.push('');
@@ -1997,7 +2005,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
     else if (nearSun) lines.push(`${E}: hang on to the sun`);
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : body.hidden ? 'in the miners\' shed, the door shut' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
-    else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
+    else if (!body.dead && !climb.active && body.grounded && body.health < body.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {
       // Out in the village no draft is felt: the line points the way home instead.
       const out = level.depth === 0 && daylightAt(body.x, body.y, body.z) === 1;
@@ -2039,7 +2047,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     touchPad.reflect(controls.byTouch && !body.dead && !pause.open, tinView.open || packView.open || shopView.open || readView.open || diaryView.open || letterView.open || mapView.open || settingsView.open, campfire.resting);
     stepsView.pin(steps, now);
     hudView.render({
-      health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,
+      health: body.health, maxHealth: body.maxHealth, stamina: body.stamina, maxStamina: body.maxStamina,
       mode: body.mode === 'climb' ? 'climbing' : body.mode === 'swim' ? 'swimming' : '',
       hurt: body.time - body.hurtAt < 2 && !body.dead ? `${hurtLine(body.lastCause)}: -${body.lastHurt.toFixed(0)}` : '',
       pet: pets.alive && { name: pets.alive.name, health: pets.alive.health, maxHealth: pets.alive.maxHealth },

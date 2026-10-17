@@ -8,7 +8,7 @@
  */
 import type { Pack } from './finds';
 import { GEAR, GEAR_ORDER, buyGear, hasGear, ilseSells, type GearKind } from './hardware';
-import type { Item, Kit } from './items';
+import { ITEMS, QUALITY, type Item, type Kit } from './items';
 import { ilsePays, sell } from './pawn';
 
 export interface Merchant {
@@ -32,10 +32,10 @@ export function townMerchant(shop: 'hardware' | 'pawn', below: boolean): Merchan
 /** A line on the counter: something to buy, or a find or spare item of the pack to sell. */
 export type ShopRow = { readonly what: 'buy'; readonly kind: GearKind } | { readonly what: 'find' | 'spare'; readonly i: number };
 
-/** What a spare `item` fetches: half of what it costs new, if anyone sells it new; else nothing (it is not bought). */
+/** What a spare `item` fetches: its worth (`ItemDef.worth`), or half of what Kemal asks for it new; its quality and any property count (0: nobody buys it). */
 export function resale(item: Item): number {
-  const g = Object.values(GEAR).find((d) => d.item === item.kind);
-  return g ? Math.floor(g.price / 2) : 0;
+  const g = Object.values(GEAR).find((d) => d.item === item.kind), worth = ITEMS[item.kind].worth ?? (g ? g.price / 2 : 0);
+  return Math.floor(worth * QUALITY[item.quality].factor * (item.of ? 1.5 : 1));
 }
 
 /** The counter's lines: the goods, then (if they buy) the finds and the spare items that fetch something. */

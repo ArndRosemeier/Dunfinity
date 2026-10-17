@@ -6,7 +6,7 @@
  * tin stay with the family.
  */
 import { FINDS, type Pack } from '../loot/finds';
-import { ITEMS, SLOT_NAME, itemName, packRows, rowUse, type Kit } from '../loot/items';
+import { SLOT_NAME, itemName, itemWhat, packRows, rowUse, type Kit } from '../loot/items';
 import { AskingModal, esc, keycap } from './panel';
 
 const STYLE = `
@@ -62,7 +62,7 @@ export class PackView extends AskingModal<number> {
         finds += line(i, '', `<span>${esc(FINDS[f.kind].name)}</span><span class="v">€${f.value}</span>`);
       } else {
         const it = pack.spare[r.i];
-        spare += line(i, '', `<span>${esc(itemName(it))}</span><span class="v">${esc(ITEMS[it.kind].what)}</span>`);
+        spare += line(i, '', `<span>${esc(itemName(it))}</span><span class="v">${esc(itemWhat(it))}</span>`);
       }
     });
     const use = rows[sel] ? rowUse(rows[sel], kit) : '';

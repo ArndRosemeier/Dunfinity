@@ -2184,10 +2184,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "same name: dunfinity/gen/envelope.ts#add + dunfinity/loot/finds.ts#add",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "idiom: [.columnAt .level] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts + dunfinity/gen/quarryProps.ts",
     "reason": "creatures and the prop pass each ask the level for its column at a spot (level.columnAt) for their own placement; one seam called from four places, surfaced when the finder's corpus shifted"
   },
@@ -2417,10 +2413,6 @@
   },
   {
     "key": "same name: dunfinity/gen/geode.ts#props + dunfinity/gen/goblin.ts#props",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
-    "key": "same name: dunfinity/gen/goblin.ts#add + dunfinity/loot/finds.ts#add",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {

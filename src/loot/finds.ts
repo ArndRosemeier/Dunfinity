@@ -8,7 +8,7 @@
  * a hoard. Taken finds stay taken (`taken`, kept by the game per level: the same dungeon across
  * runs, D13).
  */
-import { deriveSeed, hash3f } from '@futuremagic/core';
+import { Rng, deriveSeed, hash3f } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { CellMemo } from '../gen/cellMemo';
 import { SHED_SPOTS, shedPoint } from '../gen/sheds';
@@ -17,7 +17,7 @@ import type { Item } from './items';
 /** Where a find lies: on open floor, in a rat's hoard, in a miners' shed. */
 type Where = 'floor' | 'hoard' | 'shed';
 
-export type FindKind = 'coin' | 'token' | 'chisel' | 'pipe' | 'tin' | 'spoon' | 'lamp' | 'medal' | 'watch' | 'ring' | 'crystal';
+export type FindKind = 'coin' | 'token' | 'chisel' | 'pipe' | 'tin' | 'spoon' | 'lamp' | 'medal' | 'watch' | 'ring' | 'crystal' | 'gear';
 
 export interface FindDef {
   /** What the HUD calls it. */
@@ -43,6 +43,8 @@ export const FINDS: Record<FindKind, FindDef> = {
   ring: { name: 'a gold ring', value: [40, 90], floor: 0, hoard: 1.2, shed: 0.2 },
   /** Only ever the gift waiting in a thin place's pocket (src/world/thinPlaces.ts `Pocket.gift`), never lying about. */
   crystal: { name: 'a crystal from a deeper world, still faintly glowing', value: [45, 110], floor: 0, hoard: 0, shed: 0 },
+  /** Something to wear or hold (`Find.item`, src/loot/found.ts): instead of a find on the floor or in a shed, now and then (`FIND.gear`); never in a rat's hoard. */
+  gear: { name: 'something to wear', value: [0, 0], floor: 0, hoard: 0, shed: 0 },
 };
 
 export const FIND = {
@@ -59,6 +61,8 @@ export const FIND = {
   spread: 0.9,
   /** None this close to the arrival. */
   quiet: 12,
+  /** The chance that a thing on the floor, or in a shed, is something to wear or hold instead (src/loot/found.ts). */
+  gear: { floor: 0.1, shed: 0.3 } as const,
   /** How close the nobody must stand to pick one up, metres, and how far over its feet it reaches (a shed's shelf). */
   reach: 1.3,
   over: 1.7,
@@ -74,7 +78,12 @@ export interface Find {
   readonly yaw: number;
   /** What the pawn shop might pay, euros. */
   readonly value: number;
+  /** What it is, if it is something to wear or hold (kind 'gear'): picked up into the pack's spare items. */
+  readonly item?: Item;
 }
+
+/** What a level's floor and sheds give to wear or hold: the item `rng` (the find's own) draws, found `depth` levels down (src/loot/found.ts `foundGear`). */
+export type GearAt = (rng: Rng, depth: number) => Item;
 
 /** A rat nest, as far as finds care. */
 export interface Hoard { x: number; y: number; z: number }
@@ -89,7 +98,7 @@ export class Finds {
    * `nestAt(i, j)`: the nest in cell (i, j) (Rats.denAt), whose hoard lies round it.
    * `taken`: ids already picked up on this level (kept by the caller, added to by `take`).
    */
-  constructor(private readonly level: Level, private readonly nestAt: (i: number, j: number) => Hoard | null, readonly taken: Set<number>) {
+  constructor(private readonly level: Level, private readonly nestAt: (i: number, j: number) => Hoard | null, readonly taken: Set<number>, private readonly gearAt: GearAt | null = null) {
     this.seed = deriveSeed(level.seed, 'finds', level.depth);
     this.cells = new CellMemo((i, j, key) => this.fill(i, j, key));
   }
@@ -139,9 +148,15 @@ export class Finds {
     const s = this.seed, c = FIND.cell, out: Find[] = [];
     const [ax, , az] = this.level.arrival;
     const add = (x: number, z: number, y: number, slot: number, where: Where) => {
+      const yaw = hash3f(s, key, slot, 2) * Math.PI * 2;
+      if (this.gearAt && where !== 'hoard' && hash3f(s, key, slot, 4) < FIND.gear[where]) {
+        const item = this.gearAt(new Rng(deriveSeed(s, 'gear', key * 8 + slot)), this.level.depth);
+        out.push({ id: key * 8 + slot, kind: 'gear', x, y, z, yaw, value: 0, item });
+        return;
+      }
       const kind = pick(hash3f(s, key, slot, 1), where), [lo, hi] = FINDS[kind].value;
       const value = Math.round(lo + (hi - lo) * hash3f(s, key, slot, 3));
-      out.push({ id: key * 8 + slot, kind, x, y, z, yaw: hash3f(s, key, slot, 2) * Math.PI * 2, value });
+      out.push({ id: key * 8 + slot, kind, x, y, z, yaw, value });
     };
     // On open, dry floor somewhere in the cell.
     const floor = hash3f(s, i, j, 0) < FIND.chance ? (hash3f(s, i, j, 1) < FIND.second ? 2 : 1) : 0;
@@ -227,8 +242,9 @@ export class Pack {
     return this.count >= this.room;
   }
 
-  /** Put `f` in, if there is room: whether it went in. */
+  /** Put `f` in, if there is room (something to wear or hold among the spare items): whether it went in. */
   add(f: Find): boolean {
+    if (f.item) return this.stow(f.item);
     if (this.full) return false;
     this.items.push(f);
     return true;

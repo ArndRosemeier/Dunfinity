@@ -29,6 +29,9 @@ export interface Rester {
   readonly vz: number;
   health: number;
   stamina: number;
+  /** Its own most health and stamina, if they are not the campfire's (what is worn moves them). */
+  readonly maxHealth?: number;
+  readonly maxStamina?: number;
 }
 
 /** A fire: where, and when it was lit (it burns from `at + FIRE.kindle`). */
@@ -95,10 +98,11 @@ export class Campfire {
   step(r: Rester, hunted: boolean, now: number, dt: number, sheltered = false): void {
     if (this.fire && now - this.fire.at > FIRE.kindle + FIRE.burn) this.fire = null;
     this.resting = r.health > 0 && Math.hypot(r.vx, r.vz) < 0.3 && (this.inHaven(r) || (!hunted && (sheltered || (this.burning(now) && this.by(r)))));
-    this.mending = this.resting && (r.health < this.maxHealth || r.stamina < this.maxStamina);
+    const most = r.maxHealth ?? this.maxHealth, breath = r.maxStamina ?? this.maxStamina;
+    this.mending = this.resting && (r.health < most || r.stamina < breath);
     if (!this.resting) return;
-    r.health = Math.min(this.maxHealth, r.health + FIRE.heal * this.soup * dt);
-    r.stamina = Math.min(this.maxStamina, r.stamina + FIRE.breath * dt);
+    r.health = Math.min(most, r.health + FIRE.heal * this.soup * dt);
+    r.stamina = Math.min(breath, r.stamina + FIRE.breath * dt);
   }
 
   /** Whether `r` is in the level's haven. */
