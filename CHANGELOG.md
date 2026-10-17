@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.264 — Practice gets its own divider in the tin
+
+- The skills practised now sit after the cards under their own Practice divider, as tiles with the level, a bar towards the next and how many more uses that takes, instead of a list squeezed under the dividers.
+- A card's page in the tin says which skill it grows and at what level it stands.
+
 ## v0.263 — Open-ended skills for every ability
 
 - Every ability now has a skill that grows with use: all of grandma's cards, plus running, swimming and leaping.
