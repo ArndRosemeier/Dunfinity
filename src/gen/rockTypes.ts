@@ -5,7 +5,7 @@
  * (`StyledField.rocks`), so a style says only which rock it is cut through, and in what proportions.
  */
 import { express, gene, type Gene } from './genes';
-import { stratumOf } from './genome';
+import { SHALLOW } from './genome';
 
 export const ROCK_TYPES = ['limestone', 'sandstone', 'shale', 'granite', 'salt', 'basalt', 'marble', 'slate'] as const;
 export type RockType = (typeof ROCK_TYPES)[number];
@@ -127,7 +127,7 @@ function shade(c: Rgb, hue: number, chroma: number, value: number): Rgb {
  * glowing). Every level of a stratum carries the same stone. Pure: a function of (seed, depth).
  */
 export function rockRecipesOf(seed: number, depth: number): RockRecipe[] {
-  if (!stratumOf(depth)) return ROCK_TYPES.map((t) => ROCK_PRESETS[t]);
+  if (depth <= SHALLOW) return ROCK_TYPES.map((t) => ROCK_PRESETS[t]);
   const x = (g: Gene) => express(g, seed, depth);
   const hue = x(STRATUM_GENES.hue), glow = x(STRATUM_GENES.glow);
   return ROCK_TYPES.map((t) => {

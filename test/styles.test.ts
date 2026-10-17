@@ -6,14 +6,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hash3f } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
-import { bandOf, mixOf } from '../src/gen/bands';
+import { mixOf } from '../src/gen/bands';
 import { newColumn } from '../src/gen/quarry';
 import { PASSAGE } from '../src/gen/styledField';
 import { MAP_FLOOR } from '../src/gen/style';
 import { farFromSurface } from '../src/gen/chunkMesh';
 
-/** The levels with more than one style, one of each band. */
-// Levels 1–10's bands, and below them a level of each stratum the genome draws (src/gen/genome.ts).
+/** Levels with more than one style: level 1 (the workings and one style), and levels of strata near the top and deep (src/gen/genome.ts). */
 const MIXED = [1, 4, 7, 9, 25, 45, 61, 131];
 
 /** `n` seeded columns within `span` metres of the arrival on `l`, as (x, z). */
@@ -30,7 +29,7 @@ const atEdge = (l: Level, x: number, z: number) => {
 test('each level is made of its band\'s styles; the cellar is one', () => {
   assert.deepEqual(new Level(7, 0).field.styles.map((s) => s.id), ['cellar']);
   for (const d of MIXED) assert.deepEqual(new Level(7, d).field.styles.map((s) => s.id), mixOf(7, d).map(([id]) => id));
-  assert.ok(MIXED.some((d) => bandOf(d).styles.some(([id]) => id === 'rift')), 'the rift is in some mix');
+  assert.ok(MIXED.some((d) => mixOf(7, d).some(([id]) => id === 'rift')), 'the rift is in some mix');
 });
 
 test('the styles cover about their share of a level, and the arrival is in the first', () => {

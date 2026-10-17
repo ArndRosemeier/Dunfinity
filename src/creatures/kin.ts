@@ -14,7 +14,7 @@
  * src/render/creatures/rigged.ts). Pure.
  */
 import { deriveSeed, Rng } from '@futuremagic/core';
-import { stratumOf } from '../gen/genome';
+import { SHALLOW, strangeFrom } from '../gen/genome';
 import { express, gene, type Gene } from '../gen/genes';
 
 export interface Kin {
@@ -69,12 +69,12 @@ const GENES: Readonly<Record<string, readonly (readonly [KnobName, Gene])[]>> = 
 
 /** The look of `species` (its glb's name) in the stratum of `depth` (ours above level 11, and for a species without kin). */
 export function kinOf(seed: number, depth: number, species: string): Kin {
-  const genes = GENES[species], stratum = stratumOf(depth);
-  if (!genes || !stratum) return OURS;
+  const genes = GENES[species];
+  if (!genes || depth <= SHALLOW) return OURS;
   const out: Record<string, number> = { ...OURS };
   for (const [k, g] of genes) out[k] = express(g, seed, depth);
   // Which pattern it is, once it shows (no deviation in itself).
-  const rng = new Rng(deriveSeed(seed, 'kin', species, stratum.from));
+  const rng = new Rng(deriveSeed(seed, 'kin', species, strangeFrom(depth)));
   out.stripes = rng.chance(0.5) ? 1 : 0;
   out.grain = rng.range(3, 9);
   return out as unknown as Kin;

@@ -1,20 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { CISTERN, QUARRY, SALT, THRESHOLD, bandOf } from '../src/gen/bands';
+import { CELLAR_BAND, bandOf } from '../src/gen/bands';
+import { stratumOf } from '../src/gen/genome';
 import { ladderOf } from '../src/gen/descents';
+import { withBand } from './where';
 
-test('levels 1–2 are the Quarry, 3–5 the Salt Works, 6–8 the Cisterns, 9–10 the Threshold', () => {
-  assert.equal(bandOf(1), QUARRY);
-  assert.equal(bandOf(2), QUARRY);
-  for (const d of [3, 4, 5]) assert.equal(bandOf(d), SALT);
-  for (const d of [6, 7, 8]) assert.equal(bandOf(d), CISTERN);
-  for (const d of [9, 10]) assert.equal(bandOf(d), THRESHOLD);
-  assert.equal(new Level(1, 3).band.name, 'The Salt Works');
+test('a stratum is cut as one kind of workings on all its levels, and every kind turns up on every stratum of some world', () => {
+  assert.equal(bandOf(4, 0), CELLAR_BAND);
+  for (let seed = 1; seed <= 20; seed++) for (const from of [1, 11, 41, 121]) {
+    for (let d = from + 1; d < from + 10; d++) assert.equal(bandOf(seed, d), bandOf(seed, from), `seed ${seed} level ${d}`);
+    assert.equal(stratumOf(from + 9)!.from, from);
+  }
+  for (const from of [1, 31, 91]) for (const id of ['quarry', 'salt', 'cistern', 'threshold'] as const)
+    assert.ok(Array.from({ length: 60 }, (_, i) => bandOf(i + 1, from).id).includes(id), `${id} on level ${from}`);
+  const [seed, depth] = withBand('salt');
+  assert.equal(new Level(seed, depth).band.id, 'salt');
 });
 
 test('in the Salt Works and the Cisterns one arrives at a way up, dry, with a way down within reach', () => {
-  for (const [seed, depth] of [[1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [1, 6], [2, 6], [3, 7], [4, 8], [1, 9], [2, 9], [3, 10], [4, 10]]) {
+  for (const [seed, depth] of [0, 1, 2, 3, 4].map((n) => withBand('salt', n)).concat([0, 1, 2, 3].map((n) => withBand('cistern', n)), [0, 1, 2, 3].map((n) => withBand('threshold', n)))) {
     const l = new Level(seed, depth), a = l.ascent;
     assert.ok(a && a.up, `seed ${seed}: no way up`);
     const [x, y, z] = l.arrival;
@@ -27,8 +32,8 @@ test('in the Salt Works and the Cisterns one arrives at a way up, dry, with a wa
 
 test("salt pillars are carved: their sides are fluted, the Quarry's are flat", () => {
   // Walk along a whole pillar's side just outside it and see the distance to rock rise and fall.
-  for (const [depth, fluted] of [[1, false], [3, true]] as const) {
-    const l = new Level(1, depth), [sx, , sz] = l.spawn();
+  for (const [[seed, depth], fluted] of [[withBand('quarry'), false], [withBand('salt'), true]] as const) {
+    const l = new Level(seed, depth), [sx, , sz] = l.spawn();
     let found = false;
     for (let k = 0; k < 40 && !found; k++) {
       const w = l.workingAt(sx + k * 37, sz - k * 23);
@@ -54,7 +59,7 @@ test("salt pillars are carved: their sides are fluted, the Quarry's are flat", (
 });
 
 test('in the Threshold, natural caverns break through: no pillars, a walkable floor, rough rock above it', () => {
-  for (const [seed, depth] of [[1, 9], [2, 10]]) {
+  for (const [seed, depth] of [withBand('threshold'), withBand('threshold', 1)]) {
     const l = new Level(seed, depth), [ax, , az] = l.arrival;
     let cave = 0, all = 0, steep = 0, open = 0;
     for (let z = az - 600; z < az + 600; z += 7) for (let x = ax - 600; x < ax + 600; x += 7) {
@@ -72,9 +77,9 @@ test('in the Threshold, natural caverns break through: no pillars, a walkable fl
     assert.ok(cave / all > 0.2 && cave / all < 0.8, `seed ${seed}: ${((cave / all) * 100).toFixed(0)}% cavern`);
     assert.ok(steep / open < 0.02, `seed ${seed}: ${steep} of ${open} too steep`);
   }
-  // Above the Threshold the excavation itself breaks into no caverns (the karst style is another matter).
-  for (const d of [1, 3, 6]) {
-    const l = new Level(1, d);
+  // Outside the Threshold the excavation itself breaks into no caverns (the karst style is another matter).
+  for (const [seed, d] of [withBand('quarry'), withBand('salt'), withBand('cistern')]) {
+    const l = new Level(seed, d);
     for (let k = 0; k < 200; k++) {
       const col = l.columnAt(k * 31, k * 17);
       if (!col.mix && l.field.styles[col.style].id === 'excavation') assert.equal(col.cavern, 0);

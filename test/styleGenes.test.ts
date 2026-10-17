@@ -23,14 +23,14 @@ import type { Style } from '../src/gen/style';
 
 /** The styles with genes: how to make one read with given genes, and its genes. */
 const GENED: [string, (t: Traits) => Style, Record<string, Gene>][] = [
-  ['karst', (t) => new Karst(7, bandOf(45), t), KARST_GENES],
-  ['rift', (t) => new Rift(7, bandOf(45), t), RIFT_GENES],
-  ['collapse', (t) => new Collapse(7, bandOf(45), t), COLLAPSE_GENES],
-  ['fungal', (t) => new Fungal(7, bandOf(45), t), FUNGAL_GENES],
-  ['lava', (t) => new Lava(7, bandOf(45), t), LAVA_GENES],
-  ['organic', (t) => new Organic(7, bandOf(45), t), ORGANIC_GENES],
-  ['glyph', (t) => new GlyphCut(7, bandOf(45), t), GLYPH_GENES],
-  ['floating', (t) => new Floating(7, bandOf(45), t), FLOATING_GENES],
+  ['karst', (t) => new Karst(7, bandOf(1, 45), t), KARST_GENES],
+  ['rift', (t) => new Rift(7, bandOf(1, 45), t), RIFT_GENES],
+  ['collapse', (t) => new Collapse(7, bandOf(1, 45), t), COLLAPSE_GENES],
+  ['fungal', (t) => new Fungal(7, bandOf(1, 45), t), FUNGAL_GENES],
+  ['lava', (t) => new Lava(7, bandOf(1, 45), t), LAVA_GENES],
+  ['organic', (t) => new Organic(7, bandOf(1, 45), t), ORGANIC_GENES],
+  ['glyph', (t) => new GlyphCut(7, bandOf(1, 45), t), GLYPH_GENES],
+  ['floating', (t) => new Floating(7, bandOf(1, 45), t), FLOATING_GENES],
 ];
 
 /** Every gene low, every gene high, and four seeded mixes of the ends. */

@@ -78,7 +78,8 @@ test('floors never jump: where workings meet they ramp, even at a corner of thre
 test('a chunk at the spawn meshes; one deep in the rock or high in the air does not', () => {
   const [x, y, z] = level.spawn();
   const req = (ox: number, oy: number, oz: number, step = 1) => ({ ox, oy, oz, step, cells: 32, lod: 0, colorMode: 'rock' as const, overlap: 0 });
-  const m = meshChunk(level, req(Math.floor(x / 32) * 32, Math.floor((level.floorAt(x, z) - 4) / 32) * 32, Math.floor(z / 32) * 32));
+  // (The chunk's middle at the floor: a floor near a chunk's edge would leave it in the next one.)
+  const m = meshChunk(level, req(Math.floor(x / 32) * 32, Math.floor(level.floorAt(x, z)) - 16, Math.floor(z / 32) * 32));
   assert.ok(m && m.indices.length > 300 && m.colors.length === m.positions.length);
   assert.equal(meshChunk(level, req(0, -2048, 0)), null);
   assert.equal(meshChunk(level, req(0, 2048, 0)), null);

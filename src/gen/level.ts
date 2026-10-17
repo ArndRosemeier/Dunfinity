@@ -99,7 +99,7 @@ export class Level {
 
   /** `style`: the whole level of that style (but where one arrives), instead of its band's mix; not in the cellar. */
   constructor(readonly seed: number, readonly depth: number, readonly style?: StyleId) {
-    this.band = lawfulBand(bandOf(depth), lawsOf(seed, depth)); // the world's laws on the stratum's band
+    this.band = lawfulBand(bandOf(seed, depth), lawsOf(seed, depth)); // the world's laws on the stratum's band
     this.rockRecipes = rockRecipesOf(seed, depth);
     // Depth 0 is grandma's cellar, the same for every seed, its one way down the old shaft.
     const s = deriveSeed(seed, 'level', depth);

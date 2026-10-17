@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { express, gene, pushChance } from '../src/gen/genes';
-import { STRATA } from '../src/gen/genome';
+import { stratumOf } from '../src/gen/genome';
 
 const dome = gene('test.dome', 14, [8, 24], [4, 60]);
 
@@ -21,7 +21,7 @@ test('a gene is its standard in the town, inside its safe range while strangenes
 });
 
 test('a stratum expresses a gene the same on all its levels, other worlds otherwise, and the deep pushes some genes out of the safe range', () => {
-  for (const s of STRATA) assert.equal(express(dome, 7, s.from), express(dome, 7, s.from + 6), s.name);
+  for (const d of [11, 21, 41]) { const s = stratumOf(d)!; assert.equal(express(dome, 7, s.from), express(dome, 7, s.from + 6), `from ${s.from}`); }
   const deep = Array.from({ length: 200 }, (_, i) => express(dome, i + 1, 300));
   assert.ok(new Set(deep).size > 150, 'worlds differ');
   const out = deep.filter((v) => v < 8 || v > 24).length;

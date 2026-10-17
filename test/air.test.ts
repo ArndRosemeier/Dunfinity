@@ -13,12 +13,12 @@ test('the air is ours in the town and the cellar; each of levels 1–10 has one 
     assert.deepEqual(a.lamp, hexToRgb(0xfff0dc));
     assert.deepEqual(a.flame, hexToRgb(0xffbe80));
     assert.equal(a.clear, 1);
-    assert.equal(a.veins, bandOf(0).veins);
+    assert.equal(a.veins, bandOf(1, 0).veins);
     assert.deepEqual(lawsOf(seed, 0), []);
   }
   const seen = new Set<string>();
   for (let seed = 1; seed <= 40; seed++) for (let d = 1; d <= 10; d++) {
-    const laws = lawsOf(seed, d), band = bandOf(d);
+    const laws = lawsOf(seed, d), band = bandOf(seed, d);
     assert.equal(laws.length, 1, `seed ${seed} level ${d}`);
     if (laws[0] === 'glow') assert.ok(band.veins < 1, `level ${d} glows anyway`);
     if (laws[0] === 'uphill') assert.ok(band.uphill < 0.5, `level ${d}: its water climbs anyway`);

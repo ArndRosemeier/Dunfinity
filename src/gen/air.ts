@@ -44,7 +44,7 @@ const CLEAR = gene('air.clear', 1, [0.85, 1.15], [0.35, 1.4]);
 const GLOW = gene('air.glow', 0, [0, 0.2], [0, 1]);
 
 export function airOf(seed: number, depth: number): Air {
-  const band = bandOf(depth);
+  const band = bandOf(seed, depth);
   const laws = lawsOf(seed, depth);
   // A law's light is as strong as the stratum is strange: a tinge at the Ossuaries, a colour one names deeper.
   const law = Math.min(1, 0.5 + strangeness(seed, strangeFrom(depth)).amplitude / 4);

@@ -18,7 +18,7 @@
  * Pure: a function of (seed, depth, slot). A stratum's species are the same on all its levels.
  */
 import { Rng, clamp, deriveSeed, hsl2rgb, lerp, mixRgb } from '@futuremagic/core';
-import { strangeness, stratumOf } from '../gen/genome';
+import { strangeness, strangeFrom } from '../gen/genome';
 
 export type Rgb = [number, number, number];
 
@@ -246,7 +246,7 @@ const G = 9.81;
 
 /** The roles of a level's slots: what lives there (slot 0, 1: peaceful; 2, 3: hunters; more as it gets deeper). */
 export function rolesOf(seed: number, depth: number): CritterRole[] {
-  const rng = new Rng(deriveSeed(seed, 'bestiary', stratumOf(depth)?.from ?? depth));
+  const rng = new Rng(deriveSeed(seed, 'bestiary', strangeFrom(depth)));
   const peaceful: CritterRole[] = ['scuttler', 'grazer', 'floater', 'watcher', 'giant'];
   const hostile: CritterRole[] = ['hunter', 'lurker', 'swarmer', 'brute'];
   const first = rng.pick(['scuttler', 'grazer', 'watcher'] as const);
@@ -258,7 +258,7 @@ export function rolesOf(seed: number, depth: number): CritterRole[] {
 
 /** The species in slot `slot` of the level of `depth`, playing `role`. */
 export function speciesOf(seed: number, depth: number, slot: number, role: CritterRole): Species {
-  const at = stratumOf(depth)?.from ?? depth;
+  const at = strangeFrom(depth);
   const rng = new Rng(deriveSeed(seed, 'species', at, slot, role));
   // Some strangeness from the very first level (Arnd, 2026-10-16), rising with depth.
   const strange = clamp(0.35 + strangeness(seed, at).s * 0.9, 0, 3.5);

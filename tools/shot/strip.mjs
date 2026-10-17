@@ -36,7 +36,7 @@ for (const d of depths) {
     console.error(`  level ${d}: ${e.message.split('\n')[0]}`);
     continue;
   }
-  const label = `level ${d} · ${bandOf(d).name} · ${strangeLabel(n, d)}${lawsOf(n, d).map((l) => ` · ${l}`).join('')}`;
+  const label = `level ${d} · ${bandOf(n, d).name} · ${strangeLabel(n, d)}${lawsOf(n, d).map((l) => ` · ${l}`).join('')}`;
   console.log(`  ${label}`);
   tiles.push({ label, src: `data:image/png;base64,${readFileSync(file).toString('base64')}` });
 }

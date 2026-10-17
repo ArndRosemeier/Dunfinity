@@ -4,7 +4,7 @@
  * and make a procedural creature to look at (src/app/creatureMaker.ts). A DOM panel;
  * it lets go of the mouse while open (click the game to look round again).
  */
-import { bandOf } from '../gen/bands';
+import { CELLAR_BAND } from '../gen/bands';
 import type { Species } from '../creatures/bestiary';
 import { CreatureMaker, MAKER_STYLE } from './creatureMaker';
 import { button as uiButton, child, panel } from './panel';
@@ -82,7 +82,7 @@ export class DebugMenu {
     toggle('Tireless (stamina stays full)', (on) => { this.tireless = on; });
     heading('Go to level');
     this.levels = child(this.el, 'div');
-    for (let d = 0; d <= LEVELS; d++) button(this.levels, String(d), () => act.toLevel(d)).title = d ? `Level ${d} · ${bandOf(d).name}` : bandOf(0).name;
+    for (let d = 0; d <= LEVELS; d++) button(this.levels, String(d), () => act.toLevel(d)).title = d ? `Level ${d}` : CELLAR_BAND.name;
     const any = document.createElement('div'), n = document.createElement('input');
     n.type = 'number'; n.min = '0'; n.value = String(LEVELS + 1);
     any.append(n, ' ');

@@ -161,6 +161,16 @@ Proposal against C4: the Deep's scripts are **drifts of Kerf and Thread**. A str
 
 ---
 
+## 8b. Nothing kept for the deep (Arnd, 2026-10-17)
+
+Most players never see level 40, so depth no longer gates content. Arnd took all four picks:
+1. Gates become odds: every style, every kind of workings and every mob type can turn up on any level; depth only shifts the odds (`AFFINITY`, `CUTS` in src/gen/genome.ts).
+2. Regions of ten levels from level 1, each world drawing its own mix from all styles; the hand bands of levels 1–10 became workings any region can be cut as (`workingsOf`), and a region is named for what it is most made of.
+3. Level 1 stays easy to read: the workings round the ladder and one other style.
+4. Big creatures come young: a level-1 giant is a juvenile that grows with depth (mobs thread). One mob up to about five levels above the level's difficulty is fine, never a horde of them.
+
+What still rises going down: mob difficulty and strangeness (laws, genes, air, stone).
+
 ## Changelog
 - 2026-10-15 draft 2: Arnd took G1–G5; music from a ProcMuse-style engine (6.3a).
 - 2026-10-15 draft 1: contradictions C1–C10, strangeness (curve, standards, laws, invariants), deviation catalogue, procedural styles/textures/critters/props/sound/writing, order of work, decisions G1–G5.
