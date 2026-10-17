@@ -41,7 +41,9 @@ import { ladderOf, ladderTop, offersLadder, LADDER_REACH, type Shaft } from '../
 import type { Spot } from '../render/prepared';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
 import { DRAFT_RANGE, draftLine, homeLine } from './draft';
-import { Fauna, type Foe } from '../creatures/fauna';
+import { Fauna, mightOf, bodyLength, type Foe } from '../creatures/fauna';
+import { knowledgeOf, tierOf, wordOf, type Might } from '../combat/challenge';
+import { SaltSightView, ringColour, type Ringed } from '../app/saltSight';
 import { RatView } from '../render/creatures/ratView';
 import { TouchedView } from '../render/creatures/touchedView';
 import { ForemanView } from '../render/creatures/foremanView';
@@ -651,6 +653,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The foes Tab has been round since the cycle began (each seen one gets its turn before the first again). */
   const tabbed = new Set<Foe>();
   const targetMark = new TargetMark(document.body);
+  /** Grandma's Salt Sight (G): held open, every creature in sight is ringed in salt by how tough it is for you; stamina does not come back meanwhile. */
+  let saltSight = false;
+  const saltSightView = new SaltSightView(document.body);
+  /** Each creature's own wobble of its ring. */
+  const ringSeeds = new WeakMap<Foe, number>();
+  let ringSeedNext = 0;
   const hudView = new Hud(document.body);
   hudView.keys(keysOf(keyName, controls.byTouch));
   /** The thumb stick and buttons, played by touch (src/app/touchPad.ts). */
@@ -1241,6 +1249,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
+    if (controls.tap('KeyG') && !body.dead) {
+      saltSight = !saltSight;
+      if (saltSight && tin.firstTime('salt-sight')) say('Grandma\'s salt pricks your eyes: what lives here stands out, ringed by how much of a fight it is. Kinds you never brought down give only a rough read; it sharpens with every one you kill. Your breath does not come back while you look.', 9);
+      else say(saltSight ? `Salt Sight on (${keyName('KeyG')}).` : 'Salt Sight off.', 2);
+    }
     // Kemal's flashlight (in the off hand): L switches it on and off.
     if (controls.tap('KeyL')) {
       if (!kit.has('flashlight')) say("You have no flashlight. Kemal sells them, next door to grandma's.", 3);
@@ -1967,7 +1980,26 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         default: return { ready: 1, on: false, dim: false };
       }
     };
-    targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
+    // How tough what you look at is for you (src/combat/challenge.ts): your blow as you hold your weapon now, against its kind's.
+    const yours: Might = { health: MOVE.maxHealth, blow: ((move.damage[0] + move.damage[1]) / 2) * knife.damage * kit.edge * practice.more('knife'), every: move.dur * knife.time };
+    const measure = (f: Foe) => {
+      const kind = fauna.kindOf(f);
+      return { tier: tierOf(mightOf(f), yours, body.armour), known: knowledgeOf(kind ? tin.killsOf(kind) : 0) };
+    };
+    body.breathless = saltSight && !body.dead;
+    if (saltSight && body.dead) saltSight = false;
+    const rings: Ringed[] = [];
+    if (saltSight) {
+      for (const f of foes()) {
+        if (f.dead || Math.hypot(f.x - body.x, f.z - body.z) > TARGET.keep || !seen(f)) continue;
+        let seed = ringSeeds.get(f);
+        if (seed === undefined) ringSeeds.set(f, (seed = ringSeedNext++));
+        rings.push({ x: f.x, y: f.y, z: f.z, yaw: f.yaw, radius: f.radius, height: f.height, length: bodyLength(f), seed, ...measure(f) });
+      }
+    }
+    saltSightView.paint(view.camera, rings, now);
+    const told = target ? measure(target) : null;
+    targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null, told ? wordOf(told.tier, told.known) : '', told ? ringColour(told.tier, told.known) : '');
     abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead, tinView.open);
     touchPad.reflect(controls.byTouch && !body.dead && !pause.open, tinView.open || packView.open || readView.open || diaryView.open || letterView.open || mapView.open || settingsView.open, campfire.resting);
     stepsView.pin(steps, now);

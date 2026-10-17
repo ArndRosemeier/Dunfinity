@@ -4782,5 +4782,21 @@
   {
     "key": "same name: dunfinity/app/minimap.ts#show + dunfinity/render/props/saltLine.ts#show",
     "reason": "each view draws or shows its own thing; the minimap paints the map small in the HUD corner"
+  },
+  {
+    "key": "clone: dunfinity/app/abilityBar.ts#constructor + dunfinity/app/minimap.ts#constructor + dunfinity/app/targetMark.ts#constructor",
+    "reason": "each DOM view builds its own elements the one way (panel, child, growOn for the salt on its frame); the parts and their names differ"
+  },
+  {
+    "key": "idiom: [.dead .hypot .x .z Math] in dunfinity/combat/thrown.ts + dunfinity/creatures/pets.ts + dunfinity/game/Game.ts",
+    "reason": "a living foe within some distance of a point: one line each, each its own distance and purpose (a knife's flight, a pet's quarry, what Salt Sight rings)"
+  },
+  {
+    "key": "idiom: [.setTransform] in dunfinity/app/mapView.ts + dunfinity/app/saltSight.ts + dunfinity/app/tvSet.ts",
+    "reason": "the canvas API's own reset before clearing and drawing at the device's pixel ratio; each canvas draws something else"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#paint + dunfinity/app/saltSight.ts#paint",
+    "reason": "the views' convention: `paint` draws a view's current state each frame; different views"
   }
 ]
