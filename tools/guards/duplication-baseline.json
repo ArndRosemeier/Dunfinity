@@ -4762,5 +4762,9 @@
   {
     "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
     "reason": "each creature kind turns towards its heading at its own rate (a clamped atan2 step on its yaw); found on main before the village PR, not touched by it"
+  },
+  {
+    "key": "idiom: [.kind .pts .roads] in dunfinity/gen/townProps.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",
+    "reason": "each walks VILLAGE.roads for its own end (the layout lays houses, the props stand lamps, the walkers find their streets); the roads are the one seam"
   }
 ]

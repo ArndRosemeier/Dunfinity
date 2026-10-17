@@ -53,6 +53,8 @@ import { ScavengerView } from '../render/creatures/scavengerView';
 import { GoblinView } from '../render/creatures/goblinView';
 import { GhostView } from '../render/creatures/ghostView';
 import { NeighbourView } from '../render/humans/neighbourView';
+import { townsfolkPool } from '../render/humans/villagerView';
+import { villagers } from '../world/villagers';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { Stranger, STRANGER_KEY } from '../world/stranger';
 import { Grandma, GRANDMA, GLIMPSES, NAMES_NEAR, RING_SIGHT } from '../world/grandma';
@@ -264,7 +266,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
   /** Stream level l and point every view at it (the title looks at levels this way too). */
   const look = (l: Level): void => {
-    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = tallView.level = l;
+    touchedView.level = foremanView.level = scavengerView.people.level = goblinView.level = ghostView.level = neighbourView.people.level = villagerView.level = strangerView.people.level = grandmaView.people.level = tallView.level = l;
     view.go(l);
     Rigged.kinOn(params.seed, l.depth);
     cam.level = l;
@@ -350,7 +352,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The stranger at Ilse's is in the town once the family has been below level 10. */
   const strangerHere = (): boolean => level.depth === 0 && Stranger.here({ deepest: tin.deepest, fallen: fallen.length });
   const weber = new Neighbour();
-  scavengerView.people.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = level;
+  /** The village's people out by day, walking its streets (the same people every game). */
+  const villagerView = await townsfolkPool();
+  const townsfolk = villagers();
+  scavengerView.people.level = villagerView.level = neighbourView.people.level = strangerView.people.level = grandmaView.people.level = level;
   const tallView = await TallOneView.create(params.seed);
   tallView.level = level;
   /** The grandchild kept from the last visit, where they were. */
@@ -392,9 +397,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   Rigged.kinOn(params.seed, level.depth);
   nobody.pose(body, 0, 0);
   loading.step('Warming up the shaders', 0.3);
-  const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp, ...petView.roots];
+  const figures = [...touchedView.figures, ...foremanView.figures, ...scavengerView.figures, ...goblinView.figures, ...ghostView.figures, ...tallView.figures, ...neighbourView.people.figures, ...villagerView.figures, ...strangerView.people.figures, ...grandmaView.people.figures, dogView.root, ratView.root, cricketView.root, slimeView.root, eelView.root, shroomView.root, herd.warmUp, ...petView.roots];
   // Under the title screen only the nobody warms up now; everyone else warms while it plays.
-  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, strangerView.people.root, grandmaView.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root, ...petView.roots];
+  const roots = [touchedView.root, foremanView.root, scavengerView.people.root, scavengerView.camps.root, goblinView.root, ...ghostView.roots, neighbourView.people.root, villagerView.root, strangerView.people.root, grandmaView.people.root, tallView.root, ratView.root, cricketView.root, slimeView.root, dogView.root, eelView.root, shroomView.root, shroomView.spores.root, ...petView.roots];
   await view.start(titled ? [nobody.root] : [nobody.root, ...figures], titled ? [...figures, ...roots] : []);
   cam.blockers = view.props.blockers;
   await view.stage.add(nobody.root);
@@ -1492,6 +1497,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     spoken = fauna.ghosts.calls;
     if (level.depth === 0) weber.turn(body.x, body.z, dt);
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
+    if (level.depth === 0) for (const v of townsfolk) v.stroll(dt, now, body.x, body.z);
+    villagerView.draw(level.depth === 0 ? townsfolk : [], body.x, body.z, dt, now);
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
     strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
     // Not while the level streams in behind the black, nor through the prologue.
