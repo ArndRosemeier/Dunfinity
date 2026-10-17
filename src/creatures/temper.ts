@@ -22,7 +22,8 @@
  *   salt blooms.
  * - `strategy`: how it fights once it comes for you (its aggression, src/creatures/bestiary.ts, says
  *   whether and from how far): a pack that takes turns round you, an ambusher still as the rock until
- *   you are close, a swarm of small ones, or a charger that walks straight in and slams.
+ *   you are close, a swarm of small ones, a charger that walks straight in and slams, or a pack
+ *   that circles you and comes at your back one at a time (the feral dogs).
  *
  * Pure: a species in, its temper out (the same every time).
  */
@@ -34,7 +35,7 @@ export type Flock = 'cluster' | 'file' | 'scatter' | 'loner';
 export type Alarm = 'bolt' | 'scatter' | 'freeze' | 'bunch';
 export type Habit = 'peck' | 'sentry' | 'display' | 'none';
 export type LampSense = 'moth' | 'shun' | 'none';
-export type Strategy = 'pack' | 'ambush' | 'swarm' | 'charge';
+export type Strategy = 'pack' | 'ambush' | 'swarm' | 'charge' | 'flank';
 export type Diet = 'floor' | 'wall' | 'water' | 'bloom';
 
 export interface Temper {
@@ -55,7 +56,7 @@ export const FLOCKS: readonly Flock[] = ['cluster', 'file', 'scatter', 'loner'];
 export const ALARMS: readonly Alarm[] = ['bolt', 'scatter', 'freeze', 'bunch'];
 export const HABITS: readonly Habit[] = ['peck', 'sentry', 'display', 'none'];
 export const LAMPS: readonly LampSense[] = ['moth', 'shun', 'none'];
-export const STRATEGIES: readonly Strategy[] = ['pack', 'ambush', 'swarm', 'charge'];
+export const STRATEGIES: readonly Strategy[] = ['pack', 'ambush', 'swarm', 'charge', 'flank'];
 export const DIETS: readonly Diet[] = ['floor', 'wall', 'water', 'bloom'];
 
 const tempers = new WeakMap<Species, Temper>();
@@ -112,6 +113,7 @@ function grownTemper(sp: Species): Temper {
     r === 'lurker' ? 4 : p === 'serpent' || p === 'slug' || p === 'crab' || p === 'radial' ? 2 : 0.8,
     r === 'swarmer' ? 4 : sp.group[1] >= 5 ? 2 : 0.2,
     r === 'brute' ? 4 : sp.mass > 100 ? 2 : 0.5,
+    sp.group[1] >= 3 && (p === 'quadruped' || p === 'hexapod') ? 1.5 : 0.4,
   ][i]);
   // Drawn last, so the draws before it stay as they were.
   const diet = rng.weighted(DIETS, (_, i) => [

@@ -97,7 +97,7 @@ test('village dogs feed and lie down to rest too', () => {
   const town = new Level(1, 0), dogs = new Dogs(town, true), V = VILLAGE.spec;
   const pack = dens<Pack>(dogs, TOWN_DOG.cell, V.x, V.z, 4).sort((a, b) => b.count - a.count)[0];
   const me = someone(pack.x + 25, townGround(pack.x + 25, pack.z).y, pack.z);
-  const w = watch(() => { dogs.advance(1 / 15, me, 0); me.vx = me.vz = 0; }, () => dogs.list, (g) => g.pack === pack, 320, 1 / 15);
+  const w = watch(() => { dogs.advance(1 / 15, me, null, 0); me.vx = me.vz = 0; }, () => dogs.list, (g) => g.pack === pack, 320, 1 / 15);
   assert.ok(w.fed.size >= 1, `they fed (${w.fed.size})`);
   assert.ok(w.lay.size >= 1, `they lay down (${w.lay.size})`);
   assert.equal(me.taken, 0);

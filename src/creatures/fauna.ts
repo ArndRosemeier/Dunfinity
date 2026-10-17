@@ -94,12 +94,12 @@ export class Fauna {
   advance(dt: number, prey: Fighter, lamp: Lamp, facing: number): boolean {
     this.rats.advance(dt, prey);
     this.townRats.advance(dt, prey);
-    this.townDogs.advance(dt, prey, facing);
+    this.townDogs.advance(dt, prey, null, facing);
     const struck = this.touched.advance(dt, prey) + this.foreman.advance(dt, prey, this.touched) + this.scavengers.advance(dt, prey) + this.tall.advance(dt, prey) + this.toadstools.advance(dt, prey) > 0;
     this.crickets.advance(dt, prey, lamp);
     this.lumen.advance(dt, prey, this.murk.list);
     this.murk.advance(dt, prey, this.lumen.list);
-    this.dogs.advance(dt, prey, facing);
+    this.dogs.advance(dt, prey, lamp, facing);
     this.eels.advance(dt, prey);
     this.puffcaps.advance(dt, prey);
     this.goblins.advance(dt, prey);
@@ -138,10 +138,9 @@ export class Fauna {
   threats(prey: Fighter): Foe[] {
     const near = (c: Foe) => !c.dead && !thwarted(c) && Math.hypot(c.x - prey.x, c.z - prey.z) < THREAT;
     return [
-      ...[...this.rats.list, ...this.critters.list].filter((a) => afterYou(a) && near(a)),
+      ...[...this.rats.list, ...this.dogs.list, ...this.townDogs.list, ...this.critters.list].filter((a) => afterYou(a) && near(a)),
       ...[...this.touched.list, ...this.foreman.list].filter((t) => t.angry && near(t)),
       ...this.crickets.list.filter((c) => c.angry && c.mode !== 'perch' && near(c)),
-      ...[...this.dogs.list, ...this.townDogs.list].filter((g) => g.hunting && g.mode !== 'flee' && near(g)),
       ...this.eels.list.filter((e) => e.mode !== 'cruise' && near(e)),
       ...this.toadstools.list.filter((s) => s.up && near(s)),
       ...this.puffcaps.list.filter((p) => p.mode === 'puff' && near(p)),

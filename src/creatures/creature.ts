@@ -47,6 +47,9 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
 
   get dead(): boolean { return this.health <= 0; }
 
+  /** What it is doing, as a sound would tell it (src/audio/gameSounds.ts): its mode. */
+  get cue(): string { return this.mode; }
+
   /** Feeding, lying at rest, or neither (the rig poses it). */
   get pose(): Pose { return this.dead ? '' : this.life.pose; }
 

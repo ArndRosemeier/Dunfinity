@@ -55,12 +55,17 @@ export const HUNTING = {
   balk: 8,
   rear: 0.45,
   /** The wind-up before its blow, s (a charger's slam is slower and plainer), and the lunge's speed share of its run. */
-  windup: { pack: 0.4, swarm: 0.3, ambush: 0.3, charge: 0.65 } as Readonly<Record<Strategy, number>>,
+  windup: { pack: 0.4, swarm: 0.3, ambush: 0.3, charge: 0.65, flank: 0.4 } as Readonly<Record<Strategy, number>>,
   lunge: 1.2,
   /** After a blow: how long it springs back, s; the least time between its blows; how far off it waits meanwhile, in lengths. */
   back: 0.6,
   every: 1.8,
   wait: 1.5,
+  /** A flanking pack's ring round you: metres plus lengths; how fast it turns round you, radians per second. */
+  ring: [3, 1.2] as const,
+  drift: 0.3,
+  /** A flanker's lunge is a leap in from the ring: its longest time, s, and its speed's share of the run. */
+  leap: { t: 0.4, speed: 1.3 },
   /** At most this many of a pack strike at once (a swarm: all of it); the rest wait their turn round you. */
   together: 2,
 } as const;
@@ -147,12 +152,25 @@ export class Animal<D extends Den & { readonly y: number } = Den & { readonly y:
     this.maxHealth = this.health;
     this.tx = x; this.tz = z;
   }
+
+  /** Its action ('bite', 'rear', ...) while in one, else its mode. */
+  override get cue(): string { return this.action || this.mode; }
 }
 
 /** A kind of animal on the shared mind: it says where its dens are, what is born in one, and the nature of a den's animals. */
 export abstract class Animals<D extends Den & { readonly y: number }, C extends Animal<D>> extends Population<D, C, Lamp | null> {
   /** The nature of the animals of `den`. */
   protected abstract natureIn(den: D): Nature;
+  /** Which way you face (yaw; NaN: not known): a flanking pack goes for your back. */
+  protected facing = NaN;
+  /** Each flanking pack's ring round you: where on it it is, the pause until the next comes in, and who that is. */
+  private readonly rings = new Map<number, { angle: number; gap: number; next: number; since: number }>();
+
+  /** Step them all by dt (see Population.advance); `lamp`: your headlamp; `facing`: which way you face. */
+  override advance(dt: number, prey: Fighter, lamp: Lamp | null = null, facing = NaN): number {
+    this.facing = facing;
+    return super.advance(dt, prey, lamp);
+  }
 
   /** One animal's step. Returns 1 if it struck you. */
   protected act(c: C, prey: Fighter, lamp: Lamp | null, dt: number): number {
@@ -469,9 +487,15 @@ export abstract class Animals<D extends Den & { readonly y: number }, C extends 
     if (c.action) {
       // The tell, then the lunge (a charger stands and slams); the blow lands as the lunge reaches you.
       c.yaw += angleDiff(c.yaw, toYou) * Math.min(1, dt * (c.actionT * CALM.strike < windup ? 4 : 1));
-      const at = c.actionT * CALM.strike, lunging = plan !== 'charge' && at >= windup && at < windup + 0.25;
-      if (lunging) this.steer.move(c, prey.x, prey.z, run * H.lunge, dt, null);
-      else { brake(c, 6, dt); this.steer.slide(c, dt); }
+      const leap = plan === 'flank', at = c.actionT * CALM.strike;
+      const lunging = plan !== 'charge' && at >= windup && at < windup + (leap ? H.leap.t : 0.25) && !(leap && c.struck);
+      if (lunging && leap) {
+        // Straight in from the ring (it hangs on a moment once it has bitten: in reach of your knife).
+        const k = (run * H.leap.speed) / (d || 1);
+        c.vx = dx * k; c.vz = dz * k;
+        this.steer.slide(c, dt);
+      } else if (lunging) this.steer.move(c, prey.x, prey.z, run * H.lunge, dt, null);
+      else { brake(c, leap ? 12 : 6, dt); this.steer.slide(c, dt); }
       let struck = 0;
       if (!c.struck && at >= windup + (plan === 'charge' ? 0 : 0.12)) {
         const ahead = Math.abs(angleDiff(c.yaw, toYou)) < 1.1;
@@ -503,6 +527,7 @@ export abstract class Animals<D extends Den & { readonly y: number }, C extends 
         if (c.t <= 0) c.mode = 'stalk';
         break;
       case 'stalk': {
+        if (plan === 'flank') { this.flank(c, prey, dt, d, toYou, len, run); break; }
         // Comes for you; waits a little way off while it gathers for the next blow.
         let striking = 0;
         for (const o of this.list) if (o.den === c.den && o.action) striking++;
@@ -522,6 +547,44 @@ export abstract class Animals<D extends Den & { readonly y: number }, C extends 
         break;
     }
     return 0;
+  }
+
+  /**
+   * A flanking pack: it spreads out on a ring round you and circles; one at a time, the one furthest
+   * behind your back comes in (its crouch is the tell), bites, and springs back to its place.
+   */
+  private flank(c: C, prey: Fighter, dt: number, d: number, toYou: number, len: number, run: number): void {
+    // (The ring is the ones after you now: not one that has run off.)
+    const H = HUNTING, pack = this.herdOf(c).filter((o) => o.mode === 'stalk' || o.mode === 'back'), k = pack.indexOf(c);
+    let r = this.rings.get(c.den.key);
+    if (!r) this.rings.set(c.den.key, (r = { angle: Math.atan2(c.x - prey.x, c.z - prey.z), gap: 0, next: -1, since: 0 }));
+    if (k === 0) {
+      // Once a step, by the first of the pack: the ring turns, and after the pause the next is chosen.
+      r.angle += H.drift * dt;
+      if (pack.some((o) => o.action || o.mode === 'back')) r.gap = H.every;
+      // (One that cannot get to its place in time gives its turn up.)
+      else if (r.next >= 0 && (r.since += dt) > H.every) r.next = -1;
+      else if ((r.gap -= dt) <= 0 && r.next < 0) {
+        let worst = -1;
+        r.since = 0;
+        for (const o of pack) {
+          if (o.mode !== 'stalk' || (o.aim?.stuck ?? 0) > 0.3) continue;
+          const behind = Number.isNaN(this.facing) ? o.id % 7 : Math.abs(angleDiff(this.facing, Math.atan2(-(o.x - prey.x), -(o.z - prey.z))));
+          if (behind > worst) { worst = behind; r.next = o.id; }
+        }
+      }
+    }
+    // Its place on the ring (hung off the pack's angle, not off itself), pulled in short of rock.
+    // (No further out than its leap carries it in.)
+    const leap = prey.radius + c.radius + len * CALM.reach + run * H.leap.speed * H.leap.t * 0.8;
+    const a = r.angle + (k / pack.length) * Math.PI * 2, ux = Math.sin(a), uz = Math.cos(a), ring = Math.min(H.ring[0] + H.ring[1] * len, leap);
+    const R = Math.max(prey.radius + c.radius + 0.3, Math.min(ring, this.level.trace(prey.x, prey.y + 0.5, prey.z, ux, 0, uz, ring + 1) - c.radius - 0.4));
+    const sx = prey.x + ux * R, sz = prey.z + uz * R, there = Math.hypot(sx - c.x, sz - c.z) < Math.max(1, len);
+    c.running = !there;
+    this.steer.move(c, sx, sz, run, dt, there ? toYou : null);
+    // On its place it keeps pace with the turning ring: that is not getting nowhere.
+    if (there && c.aim) c.aim.stuck = 0;
+    if (r.next === c.id && there && d < ring + len + 1) { this.attack(c); r.next = -1; }
   }
 
   private attack(c: C): void {
