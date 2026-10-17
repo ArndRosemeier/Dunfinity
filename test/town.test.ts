@@ -40,7 +40,7 @@ test("grandma's street: open sky over the cobbles, the houses solid, the cellar 
   }
 });
 
-test('out of her front door: a body walks from the hall into the street and down it, and the lamps are lit', () => {
+test('out of her front door: a body walks from the hall into the street and down it; by day the street lamps are out', () => {
   const blockers = new Blockers();
   for (let tz = -2; tz <= 1; tz++) for (let tx = -2; tx <= 0; tx++) blockers.set(`${tx},${tz}`, quarryProps(level, tx, tz).blockers);
   const b = new Body(-12, CELLAR.house.floor, 0), dt = 1 / 120;
@@ -50,9 +50,7 @@ test('out of her front door: a body walks from the hall into the street and down
     }
   }
   assert.ok(Math.hypot(b.x + 18.5, b.z - 25) < 0.4 && Math.abs(b.y - G) < 0.2, `stopped at ${b.x.toFixed(2)}, ${b.y.toFixed(2)}, ${b.z.toFixed(2)}`);
-  let lit = 0;
-  for (const tz of [-1, 0]) lit += quarryProps(level, -1, tz).counts.lit;
-  assert.ok(lit >= 12, `lights ${lit}`);
+  assert.equal(quarryProps(level, -1, 1).counts.lit, 0, 'no lamp burns up the street');
 });
 
 test('a village like Scale\'s: a square with its church and spired tower, streets, houses along them, farms out in the fields', () => {

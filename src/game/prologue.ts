@@ -1,5 +1,5 @@
 /**
- * The prologue after New Game (the introduction): a few shots in the game itself, the town at night
+ * The prologue after New Game (the introduction): a few shots in the game itself, the town by day
  * and grandma's house and cellar, with captions that set up the story (docs/design/lore.md,
  * grandmas-diary.md). The nobody walks up the street, opens her front door, and is found in her
  * cellar by the armchair, where play begins. Captions advance on their own; a click hurries the
@@ -42,7 +42,7 @@ const G = TOWN.ground, S = CELLAR.start;
 
 export const SHOTS: readonly Shot[] = [
   {
-    // The street at night, from down the hill: the nobody walks up it to grandma's door.
+    // The street by day, from down the hill: the nobody walks up it to grandma's door.
     lines: [
       'Your grandmother, Grete Hollmann, died this year. She was eighty-six.',
       'Nobody in the family had seen her in thirty years. She was difficult, they said. She would not let anyone into her cellar.',

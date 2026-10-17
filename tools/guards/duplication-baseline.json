@@ -4700,10 +4700,6 @@
     "reason": "each creature kind turns towards its heading at its own rate (a clamped atan2 step on its yaw); found on main before the village PR, not touched by it"
   },
   {
-    "key": "same name: dunfinity/audio/gameSounds.ts#place + dunfinity/render/spells.ts#place",
-    "reason": "where one is for sound (town or cellar) and where a spell lands: different things that share a word"
-  },
-  {
     "key": "clone: dunfinity/creatures/foreman.ts#constructor + dunfinity/creatures/scavengers.ts#constructor + dunfinity/creatures/shrooms.ts#constructor + dunfinity/creatures/slimes.ts#constructor",
     "reason": "constructors that only pass the kind's name, numbers and gait to Population"
   },

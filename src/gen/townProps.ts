@@ -1,7 +1,7 @@
 /**
- * What stands in the town at night (src/gen/town.ts): every building's walls and roof crisp over
- * the field's rounded ones, the church's tower and spire, the street lamps, the houses' windows (a
- * few still lit), their front doors, the shops' fronts, Frau Weber's open door, grandma's own lit
+ * What stands in the town by day (src/gen/town.ts): every building's walls and roof crisp over
+ * the field's rounded ones, the church's tower and spire, the street lamps (out: it is day), the
+ * houses' windows, their front doors, the shops' fronts, Frau Weber's open door, grandma's own
  * window and doorstep. Pure data like the other props: it places only what lies in the tile it is
  * asked for.
  */
@@ -13,12 +13,13 @@ import { local, type PropBuilder, type Rgb } from './propMesh';
 import type { Furnish } from './cellarProps';
 
 const IRON: Rgb = [0.08, 0.08, 0.09], DOOR: Rgb = [0.18, 0.11, 0.07], FRAME: Rgb = [0.3, 0.26, 0.2], STONE: Rgb = [0.36, 0.34, 0.31];
-const LIT: Rgb = [0.95, 0.68, 0.36], DARK_PANE: Rgb = [0.04, 0.05, 0.09], LANTERN: Rgb = [1, 0.85, 0.55], CHURCH_PANE: Rgb = [0.06, 0.08, 0.14];
+/** Window glass by day (a little of the sky in it, the rooms dim behind), a lamp's glass when it is out, a dim hall seen through an open door. */
+const PANE: Rgb = [0.2, 0.25, 0.3], BACK_PANE: Rgb = [0.1, 0.12, 0.15], LANTERN: Rgb = [0.62, 0.6, 0.52], HALL: Rgb = [0.1, 0.075, 0.06], BELFRY: Rgb = [0.03, 0.03, 0.035], CHURCH_PANE: Rgb = [0.12, 0.15, 0.22];
 
 /** How far the buildings' walls and roofs stand out of the field's (rounder) surface, metres: they hide it. */
 const SHELL = 0.15;
 
-/** The town's own seed for its props: which windows are lit. */
+/** The town's own seed for its props: which windows show more of the sky. */
 const TOWN_PROPS = 1932;
 
 /** The street lamps: how far apart along a street (closer on grandma's), how high. */
@@ -56,8 +57,7 @@ export function furnishTown(f: Furnish): void {
     s.cylinder(x, G + 0.15, z, 0.12, 0.15, IRON, 8);
     s.cylinder(x, G + LAMP.height / 2, z, 0.05, LAMP.height / 2, IRON, 8);
     s.upright(x, G + LAMP.height + 0.3, z, 0, 0.16, 0.03, 0.16, IRON);
-    f.glow.upright(x, G + LAMP.height + 0.12, z, 0, 0.11, 0.15, 0.11, LANTERN);
-    f.light(x, G + LAMP.height - 0.1, z);
+    s.upright(x, G + LAMP.height + 0.12, z, 0, 0.11, 0.15, 0.11, LANTERN);
     f.block(x, z, 0, 0.13, 0.13, G, G + LAMP.height);
   }
 
@@ -67,12 +67,12 @@ export function furnishTown(f: Furnish): void {
     if (i > 0) fronts(f, H, i);
   });
 
-  // Grandma's own front: the doorstep, and her living-room window lit (her standard lamp).
+  // Grandma's own front: the doorstep, and her living-room window.
   const g = TOWN.grandma, D = TOWN.door, G = TOWN.ground;
   if (f.inTile(HOUSES[0].cx, HOUSES[0].cz)) {
     const fx = g.x[0] - SHELL;
     s.upright(fx - 0.35, G + 0.06, 0, Math.PI / 2, 0.75, 0.06, 0.35, STONE);
-    f.glow.upright(fx - 0.02, G + 1.5, -2.8, Math.PI / 2, 0.5, 0.6, 0.01, LIT);
+    s.upright(fx - 0.02, G + 1.5, -2.8, Math.PI / 2, 0.5, 0.6, 0.01, PANE);
     s.upright(fx - 0.03, G + 1.5, -2.8, Math.PI / 2, 0.03, 0.6, 0.02, FRAME);
     s.upright(fx - 0.03, G + 2.13, -2.8, Math.PI / 2, 0.58, 0.04, 0.05, FRAME);
     s.upright(fx - 0.02, G + D.top + 0.06, 0, Math.PI / 2, 0.6, 0.06, 0.04, FRAME); // the lintel
@@ -91,13 +91,13 @@ function framePoint(H: House, side: number, fwd: number, y: number): [number, nu
   return [x, y, z];
 }
 
-/** The windows, door and step of a building's front (and its back), a few windows lit; a shop's front, the neighbour's open door; the church's tall windows and the tower's door and belfry; a barn's big doors. */
+/** The windows, door and step of a building's front (and its back); a shop's front, the neighbour's open door; the church's tall windows and the tower's door and belfry; a barn's big doors. */
 function fronts(f: Furnish, H: House, i: number): void {
   const s = f.solid, G = H.base, out = H.hv + SHELL + 0.02;
   const pane = (side: number, fwd: number, y: number, k: number, back: boolean) => {
-    const lit = (H.role === 'weber' && !back && y < G + 3) || hash3f(TOWN_PROPS, i, k, 1) < (back ? 0.15 : 0.3); // (Frau Weber is up: her downstairs is lit)
+    const bright = 0.75 + 0.5 * hash3f(TOWN_PROPS, i, k, 1), c = back ? BACK_PANE : PANE;
     const dir = Math.sign(fwd);
-    (lit ? f.glow : s).upright(...framePoint(H, side, fwd, y), H.yaw, 0.42, 0.55, 0.01, lit ? LIT : DARK_PANE);
+    s.upright(...framePoint(H, side, fwd, y), H.yaw, 0.42, 0.55, 0.01, [c[0] * bright, c[1] * bright, c[2] * bright]);
     inFrame(s, H, side, fwd + dir * 0.01, y, 0.03, 0.55, 0.02, FRAME);
     inFrame(s, H, side, fwd + dir * 0.03, y - 0.6, 0.5, 0.04, 0.06, STONE); // the sill
   };
@@ -111,8 +111,8 @@ function fronts(f: Furnish, H: House, i: number): void {
   }
   if (H.role === 'pawn' || H.role === 'hardware') shopFront(f, H, out);
   if (H.role === 'weber') {
-    // Frau Weber's door stands open on her lit hall, the leaf folded back against the front.
-    inFrame(f.glow, H, H.door, out - 0.02, G + 1.05, 0.5, 1.05, 0.01, LIT);
+    // Frau Weber's door stands open on her hall, the leaf folded back against the front.
+    inFrame(s, H, H.door, out - 0.02, G + 1.05, 0.5, 1.05, 0.01, HALL);
     inFrame(s, H, H.door - 0.53, out + 0.5, G + 1.05, 0.03, 1.05, 0.5, DOOR);
   } else inFrame(s, H, H.door, out, G + 1.05, 0.5, 1.05, 0.03, DOOR);
   inFrame(s, H, H.door, out + 0.23, G + 0.08, 0.7, 0.08, 0.25, STONE); // the step
@@ -151,10 +151,10 @@ function churchFront(f: Furnish, H: House): void {
   const top = H.eaves - 2.2;
   for (const [side, fwd] of [[0, 1], [0, -1], [1, 0], [-1, 0]] as const) {
     const at = framePoint(H, side * (H.hu + SHELL + 0.02), fwd * (H.hv + SHELL + 0.02), top);
-    s.upright(at[0], at[1], at[2], H.yaw, side ? 0.01 : 0.6, 1.0, side ? 0.6 : 0.01, DARK_PANE);
+    s.upright(at[0], at[1], at[2], H.yaw, side ? 0.01 : 0.6, 1.0, side ? 0.6 : 0.01, BELFRY);
   }
   // The clock over the door, its face pale.
-  inFrame(f.glow, H, 0, out + 0.01, top - 3.2, 0.7, 0.7, 0.01, [0.5, 0.48, 0.4]);
+  inFrame(s, H, 0, out + 0.01, top - 3.2, 0.7, 0.7, 0.01, [0.78, 0.75, 0.66]);
 }
 
 /** a + b·k; a at length k. */
@@ -277,10 +277,8 @@ function shopFront(f: Furnish, H: House, out: number): void {
     s.beam(a[0], a[1], a[2], b[0], b[1], b[2], 0.03, 0.02, WOOD_HANDLE);
     inFrame(s, H, H.door + 1.0, out + 0.31, G + 0.15, 0.11, 0.14, 0.015, IRON);
   }
-  // The lantern by the door, lit.
+  // The lantern by the door (out by day).
   const lu = H.door + 0.85;
   inFrame(s, H, lu, out + 0.15, G + 2.25, 0.06, 0.02, 0.12, IRON);
-  inFrame(f.glow, H, lu, out + 0.2, G + 2.1, 0.07, 0.11, 0.07, LANTERN);
-  const l = framePoint(H, lu, out + 0.3, G + 2.0);
-  f.light(l[0], l[1], l[2]);
+  inFrame(s, H, lu, out + 0.2, G + 2.1, 0.07, 0.11, 0.07, LANTERN);
 }

@@ -4,9 +4,10 @@
  *
  * Lights are fixed before the warm-up: they are part of every shader's cache key (docs/SHADERS.md).
  */
-import { Scene, PerspectiveCamera, Color, SRGBColorSpace, Fog, HemisphereLight, PointLight, SpotLight, Group, Vector3, type Object3D, type WebGPURenderer } from 'three/webgpu';
+import { Scene, PerspectiveCamera, Color, SRGBColorSpace, Fog, HemisphereLight, DirectionalLight, PointLight, SpotLight, Group, Vector3, type Object3D, type WebGPURenderer } from 'three/webgpu';
 import type { Level } from '../gen/level';
 import { airOf, type Air } from '../gen/air';
+import { daylightAt } from '../gen/cellar';
 import { createRenderer } from './renderer';
 import { Stage } from './stage';
 import { Dust } from './dust';
@@ -43,6 +44,13 @@ export class LevelView {
   /** Where the headlamp is carried (null: on the camera). */
   carrier: Vector3 | null = null;
   private readonly ambient = new HemisphereLight(0x9aa6b4, 0x2a2218, 0.7);
+  /** The sun over the village (depth 0, out of doors): no shadow, dark (intensity 0) everywhere else. */
+  private readonly sun = new DirectionalLight(DAY.sun, 0);
+  /** How much daylight the view has now, 0–1 (src/gen/cellar.ts `daylightAt` where the viewer is, eased). */
+  private day = 0;
+  /** The lamps' brightness on this level before the day dims them (its band's `lamplight`). */
+  private lamplight = 1;
+  private readonly dayFog = new Color();
   /** The lamp pool; wisps borrow lights from it (`lamps.glows`). */
   readonly lamps: LampLights;
   private readonly rock = new Group();
@@ -88,6 +96,8 @@ export class LevelView {
     this.scene.background = new Color(0x050607);
     this.scene.fog = this.fog;
     this.scene.add(this.ambient);
+    this.sun.position.set(DAY.toSun[0], DAY.toSun[1], DAY.toSun[2]);
+    this.scene.add(this.sun);
     this.lamps = new LampLights(this.scene);
     renderer.shadowMap.enabled = true;
     const sh = this.headlamp.shadow;
@@ -149,14 +159,14 @@ export class LevelView {
     this.headlamp.color.setRGB(...this.air.lamp, SRGBColorSpace);
     this.spill.color.setRGB(...this.air.lamp, SRGBColorSpace);
     this.lamps.tint(this.air.flame);
-    this.dark = this.dark_; // the fog's distances, as clear as the air
+    this.lamplight = this.level_.band.lamplight;
+    this.dark = this.dark_; // the fog's distances, as clear as the air; the lamps' power
     setRockRecipes(this.level_.rockRecipes);
     const sky = skyOf(this.level_.seed, this.level_.depth);
     SKY_LOOK.tint.value.set(...sky.color);
     SKY_LOOK.arms.value.set(sky.arms, sky.spin);
     const finish = this.level_.band.finish;
     ROCK_FINISH.formwork.value = finish.formwork; ROCK_FINISH.wet.value = finish.wet;
-    this.lamps.power = this.level_.band.lamplight;
     this.terrain_ = new Terrain(this.stage, this.rock, this.level_.key, this.chunkView);
     this.props_ = new Props(this.stage, this.things, this.level_.key, this.lamps);
   }
@@ -184,6 +194,37 @@ export class LevelView {
     this.ambient.intensity = dark ? 0.05 : 0.7;
     this.headlamp.intensity = dark ? this.headlampPower.dark : this.headlampPower.survey;
     this.spill.intensity = this.headlamp.intensity * HEADLAMP.spill;
+    this.applyDay();
+  }
+
+  /**
+   * Lay the day over the light and air just set (by `dark`): sky-coloured haze far off, a bright sky,
+   * the sun, the carried lamp and the burning lamps faded out. Light values only: never a new shader.
+   */
+  private applyDay(): void {
+    const d = this.day;
+    this.sun.intensity = DAY.sunPower * d;
+    this.lamps.power = this.lamplight * (1 - d);
+    this.dayFog.setRGB(...this.air.fog, SRGBColorSpace).lerp(DAY.fog, d);
+    this.fog.color.copy(this.dayFog);
+    (this.scene.background as Color).copy(this.dayFog);
+    this.ambient.color.setRGB(...this.air.sky, SRGBColorSpace).lerp(DAY.sky, d);
+    this.ambient.groundColor.setRGB(...this.air.ground, SRGBColorSpace).lerp(DAY.ground, d);
+    if (d <= 0) return;
+    this.ambient.intensity += (DAY.ambient - this.ambient.intensity) * d;
+    this.fog.near += (DAY.fogNear - this.fog.near) * d;
+    this.fog.far += (DAY.fogFar - this.fog.far) * d;
+    this.headlamp.intensity *= 1 - d;
+    this.spill.intensity *= 1 - d;
+  }
+
+  /** Ease the daylight towards what reaches (x, y, z) (none below the town); `dt` in seconds. */
+  private follow(x: number, y: number, z: number, dt: number): void {
+    const want = this.level_.depth === 0 ? daylightAt(x, y, z) : 0;
+    const next = Math.abs(want - this.day) < 0.002 ? want : this.day + (want - this.day) * Math.min(1, dt * DAY.ease);
+    if (next === this.day) return;
+    this.day = next;
+    this.dark = this.dark_; // the night's light afresh, the day laid over it
   }
 
   /** Show or hide the streamed rock and props (the Lab's creature studio draws on a plain floor). */
@@ -230,6 +271,7 @@ export class LevelView {
     this.blooms.draw(this.level_, x, z, time);
     this.hums.draw(time);
     this.pulseVeins(x, z, time);
+    this.follow(x, y, z, Math.max(0, Math.min(0.1, time - this.lastTime)));
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));
     this.lastTime = time;
     if (draw) this.renderer.render(this.scene, this.camera);
@@ -254,6 +296,21 @@ export class LevelView {
  * rock an arm's length away must not burn out to white while the far end of a hall still shows.
  */
 const HEADLAMP = { angle: 0.95, penumbra: 0.6, map: 1024, shadowFar: 60, spill: 0.15, decay: 1 };
+
+/**
+ * The day over the village: the haze far off (and the sky behind it), the ambient light from the sky
+ * and the fields, the sun (its colour, power, and where it stands: up the hill's side, south-west and
+ * high), how far one sees, and how fast the eye takes to it when going in or out (per second).
+ */
+const DAY = {
+  fog: new Color().setRGB(0.66, 0.76, 0.86, SRGBColorSpace),
+  sky: new Color().setRGB(0.86, 0.9, 0.96, SRGBColorSpace),
+  ground: new Color().setRGB(0.42, 0.42, 0.3, SRGBColorSpace),
+  ambient: 1.4,
+  sun: 0xfff0d8, sunPower: 2.4, toSun: [-45, 80, 40] as const,
+  fogNear: 90, fogFar: 1200,
+  ease: 2.5,
+} as const;
 
 function need<T>(v: T | null): T {
   if (!v) throw new Error('LevelView.start() has not finished');
