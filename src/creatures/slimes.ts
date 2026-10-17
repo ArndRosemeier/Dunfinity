@@ -13,7 +13,7 @@ import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { damage, type Fighter, noticed } from '../combat/combat';
 import { Creature } from './creature';
-import { Population, type Den } from './population';
+import { Population, early, type Den } from './population';
 import { brake } from './steer';
 import { rockDistance } from '../gen/quarry';
 import type { Diet } from './temper';
@@ -39,7 +39,8 @@ export const SLIME = {
   throw: 0.18,
   every: 1.5,
   damage: { lumen: [3, 5], murk: [5, 8] } as const,
-  /** Colonies: cell size, chance per cell from level 2, none this close to the arrival, slimes per colony, how far they ooze. */
+  /** Colonies: from this level (above it rarer, fewer and smaller: `early`), cell size, chance per cell, none this close to the arrival, slimes per colony, how far they ooze. */
+  from: 2,
   cell: 44,
   chance: 0.3,
   quiet: 20,
@@ -88,20 +89,19 @@ export class Slimes extends Population<Colony, Slime, readonly Slime[]> {
   }
 
   protected denIn(key: number, i: number, j: number): Colony | null {
-    const l = this.level;
-    if (l.depth < 2) return null;
-    for (const [x, z] of this.sites(i, j, SLIME.chance)) {
+    const l = this.level, { share } = early(l.depth, SLIME.from);
+    for (const [x, z] of this.sites(i, j, SLIME.chance * share)) {
       const col = l.columnAt(x, z);
       if (rockDistance(col) < 2.5 || col.rubble > 0.1) continue;
       const y = this.floorFor(x, z, 0.8, 0.6);
-      if (y !== null) return { key, x, z, y, faction: this.faction, count: this.countIn(i, j, SLIME.count), angry: false };
+      if (y !== null) return { key, x, z, y, faction: this.faction, count: this.countIn(i, j, SLIME.count, share), angry: false };
     }
     return null;
   }
 
   protected hatch(c: Colony, killed: (id: number) => boolean): Slime[] {
     return this.brood(c, 'colony', 8, 0.5, 2.5, killed, (id, x, y, z, rng) => {
-      const size = rng.range(0.75, 1.3), phase = rng.range(0, Math.PI * 2), sl = new Slime(id, c, x, y, z, size, phase);
+      const size = rng.range(0.75, 1.3) * early(this.level.depth, SLIME.from).youth, phase = rng.range(0, Math.PI * 2), sl = new Slime(id, c, x, y, z, size, phase);
       sl.t = rng.range(0.5, 3);
       return sl;
     });

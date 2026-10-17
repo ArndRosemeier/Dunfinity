@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { SLIME, Slimes, type Colony, type Faction, type Slime } from '../src/creatures/slimes';
+import { early } from '../src/creatures/population';
 import type { Fighter } from '../src/combat/combat';
 
 const level = new Level(1, 3);
@@ -43,8 +44,11 @@ function run(l: Slimes, m: Slimes, me: Prey, seconds: number, dt = 1 / 60, each?
   }
 }
 
-test('slimes live from level 2, both kinds', () => {
-  assert.equal(colonies(new Slimes(new Level(1, 1), 'murk')).length, 0);
+test('slimes live on any level, both kinds: on level 1 rarer, fewer and smaller', () => {
+  const top = colonies(new Slimes(new Level(1, 1), 'murk')), home = colonies(new Slimes(level, 'murk')), mobs = (c: Colony[]) => c.reduce((s, x) => s + x.count, 0);
+  assert.ok(mobs(top) < mobs(home) / 3, `far fewer on level 1 (${mobs(top)} vs ${mobs(home)})`);
+  assert.ok(top.every((c) => c.count <= 2), 'small colonies on level 1');
+  assert.ok(early(1, SLIME.from).youth < 1 && early(SLIME.from, SLIME.from).youth === 1, 'young on level 1');
   assert.ok(colonies(new Slimes(level, 'lumen')).length > 3);
   assert.ok(colonies(new Slimes(level, 'murk')).length > 3);
 });

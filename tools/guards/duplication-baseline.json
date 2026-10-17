@@ -16,10 +16,6 @@
     "reason": "2D and 3D variants of the same noise in one file; merging them would cost the hot path a dimension branch."
   },
   {
-    "key": "clone: dunfinity/creatures/dogs.ts#hatch + dunfinity/creatures/rats.ts#hatch + dunfinity/creatures/slimes.ts#hatch",
-    "reason": "each kind's hatch is a call of Population.brood with its own den name, id stride and looks"
-  },
-  {
     "key": "clone: dunfinity/gen/dungeon.ts#portal + dunfinity/gen/dwarven.ts#portal",
     "reason": "each built style's portal turns (x, z) into its own grid's frame (Grain), looks up its own room or hall there and turns its middle back; the frame is the one seam (src/gen/grainLines.ts), the grids and rooms differ"
   },
@@ -4424,10 +4420,6 @@
     "reason": "Each population counts its den with the shared Population.countIn."
   },
   {
-    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/dogs.ts#denIn",
-    "reason": "Population hook: each kind says where its dens are."
-  },
-  {
     "key": "same name: dunfinity/render/creatures/rigged.ts#draw + dunfinity/render/props/doorView.ts#draw",
     "reason": "A view posing its figures each frame: the common verb, unrelated jobs."
   },
@@ -4560,14 +4552,6 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
-    "key": "idiom: [.damage .range .x] in dunfinity/combat/snapdragon.ts + dunfinity/combat/thrown.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
-    "reason": "Rats and dogs on the shared mind (one-animal-mind): each kind keeps only where its dens are and what it is; the shared shape of that is the Animals seam, not a copy"
-  },
-  {
-    "key": "idiom: [.damage .range] in dunfinity/combat/thrown.ts + dunfinity/creatures/shrooms.ts + dunfinity/game/Game.ts",
-    "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
-  },
-  {
     "key": "idiom: [.dead .lieDead] in dunfinity/creatures/foreman.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts + dunfinity/creatures/tallOne.ts + dunfinity/creatures/touched.ts",
     "reason": "each kind's one-line call into the Population seam (`if (c.dead) return this.lieDead(c, dt)`); the work is shared in population.ts. Flips between NEW and STALE as the corpus changes, like [.body .root]."
   },
@@ -4674,5 +4658,17 @@
   {
     "key": "same name: dunfinity/creatures/pasture.ts#near + dunfinity/world/doors.ts#near",
     "reason": "unrelated names and the shared steering calls; the way round rock is one seam (pasture walkOf)"
+  },
+  {
+    "key": "clone: dunfinity/creatures/dogs.ts#hatch + dunfinity/creatures/rats.ts#hatch",
+    "reason": "incidental: depth odds for each kind's dens (early / countIn share)"
+  },
+  {
+    "key": "idiom: [.count .countIn] in dunfinity/creatures/eels.ts + dunfinity/creatures/scavengers.ts + dunfinity/creatures/slimes.ts",
+    "reason": "incidental: depth odds for each kind's dens (early / countIn share)"
+  },
+  {
+    "key": "idiom: [.damage .range] in dunfinity/combat/snapdragon.ts + dunfinity/combat/thrown.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/pick.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/tallOne.ts + dunfinity/game/Game.ts",
+    "reason": "each blow rolls its own damage through combat's damage(); the roll is one call"
   }
 ]

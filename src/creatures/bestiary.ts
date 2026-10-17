@@ -18,7 +18,7 @@
  * Pure: a function of (seed, depth, slot). A stratum's species are the same on all its levels.
  */
 import { Rng, clamp, deriveSeed, hsl2rgb, lerp, mixRgb } from '@futuremagic/core';
-import { strangeness, strangeFrom } from '../gen/genome';
+import { oddsAt, strangeness, strangeFrom } from '../gen/genome';
 
 export type Rgb = [number, number, number];
 
@@ -244,15 +244,22 @@ function jointed(plan: BodyPlan): boolean {
 /** Gravity, for speeds from leg length (Froude scaling: v = sqrt(Fr·g·leg)). */
 const G = 9.81;
 
-/** The roles of a level's slots: what lives there (slot 0, 1: peaceful; 2, 3: hunters; more as it gets deeper). */
+/** The chance of each hunting slot of a level, near the top and deep (`oddsAt`): rare near the top, the rule deep down (Arnd 2026-10-17: depth shifts the odds, never a gate). */
+const HOSTILE_SLOTS = [[0.3, 1], [0.08, 1], [0.01, 0.8]] as const;
+/** The chance of a third peaceful slot, near the top and deep. */
+const THIRD_PEACEFUL = [0.1, 0.7] as const;
+
+/** The roles of a level's slots: what lives there (slot 0, 1: peaceful; then hunters, and another peaceful, more likely the deeper). */
 export function rolesOf(seed: number, depth: number): CritterRole[] {
   const rng = new Rng(deriveSeed(seed, 'bestiary', strangeFrom(depth)));
   const peaceful: CritterRole[] = ['scuttler', 'grazer', 'floater', 'watcher', 'giant'];
   const hostile: CritterRole[] = ['hunter', 'lurker', 'swarmer', 'brute'];
   const first = rng.pick(['scuttler', 'grazer', 'watcher'] as const);
   const out: CritterRole[] = [first, rng.pick(peaceful.filter((r) => r !== first))];
-  if (depth > 10) out.push(...rng.sample(hostile, depth > 30 ? 3 : 2));
-  if (depth > 20 && rng.chance(0.6)) out.push(rng.pick(peaceful.filter((r) => !out.includes(r))));
+  let hunting = 0;
+  for (const w of HOSTILE_SLOTS) if (rng.chance(oddsAt(depth, w))) hunting++;
+  if (hunting) out.push(...rng.sample(hostile, hunting));
+  if (rng.chance(oddsAt(depth, THIRD_PEACEFUL))) out.push(rng.pick(peaceful.filter((r) => !out.includes(r))));
   return [...new Set(out)];
 }
 

@@ -19,12 +19,14 @@
  * as every animal's (src/creatures/life.ts): off to feed, by its diet, and lying down with its herd
  * in their hours of rest.
  *
- * Levels 1 to 10 have them rarely (the hand-made foes rule there); deeper, more often.
+ * Every level may have any of them (Arnd 2026-10-17): near the top rarely, and a hunter there is a small one,
+ * a giant a young one; deeper, more often and more of them hunting.
  *
  * Pure: floor walking with src/creatures/steer.ts, blows through src/combat. Herds are fixed by the
  * seed; the dead stay dead on this visit.
  */
 import { clamp, hash3f } from '@futuremagic/core';
+import { oddsAt } from '../gen/genome';
 import type { Level } from '../gen/level';
 import type { Den } from './population';
 import { bestiaryOf, type Species } from './bestiary';
@@ -33,10 +35,9 @@ import { Animal, Animals, CALM, HUNTING, type Nature } from './animals';
 
 export const HERD = {
   ...CALM,
-  /** Herds: cell size, chance per cell on levels 1–10 and deeper, none this close to the arrival. */
+  /** Herds: cell size, chance per cell near the top and deep (`oddsAt`), none this close to the arrival. */
   cell: 70,
-  chance: 0.16,
-  deeper: 0.3,
+  chance: [0.15, 0.32] as const,
   quiet: 35,
   wake: 70,
   sleep: 95,
@@ -48,9 +49,8 @@ export const HERD = {
 /** The hunting kinds: how often a den is theirs, how they find you, and their fair power per level. */
 export const HUNT = {
   ...HUNTING,
-  /** Share of the dens that are hunters' on levels 1–10 and deeper. */
-  share: 0.3,
-  deeper: 0.45,
+  /** Share of the dens that are hunters', near the top and deep (`oddsAt`). */
+  share: [0.25, 0.5] as const,
   /** One that comes for you: its fair health on level d, base + per·d, times its strategy's share (one charger is a pack's worth). */
   base: 12,
   per: 2.5,
@@ -75,7 +75,7 @@ export interface Herd extends Den {
   /** Which of the level's species lives here (an index into `Critters.species`). */
   readonly kind: number;
   readonly species: Species;
-  /** The size its animals are grown to (1 for peaceful ones; a hunter's fair size for the level). */
+  /** The size its animals are grown to (a peaceful one full grown, a young giant near the top: `youthOf`; a hunter's fair size for the level). */
   readonly scale: number;
 }
 
@@ -98,6 +98,12 @@ export function fitSize(sp: Species, depth: number): number {
   return clamp(Math.cbrt(mass / sp.mass), HUNT.size[0], HUNT.size[1]);
 }
 
+/** How grown a peaceful species is on level `depth`: a giant near the top is a young one, smaller and weaker, grown with depth (Arnd 2026-10-17); the rest full grown. */
+export function youthOf(sp: Species, depth: number): number {
+  return sp.role === 'giant' ? oddsAt(depth, GIANT_YOUTH) : 1;
+}
+const GIANT_YOUTH = [0.35, 1] as const;
+
 /** What a species does when it strikes (the rig's action). */
 export function strikeOf(sp: Species): string {
   if (sp.tail.tip === 'sting') return 'sting';
@@ -116,10 +122,9 @@ export class Critters extends Animals<Herd, Critter> {
   constructor(level: Level) {
     super(level, 'critters', HERD, { arrive: 0.6, still: 0.08, step: 0.5, drop: 1.2, accel: 6, turn: 4, face: 5 });
     this.species = level.depth ? bestiaryOf(level.seed, level.depth) : [];
-    const shallow = level.depth <= 10;
-    this.share = this.species.some((s) => !s.peaceful) ? (shallow ? HUNT.share : HUNT.deeper) : 0;
+    this.share = this.species.some((s) => !s.peaceful) ? oddsAt(level.depth, HUNT.share) : 0;
     // The hunters' dens come on top of the herds' (as many herds as before).
-    this.chance = level.depth ? (shallow ? HERD.chance : HERD.deeper) / (1 - this.share) : 0;
+    this.chance = level.depth ? oddsAt(level.depth, HERD.chance) / (1 - this.share) : 0;
     this.apart = 1;
   }
 
@@ -129,7 +134,7 @@ export class Critters extends Animals<Herd, Critter> {
       const hunting = hash3f(this.seed, i, j, 31) < this.share;
       const kinds = this.species.map((s, k) => [s, k] as const).filter(([s]) => s.peaceful !== hunting);
       const [sp, kind] = kinds[Math.floor(hash3f(this.seed, i, j, 30) * kinds.length)];
-      const scale = sp.peaceful ? 1 : fitSize(sp, this.level.depth);
+      const scale = sp.peaceful ? youthOf(sp, this.level.depth) : fitSize(sp, this.level.depth);
       // Room over its back, and room to walk where the walker feels for rock (see `bodyOf`).
       const b = bodyOf(sp, scale);
       const y = this.floorFor(x, z, Math.max(1, (sp.hipHeight * 2 + sp.altitude) * scale), Math.max(0.5, b.radius * 1.5));
