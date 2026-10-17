@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.212 — The village by day
+
+- Out in the village it is now day: a pale blue sky with haze over the far fields, the sun from the south-west, and bright light from the sky. The street lamps and lanterns are out and the windows show glass, not lamplight.
+- Grandma's house gets some of the day through its windows. The cellar and everything below stay as dark as before, and the eye takes a moment to adjust going in and out.
+
 ## v0.211 — Grandma's furniture, modelled
 
 - Grandma's house and cellar get Blender-made furniture in place of stacked boxes: her wing armchair (in the salt circle and in the living room), the lamp table, the sofa, the kitchen table, chairs, stove and sink cupboard, the bed, the wardrobe, the sideboard, the coat stand and the cellar shelves.
