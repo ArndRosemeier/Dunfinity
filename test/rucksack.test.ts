@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PACK, Pack, type Find } from '../src/loot/finds';
 import { Kit, freshKit, packRows, rummage, withRucksack, type PackRow } from '../src/loot/items';
-import { GEAR, GEAR_ORDER, ILSE_ORDER, buyGear, kitFromGear } from '../src/loot/hardware';
+import { GEAR, GEAR_ORDER, buyGear, ilseSells, kitFromGear } from '../src/loot/hardware';
 
 const coin = (id: number): Find => ({ id, kind: 'coin', x: 0, y: 0, z: 0, yaw: 0, value: 2 });
 const back: PackRow = { what: 'slot', slot: 'back' };
@@ -59,7 +59,7 @@ test('saves from before rucksacks get the plain one, unless one is worn or packe
 
 test('Kemal sells the army rucksack (key 8); Ilse the satchel the stranger brought her', () => {
   assert.equal(GEAR_ORDER.indexOf('rucksack'), 7);
-  assert.deepEqual(ILSE_ORDER, ['satchel']);
+  assert.ok(ilseSells(true).includes('satchel') && !ilseSells(false).includes('satchel'));
   const kit = freshKit();
   let r = buyGear(kit, 'rucksack', 100);
   assert.equal(r.euros, 100 - GEAR.rucksack.price);

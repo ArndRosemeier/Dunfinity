@@ -19,7 +19,7 @@ import { CELLAR, daylightAt } from '../gen/cellar';
 import { TOWN } from '../gen/town';
 import { temperLine } from '../creatures/temper';
 import { sell } from '../loot/pawn';
-import { GEAR, GEAR_ORDER, ILSE_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
+import { GEAR, GEAR_ORDER, buyGear, hasGear, ilseSells, kitFromGear } from '../loot/hardware';
 import { Kit, freshKit, isItem, packRows, rummage, withRucksack } from '../loot/items';
 import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { DeathView, DEATH, NEXT } from '../app/deathView';
@@ -1342,9 +1342,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       return keepers[shop].canHear(body.x, body.y, body.z); // (at the counter)
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
-    /** Ilse has the satchel once the stranger from below is in town. */
-    const ilseSells = Stranger.here({ deepest: tin.deepest, fallen: fallen.length }) ? ILSE_ORDER : [];
-    const counter = nearKemal ? { order: GEAR_ORDER, keeper: keepers.hardware } : nearPawn && ilseSells.length ? { order: ilseSells, keeper: keepers.pawn } : null;
+    /** Ilse's counter: her salt feather, and what the stranger from below brought her once it is in town. */
+    const ilse = ilseSells(Stranger.here({ deepest: tin.deepest, fallen: fallen.length }));
+    const counter = nearKemal ? { order: GEAR_ORDER, keeper: keepers.hardware } : nearPawn ? { order: ilse, keeper: keepers.pawn } : null;
     atCounter = !!counter;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
     const nearStranger = strangerHere() && !busy && !nearLadder && !nearFind && !nearNote && !nearWeber && body.grounded && stranger.canHear(body.x, body.y, body.z);
@@ -1680,6 +1680,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const threat = fauna.after(body);
       body.climbCost = cooked.climbing * practice.less('climbing') * kit.climb;
       body.armour = kit.armour;
+      body.featherfall = kit.featherfall;
       // Practice: metres climbed, and blows the lid stopped.
       if (body.mode === 'climb') climbed += Math.max(0, body.y - climbY);
       climbY = body.y;
@@ -1843,7 +1844,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
     else if (nearKemal) lines.push(`Kemal's counter (purse €${euros}, ${E}: talk): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(' · '));
     else if (nearPawn) lines.push((pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : `${E}: talk to Ilse (you have nothing to sell her yet)`)
-      + ilseSells.map((k, i) => ` · ${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(''));
+      + ilse.map((k, i) => ` · ${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(''));
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);

@@ -8,7 +8,7 @@
  */
 import { ITEMS, Kit, itemName, type ItemKind } from './items';
 
-export type GearKind = 'gloves' | 'whetstone' | 'helmet' | 'hatchet' | 'crowbar' | 'pick' | 'flashlight' | 'rucksack' | 'satchel';
+export type GearKind = 'gloves' | 'whetstone' | 'helmet' | 'hatchet' | 'crowbar' | 'pick' | 'flashlight' | 'rucksack' | 'satchel' | 'umbrella' | 'feather' | 'cloak';
 
 export interface GearDef {
   readonly name: string;
@@ -21,6 +21,8 @@ export interface GearDef {
   readonly item?: ItemKind;
   /** Who sells it: Kemal (unless said), or Ilse at her counter (`ILSE_ORDER`). */
   readonly seller?: 'Ilse';
+  /** Only once the stranger from below is in town (Ilse has it from them). */
+  readonly fromBelow?: true;
 }
 
 export const GEAR: Record<GearKind, GearDef> = {
@@ -32,14 +34,22 @@ export const GEAR: Record<GearKind, GearDef> = {
   flashlight: { name: 'a flashlight', price: 15, what: 'a long bright beam in the off hand (L)', item: 'flashlight', says: '"Batteries included. Well. One battery. The other one is in the clock."' },
   pick: { name: "a miner's pick", price: 60, what: 'two hands, slow, and very hard', item: 'pick', says: '"Heavy, eh? My father swung one for thirty years. His back, oh, his back."' },
   rucksack: { name: 'an army rucksack', price: 40, what: 'the pack holds 14 things', item: 'army-rucksack', says: '"Army surplus. Swiss. Or Austrian. Neutral, anyway." He takes your old one for the bin.' },
-  satchel: { name: 'a salt-woven satchel', price: 150, what: 'the pack holds 40 things', item: 'salt-satchel', seller: 'Ilse', says: 'Ilse lifts it from under the counter with both hands, though it weighs nothing. "The one from below sold it me. It holds more than it should. I stopped counting." She takes your old one in part payment, and does not say for what.' },
+  satchel: { name: 'a salt-woven satchel', price: 150, what: 'the pack holds 40 things', item: 'salt-satchel', seller: 'Ilse', fromBelow: true, says: 'Ilse lifts it from under the counter with both hands, though it weighs nothing. "The one from below sold it me. It holds more than it should. I stopped counting." She takes your old one in part payment, and does not say for what.' },
+  umbrella: { name: 'a big black umbrella', price: 25, what: 'snaps open in the off hand when you fall: you land unhurt', item: 'umbrella', says: '"For the rain. Down there, rain? No? Then for the dripping." He pops it open indoors, which is bad luck, and closes it fast.' },
+  feather: { name: 'a salt feather', price: 60, what: 'a trinket: falls are slowed to a safe landing', item: 'salt-feather', seller: 'Ilse', says: 'Ilse lays it on the glass: a crow\'s feather, gone white and stiff with salt. "Your grandmother\'s. She sold it me in \'66 and said I would know when to sell it back. Drop it." You do. It takes a long time to land.' },
+  cloak: { name: 'an owl-down cloak', price: 140, what: 'on the body: you sink like a feather from any height', item: 'owl-cloak', seller: 'Ilse', fromBelow: true, says: 'Ilse unfolds it on the counter, grey and soft as smoke. "From the one below. Their children wear them to go down the long shafts, it says. I tried it on the stairs. Never again."' },
 };
 
-/** Their order on his counter (keys 1 to 8). */
-export const GEAR_ORDER: readonly GearKind[] = ['gloves', 'whetstone', 'helmet', 'hatchet', 'crowbar', 'pick', 'flashlight', 'rucksack'];
+/** Their order on his counter (keys 1 to 9). */
+export const GEAR_ORDER: readonly GearKind[] = ['gloves', 'whetstone', 'helmet', 'hatchet', 'crowbar', 'pick', 'flashlight', 'rucksack', 'umbrella'];
 
-/** What Ilse sells across her counter (key 1), once the stranger from below is in town (src/world/stranger.ts `Stranger.here`). */
-export const ILSE_ORDER: readonly GearKind[] = ['satchel'];
+/** Everything Ilse sells across her counter (keys 1, 2, ...): her salt feather always; what the stranger from below brings her (`fromBelow`) once it is in town (src/world/stranger.ts `Stranger.here`). */
+export const ILSE_ORDER: readonly GearKind[] = ['feather', 'cloak', 'satchel'];
+
+/** What Ilse has on her counter now: `below`, whether the stranger is in town. */
+export function ilseSells(below: boolean): GearKind[] {
+  return ILSE_ORDER.filter((k) => below || !GEAR[k].fromBelow);
+}
 
 /** Whether the grandchild in `kit` has what Kemal sells as `kind` (worn, or the knife honed). */
 export function hasGear(kit: Kit, kind: GearKind): boolean {

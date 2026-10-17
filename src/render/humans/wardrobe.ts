@@ -187,6 +187,15 @@ function flashlight(): Object3D {
   }, FLASHLIGHT_TILT);
 }
 
+/** Kemal's big black umbrella, furled, in grip space like the knife: the crook in the fist, the ferrule forward. */
+function umbrella(): Object3D {
+  return held((wood) => {
+    wood.ellipsoid(0, -0.06, 0, 0.022, 0.03, 0.022, [0.22, 0.13, 0.06], 8); // the crook
+    wood.tube(0, -0.04, 0, 0, 0.62, 0, 0.007, [0.08, 0.08, 0.085]);
+    wood.cylinder(0, 0.36, 0, 0.04, 0.2, [0.04, 0.04, 0.045], 10, 0.1, -0.75); // the furled canopy
+  }, KNIFE_TILT);
+}
+
 /**
  * Grandma's pot lid, as a shield (grip space as the humanoid straps a shield to the forearm: its
  * face out along +z): dented blue enamel, a black rim and a wooden knob.
@@ -231,6 +240,7 @@ export const WARDROBE: Wardrobe = {
     if (TOOLS[defId]) return tool(TOOLS[defId][0]);
     if (defId === 'potlid') return potLid();
     if (defId === 'flashlight') return flashlight();
+    if (defId === 'umbrella') return umbrella();
     throw new Error(`no held item "${defId}"`);
   },
   disposeItem: (o) => o.traverse((m) => (m as Mesh).geometry?.dispose()),
@@ -326,6 +336,7 @@ function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = 
     const [defId, a, b, wear] = o.hand;
     eq.mainhand = { defId, visual: { ...visual(seed + 3, a, b, wear), shape: TOOLS[defId]?.[1] ?? defId, material: 'metal' } };
   }
+  if (!lid && items.some((it) => it.kind === 'umbrella')) eq.offhand = { defId: 'umbrella', visual: { ...visual(seed + 4, [0.04, 0.04, 0.045], [0.22, 0.13, 0.06], 0.3), shape: 'umbrella', material: 'cloth' } };
   if (!lid && items.some((it) => it.kind === 'flashlight')) eq.offhand = { defId: 'flashlight', visual: { ...visual(seed + 4, [0.06, 0.06, 0.065], [0.62, 0.63, 0.66], 0.3), shape: 'flashlight', material: 'metal' } };
   if (lid) eq.offhand = { defId: 'potlid', visual: { ...visual(seed + 4, [0.16, 0.24, 0.38], [0.05, 0.05, 0.06], 0.4), shape: 'shield-potlid', material: 'metal' } };
   return eq;
