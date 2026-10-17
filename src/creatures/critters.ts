@@ -12,6 +12,11 @@
  * a small thing and a level-30 brute a big one). Each blow has its tell: the wind-up, then the lunge
  * or the slam; after it they spring back and come again. Badly hurt, they run.
  *
+ * How each species lives comes from its temper (src/creatures/temper.ts), grown with its body: its
+ * pace, its flock (a cluster, a procession in single file, a scatter, loners), how curious or shy
+ * it is, what its herd does in alarm (bolt, scatter, freeze, bunch up), its nerve and its warning,
+ * its habits while it grazes, and what it makes of your headlamp.
+ *
  * Levels 1 to 10 have them rarely (the hand-made foes rule there); deeper, more often.
  *
  * Pure: floor walking with src/creatures/steer.ts, blows through src/combat. Herds are fixed by the
@@ -23,7 +28,9 @@ import { damage, type Fighter, noticed } from '../combat/combat';
 import { Creature } from './creature';
 import { Population, type Den } from './population';
 import { brake } from './steer';
-import { bestiaryOf, type Species } from './bestiary';
+import { AGGRESSION, bestiaryOf, type Species } from './bestiary';
+import { habitAction, temperOf, type Flock, type Pace, type Strategy, type Temper } from './temper';
+import type { Lamp } from './crickets';
 
 export const HERD = {
   /** Herds: cell size, chance per cell on levels 1–10 and deeper, none this close to the arrival. */
@@ -57,16 +64,15 @@ export const HUNT = {
   /** Share of the dens that are hunters' on levels 1–10 and deeper. */
   share: 0.3,
   deeper: 0.45,
-  /** They see you this close (a lurker only when you are nearly on it), and give up beyond `forget`. */
-  notice: 14,
-  lurk: 5,
+  /** An ambusher comes for you only from this share of its range; they all give up beyond `forget` (and beyond its range). */
+  lurk: 0.35,
   forget: 32,
-  /** A pack member's fair health on level d: base + per·d, times its role's share (one brute is a pack's worth). */
+  /** One that comes for you: its fair health on level d, base + per·d, times its strategy's share (one charger is a pack's worth). */
   base: 12,
   per: 2.5,
-  role: { hunter: 1, swarmer: 0.35, lurker: 1.4, brute: 3 } as Readonly<Record<string, number>>,
-  /** The wind-up before its blow, s (a brute's slam is slower and plainer), and the lunge's speed share of its run. */
-  windup: { hunter: 0.4, swarmer: 0.3, lurker: 0.3, brute: 0.65 } as Readonly<Record<string, number>>,
+  strategy: { pack: 1, swarm: 0.35, ambush: 1.4, charge: 3 } as Readonly<Record<Strategy, number>>,
+  /** The wind-up before its blow, s (a charger's slam is slower and plainer), and the lunge's speed share of its run. */
+  windup: { pack: 0.4, swarm: 0.3, ambush: 0.3, charge: 0.65 } as Readonly<Record<Strategy, number>>,
   lunge: 1.2,
   /** After a blow: how long it springs back, s; the least time between its blows; how far off it waits meanwhile, in lengths. */
   back: 0.6,
@@ -78,7 +84,19 @@ export const HUNT = {
   size: [0.25, 3] as const,
 } as const;
 
-export type CritterMode = 'graze' | 'wander' | 'watch' | 'lurk' | 'flee' | 'fight' | 'stalk' | 'back' | 'dead';
+export type CritterMode = 'graze' | 'wander' | 'watch' | 'approach' | 'freeze' | 'bunch' | 'drawn' | 'lurk' | 'flee' | 'fight' | 'stalk' | 'back' | 'dead';
+
+/** Each pace (src/creatures/temper.ts): its wander speed (a share of the walk), how long it grazes, s, and how far it roams (a share). */
+const PACE: Readonly<Record<Pace, { speed: number; graze: readonly [number, number]; roam: number }>> = {
+  plod: { speed: 0.4, graze: [5, 12], roam: 0.7 },
+  steady: { speed: 0.6, graze: [2, 8], roam: 1 },
+  dart: { speed: 0.3, graze: [2, 6], roam: 1 },
+  restless: { speed: 0.85, graze: [0.5, 2], roam: 1.4 },
+};
+/** How far each flock roams from its place (a share). */
+const FLOCK: Readonly<Record<Flock, { roam: number }>> = { cluster: { roam: 0.45 }, file: { roam: 1.6 }, scatter: { roam: 1.6 }, loner: { roam: 2.4 } };
+/** The headlamp draws or drives off the ones it shines on within this far, metres. */
+const LIT = 16;
 
 export class Critter extends Creature<CritterMode> {
   /** Seconds left in the mode (graze, wander, flee, fight). */
@@ -97,6 +115,16 @@ export class Critter extends Creature<CritterMode> {
   watching = false;
   /** Seconds until a hunter may strike again. */
   cool = 0;
+  /** Its action is a habit or a warning (it never lands). */
+  harmless = false;
+  /** Seconds until its next habit; until it is curious (or drawn to the lamp) again; since its warning. */
+  habitT = 3;
+  bored = 0;
+  warned = 0;
+  /** On its way (a darter between dashes, one in a procession catching up). */
+  going = false;
+  /** Which way it runs off from straight away from you (scattering), radians. */
+  veer = 0;
   readonly maxHealth: number;
 
   constructor(readonly id: number, readonly herd: Herd, x: number, y: number, z: number, yaw: number, readonly size: number) {
@@ -133,9 +161,16 @@ export function powerOf(sp: Species, size = 1): { health: number; blow: number }
 
 /** The size that gives a hunting species its fair health on level `depth` (see HUNT). */
 export function fitSize(sp: Species, depth: number): number {
-  const want = (HUNT.base + HUNT.per * depth) * (HUNT.role[sp.role] ?? 1);
+  const want = (HUNT.base + HUNT.per * depth) * HUNT.strategy[temperOf(sp).strategy];
   const mass = (want / HERD.health[0]) ** (1 / HERD.health[1]);
   return clamp(Math.cbrt(mass / sp.mass), HUNT.size[0], HUNT.size[1]);
+}
+
+/** How far off one that attacks comes for you (its own length added; an ambusher only from close): none for one that leaves you be. */
+export function rangeOf(sp: Species, len: number): number {
+  if (sp.peaceful) return 0;
+  const k = (sp.aggression - AGGRESSION.attack) / (1 - AGGRESSION.attack), r = len + AGGRESSION.near + k * (AGGRESSION.far - AGGRESSION.near);
+  return temperOf(sp).strategy === 'ambush' ? len + AGGRESSION.near + (r - len - AGGRESSION.near) * HUNT.lurk : r;
 }
 
 /** What a species does when it strikes (the rig's action). */
@@ -147,7 +182,7 @@ export function strikeOf(sp: Species): string {
   return 'bite';
 }
 
-export class Critters extends Population<Herd, Critter> {
+export class Critters extends Population<Herd, Critter, Lamp | null> {
   /** The level's species (one per herd kind), peaceful and hunting. */
   readonly species: readonly Species[];
   private readonly chance: number;
@@ -183,60 +218,85 @@ export class Critters extends Population<Herd, Critter> {
     return this.brood(h, 'herd', 16, len * 0.6, spread, killed, (id, x, y, z, rng) => {
       const c = new Critter(id, h, x, y, z, rng.range(0, Math.PI * 2), h.scale * rng.range(0.85, 1.15));
       c.t = rng.range(0.5, 6);
-      if (sp.role === 'lurker') c.mode = 'lurk';
+      c.habitT = rng.range(1, 12);
+      if (!sp.peaceful && temperOf(sp).strategy === 'ambush') c.mode = 'lurk';
       return c;
     }, body.radius * 0.9 + 0.05, body.height * 0.5625);
   }
 
   /** One animal's step. Returns 1 if it struck you. */
-  protected act(c: Critter, prey: Fighter, _ctx: null, dt: number): number {
+  protected act(c: Critter, prey: Fighter, lamp: Lamp | null, dt: number): number {
     const sp = c.species, H = HERD;
     c.t -= dt;
     if (c.action) c.actionT = Math.min(1, c.actionT + dt / H.strike);
     if (c.dead) { c.action = ''; c.running = false; c.watching = false; return this.lieDead(c, dt, 4); }
     const dx = prey.x - c.x, dz = prey.z - c.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     const len = Math.max(0.2, sp.totalLength * c.size), near = Math.abs(prey.y - c.y) < 2 + c.height;
-    if (!sp.peaceful) return this.hunt(c, prey, dt, dx, dz, d, toYou, len, near);
+    // One that attacks comes for you once you are within its range (or it is hurt, or already at you); else it lives as the rest do.
+    if (!sp.peaceful) {
+      const range = rangeOf(sp, len), lurking = c.mode === 'lurk';
+      const spots = (lurking || this.idle(c)) && !prey.dead && near && noticed(prey, d, range);
+      if (spots) for (const o of this.herdOf(c)) if (o.mode !== 'flee' && o.mode !== 'stalk' && o.mode !== 'back') { o.mode = 'stalk'; o.action = o.harmless ? '' : o.action; o.harmless = false; }
+      if (spots || lurking || c.mode === 'stalk' || c.mode === 'back' || (c.provoked && c.cause === 'knife')) return this.hunt(c, prey, dt, dx, dz, d, toYou, len, near, range);
+    }
 
+    const T = temperOf(sp), bold = this.bold(c, T);
     if (c.provoked) {
       c.provoked = false;
-      // Fight back, or run if the fight is hopeless (a small thing nips first if you are in reach).
-      const bold = sp.mass * c.size ** 3 >= H.bold && c.health > c.maxHealth * H.hopeless;
-      if (bold && c.cause === 'knife') { c.mode = 'fight'; c.t = H.anger * (1 + Math.log10(1 + sp.mass) * 0.5); }
-      else if (c.cause === 'knife' && d < len * (0.5 + H.reach) + prey.radius && !c.action) this.attack(c);
+      // Fight back, or run if the fight is hopeless (a small thing nips first if you are in reach); the most passive only run.
+      if (c.action && c.harmless) { c.action = ''; c.actionT = 0; }
+      if (bold && c.cause === 'knife') this.anger(c);
+      else if (c.cause === 'knife' && sp.aggression >= AGGRESSION.retaliate && d < len * (0.5 + H.reach) + prey.radius && !c.action) this.attack(c);
       else this.frighten(c, H.flee);
       // The rest of its herd hears it.
-      for (const o of this.list) if (o !== c && o.herd === c.herd && !o.dead && (o.mode === 'graze' || o.mode === 'wander' || o.mode === 'watch')) {
-        if (sp.mass * o.size ** 3 >= H.bold && bold) { o.mode = 'fight'; o.t = c.t * 0.7; } else this.frighten(o, H.flee * 0.8);
+      for (const o of this.herdOf(c)) if (o !== c && this.idle(o)) {
+        if (bold && this.bold(o, T)) { o.mode = 'fight'; o.t = c.t * 0.7; } else this.alarm(o, T, H.flee * 0.8);
       }
     }
-    // Shy ones keep their distance (a giant minds nobody).
-    const shy = sp.role === 'giant' ? 0 : sp.role === 'scuttler' ? 2.5 + len : sp.role === 'watcher' ? 3.5 + len : 4 + len * 1.5;
-    if (!prey.dead && near && d < shy && (c.mode === 'graze' || c.mode === 'wander')) {
-      if (sp.role === 'watcher') { c.mode = 'watch'; c.t = 3; } else this.frighten(c, 2 + H.flee * 0.4);
+    // Shy ones keep their distance (a giant minds nobody; a curious one lets you closer).
+    const shy = this.shyOf(c, len, T);
+    c.bored = Math.max(0, c.bored - dt);
+    c.warned = Math.max(0, c.warned - dt);
+    if (!prey.dead && near && d < shy && this.idle(c) && c.mode !== 'watch') {
+      if (T.bluff && bold && !c.warned) { this.warn(c); }
+      else if (sp.role === 'watcher' || T.curious > 0.35 || c.mode === 'approach') { c.mode = 'watch'; c.t = 3; }
+      else {
+        // It startles, and its herd with it.
+        this.alarm(c, T, 2 + H.flee * 0.4);
+        for (const o of this.herdOf(c)) if (o !== c && this.idle(o) && Math.hypot(o.x - c.x, o.z - c.z) < 12) this.alarm(o, T, 2 + H.flee * 0.4);
+      }
     }
+    // Pushed on after its warning: it goes for you.
+    if (c.mode === 'watch' && T.bluff && bold && c.warned > 0 && d < shy * 0.55 && !c.action) this.anger(c, 0.5);
     if (c.mode === 'fight' && (prey.dead || c.t <= 0 || d > 25 || !near)) { c.mode = 'wander'; c.t = 0; }
+    // A curious one comes over to look at you, now and then.
+    if (T.curious > 0.35 && !prey.dead && near && !c.bored && (c.mode === 'graze' || c.mode === 'wander') && d < shy * 3 + 6 && d > shy * 1.3) {
+      c.mode = 'approach'; c.t = this.rng.range(8, 18) * (0.5 + T.curious);
+    }
+    // The headlamp: drawn to it, or out of its beam.
+    if (lamp && T.lamp !== 'none' && (c.mode === 'graze' || c.mode === 'wander' || c.mode === 'drawn')) this.lampFor(c, lamp, T, shy, len);
 
-    c.watching = c.mode === 'watch' || c.mode === 'fight' || (d < shy * 2.5 && sp.role !== 'giant' && !prey.dead);
+    c.watching = c.mode === 'watch' || c.mode === 'fight' || c.mode === 'approach' || c.mode === 'bunch' && bold || (d < shy * 2.5 && sp.role !== 'giant' && !prey.dead && c.mode !== 'freeze');
     let struck = 0;
     if (c.action) {
-      // The blow lands at the end of the wind-up, if you are still in reach in front of it.
-      c.yaw += angleDiff(c.yaw, toYou) * Math.min(1, dt * 3);
+      // The blow lands at the end of the wind-up, if you are still in reach in front of it (a habit or a warning never lands).
+      if (!c.harmless) c.yaw += angleDiff(c.yaw, toYou) * Math.min(1, dt * 3);
       brake(c, 6, dt);
       this.steer.slide(c, dt);
       if (!c.struck && c.actionT * H.strike >= H.windup) {
         c.struck = true;
         const ahead = Math.abs(angleDiff(c.yaw, toYou)) < 1.1;
-        if (ahead && near && d - prey.radius - c.radius < len * H.reach + 0.2) {
+        if (!c.harmless && ahead && near && d - prey.radius - c.radius < len * H.reach + 0.2) {
           const { blow } = powerOf(sp, c.size);
           damage(prey, this.rng.range(0.8, 1.2) * blow, c.x, c.z, clamp(1 + blow * 0.08, 1, 9), sp.mass * c.size ** 3 > 400 ? 'colossus' : 'critter');
           struck = 1;
         }
       }
       if (c.actionT >= 1) {
-        c.action = ''; c.actionT = 0;
+        const harmless = c.harmless;
+        c.action = ''; c.actionT = 0; c.harmless = false;
         // A small thing that nipped now runs.
-        if (c.mode !== 'fight') this.frighten(c, H.flee);
+        if (!harmless && c.mode !== 'fight') this.frighten(c, H.flee);
       }
       return struck;
     }
@@ -246,15 +306,24 @@ export class Critters extends Population<Herd, Critter> {
         c.running = false;
         brake(c, 4, dt);
         this.steer.slide(c, dt);
-        if (c.t <= 0) {
-          [c.tx, c.tz] = this.roamFrom(c.herd, Math.max(H.roamMin, len * H.roam));
-          c.mode = 'wander'; c.t = 4 + len * 2;
+        // Now and then its habit (a peck, a look round, a show).
+        if ((c.habitT -= dt) <= 0) {
+          c.habitT = this.rng.range(4, 12);
+          const a = habitAction(sp, T);
+          if (a && d > shy) { c.action = a; c.actionT = 0; c.struck = false; c.harmless = true; }
         }
+        if (c.t <= 0) this.onward(c, T, len);
         break;
       case 'wander':
-        c.running = false;
-        this.steer.move(c, c.tx, c.tz, sp.walkSpeed * c.size * 0.6, dt, null);
-        if (c.t <= 0 || Math.hypot(c.tx - c.x, c.tz - c.z) < Math.max(0.3, len * 0.3)) { c.mode = 'graze'; c.t = this.rng.range(2, 8); }
+        c.running = T.pace === 'dart';
+        if (this.follows(c, T)) { this.procession(c, sp, len, dt); break; }
+        this.steer.move(c, c.tx, c.tz, sp.walkSpeed * c.size * PACE[T.pace].speed + (T.pace === 'dart' ? sp.runSpeed * c.size * 0.4 : 0), dt, null);
+        if (Math.hypot(c.tx - c.x, c.tz - c.z) < Math.max(0.3, len * 0.3)) { c.mode = 'graze'; c.t = this.rng.range(PACE[T.pace].graze[0], PACE[T.pace].graze[1]); c.going = false; }
+        else if (c.t <= 0) {
+          // A darter's dash ends in a freeze (then on to the same place); anyone else gives up on it.
+          c.mode = 'graze'; c.going = T.pace === 'dart';
+          c.t = T.pace === 'dart' ? this.rng.range(0.5, 1.8) : this.rng.range(PACE[T.pace].graze[0], PACE[T.pace].graze[1]);
+        }
         break;
       case 'watch':
         // Stands its ground, eyes on you; backs off if you come closer still.
@@ -263,10 +332,38 @@ export class Critters extends Population<Herd, Critter> {
         else this.steer.move(c, c.x, c.z, 0, dt, toYou);
         if (c.t <= 0 && d > shy) { c.mode = 'graze'; c.t = this.rng.range(1, 4); }
         break;
+      case 'approach':
+        // Comes to look at you from a little way off, and trails after you a while.
+        c.running = false;
+        this.steer.close(c, prey, shy * 1.15, sp.walkSpeed * c.size * 0.8, dt, shy * 2);
+        if (c.t <= 0 || d > shy * 4 + 10) { c.mode = 'graze'; c.t = this.rng.range(1, 3); c.bored = this.rng.range(25, 45); }
+        break;
+      case 'freeze':
+        // Stock still, hoping not to be seen; it bolts if you come right up to it.
+        c.running = false;
+        brake(c, 10, dt);
+        this.steer.slide(c, dt);
+        if (!prey.dead && near && d < len + 1.2) this.frighten(c, H.flee);
+        else if (c.t <= 0) { c.mode = 'graze'; c.t = this.rng.range(1, 3); }
+        break;
+      case 'bunch': {
+        // Into the middle of the herd, the big ones facing you.
+        c.running = false;
+        const [mx, mz] = this.herdMiddle(c), there = Math.hypot(mx - c.x, mz - c.z) < len * 1.5 + 0.5;
+        this.steer.move(c, mx, mz, there ? 0 : sp.walkSpeed * c.size, dt, there && bold ? toYou : null);
+        if (c.t <= 0) { c.mode = 'graze'; c.t = this.rng.range(1, 3); }
+        break;
+      }
+      case 'drawn':
+        // Drawn to the headlamp's light: comes into the beam and mills there, eyes on it.
+        c.running = false;
+        this.steer.move(c, c.tx, c.tz, sp.walkSpeed * c.size * 0.7, dt, Math.hypot(c.tx - c.x, c.tz - c.z) < len + 0.6 ? toYou : null);
+        if (c.t <= 0) { c.mode = 'graze'; c.t = this.rng.range(1, 3); c.bored = this.rng.range(10, 20); }
+        break;
       case 'flee':
         c.running = true;
-        this.steer.move(c, c.x - (dx / (d || 1)) * 6, c.z - (dz / (d || 1)) * 6, sp.runSpeed * c.size, dt, null);
-        if (c.t <= 0) { [c.tx, c.tz] = this.roamFrom(c.herd, Math.max(H.roamMin, len * H.roam)); c.mode = 'wander'; c.t = 6; }
+        this.steer.move(c, c.x - (Math.cos(c.veer) * dx - Math.sin(c.veer) * dz) / (d || 1) * 6, c.z - (Math.sin(c.veer) * dx + Math.cos(c.veer) * dz) / (d || 1) * 6, sp.runSpeed * c.size, dt, null);
+        if (c.t <= 0) { this.onward(c, T, len); c.t = 6; c.veer = 0; }
         break;
       case 'fight': {
         c.running = d > len * 2;
@@ -279,9 +376,115 @@ export class Critters extends Population<Herd, Critter> {
     return 0;
   }
 
+  /** It is about its own business (not running, fighting, freezing or in an action). */
+  private idle(c: Critter): boolean {
+    return !c.dead && !c.action && (c.mode === 'graze' || c.mode === 'wander' || c.mode === 'watch' || c.mode === 'approach' || c.mode === 'drawn');
+  }
+
+  /** Heavy enough to fight back (by its nerve: a timid one needs more weight) and not too hurt. */
+  private bold(c: Critter, T: Temper): boolean {
+    const sp = c.species;
+    if (sp.aggression < AGGRESSION.retaliate) return false;
+    return sp.mass * c.size ** 3 >= HERD.bold * (2.2 - 1.8 * T.nerve) && c.health > c.maxHealth * HERD.hopeless * (1.4 - 0.8 * T.nerve);
+  }
+
+  /** How close you may come before it minds (a giant minds nobody; a curious one lets you nearer, a shy one less). */
+  private shyOf(c: Critter, len: number, T: Temper): number {
+    const r = c.species.role;
+    const base = r === 'giant' ? 0 : r === 'scuttler' ? 2.5 + len : r === 'watcher' ? 3.5 + len : 4 + len * 1.5;
+    return base * (1 - 0.45 * T.curious);
+  }
+
+  /** Angry: it comes for you this long (bigger ones longer; `k` of it). */
+  private anger(c: Critter, k = 1): void {
+    c.mode = 'fight';
+    c.t = HERD.anger * (1 + Math.log10(1 + c.species.mass) * 0.5) * k;
+  }
+
+  /** A warning: it rears up at you (harmless), then watches; come closer still and it fights. */
+  private warn(c: Critter): void {
+    c.mode = 'watch'; c.t = 4; c.warned = 8;
+    c.action = 'rear'; c.actionT = 0; c.struck = false; c.harmless = true;
+  }
+
+  /** Frightened: as its temper says, it bolts, scatters, freezes or bunches up (for about `t` seconds). */
+  private alarm(c: Critter, T: Temper, t: number): void {
+    switch (T.alarm) {
+      case 'freeze': c.mode = 'freeze'; c.t = t * 1.2; break;
+      case 'bunch': c.mode = 'bunch'; c.t = t * 1.2; break;
+      case 'scatter': this.frighten(c, t); c.veer = ((c.id * 2654435761) % 1000 / 1000 - 0.5) * 2.2; break;
+      default: this.frighten(c, t);
+    }
+  }
+
+  /** Its herd's living. */
+  private herdOf(c: Critter): Critter[] {
+    return this.list.filter((o) => o.herd === c.herd && !o.dead);
+  }
+
+  /** The middle of its herd's living. */
+  private herdMiddle(c: Critter): [number, number] {
+    const h = this.herdOf(c);
+    let x = 0, z = 0;
+    for (const o of h) { x += o.x; z += o.z; }
+    return h.length ? [x / h.length, z / h.length] : [c.herd.x, c.herd.z];
+  }
+
+  /** Done grazing: on somewhere new, as its pace and flock say (a darter dashes on to where it was going). */
+  private onward(c: Critter, T: Temper, len: number): void {
+    const P = PACE[T.pace], F = FLOCK[T.flock], roam = Math.max(HERD.roamMin, len * HERD.roam) * P.roam * F.roam;
+    if (!c.going) {
+      if (T.flock === 'cluster') {
+        // The herd drifts together: round its middle, the middle drawn back towards home.
+        const [mx, mz] = this.herdMiddle(c);
+        [c.tx, c.tz] = this.roamFrom({ key: c.herd.key, x: mx * 0.7 + c.herd.x * 0.3, z: mz * 0.7 + c.herd.z * 0.3 }, roam);
+      } else [c.tx, c.tz] = this.roamFrom(c.herd, roam);
+    }
+    c.mode = 'wander';
+    c.t = T.pace === 'dart' ? this.rng.range(0.4, 0.9) : 4 + len * 2;
+    c.going = false;
+  }
+
+  /** In a procession (single file) and not its head: it follows the one before it. */
+  private follows(c: Critter, T: Temper): boolean {
+    if (T.flock !== 'file') return false;
+    const h = this.herdOf(c);
+    return h.indexOf(c) > 0;
+  }
+
+  /** Follow the one before it in the file: moves when it has fallen behind, stops close up (never dithering between the two). */
+  private procession(c: Critter, sp: Species, len: number, dt: number): void {
+    const h = this.herdOf(c), ahead = h[h.indexOf(c) - 1], gap = c.radius + ahead.radius + len * 0.4;
+    const d = Math.hypot(ahead.x - c.x, ahead.z - c.z);
+    if (d > gap * 1.8) c.going = true;
+    else if (d < gap * 1.1) c.going = false;
+    if (c.going) this.steer.close(c, ahead, gap, sp.walkSpeed * c.size * (d > gap * 5 ? 1 : 0.6), dt, 0);
+    else { brake(c, 4, dt); this.steer.slide(c, dt); }
+    c.t = 1;
+  }
+
+  /** The headlamp's pull on it: one drawn to it comes into the beam (a little way off you); one that shuns it walks out of it. */
+  private lampFor(c: Critter, lamp: Lamp, T: Temper, shy: number, len: number): void {
+    const dx = c.x - lamp.x, dy = c.y + c.height / 2 - lamp.y, dz = c.z - lamp.z, d = Math.hypot(dx, dy, dz);
+    const lit = d > 0.01 && d < LIT && (dx * lamp.dx + dy * lamp.dy + dz * lamp.dz) / d > lamp.cos;
+    if (!lit) return;
+    const fl = Math.hypot(lamp.dx, lamp.dz) || 1, fx = lamp.dx / fl, fz = lamp.dz / fl;
+    if (T.lamp === 'moth') {
+      if (c.bored) return;
+      const out = Math.max(shy * 1.15, 2.5 + len);
+      if (c.mode !== 'drawn') { c.mode = 'drawn'; c.t = this.rng.range(6, 14); }
+      c.tx = lamp.x + fx * out; c.tz = lamp.z + fz * out;
+    } else if (c.mode !== 'wander' || c.t > 3.5) {
+      // Out of the beam, to the side it is already on.
+      const side = fx * dz - fz * dx > 0 ? 1 : -1, w = 4 + len;
+      c.tx = c.x - fz * side * w; c.tz = c.z + fx * side * w;
+      c.mode = 'wander'; c.t = 3; c.going = false;
+    }
+  }
+
   /** A hunting animal's step (see the header). Returns 1 if it struck you. */
-  private hunt(c: Critter, prey: Fighter, dt: number, dx: number, dz: number, d: number, toYou: number, len: number, near: boolean): number {
-    const sp = c.species, H = HUNT, run = sp.runSpeed * c.size;
+  private hunt(c: Critter, prey: Fighter, dt: number, dx: number, dz: number, d: number, toYou: number, len: number, near: boolean, range: number): number {
+    const sp = c.species, H = HUNT, run = sp.runSpeed * c.size, plan = temperOf(sp).strategy;
     c.cool -= dt;
     const hopeless = c.health <= c.maxHealth * HERD.hopeless;
     if (c.provoked) {
@@ -291,23 +494,19 @@ export class Critters extends Population<Herd, Critter> {
       else if (c.mode !== 'stalk' && c.mode !== 'back') c.mode = 'stalk';
       for (const o of this.list) if (o !== c && o.herd === c.herd && !o.dead && o.mode !== 'flee') if (o.mode !== 'back') o.mode = 'stalk';
     }
-    const idle = c.mode === 'graze' || c.mode === 'wander' || c.mode === 'lurk';
-    if (idle && !prey.dead && near && noticed(prey, d, sp.role === 'lurker' ? H.lurk : H.notice)) {
-      c.mode = 'stalk';
-      for (const o of this.list) if (o.herd === c.herd && !o.dead && (o.mode === 'graze' || o.mode === 'wander' || o.mode === 'lurk')) o.mode = 'stalk';
-    }
-    if ((c.mode === 'stalk' || c.mode === 'back') && (prey.dead || d > H.forget || !near)) { c.mode = sp.role === 'lurker' ? 'lurk' : 'wander'; c.t = 0; }
-    c.watching = c.mode === 'stalk' || c.mode === 'back' || c.mode === 'lurk' && d < H.notice;
+    if (c.mode !== 'stalk' && c.mode !== 'back' && c.mode !== 'lurk' && c.mode !== 'flee') c.mode = 'stalk';
+    if ((c.mode === 'stalk' || c.mode === 'back') && (prey.dead || d > Math.max(H.forget, range * 1.3) || !near)) { c.mode = plan === 'ambush' ? 'lurk' : 'wander'; c.t = 0; }
+    c.watching = c.mode === 'stalk' || c.mode === 'back' || c.mode === 'lurk' && d < range * 2;
 
-    const windup = H.windup[sp.role] ?? HERD.windup;
+    const windup = H.windup[plan];
     if (c.action) {
-      // The tell, then the lunge (a brute stands and slams); the blow lands as the lunge reaches you.
+      // The tell, then the lunge (a charger stands and slams); the blow lands as the lunge reaches you.
       c.yaw += angleDiff(c.yaw, toYou) * Math.min(1, dt * (c.actionT * HERD.strike < windup ? 4 : 1));
-      const at = c.actionT * HERD.strike, lunging = sp.role !== 'brute' && at >= windup && at < windup + 0.25;
+      const at = c.actionT * HERD.strike, lunging = plan !== 'charge' && at >= windup && at < windup + 0.25;
       if (lunging) this.steer.move(c, prey.x, prey.z, run * H.lunge, dt, null);
       else { brake(c, 6, dt); this.steer.slide(c, dt); }
       let struck = 0;
-      if (!c.struck && at >= windup + (sp.role === 'brute' ? 0 : 0.12)) {
+      if (!c.struck && at >= windup + (plan === 'charge' ? 0 : 0.12)) {
         const ahead = Math.abs(angleDiff(c.yaw, toYou)) < 1.1;
         if (ahead && near && d - prey.radius - c.radius < len * HERD.reach + 0.35) {
           c.struck = true;
@@ -344,8 +543,8 @@ export class Critters extends Population<Herd, Critter> {
         const stand = c.radius + prey.radius + len * HERD.reach * 0.5, hold = turn ? stand : stand + len * H.wait + 0.5;
         c.running = d > hold + len * 2;
         this.steer.close(c, prey, hold, c.running ? run : run * 0.5, dt, len * 3);
-        // In reach of its blow (a lunge carries it the last bit; a brute's slam does not).
-        const gap = d - prey.radius - c.radius, lunge = sp.role === 'brute' ? 0 : Math.min(len, run * H.lunge * 0.2);
+        // In reach of its blow (a lunge carries it the last bit; a charger's slam does not).
+        const gap = d - prey.radius - c.radius, lunge = plan === 'charge' ? 0 : Math.min(len, run * H.lunge * 0.2);
         if (turn && gap < len * HERD.reach + 0.2 + lunge && Math.abs(angleDiff(c.yaw, toYou)) < 0.5) this.attack(c);
         break;
       }
@@ -353,17 +552,6 @@ export class Critters extends Population<Herd, Critter> {
         c.running = true;
         this.steer.move(c, c.x - (dx / (d || 1)) * 6, c.z - (dz / (d || 1)) * 6, run, dt, null);
         if (c.t <= 0) { [c.tx, c.tz] = this.roamFrom(c.herd, Math.max(HERD.roamMin, len * HERD.roam)); c.mode = 'wander'; c.t = 6; }
-        break;
-      case 'graze':
-        c.running = false;
-        brake(c, 4, dt);
-        this.steer.slide(c, dt);
-        if (c.t <= 0) { [c.tx, c.tz] = this.roamFrom(c.herd, Math.max(HERD.roamMin, len * HERD.roam)); c.mode = 'wander'; c.t = 4 + len * 2; }
-        break;
-      case 'wander':
-        c.running = false;
-        this.steer.move(c, c.tx, c.tz, sp.walkSpeed * c.size * 0.6, dt, null);
-        if (c.t <= 0 || Math.hypot(c.tx - c.x, c.tz - c.z) < Math.max(0.3, len * 0.3)) { c.mode = 'graze'; c.t = this.rng.range(2, 8); }
         break;
     }
     return 0;

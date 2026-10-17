@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Rng } from '@futuremagic/core';
-import { bestiaryOf, grow, PEACEFUL, type CritterRole } from '../src/creatures/bestiary';
+import { AGGRESSION, aggressionOf, bestiaryOf, grow, PEACEFUL, type CritterRole } from '../src/creatures/bestiary';
 import { anatomyOf } from '../src/creatures/anatomy';
 import { fleshOf } from '../src/creatures/flesh';
 
@@ -12,9 +12,21 @@ test('a level\'s bestiary is the same every time, and has peaceful ones', () => 
   for (const d of [1, 5, 10, 15, 40]) {
     const a = bestiaryOf(7, d), b = bestiaryOf(7, d);
     assert.deepEqual(a, b);
-    assert.ok(a.filter((s) => s.peaceful).length >= 2, `depth ${d}: two peaceful species at least`);
-    for (const s of a) assert.equal(s.peaceful, PEACEFUL.includes(s.role));
+    assert.ok(a.filter((s) => s.peaceful).length >= 1, `depth ${d}: a peaceful species at least`);
+    for (const s of a) assert.equal(s.peaceful, s.aggression < AGGRESSION.attack);
   }
+});
+
+test('aggression is a dial, not a type: every kind of body can come out passive or aggressive, leaning by its role', () => {
+  const seen = new Map<CritterRole, { calm: number; mean: number }>();
+  for (const role of ROLES) {
+    const s = { calm: 0, mean: 0 };
+    for (let k = 0; k < 200; k++) { const a = aggressionOf(`${role}.${k}`, role); if (a < AGGRESSION.attack) s.calm++; else s.mean++; }
+    seen.set(role, s);
+  }
+  for (const r of ROLES) assert.ok(seen.get(r)!.calm > 0 && seen.get(r)!.mean > 0, `${r}: both ends (${JSON.stringify(seen.get(r))})`);
+  assert.ok(seen.get('grazer')!.calm > seen.get('grazer')!.mean && seen.get('hunter')!.mean > seen.get('hunter')!.calm, 'leaning by role');
+  for (const role of PEACEFUL) assert.ok(seen.get(role)!.calm > 150, `${role} mostly passive`);
 });
 
 test('every role grows into a body that fits the skeleton budget, with sane proportions', () => {
