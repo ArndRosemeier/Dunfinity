@@ -203,12 +203,13 @@ function shell(f: Furnish, H: House, hers: boolean): void {
   const outside = (side: number, fwd: number) => townGround(...local(H.cx, H.cz, H.yaw)(side, fwd)).y < P.top;
   for (const fwd of [-H.hv, H.hv]) {
     if (!outside(0, fwd + Math.sign(fwd))) continue;
+    const o = (Math.sign(fwd) * P.out) / 2; // (out from the wall only: not into a shop)
     if (cut && fwd > 0) {
-      plinth((-H.hu - P.out + cut.a) / 2, fwd, (cut.a + H.hu + P.out) / 2, P.out);
-      plinth((H.hu + P.out + cut.b) / 2, fwd, (H.hu + P.out - cut.b) / 2, P.out);
-    } else plinth(0, fwd, H.hu + P.out, P.out);
+      plinth((-H.hu - P.out + cut.a) / 2, fwd + o, (cut.a + H.hu + P.out) / 2, P.out / 2);
+      plinth((H.hu + P.out + cut.b) / 2, fwd + o, (H.hu + P.out - cut.b) / 2, P.out / 2);
+    } else plinth(0, fwd + o, H.hu + P.out, P.out / 2);
   }
-  for (const side of [-H.hu, H.hu]) if (outside(side + Math.sign(side), 0)) plinth(side, 0, P.out, H.hv + P.out);
+  for (const side of [-H.hu, H.hu]) if (outside(side + Math.sign(side), 0)) plinth(side + (Math.sign(side) * P.out) / 2, 0, P.out / 2, H.hv + P.out);
 
   const es: Vec3 = [Math.cos(H.yaw), 0, -Math.sin(H.yaw)], ef: Vec3 = [Math.sin(H.yaw), 0, Math.cos(H.yaw)], up: Vec3 = [0, 1, 0];
   const c: Vec3 = [H.cx, 0, H.cz], over = 0.35;
