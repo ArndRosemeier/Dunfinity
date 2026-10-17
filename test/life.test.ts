@@ -13,6 +13,7 @@ import { afterYou } from '../src/creatures/animals';
 import { VILLAGE, townGround } from '../src/gen/town';
 import type { Fighter } from '../src/combat/combat';
 import type { Creature } from '../src/creatures/creature';
+import { withBand } from './where';
 
 type Prey = Fighter & { taken: number };
 const someone = (x: number, y: number, z: number): Prey => ({
@@ -74,7 +75,8 @@ test('a pasture is the same every time, on its den\'s dry floor, and its wall an
 });
 
 test('quarry rats feed, keep still at it, then sleep together with one up as sentry, and wake when you come close', () => {
-  const l = new Level(1, 1), r = new Rats(l);
+  // (Seed 3, level 2: on its level 1 only one rat of the nest watched gets to feed in the time.)
+  const l = new Level(...withBand('quarry', 1)), r = new Rats(l);
   const nest = dens<Nest>(r, RAT.cell, l.arrival[0], l.arrival[2]).find((n) => Math.hypot(n.x - l.arrival[0], n.z - l.arrival[2]) > 30 && n.count >= LIFE.sentry)!;
   const me = off(l, nest, 30);
   const w = watch(() => { r.advance(1 / 15, me); me.vx = me.vz = 0; }, () => r.list, (x) => x.nest === nest, 320, 1 / 15);

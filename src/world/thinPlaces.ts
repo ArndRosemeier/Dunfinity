@@ -94,7 +94,7 @@ export function homeGlimpse(seed: number, depth: number): Glimpse {
 }
 
 function lookOf(seed: number, d: number, rng: Rng): Glimpse {
-  const air = airOf(seed, d), rock = bandOf(d).rock, recipe = rockRecipesOf(seed, d)[rng.int(0, 2)];
+  const air = airOf(seed, d), rock = bandOf(seed, d).rock, recipe = rockRecipesOf(seed, d)[rng.int(0, 2)];
   const lin = (c: readonly number[]) => c.map((v) => v ** 2.2) as unknown as [number, number, number];
   // Calmed towards grey: another world's air, not a coloured lamp.
   const calm = (c: readonly number[]) => { const g = (c[0] + c[1] + c[2]) / 3; return c.map((v) => g + (v - g) * 0.45); };

@@ -2,6 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { WISP, Wisps, glowOf, shine, type Wisp } from '../src/creatures/wisps';
+import { bandOf } from '../src/gen/bands';
+import { where, withBand } from './where';
+
+/** A Salt Works level below the first (as level 4 always was), and three of them in three worlds. */
+const SALT = withBand('salt', 0, 2);
+const SALT_WORLDS: [number, number][] = [];
+while (SALT_WORLDS.length < 3) {
+  const after = SALT_WORLDS.at(-1)?.[0] ?? 0;
+  SALT_WORLDS.push(where((s, d) => s > after && bandOf(s, d).id === 'salt', 0, 2));
+}
 
 /** Run wisps round a viewer standing at the arrival for `seconds`, calling `each` every step. */
 function run(level: Level, seconds: number, each: (w: Wisps, t: number) => void = () => {}): Wisps {
@@ -13,18 +23,18 @@ function run(level: Level, seconds: number, each: (w: Wisps, t: number) => void 
 
 test('wisps rise as often as the rock glows: none in the cellar, a few where seams glow faintly, most in the Salt Works', () => {
   assert.equal(glowOf(new Level(1, 0)).strength, 0);
-  assert.equal(glowOf(new Level(1, 4)).strength, 1);
-  const born = (depth: number) => { let n = 0; run(new Level(1, depth), 120, (w) => { n += w.risen.splice(0).length; }); return n; };
-  assert.equal(born(0), 0);
-  const faint = new Level(1, 1);
-  if (glowOf(faint).strength < WISP.faint) assert.equal(born(1), 0);
-  else assert.ok(born(1) * 3 < born(4), 'faint seams bear far fewer than the Salt Works');
+  assert.equal(glowOf(new Level(...SALT)).strength, 1);
+  const born = (l: Level) => { let n = 0; run(l, 120, (w) => { n += w.risen.splice(0).length; }); return n; };
+  assert.equal(born(new Level(1, 0)), 0);
+  const faint = new Level(...withBand('quarry')); // (level 1 in the Quarry, as level 1 always was)
+  if (glowOf(faint).strength < WISP.faint) assert.equal(born(faint), 0);
+  else assert.ok(born(faint) * 3 < born(new Level(...SALT)), 'faint seams bear far fewer than the Salt Works');
 });
 
 test('in the Salt Works a few are born, never more than the most at once, and every one pops with its flash', () => {
-  for (const seed of [1, 2, 3]) {
+  for (const [seed, depth] of SALT_WORLDS) {
     let born = 0, popped = 0, most = 0;
-    run(new Level(seed, 4), 120, (w) => {
+    run(new Level(seed, depth), 120, (w) => {
       born += w.risen.splice(0).length;
       popped += w.popped.splice(0).length;
       most = Math.max(most, w.list.length);
@@ -36,7 +46,7 @@ test('in the Salt Works a few are born, never more than the most at once, and ev
 });
 
 test('a wisp drifts along the rock: out of it, never far from it, smoothly (no jitter)', () => {
-  const level = new Level(1, 4);
+  const level = new Level(...SALT);
   const last = new Map<Wisp, [number, number, number]>();
   let checked = 0;
   run(level, 120, (w) => {

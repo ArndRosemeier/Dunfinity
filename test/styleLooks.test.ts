@@ -6,10 +6,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hash3f } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
+import { withStyles } from './where';
 
 test('the rift is neither: tall, narrow canyons with rock between, no pillars', () => {
-  for (const d of [9, 10]) {
-    const l = new Level(1, d), [ax, , az] = l.arrival;
+  for (const [seed, d] of [0, 1].map((n) => withStyles(['rift', 'karst'], n))) {
+    const l = new Level(seed, d), [ax, , az] = l.arrival;
     const st: Record<string, { n: number; open: number; tall: number }> = {};
     let pillars = 0;
     for (let k = 0; k < 20000; k++) {
@@ -30,8 +31,8 @@ test('the rift is neither: tall, narrow canyons with rock between, no pillars', 
 });
 
 test('the collapse is neither: big open chambers whose floor is heaped with fallen blocks, no pillars', () => {
-  for (const d of [3, 4]) {
-    const l = new Level(1, d), [ax, , az] = l.arrival;
+  for (const [seed, d] of [0, 1].map((n) => withStyles(['collapse', 'karst'], n))) {
+    const l = new Level(seed, d), [ax, , az] = l.arrival;
     const st: Record<string, { n: number; open: number; relief: number; rn: number }> = {};
     let pillars = 0;
     for (let k = 0; k < 20000; k++) {
@@ -55,7 +56,7 @@ test('the collapse is neither: big open chambers whose floor is heaped with fall
 });
 
 test('the catacombs are none of them: low, narrow galleries lined with niches, a few domed chapels', () => {
-  const l = new Level(1, 9), [ax, , az] = l.arrival;
+  const l = new Level(...withStyles(['catacombs', 'karst'])), [ax, , az] = l.arrival;
   const st: Record<string, { n: number; open: number; high: number }> = {};
   let niches = 0, walls = 0;
   for (let k = 0; k < 45000; k++) {
@@ -74,8 +75,8 @@ test('the catacombs are none of them: low, narrow galleries lined with niches, a
 });
 
 test('the dungeon rooms are none of them: built rooms with dead flat floors, joined by narrow corridors', () => {
-  for (const depth of [6, 9]) {
-    const l = new Level(1, depth), [ax, , az] = l.arrival;
+  for (const [seed, depth] of [0, 1].map((n) => withStyles(['dungeon'], n, 0.08))) {
+    const l = new Level(seed, depth), [ax, , az] = l.arrival;
     const st: Record<string, { n: number; open: number; flat: number }> = {};
     for (let k = 0; k < 40000; k++) {
       const x = ax + (hash3f(29, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(29, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
@@ -97,8 +98,8 @@ test('the dungeon rooms are none of them: built rooms with dead flat floors, joi
 });
 
 test('the root hollows are none of them: chambers crossed by giant roots from roof to floor', () => {
-  for (const depth of [6, 7]) {
-    const l = new Level(1, depth), [ax, , az] = l.arrival;
+  for (const [seed, depth] of [0, 1].map((n) => withStyles(['roots', 'karst'], n))) {
+    const l = new Level(seed, depth), [ax, , az] = l.arrival;
     const st: Record<string, { inner: number; crossed: number }> = {};
     for (let k = 0; k < 40000; k++) {
       const x = ax + (hash3f(31, k, 9, 0) - 0.5) * 3000, z = az + (hash3f(31, k, 9, 1) - 0.5) * 3000, c = l.columnAt(x, z);
@@ -115,7 +116,7 @@ test('the root hollows are none of them: chambers crossed by giant roots from ro
 });
 
 test('the fungal grotto is none of them: giant mushrooms whose broad caps make a second storey', () => {
-  const l = new Level(1, 9), [ax, , az] = l.arrival;
+  const l = new Level(...withStyles(['fungal'])), [ax, , az] = l.arrival;
   // The top of the first rock under air between y0 and y1 (NaN: none).
   const top = (x: number, z: number, y0: number, y1: number) => {
     for (let y = y0; y < y1; y += 0.25) if (l.sdf(x, y, z) < 0 && l.sdf(x, y + 0.25, z) >= 0) return y;

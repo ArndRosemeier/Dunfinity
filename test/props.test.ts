@@ -3,16 +3,22 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { quarryProps, PROP_TILE } from '../src/gen/quarryProps';
 import { PropBuilder } from '../src/gen/propMesh';
+import { bandOf } from '../src/gen/bands';
+import { lawsOf } from '../src/gen/laws';
+import { where, withBand } from './where';
 
-const level = new Level(1, 1);
-// A 6 × 6 tile patch around the seed-1 spawn (an intact grand hall with tracks, carts and a shack).
+/** A level cut as `id`'s workings where no law brings water up the rock or older drums. */
+const plain = (id: 'quarry' | 'salt' | 'cistern' | 'threshold') => where((s, d) => bandOf(s, d).id === id && !lawsOf(s, d).some((l) => l === 'uphill' || l === 'older'));
+
+const level = new Level(...withBand('quarry'));
+// A 6 × 6 tile patch around the spawn of the first Quarry level.
 const [sx, , sz] = level.spawn();
 const tiles = [] as ReturnType<typeof quarryProps>[];
 for (let tz = -3; tz < 3; tz++) for (let tx = -3; tx < 3; tx++) tiles.push(quarryProps(level, Math.floor(sx / PROP_TILE) + tx, Math.floor(sz / PROP_TILE) + tz));
 const total = (k: keyof (typeof tiles)[0]['counts']) => tiles.reduce((s, t) => s + t.counts[k], 0);
 
 test('props are deterministic per seed', () => {
-  const a = quarryProps(new Level(1, 1), -9, 1), b = quarryProps(new Level(1, 1), -9, 1);
+  const a = quarryProps(new Level(...withBand('quarry')), -9, 1), b = quarryProps(new Level(...withBand('quarry')), -9, 1);
   assert.deepEqual(a.counts, b.counts);
   assert.deepEqual(a.solid?.positions, b.solid?.positions);
   assert.deepEqual(a.lamps, b.lamps);
@@ -72,9 +78,14 @@ test('prop boxes wind outwards', () => {
 });
 
 test('standing water lies on the water table, and props stay dry', () => {
-  // A patch that holds a flooded low working (found near the seed-1 spawn).
-  const wet = [] as ReturnType<typeof quarryProps>[];
-  for (let tz = -2; tz < 1; tz++) for (let tx = -12; tx < -9; tx++) wet.push(quarryProps(level, tx, tz));
+  // A 3 × 3 tile patch that holds a flooded low working, the first one found going out from the spawn.
+  let wet = [] as ReturnType<typeof quarryProps>[];
+  const [wx, wz] = [Math.floor(sx / PROP_TILE), Math.floor(sz / PROP_TILE)];
+  for (let r = 0; r < 12 && wet.reduce((s, t) => s + t.counts.wet, 0) <= 50; r++) for (let oz = -r; oz <= r; oz += 3) for (let ox = -r; ox <= r; ox += 3) {
+    if (wet.reduce((s, t) => s + t.counts.wet, 0) > 50) break;
+    wet = [];
+    for (let tz = 0; tz < 3; tz++) for (let tx = 0; tx < 3; tx++) wet.push(quarryProps(level, wx + ox + tx, wz + oz + tz));
+  }
   assert.ok(wet.reduce((s, t) => s + t.counts.wet, 0) > 50, 'expected a flooded working');
   for (const t of [...wet, ...tiles]) {
     if (t.water) {
@@ -101,12 +112,14 @@ test('loose stones lie on the floor, out of the water', () => {
 });
 
 test('the Salt Works has salt statues, chapels and electric lamps hanging from the roof; the quarry has none', () => {
-  const salt = new Level(1, 3);
-  const [ax, , az] = salt.arrival;
+  // (Round the arrivals of five Salt Works levels: how much lies near one depends on its mix.)
   const sum = { statues: 0, watchers: 0, chapels: 0, hanging: 0 };
-  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
-    const c = quarryProps(salt, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts;
-    sum.statues += c.statues; sum.watchers += c.watchers; sum.chapels += c.chapels; sum.hanging += c.hanging;
+  for (const n of [0, 1, 2, 3, 4]) {
+    const salt = new Level(...withBand('salt', n)), [ax, , az] = salt.arrival;
+    for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+      const c = quarryProps(salt, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts;
+      sum.statues += c.statues; sum.watchers += c.watchers; sum.chapels += c.chapels; sum.hanging += c.hanging;
+    }
   }
   assert.ok(sum.statues > sum.watchers && sum.watchers > 0 && sum.chapels > 0 && sum.hanging > 0, JSON.stringify(sum));
   assert.equal(total('statues') + total('chapels') + total('hanging'), 0);
@@ -121,7 +134,7 @@ test('the Cisterns have pipes, pumps and bunker furniture, and no salt statues; 
     }
     return s;
   };
-  const cis = sum(new Level(1, 6)), salt = sum(new Level(1, 3));
+  const cis = sum(new Level(...plain('cistern'))), salt = sum(new Level(...plain('salt')));
   assert.ok(cis.machines > 5, JSON.stringify(cis));
   assert.equal(cis.statues + cis.chapels, 0);
   assert.equal(salt.machines, 0);
@@ -134,9 +147,9 @@ test('the Threshold has ruins against its cavern walls and no miners\' leavings 
     return s;
   };
   // (Ruins stand in the excavation's caverns: how many near you depends on how much of the mix it is.)
-  const deep = sum(new Level(1, 9), 5).ruins + sum(new Level(2, 10), 5).ruins + sum(new Level(3, 9), 5).ruins;
+  const deep = [0, 1, 2].reduce((a, n) => a + sum(new Level(...withBand('threshold', n)), 5).ruins, 0);
   assert.ok(deep >= 2, `${deep} ruins`);
-  assert.equal(sum(new Level(1, 3), 2).ruins + sum(new Level(1, 6), 2).ruins, 0);
+  assert.equal(sum(new Level(...plain('salt')), 2).ruins + sum(new Level(...plain('cistern')), 2).ruins, 0);
 });
 
 test('a tube runs between its ends, round', () => {
@@ -166,14 +179,14 @@ test('in the Cisterns water runs up the rock from the pools, and up only; nowher
     }
     return { up, rises, falls };
   };
-  const cis = run(new Level(1, 7), 3);
+  const cis = run(new Level(...plain('cistern')), 3);
   assert.ok(cis.up >= 3, JSON.stringify(cis));
   assert.ok(cis.rises > cis.falls * 10, JSON.stringify(cis));
-  assert.equal(run(new Level(1, 3), 1).up + run(new Level(1, 9), 1).up, 0);
+  assert.equal(run(new Level(...plain('salt')), 1).up + run(new Level(...plain('threshold')), 1).up, 0);
 });
 
 test('some Cistern pillars stand on an older drum: round and wider below, the square pillar on top', () => {
-  const l = new Level(1, 7), f = l.field;
+  const l = new Level(...plain('cistern')), f = l.field;
   const [ax, , az] = l.arrival;
   let older = 0;
   for (let z = az - 150; z < az + 150 && older < 3; z += 1.5) for (let x = ax - 150; x < ax + 150 && older < 3; x += 1.5) {
@@ -186,7 +199,7 @@ test('some Cistern pillars stand on an older drum: round and wider below, the sq
     older++;
   }
   assert.ok(older >= 3, `${older} older drums`);
-  assert.equal(new Level(1, 3).band.older, 0);
+  assert.equal(new Level(...plain('salt')).band.older, 0);
 });
 
 test('the Quarry has chalk numbers on its pillars; the Salt Works has none', () => {
@@ -196,6 +209,6 @@ test('the Quarry has chalk numbers on its pillars; the Salt Works has none', () 
     for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) c += quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).counts.chalk;
     return c;
   };
-  assert.ok(count(new Level(1, 1), 1) >= 4);
-  assert.equal(count(new Level(1, 3), 1), 0);
+  assert.ok([0, 1, 2].reduce((a, n) => a + count(new Level(...withBand('quarry', n)), 1), 0) >= 12);
+  assert.equal(count(new Level(...plain('salt')), 1), 0);
 });

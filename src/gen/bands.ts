@@ -1,12 +1,15 @@
 import { deriveSeed, hash2i, hashToFloat } from '@futuremagic/core';
 import type { Mix } from './regions';
-import { genome, stratumOf, type Stratum } from './genome';
+import type { StyleId } from './style';
+import { genome, stratumOf, workingsOf, type Workings } from './genome';
 import type { RockType } from './rockTypes';
 
 /**
- * The bands of levels 1–10 (docs/design/town-and-first-strata.md §4): which kind of place a depth is,
- * the styles it is made of and how much of each (docs/design/level-styles.md), and the numbers that
- * make each style (the excavation field, src/gen/quarry.ts) look like that place. A band is data.
+ * The bands (docs/design/town-and-first-strata.md §4): the kinds of workings a stratum can be cut as
+ * (the Quarry, the Salt Works, the Cisterns, the Threshold), and the numbers that make the
+ * excavation field (src/gen/quarry.ts) and what lives and stands in it look like that place. Which
+ * band a level has is its stratum's draw (`workingsOf`, src/gen/genome.ts), on any level: nothing
+ * is kept for the deep (Arnd, 2026-10-17). A band is data.
  */
 export interface Band {
   readonly id: 'cellar' | 'quarry' | 'salt' | 'cistern' | 'threshold';
@@ -174,27 +177,44 @@ export function dryAbove(band: Band): number {
 const MIX_VARY = 0.5;
 
 /**
- * A level's mix of styles: its band's, each weight scaled by up to 2^MIX_VARY either way, drawn
- * from (seed, depth), so no two levels of a band are alike: one Cisterns level mostly caves,
- * the next mostly workings. The first style stays first (the home ground round the arrival).
+ * A level's mix of styles: its stratum's genome, each weight scaled by up to 2^MIX_VARY either way, drawn
+ * from (seed, depth), so no two levels of a stratum are alike. The first style stays first (the home
+ * ground round the arrival). Level 1 stays easy to read, near the town: the workings round the ladder
+ * and one other style, the stratum's strongest.
  */
 export function mixOf(seed: number, depth: number): Mix {
-  const stratum = stratumOf(depth), styles = stratum ? genome(seed, stratum) : bandOf(depth).styles;
-  if (styles.length === 1) return styles;
+  const stratum = stratumOf(depth);
+  if (!stratum) return CELLAR_BAND.styles;
+  let styles = genome(seed, stratum);
+  if (depth === 1) {
+    const [home, ...rest] = styles, wild = rest.reduce((a, b) => (b[1] > a[1] ? b : a));
+    styles = [[home[0], 3 * wild[1]], wild];
+  }
   const s = deriveSeed(seed, 'mix', depth);
   return styles.map(([id, w], i) => [id, w * 2 ** (MIX_VARY * (2 * hashToFloat(hash2i(s, i, 0)) - 1))] as const);
 }
 
-/** The bands below level 10, one per stratum (src/gen/genome.ts): the Threshold's workings under the stratum's name; its styles are the world's genome (`mixOf`). */
-const DEEPER = new Map<Stratum, Band>();
+const BANDS: Readonly<Record<Workings, Band>> = { quarry: QUARRY, salt: SALT, cistern: CISTERN, threshold: THRESHOLD };
 
-/** The band a depth belongs to: the cellar, the four of levels 1–10, then one per stratum. */
-export function bandOf(depth: number): Band {
+/** What a stratum is called after the style it is most made of; the workings' own name where that is one of the plain caves (karst, collapse, dungeon rooms). */
+const NAMES: Readonly<Partial<Record<StyleId, string>>> = {
+  catacombs: 'The Ossuaries', bones: 'The Bone Fields', dwarven: 'The Old Halls', elven: 'The Old Halls', goblin: 'The Warrens',
+  rift: 'The Rifts', flooded: 'The Drowned Works', roots: 'The Root Hollows', fungal: 'The Grottoes', geode: 'The Geodes',
+  lava: 'The Burning Deep', basalt: 'The Columns', organic: 'The Living Rock', glyph: 'The Written Halls', floating: 'The Hanging Stones',
+};
+
+const named = new Map<string, Band>();
+
+/** The band of level `depth` in world `seed`: grandma's cellar at 0, else its stratum's workings, named for what the stratum is most made of. One object per stratum. */
+export function bandOf(seed: number, depth: number): Band {
   const stratum = stratumOf(depth);
-  if (stratum) {
-    let b = DEEPER.get(stratum);
-    if (!b) DEEPER.set(stratum, (b = { ...THRESHOLD, name: stratum.name }));
-    return b;
+  if (!stratum) return CELLAR_BAND;
+  const key = `${seed}:${stratum.from}`;
+  let b = named.get(key);
+  if (!b) {
+    const band = BANDS[workingsOf(seed, stratum)], [, ...drawn] = genome(seed, stratum);
+    const lead = drawn.reduce((a, c) => (c[1] > a[1] ? c : a))[0];
+    named.set(key, (b = { ...band, name: NAMES[lead] ?? band.name }));
   }
-  return depth <= 0 ? CELLAR_BAND : depth >= 9 ? THRESHOLD : depth >= 6 ? CISTERN : depth >= 3 ? SALT : QUARRY;
+  return b;
 }

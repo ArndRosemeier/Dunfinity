@@ -51,7 +51,7 @@ function shows(band: Band, law: LawId): boolean {
 /** The laws that hold on level `depth` of world `seed` (the same on all levels of a stratum). */
 export function lawsOf(seed: number, depth: number): readonly LawId[] {
   if (depth <= 0) return [];
-  const at = strangeFrom(depth), k = strangeness(seed, at), band = bandOf(at);
+  const at = strangeFrom(depth), k = strangeness(seed, at), band = bandOf(seed, at);
   const rng = new Rng(deriveSeed(seed, 'laws', at));
   // Below strangeness 1 (the first levels) the mildest laws are within reach: a level's one oddity.
   const left = LAWS.filter((l) => l.from <= Math.max(1, k.s) && !shows(band, l.id)), out: LawId[] = [];

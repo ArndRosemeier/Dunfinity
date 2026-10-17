@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hash3f } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
+import { withBand, withStyles } from './where';
 import { NAMED_STYLES } from '../src/gen/styles';
 import { GLYPH, GLYPH_LINES, glyphLine } from '../src/gen/glyph';
 import { segDist } from '../src/gen/shapes';
@@ -164,9 +165,10 @@ test('the elven vaults are none of them: tall naves that narrow to a pointed vau
 });
 
 test('the goblin warrens are none of them: low burrows with more burrows over them', () => {
-  // (The Old Halls draw them: a level all of them, against the Old Halls', Before People's and the Threshold's mixes.)
+  // (A level all of them, against the mixes of halls, of grottoes and of a Threshold, as the deep drew them before nothing was kept for it.
+  // Root hollows cut through the Salt Works' tall workings stack a little more: see changes/ungated-depth.md.)
   const st: Record<string, { n: number; stacked: number }> = {};
-  for (const l of [new Level(1, 25, 'goblin'), new Level(1, 25), new Level(1, 45), new Level(1, 9)]) {
+  for (const l of [new Level(1, 25, 'goblin'), new Level(...withStyles(['dwarven'], 0, 0.12, 'threshold')), new Level(...withStyles(['fungal'], 0, 0.12, 'threshold')), new Level(...withBand('threshold'))]) {
     const [ax, , az] = l.arrival;
     for (let k = 0; k < 3000; k++) {
       const x = ax + (hash3f(67, k, 25, 0) - 0.5) * 3000, z = az + (hash3f(67, k, 25, 1) - 0.5) * 3000, c = l.columnAt(x, z);
@@ -188,7 +190,7 @@ test('the goblin warrens are none of them: low burrows with more burrows over th
   const stacked = (id: string) => st[id].stacked / st[id].n;
   assert.ok(st.goblin.n > 500, `${st.goblin.n} open goblin columns`);
   assert.ok(stacked('goblin') > 0.08, `burrows over burrows over ${(stacked('goblin') * 100).toFixed(1)}% of the goblin warrens`);
-  for (const id of Object.keys(st)) if (id !== 'goblin' && st[id].n > 100) assert.ok(stacked(id) < stacked('goblin') / 4, `${id}: stacked over ${(stacked(id) * 100).toFixed(1)}%`);
+  for (const id of Object.keys(st)) if (id !== 'goblin' && st[id].n > 100) assert.ok(stacked(id) < stacked('goblin') / 4, `${id}: stacked over ${(stacked(id) * 100).toFixed(1)}%, the warrens ${(stacked('goblin') * 100).toFixed(1)}%`);
 });
 
 test('the bone hollows are none of them: arched chambers ribbed every few metres, rib after rib', () => {

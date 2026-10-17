@@ -7,13 +7,14 @@ import { Rats } from '../src/creatures/rats';
 import { Cooked } from '../src/loot/recipes';
 import { byYou, type Fighter } from '../src/combat/combat';
 import { GRUDGE } from '../src/creatures/creature';
+import { withBand } from './where';
 
 const DT = 1 / 60;
 const level = new Level(1, 1);
 const [ax, , az] = level.arrival;
 
-function dummy(x: number, z: number, health = 500): Fighter & { health: number; cause: string; facing: number; grudge: Fighter | null } {
-  return { x, y: level.groundAt(x, z), z, vx: 0, vz: 0, radius: 0.35, height: 1.7, health, cause: '', facing: 0, grudge: null, get dead() { return this.health <= 0; }, hurt(a: number, c: string) { this.health -= a; this.cause = c; } };
+function dummy(x: number, z: number, health = 500, l = level): Fighter & { health: number; cause: string; facing: number; grudge: Fighter | null } {
+  return { x, y: l.groundAt(x, z), z, vx: 0, vz: 0, radius: 0.35, height: 1.7, health, cause: '', facing: 0, grudge: null, get dead() { return this.health <= 0; }, hurt(a: number, c: string) { this.health -= a; this.cause = c; } };
 }
 
 /** Somewhere open round the arrival: `n` metres off along +x (or the arrival). */
@@ -54,9 +55,10 @@ test('it goes for what comes at you and bites it; the bitten turns on it', () =>
 });
 
 test('a creature with a grudge goes for the pet, not for you', () => {
-  const rats = new Rats(level), nest = rats.nearestDen(ax, az)!;
-  const you = dummy(nest.x + 40, nest.z), pet = dummy(nest.x, nest.z + 5);
-  rats.advance(DT, dummy(nest.x, nest.z)); // wake the nest
+  // On a Quarry level whose nearest nest wakes first and whose other rats leave you be 40 m off it (seed 3, level 3).
+  const q = new Level(...withBand('quarry', 2)), rats = new Rats(q), nest = rats.nearestDen(q.arrival[0], q.arrival[2])!;
+  const you = dummy(nest.x + 40, nest.z, 500, q), pet = dummy(nest.x, nest.z + 5, 500, q);
+  rats.advance(DT, dummy(nest.x, nest.z, 500, q)); // wake the nest
   const r = rats.list.find((x) => x.nest === nest)!;
   assert.ok(r, 'a rat');
   r.grudge = pet;
