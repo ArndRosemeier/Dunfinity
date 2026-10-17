@@ -13,6 +13,8 @@ import { MOOD_TRACKS } from './tracks';
 
 /** The pieces are mastered loud (−16 LUFS): this sits them under the game's sounds. */
 const MUSIC_LEVEL = 0.5;
+/** The title screen's piece (public/music/tracks.json; silent until it is there). */
+export const TITLE_TRACK = 'title';
 
 export class Music {
   readonly director: MoodDirector;
@@ -37,9 +39,7 @@ export class Music {
   }
 
   update(dt: number, s: MusicSignals): void {
-    const out = this.sound.musicOut();
-    if (!out) return;
-    if (!this.player.attached) this.player.attach(out.ctx, out.out);
+    if (!this.plugged()) return;
     dt = Math.min(dt, 0.25);
     this.last = this.director.update(dt, s);
     const on = this.sound.settings.music && this.sound.audible;
@@ -50,6 +50,24 @@ export class Music {
       this.director.endEpisode(this.pick.mood);
       this.pick = null;
     }
+  }
+
+  /**
+   * The title screen's melody (`TITLE_TRACK`, src/game/title.ts), at `level` (0…1 of its own level),
+   * the director left out. When play begins, `update` takes over and fades it out.
+   */
+  theme(dt: number, level: number): void {
+    if (!this.plugged()) return;
+    const on = this.sound.settings.music && this.sound.audible;
+    this.player.update(Math.min(dt, 0.25), { id: on ? TITLE_TRACK : null, fadeIn: 3, fadeOut: 2, level }, { duck: 1 });
+  }
+
+  /** The player is on the music's output (false until audio has started). */
+  private plugged(): boolean {
+    const out = this.sound.musicOut();
+    if (!out) return false;
+    if (!this.player.attached) this.player.attach(out.ctx, out.out);
+    return true;
   }
 
   private want(): TrackWant {

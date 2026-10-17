@@ -27,7 +27,7 @@ export interface ReportShot {
 /** The programme's name and the evening it went out. */
 export const PROGRAMME = { name: 'THE UNEXPLAINED', date: 'Saturday 10 September 1966, 23.15' };
 
-/** The report, in order; it loops (`onAir`), with snow between airings. */
+/** The report, in order; it airs once (`onAir`), then the set shows snow. */
 export const REPORT: readonly ReportShot[] = [
   { still: null, seconds: 6, caption: '' },
   {
@@ -81,16 +81,16 @@ export const REPORT: readonly ReportShot[] = [
   },
 ];
 
-/** How fast the words go by (characters a second; each shot stays at least that long), and the snow between one airing and the next (seconds). */
-export const PACE = { read: 14, linger: 1.5, snow: 3, line: 90 };
+/** How fast the words go by (characters a second; each shot stays at least that long), and the longest line of words (characters). */
+export const PACE = { read: 14, linger: 1.5, line: 90 };
 
 /** How long a shot is on screen: its own seconds, or long enough to read its words. */
 export function shotSeconds(s: ReportShot): number {
   return Math.max(s.seconds, s.caption.length / PACE.read + PACE.linger);
 }
 
-/** One airing, snow included (seconds); the report loops. */
-export const AIRING = REPORT.reduce((n, s) => n + shotSeconds(s), 0) + PACE.snow;
+/** The report's length (seconds): after it, snow. */
+export const AIRING = REPORT.reduce((n, s) => n + shotSeconds(s), 0);
 
 /** Where shot `i` begins in the airing (seconds). */
 export function shotStart(i: number): number {
@@ -116,9 +116,9 @@ export interface OnAir {
   readonly line: string;
 }
 
-/** What is on the air at `time` (seconds; it loops). Each line of a shot's words stays for its share of the shot, by length. */
+/** What is on the air at `time` (seconds; from `AIRING` on, snow for good). Each line of a shot's words stays for its share of the shot, by length. */
 export function onAir(time: number): OnAir {
-  let u = ((time % AIRING) + AIRING) % AIRING;
+  let u = Math.max(0, time);
   for (let i = 0; i < REPORT.length; i++) {
     const s = REPORT[i], len = shotSeconds(s);
     if (u < len) {

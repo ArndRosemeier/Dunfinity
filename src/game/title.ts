@@ -15,7 +15,9 @@ import type { FamilyEntry } from '../persist/save';
 /** Seconds: the set warming up before the name and menu come; from the choice to black. */
 const TIMING = { reveal: 1.2, leave: 0.8 };
 /** The set's sound: the hiss (and how much louder a rough signal makes it), a slip's crackle, and how soon after it comes on its clunk still plays (s). */
-const SOUND = { hiss: 0.45, rough: 0.5, crackle: 0.8, clunk: 2 };
+const SOUND = { hiss: 0.45, rough: 0.5, crackle: 0.8, clunk: 2, snow: 0.6 };
+/** The title's melody (src/audio/music/Music.ts theme): its level under the report, once the report is over, and how fast it swells (its share a second). */
+const TUNE = { under: 0.25, after: 1, swell: 0.12 };
 /** Seconds: a voice is not begun this close to its end. */
 const VOICE = { tail: 0.8 };
 
@@ -40,6 +42,8 @@ export interface TitleCast {
   readonly pinned: number | null;
   /** The game's sound, made before the set comes on (it starts on the first touch or key: then the set hisses and the presenter speaks). */
   readonly sound: SoundEngine;
+  /** Once a frame: the title's melody, at `level` (0…1; it fades to it). */
+  tune(dt: number, level: number): void;
   /** The game, once set up: the set plays while it loads, and a choice made before then waits for it. */
   readonly game: Promise<TitleGame>;
   /** The set is on (the loading screen can go). */
@@ -54,7 +58,7 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
   const tv = new TvSet(screen.back, cast.seed, from, cast.pinned);
   await tv.loaded.catch(() => {}); // a missing picture leaves its shot dark, nothing worse
   let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null, spoken = -1;
-  let game: TitleGame | null = null, gameAt = 0;
+  let game: TitleGame | null = null, gameAt = 0, swell = 0, last = 0;
   const now = (): number => performance.now() / 1000;
   const start = now();
   tv.on(start);
@@ -63,7 +67,8 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
   cast.game.then((g) => { game = g; gameAt = now(); g.ready.then(() => screen.ready()); });
   return new Promise((resolve) => {
     const beat = (): void => {
-      const t = now();
+      const t = now(), dt = last ? t - last : 0;
+      last = t;
       if (!revealed && t - start > TIMING.reveal) { revealed = true; screen.reveal(); }
       // (A choice made while the game still sets up waits for it, the set playing on.)
       const leaving = chosen === null || !game ? 0 : Math.min(1, (t - Math.max(chosenAt, gameAt)) / TIMING.leave);
@@ -74,7 +79,11 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
       const sound = cast.sound;
       // The sound, once the browser lets it start: the clunk if the set has only just come on, its hiss, a crackle when the picture slips.
       if (!hiss && chosen === null && sound.ctx && (hiss = sound.loop('tv_static')) && t - start < SOUND.clunk) sound.play('tv_on', null);
-      hiss?.set(0, 0, -1, (SOUND.hiss + SOUND.rough * tv.trouble) * (1 - leaving));
+      // The report airs once; then the set shows snow and hisses on, and the melody comes up from under it.
+      const over = !!tv.playing && tv.playing.shot < 0;
+      hiss?.set(0, 0, -1, ((over ? SOUND.snow : SOUND.hiss) + SOUND.rough * tv.trouble) * (1 - leaving));
+      if (over) swell = Math.min(1, swell + dt * TUNE.swell);
+      cast.tune(dt, (TUNE.under + (TUNE.after - TUNE.under) * swell) * (1 - leaving));
       if (slipped) sound.play('tv_glitch', null, SOUND.crackle);
       // The presenter reads each shot's words. His clip begins as far in as the shot is (a set switched on
       // late, a sound started late, a slow frame), so he is never out of step; he is played at his own pitch.

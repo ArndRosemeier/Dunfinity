@@ -183,7 +183,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let joinTitle: (g: TitleGame) => void = () => {};
   const titling = titled ? playTitle(host, {
     seed: params.seed, canContinue: !!saved, families: keep ? families() : [], pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
-    sound: sounds.engine, game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
+    sound: sounds.engine, tune: (dt, level) => sounds.music.theme(dt, level), game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
     shown: () => { if (loading.open) loading.hide(); },
   }) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
