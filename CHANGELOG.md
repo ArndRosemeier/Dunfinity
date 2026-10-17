@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.246 — Sounds for the sun orbs
+
+- New sounds for the big sun orbs: `sun_rise` (fire catching and swelling as a sun pulls out of the rock, two takes), `sun_drip` (a burning drop splashing on stone with a hiss, three takes) and `sun_hum` (a low, steady flame roar, looped, to place near a sun).
+
 ## v0.245 — The title's hiss fades as the melody comes up
 
 - Once the TV report is over, the set's hiss and its crackles fade to a whisper while the title melody swells to the foreground (it used to get louder).
