@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.237 — Every kind of creature in every workings
+
+- The Quarry, the Salt Works, the Cisterns and the Threshold now each have every kind of creature: feral dogs, brine eels, scavengers, the Salt-Touched and cave crickets can turn up in workings that used to have none, only fewer of them there.
+
 ## v0.236 — Mobs on every level
 
 - Slimes, scavengers and brine eels can turn up on any level now, not only from levels 2, 4 and 5. Above their usual depth they are rare and few: a lone eel, a single scavenger at a fire, a small colony of smaller slimes. Eels met early bite less.
