@@ -554,12 +554,22 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     look(there);
     land(stay.at[0], stay.at[1], stay.at[2], stay.facing);
     sounds.play('thin_place', null, 0.9, 0.8);
-    say('You step through. The air is another world\'s, and it will not hold you long.', 4);
+    // A gift waits a few steps ahead: a crystal of that world, worth more the deeper it lies.
+    gift = null;
+    if (stay.gift) {
+      const [gx, , gz] = stay.gift, [lo, hi] = FINDS.crystal.value, r = new Rng(deriveSeed(params.seed, 'pocket gift', stay.home, p.glimpse.depth));
+      const value = Math.round(r.range(lo, hi) * (1 + p.glimpse.depth / 60));
+      gift = finds.drop({ id: -1 - p.glimpse.depth, kind: 'crystal', x: gx, y: stay.gift[1], z: gz, yaw: r.range(0, Math.PI * 2), value }, gx, gz);
+    }
+    say(gift ? 'You step through. Something glows a little way ahead: take it before this world lets go of you.' : 'You step through. The air is another world\'s, and it will not hold you long.', 5);
   };
+  /** The gift lying in the pocket one is in (null: none, or taken), and when its trail of salt last rose. */
+  let gift: Find | null = null, giftMote = 0;
   /** The pocket lets go (or you walk back through): home, where you stepped in. */
   const leavePocket = (): void => {
     const k = pocket!;
     pocket = null;
+    gift = null;
     ({ level, fauna, wisps, suns, finds, doors, campfire } = k);
     riding = null;
     saltLine.circle = k.circle;
@@ -1852,6 +1862,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!arriving && !body.dead && (k.advance(dt) || k.walksBack(body.x, body.y, body.z))) leavePocket();
       else {
         thinView.draw(k.way, k.open);
+        // A thread of rising salt from the nobody to the gift, while it lies there.
+        if (gift && !finds.lying(gift)) gift = null;
+        if (gift && now >= giftMote) {
+          giftMote = now + 0.25;
+          const t = (now * 0.35) % 1, gx = gift.x, gz = gift.z;
+          drift.burst(body.x + (gx - body.x) * t, body.y + (gift.y - body.y) * t + 0.1, body.z + (gz - body.z) * t, 1, now);
+        }
         rift.style.opacity = String(shake * (0.55 + 0.35 * Math.sin(k.age * (4 + 9 * shake))));
         const j = shake * 3;
         view.renderer.domElement.style.transform = shake ? `translate(${(Math.sin(k.age * 31) * j).toFixed(1)}px,${(Math.sin(k.age * 23 + 1) * j).toFixed(1)}px)` : '';

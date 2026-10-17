@@ -43,6 +43,9 @@ export const THIN = {
   /** Seconds a pocket holds you; it grows unstable from `shaky` on. */
   stay: 40,
   shaky: 14,
+  /** The gift waiting in a pocket lies this far from where one comes out (m, min and max), within this of where one faces (radians). */
+  gift: [6, 11] as const,
+  giftTurn: 0.6,
   /** The way back hangs this far from where one comes out (m, min and max). */
   back: [3, 6] as const,
   /** One comes out within this of the other world's arrival (m), where there is the most air round one's head (enough at `headroom` m). */
@@ -123,6 +126,19 @@ function roomFor(l: Level, rng: Rng, x: number, y: number, z: number, ux: number
   return null;
 }
 
+/** Open, dry floor `THIN.gift` m from feet (x, y, z) looking along `facing`, in sight of the eyes, or null. */
+function giftSpot(l: Level, rng: Rng, x: number, y: number, z: number, facing: number): [number, number, number] | null {
+  for (let k = 0; k < 16; k++) {
+    const d = rng.range(THIN.gift[0], THIN.gift[1]), a = facing + rng.range(-THIN.giftTurn, THIN.giftTurn);
+    const px = x - Math.sin(a) * d, pz = z - Math.cos(a) * d, g = l.groundAt(px, pz, y + 2);
+    if (Math.abs(g - l.floorAt(px, pz)) > 0.5 || Math.abs(g - y) > 3 || !l.dry(px, pz, 0.3) || l.sdf(px, g + 0.5, pz) < 0.3) continue;
+    const ex = px - x, ey = g + 0.2 - (y + 1.6), ez = pz - z, e = Math.hypot(ex, ey, ez);
+    if (l.trace(x, y + 1.6, z, ex / e, ey / e, ez / e, e) < e - 0.3) continue;
+    return [px, g, pz];
+  }
+  return null;
+}
+
 /** Feet on open, dry floor near level l's arrival: the most air round one's head, searched ring by ring outwards until there is enough. */
 function openFloor(l: Level, rng: Rng): [number, number, number] {
   const [ax, , az] = l.arrival, turn = rng.range(0, Math.PI * 2);
@@ -146,13 +162,15 @@ export function steppedIn(p: Pick<ThinPlace, 'x' | 'y' | 'z' | 'yaw' | 'age'>, x
 /**
  * A stay in another world, stepped into through thin place `through` on the level at `home`: where
  * one stands at first there (`at`: open floor near its arrival, looking along `facing`), the way back
- * open behind (null where there was no room for it), and how unstable it has grown.
+ * open behind (null where there was no room for it), how unstable it has grown, and the gift waiting
+ * a few steps ahead (`gift`: a crystal of that world on open floor in sight, null where there was none).
  */
 export class Pocket {
   age = 0;
   readonly at: readonly [number, number, number];
   readonly way: ThinPlace | null;
   readonly facing: number;
+  readonly gift: readonly [number, number, number] | null;
 
   constructor(readonly home: number, readonly through: ThinPlace, readonly there: Level) {
     const rng = new Rng(deriveSeed(there.seed, 'pocket', home, through.glimpse.depth));
@@ -161,6 +179,7 @@ export class Pocket {
     this.way = room ? { ...room, age: THIN.open, glimpse: homeGlimpse(there.seed, home) } : null;
     // Facing away from the way back: into the world.
     this.facing = room ? Math.atan2(room.x - x, room.z - z) : a;
+    this.gift = giftSpot(there, rng, x, y, z, this.facing);
   }
 
   /** 0 steady, rising to 1 as the pocket lets go. */
