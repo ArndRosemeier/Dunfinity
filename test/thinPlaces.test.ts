@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { THIN, THIN_LIFE, ThinPlaces, glimpseOf, openness } from '../src/world/thinPlaces';
+import { THIN, THIN_LIFE, Pocket, ThinPlaces, glimpseOf, openness, steppedIn, type ThinPlace } from '../src/world/thinPlaces';
 
 test('a thin place opens now and then ahead of the viewer, in open air with nothing between, and closes again', () => {
   const level = new Level(1, 3), [x, y, z] = level.arrival, thin = new ThinPlaces(level);
@@ -35,4 +35,42 @@ test('opening and closing are smooth, and the glimpsed worlds differ', () => {
   const a = glimpseOf(1, 3, 0), b = glimpseOf(1, 3, 1);
   assert.notDeepEqual(a, b);
   assert.deepEqual(a, glimpseOf(1, 3, 0));
+});
+
+test('walking into an open thin place steps through; a pocket holds one a while, grows unstable and lets go', () => {
+  const level = new Level(1, 3), [x, y, z] = level.arrival, thin = new ThinPlaces(level);
+  let p: ThinPlace | null = null;
+  for (let t = 0; t < 1500 && !p; t += 0.25) { thin.advance(0.25, x, y + 1.6, z, 0, -1); p = thin.current; }
+  assert.ok(p, 'one opened');
+  p.age = THIN.open + 1;
+  const feet = p.y - THIN.over;
+  assert.ok(steppedIn(p, p.x, feet, p.z), 'through its middle');
+  assert.ok(!steppedIn(p, p.x + 5, feet, p.z), 'not beside it');
+  assert.ok(!steppedIn(p, p.x, feet + 4, p.z), 'not over it');
+  assert.ok(!steppedIn({ ...p, age: 0.1 }, p.x, feet, p.z), 'not while it is still opening');
+
+  let held = 0;
+  for (let k = 0; k < 6; k++) {
+    const g = glimpseOf(1, 3, k), there = new Level(1, g.depth), pocket: Pocket = new Pocket(3, { ...p, glimpse: g }, there);
+    const at = pocket.at;
+    assert.ok(there.sdf(at[0], at[1] + 1.7, at[2]) >= 1.8, 'one comes out in open air');
+    assert.ok(there.dry(at[0], at[2], 0.2), 'on dry floor');
+    if (!pocket.way) continue;
+    held++;
+    assert.equal(pocket.way.glimpse.depth, 3, 'the way back shows home');
+    const w = pocket.way;
+    assert.ok(pocket.walksBack(w.x, w.y - THIN.over, w.z), 'walking into the way back takes you home');
+    assert.ok(!pocket.walksBack(...at), 'not where one comes out');
+  }
+  assert.ok(held >= 3, `the way back has room (${held} of 6)`);
+  const pocket = new Pocket(3, p, new Level(1, p.glimpse.depth));
+  let over = false, t = 0, low = 1;
+  for (; t < THIN.stay + 1 && !over; t += 0.1) {
+    over = pocket.advance(0.1);
+    if (pocket.age < THIN.shaky) assert.ok(pocket.instability === 0 && pocket.open === 1, 'steady at first');
+    low = Math.min(low, pocket.open);
+    assert.ok(pocket.open >= 0 && pocket.open <= 1);
+  }
+  assert.ok(over && Math.abs(t - THIN.stay) < 0.2, `lets go after ${THIN.stay} s`);
+  assert.ok(low < 0.6, 'the way back flickers before it does');
 });

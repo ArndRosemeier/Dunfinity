@@ -24,15 +24,15 @@ export class ThinView {
     this.mesh.visible = false;
   }
 
-  /** Once a frame: show `place` (null: none open). */
-  draw(place: ThinPlace | null): void {
+  /** Once a frame: show `place` (null: none open), `open` that much (by default as its age says). */
+  draw(place: ThinPlace | null, open = place ? openness(place.age) : 0): void {
     this.mesh.visible = !!place;
     if (!place) return;
     const g = place.glimpse;
     this.mesh.position.set(place.x, place.y, place.z);
     this.mesh.rotation.set(0, place.yaw, 0);
     this.mesh.scale.set(THIN.half[0], THIN.half[1], 1);
-    THIN_STATE.open.value.set(openness(place.age), place.age, g.bay, g.height);
+    THIN_STATE.open.value.set(open, place.age, g.bay, g.height);
     THIN_STATE.stone.value.set(...g.stone);
     THIN_STATE.light.value.set(...g.light);
     THIN_STATE.haze.value.set(...g.haze);
