@@ -129,7 +129,7 @@ export interface HudState {
   flags: string;
   salt: number;
   euros: number;
-  /** The finds carried, the room for them, what they might fetch. */
+  /** What is carried (finds and spare things), the room for it (the rucksack), what the finds might fetch. */
   pack: { count: number; room: number; worth: number } | null;
   /** The grandchild is dead (the death screen, src/app/deathView.ts, has the screen: prompts and notices go). */
   dead: boolean;
@@ -221,7 +221,7 @@ export class Hud {
     this.set('purse', `${s.salt}|${s.euros}|${s.pack?.count}|${s.pack?.room}|${s.pack?.worth}`, () => {
       p.purse.innerHTML = `<div class="salt">${s.salt} infused salt</div>`
         + (s.euros ? `<div>€${s.euros} <span class="dim">in grandma's purse</span></div>` : '')
-        + (s.pack ? `<div>${s.pack.count} of ${s.pack.room} finds <span class="dim">· about €${s.pack.worth}</span></div>` : '');
+        + (s.pack ? `<div>${s.pack.count} of ${s.pack.room} in the pack <span class="dim">· about €${s.pack.worth}</span></div>` : '');
     });
     this.set('boss', s.boss ? `${s.boss.name}|${s.boss.left.toFixed(3)}` : '', () => {
       p.boss.style.display = s.boss ? 'block' : 'none';
@@ -248,7 +248,7 @@ export class Hud {
   private lines(s: HudState): string[] {
     return [`health ${s.health.toFixed(0)}`, `stamina ${s.stamina.toFixed(0)}${s.mode ? `  ${s.mode}` : ''}`, s.hurt, s.dev, '', s.boss ? s.boss.name : '', s.notice, s.gain, s.prompt,
       s.flags, ...s.tally, `infused salt in grandma's tin: ${s.salt}`, s.euros ? `euros in grandma's purse: €${s.euros}` : '',
-      s.pack ? `pack: ${s.pack.count} of ${s.pack.room} finds, worth about €${s.pack.worth}` : '', s.pet ? `${s.pet.name.toLowerCase()}: health ${s.pet.health.toFixed(0)}` : '', s.dead ? 'dead' : ''].filter((l, i) => i < 5 || l);
+      s.pack ? `pack: ${s.pack.count} of ${s.pack.room} things, worth about €${s.pack.worth}` : '', s.pet ? `${s.pet.name.toLowerCase()}: health ${s.pet.health.toFixed(0)}` : '', s.dead ? 'dead' : ''].filter((l, i) => i < 5 || l);
   }
 
   /** Run `apply(value)` when part `key` is to show something new. */

@@ -175,7 +175,7 @@ const TOOLS: Readonly<Record<string, readonly ['held_hatchet' | 'held_pick' | 'h
 };
 
 /**
- * Kemal's flashlight, in grip space like the knife (along the forearm, the lamp end forward): a
+ * Kemal's flashlight, in grip space (along the forearm, the lamp end forward): a
  * black rubber barrel with a ridged grip and a chrome head round the glass.
  */
 function flashlight(): Object3D {
@@ -184,7 +184,7 @@ function flashlight(): Object3D {
     for (const y of [-0.04, -0.01, 0.02]) rubber.tube(0, y, 0, 0, y + 0.012, 0, 0.0185, [0.1, 0.1, 0.11]);
     chrome.tube(0, 0.1, 0, 0, 0.145, 0, 0.025, [0.62, 0.63, 0.66]);
     rubber.tube(0, 0.143, 0, 0, 0.147, 0, 0.022, [0.9, 0.88, 0.7]); // the glass
-  }, KNIFE_TILT);
+  }, FLASHLIGHT_TILT);
 }
 
 /**
@@ -214,8 +214,14 @@ function hardHat(fit: BodyFit): Object3D {
 /** The hard hat's fit: the head it was made for, how far above the socket its brim sits and how far forward (both in head radii). */
 const HAT = { radius: 0.1, lift: 0.3, forward: 0.05 } as const;
 
-/** How far the knife is turned from blade-up in the fist, radians (checked side-on in the ready pose). */
-const KNIFE_TILT = 2.7;
+/**
+ * How far the knife is turned from blade-up in the fist, radians: not at all, so the handle runs
+ * through the closed fist and the blade comes out of the thumb side (the humanoid's guard turns the
+ * forearm so that points at the foe). Turned further, the handle lay across the top of the fingers.
+ */
+const KNIFE_TILT = 0;
+/** How far the flashlight is turned in the off hand's fist, radians: along the forearm, the lamp forward. */
+const FLASHLIGHT_TILT = 2.7;
 
 export const WARDROBE: Wardrobe = {
   resolve,

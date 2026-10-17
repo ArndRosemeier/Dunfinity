@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.248 — Weapons held in a closed fist
+
+- Grandma's knife sits in a fist closed round its handle, the thumb wrapped over, instead of lying across the top of a half-open hand.
+- Held ready, the knife's blade, the hatchet's and the pick's heads and the crowbar point ahead at the foe, not back at your own face.
+- The pick's blow brings its head down ahead into the rock instead of pointing it at the sky (the Salt-Touched mine the same way).
+- Every swing, block, throw, roll and pick-up keeps the weapon in the fist.
+
+## v0.247 — A rucksack on the back
+
+- What the pack holds now comes from the rucksack on a grandchild's back, a new Back slot in the pack panel. Every grandchild starts with a canvas rucksack (8 things, as before). Without one, only the pockets (2).
+- Kemal sells an army rucksack (key 8 at his counter, €40) that holds 14.
+- Once the stranger from below is in town, Ilse sells a salt-woven satchel (key 1 at her counter, €150) that holds 40, far more than it is big.
+- A rucksack's quality scales what it holds. One is only taken off or swapped when what is carried fits in what is left.
+
 ## v0.246 — Sounds for the sun orbs
 
 - New sounds for the big sun orbs: `sun_rise` (fire catching and swelling as a sun pulls out of the rock, two takes), `sun_drip` (a burning drop splashing on stone with a hiss, three takes) and `sun_hum` (a low, steady flame roar, looped, to place near a sun).
