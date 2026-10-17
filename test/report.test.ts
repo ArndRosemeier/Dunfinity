@@ -8,12 +8,12 @@ test('every still of the report and the set it plays on are painted', () => {
   for (const id of new Set([...REPORT.map((s) => s.still).filter(Boolean), 'set'])) assert.ok(existsSync(`public/report/${id}.webp`), `public/report/${id}.webp`);
 });
 
-test('the report opens on its card, gives each shot time to be read, and loops through snow', () => {
+test('the report opens on its card, gives each shot time to be read, and airs once: then snow for good', () => {
   assert.equal(REPORT[0].still, null);
   for (const s of REPORT) assert.ok(shotSeconds(s) >= s.caption.length / PACE.read, s.caption);
   assert.equal(onAir(0).shot, 0);
-  assert.equal(onAir(AIRING - 1).shot, -1); // snow between airings
-  assert.equal(onAir(AIRING + 0.5).shot, 0);
+  assert.equal(onAir(AIRING - 0.01).shot, REPORT.length - 1);
+  for (const t of [AIRING + 0.01, AIRING + 0.5, AIRING * 3]) assert.equal(onAir(t).shot, -1);
   for (let i = 0; i < REPORT.length; i++) assert.equal(onAir(shotStart(i) + 0.01).shot, i);
 });
 
