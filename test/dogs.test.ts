@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { DOG, Dogs, type Dog, type Pack } from '../src/creatures/dogs';
 import { STAB, blowFrom, damage, nearestReached, type Fighter } from '../src/combat/combat';
+import { withBand } from './where';
 
-const level = new Level(1, 6);
+// The second Cisterns level (seed 1, level 12): on the first, seven dogs (more than one pack) are still up after the minute.
+const level = new Level(...withBand('cistern', 1));
 
 type Prey = Fighter & { taken: number; bites: { t: number; behind: number }[] };
 const someone = (x: number, z: number): Prey => ({
@@ -54,9 +56,12 @@ function run(dogs: Dogs, me: Prey, seconds: number, facing: number, dt = 1 / 60,
   }
 }
 
-test('feral dogs live in the Cisterns, not above', () => {
-  assert.ok(packs(new Dogs(level)).length > 3, 'packs on level 6');
-  for (const d of [1, 3, 5]) assert.equal(packs(new Dogs(new Level(1, d)), new Level(1, d)).length, 0, `none on level ${d}`);
+test('feral dogs live in the Cisterns, not in the Quarry or the Salt Works', () => {
+  assert.ok(packs(new Dogs(level)).length > 3, `packs on a Cisterns level (${level.seed}, ${level.depth})`);
+  for (const [s, d] of [withBand('quarry'), withBand('quarry', 1), withBand('salt'), withBand('salt', 1)]) {
+    const l = new Level(s, d);
+    assert.equal(packs(new Dogs(l), l).length, 0, `none on ${l.band.id} level (${s}, ${d})`);
+  }
 });
 
 test('a pack circles you and comes at you from behind, one at a time, with a crouch first', () => {

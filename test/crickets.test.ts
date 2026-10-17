@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { CRICKET, Crickets, type Cricket, type Lamp } from '../src/creatures/crickets';
 import type { Fighter } from '../src/combat/combat';
+import { withBand } from './where';
 
-const level = new Level(1, 2); // (a group whose wall leaves room to land by you)
+const level = new Level(...withBand('quarry', 1)); // (a Quarry level, as level 2 always was: a group whose wall leaves room to land by you)
 
 /** Someone standing near the cave crickets' group nearest the arrival. */
 function setup(): { cr: Crickets; me: Fighter & { taken: number } } {

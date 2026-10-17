@@ -22,8 +22,8 @@ function nests(level: Level, rats: Rats): Nest[] {
 }
 
 test('rats that cannot get up to you give up and go home, and nothing counts as after you', () => {
-  // Level 1, seed 5: the nearest nest's rats run at you, 9 m off, up a ledge they cannot take (found by the balance sweep).
-  const level = new Level(5, 1), fauna = new Fauna(level), rats = fauna.rats;
+  // Level 1, seed 4 (a Quarry level 1, as seed 5's was): the nearest nest's rats run at you, 9 m off, up a ledge they cannot take and give up (found by a sweep of the seeds' level 1).
+  const level = new Level(4, 1), fauna = new Fauna(level), rats = fauna.rats;
   const nest = nests(level, rats)[0];
   let me: (Fighter & { taken: number }) | null = null;
   for (let a = 0; a < 16 && !me; a++) {

@@ -4,13 +4,15 @@ import { Level } from '../src/gen/level';
 import { SKY, SkyBuilder, skyLights, skyOf } from '../src/gen/glowworms';
 import { quarryProps } from '../src/gen/quarryProps';
 import { PROP_TILE } from '../src/gen/propGrid';
+import { withBand } from './where';
 
 test('glow-worm skies hang on high cavern roofs, a few per level, the same for a seed', () => {
-  for (const d of [1, 3, 7]) {
-    const l = new Level(1, d), [x, , z] = l.arrival;
+  // A level 1 in the Quarry, and the first level below it of the Salt Works and the Cisterns (as levels 1, 3 and 7 were).
+  for (const [seed, d] of [withBand('quarry'), withBand('salt', 0, 2), withBand('cistern', 0, 2)]) {
+    const l = new Level(seed, d), [x, , z] = l.arrival;
     const skies = l.skies.near(x, z, 250);
-    assert.ok(skies.length >= 2, `level ${d}: ${skies.length} skies`);
-    assert.deepEqual(skies, new Level(1, d).skies.near(x, z, 250));
+    assert.ok(skies.length >= 2, `seed ${seed}, level ${d}: ${skies.length} skies`);
+    assert.deepEqual(skies, new Level(seed, d).skies.near(x, z, 250));
     for (const s of skies) {
       const up = l.trace(s.x, s.y + 1, s.z, 0, 1, 0, SKY.roof[1]) + 1;
       assert.ok(up >= SKY.roof[0] - 0.1 && up <= SKY.roof[1], `a roof to look up at (${up.toFixed(1)} m)`);

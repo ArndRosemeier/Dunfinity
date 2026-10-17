@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { SaltTouched, TOUCHED, type Touched } from '../src/creatures/touched';
 import type { Fighter } from '../src/combat/combat';
+import { withBand } from './where';
 
-const salt = new Level(1, 3);
+const salt = new Level(...withBand('salt', 2)); // (seed 1, level 3)
 
 /** Someone standing `away` metres out from the nearest working spot to the arrival. */
 function setup(away: number): { st: SaltTouched; me: Fighter & { taken: number; hits: number[] }; spot: { x: number; z: number } } {
@@ -30,7 +31,7 @@ function setup(away: number): { st: SaltTouched; me: Fighter & { taken: number; 
 const out = (s: { yaw: number }): [number, number] => [Math.sin(s.yaw), Math.cos(s.yaw)];
 
 test('the Salt-Touched work the salt, not the quarry', () => {
-  const q = new SaltTouched(new Level(1, 1)), s = new SaltTouched(salt);
+  const q = new SaltTouched(new Level(...withBand('quarry'))), s = new SaltTouched(salt);
   let inQuarry = 0, inSalt = 0;
   for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) { if (q.denAt(i, j)) inQuarry++; if (s.denAt(i, j)) inSalt++; }
   assert.equal(inQuarry, 0);

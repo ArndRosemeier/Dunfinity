@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { Rats, RAT } from '../src/creatures/rats';
 import { FIND, FINDS, Finds, PACK, Pack } from '../src/loot/finds';
+import { withBand } from './where';
 
-const level = new Level(1, 1);
+const level = new Level(...withBand('quarry')); // (level 1 in the Quarry, as level 1 always was)
 const rats = new Rats(level);
 const finds = (taken = new Set<number>()) => new Finds(level, (i, j) => rats.denAt(i, j), taken);
 const [ax, , az] = level.arrival;

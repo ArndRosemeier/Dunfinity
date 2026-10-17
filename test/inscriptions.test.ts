@@ -10,6 +10,7 @@ import { CELLAR_WARD, type Inscription, type PathPlace, onPath, type RingPlace, 
 import { PropBuilder } from '../src/gen/propMesh';
 import { inscribe } from '../src/gen/inscriptions';
 import { DWARVEN } from '../src/gen/dwarven';
+import { withBand } from './where';
 
 test('the cellar has grandma\'s ward round her salt circle, and no other level has writing yet', () => {
   const [ward] = inscriptionsAt(0);
@@ -61,7 +62,7 @@ test('a text wraps at words to the width asked', () => {
 
 test('crypt fronts at the Threshold carry a dwarven warning on their lintel, readable from in front and below', () => {
   const found: Inscription[] = [];
-  for (const [seed, depth] of [[1, 9], [2, 10], [3, 9]] as const) {
+  for (const [seed, depth] of [withBand('threshold'), withBand('threshold', 1), withBand('threshold', 2)]) {
     const l = new Level(seed, depth), [ax, , az] = l.arrival, n = 5;
     for (let j = -n; j <= n && found.length < 3; j++) for (let i = -n; i <= n; i++) found.push(...quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).inscriptions);
   }
@@ -87,7 +88,7 @@ test('grandma\'s rubbing pencils in her runes once', () => {
 test('the dwarven halls carry gold runes: hall names over the gates, friezes on the panels, readable from the floor', () => {
   // Tiles (from the arrival) where halls stand, found by looking.
   const found: [Level, Inscription][] = [];
-  for (const [seed, tiles] of [[7, [[-2, -1], [-1, -1]]], [2, [[1, 2], [2, 2]]]] as const) {
+  for (const [seed, tiles] of [[7, [[-3, 2], [-2, -2]]], [2, [[0, -3], [3, 0]]]] as const) {
     const l = new Level(seed, 25, 'dwarven'), [ax, , az] = l.arrival;
     for (const [i, j] of tiles) for (const ins of quarryProps(l, Math.floor(ax / PROP_TILE) + i, Math.floor(az / PROP_TILE) + j).inscriptions) found.push([l, ins]);
   }

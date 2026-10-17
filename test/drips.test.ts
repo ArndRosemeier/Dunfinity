@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { DRIP, DRIP_CYCLE, dripLook, heard, landed, tipOf, type DripLook, type DripSite } from '../src/gen/drips';
+import { withBand } from './where';
 
 const look = (): DripLook => ({ height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 });
 
@@ -11,9 +12,10 @@ function sitesOf(seed: number, depth: number): DripSite[] {
 }
 
 test('a few living stalagmites on every level below the cellar, the same for a seed', () => {
-  for (const d of [1, 3, 6, 9]) {
-    const a = sitesOf(1, d), b = sitesOf(1, d);
-    assert.ok(a.length >= 3, `level ${d}: ${a.length} sites`);
+  // A level 1 in the Quarry, and the first level below it of the Salt Works, the Cisterns and the Threshold (as levels 1, 3, 6 and 9 were).
+  for (const [seed, d] of [withBand('quarry'), withBand('salt', 0, 2), withBand('cistern', 0, 2), withBand('threshold', 0, 2)]) {
+    const a = sitesOf(seed, d), b = sitesOf(seed, d);
+    assert.ok(a.length >= 3, `seed ${seed}, level ${d}: ${a.length} sites`);
     assert.deepEqual(a, b);
   }
   assert.equal(new Level(1, 0).drips.near(0, 0, 200).length, 0, 'none in grandma\'s cellar or the town');

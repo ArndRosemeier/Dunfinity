@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { Body, MOVE, type BodyInput } from '../src/world/traverse/body';
 import { damage } from '../src/combat/combat';
+import { withBand } from './where';
 
 const level = new Level(1, 1);
 const [sx, , sz] = level.spawn();
@@ -123,8 +124,8 @@ test('a roll (grandma\'s Duck) carries the body a few metres, costs stamina, and
 });
 
 test('at the top of a climb the body holds the edge, then is pulled over to stand on the ledge', () => {
-  // A broken pillar's stump near the spawn on level 2, its top 1.6 to 4.5 m up, and a spot on the floor beside it.
-  const level = new Level(1, 2), [x0, , z0] = level.spawn();
+  // A broken pillar's stump near the spawn on a Quarry level (seed 3, level 3: one with a stump near its spawn), its top 1.6 to 4.5 m up, and a spot on the floor beside it.
+  const level = new Level(...withBand('quarry', 2)), [x0, , z0] = level.spawn();
   const run = (b: Body, seconds: number, input: Partial<BodyInput> = {}) => {
     const inp: BodyInput = { forward: 0, right: 0, yaw: 0, sprint: false, jump: false, ...input };
     for (let i = 0; i < seconds / STEP; i++) b.step(level, inp, STEP);
