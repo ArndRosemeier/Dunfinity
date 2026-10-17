@@ -45,6 +45,18 @@
     "prop_forge_fire",
     "prop_dwarf_statue",
     "prop_brazier",
-    "prop_chain"
+    "prop_chain",
+    "furn_armchair",
+    "furn_side_table",
+    "furn_chair",
+    "furn_kitchen_table",
+    "furn_sofa",
+    "furn_wardrobe",
+    "furn_sideboard",
+    "furn_sink_cupboard",
+    "furn_bed",
+    "furn_stove",
+    "furn_cellar_shelf",
+    "furn_coat_stand"
   ]
 }
