@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.210 — Your salt pet comes along down and up the levels
+
+- Taking stairs, a ladder or a gate to another level no longer kills your salt pet: it follows you, keeps the health it had, and stands up out of salt at your side.
+
+## v0.209 — Glowing eyes in the deep, ordinary rats and dogs in the town
+
+- The quarry rats and feral dogs of the deep now have the salt in their eyes: a hot blue-white glow in the veins' blue with a soft halo round each eye, flickering a little, so they read as no ordinary animals. The light goes out when one dies.
+- The town above has ordinary rats and village dogs. The rats live in holes along the house walls, scurry off when you come right up to them and bolt when hit. The dogs lie about the farmyards and lanes and trot round. They have dark, ordinary eyes.
+- The town's animals let you be. Hit a village dog and its lot turns on you until it calms down; a badly hurt one runs from you instead. A rat cannot fight you, so it runs.
+- The town's animals drop no infused salt.
+- The debug menu's teleport list has "Town rats" and "Village dogs".
+
+## v0.208 — Your salt pet's health under yours
+
+- While a salt pet is with you, the HUD shows its name and health bar under your health and stamina, in the veins' blue.
+
+## v0.207 — Grandma's salt circle, quiet and alive
+
+- The circle of salt round grandma's armchair, and the ward traced round it, no longer shine as a bright ring. They glow softly on the flagstones, with a faint halo spilling round them.
+- The glow breathes slowly and a shimmer drifts through the salt, and the whole circle turns, very slowly, once round in about five minutes.
+
 ## v0.206 — Alpha stamp, contact button, the television first, every line spoken
 
 - The title screen says plainly that this is an alpha: a big ALPHA stamp on the name, and a line on what that means (bugs, gaps, changes, a family that may not survive an update).

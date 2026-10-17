@@ -16,10 +16,6 @@
     "reason": "each kind's hatch is a call of Population.brood with its own den name, id stride and looks"
   },
   {
-    "key": "clone: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/slimes.ts#denIn",
-    "reason": "what is left of each kind's denIn/hatch after the Population seam (sites, floorFor, around, countIn): a loop over the seam's helpers with the kind's own checks and fields"
-  },
-  {
     "key": "clone: dunfinity/gen/dungeon.ts#portal + dunfinity/gen/dwarven.ts#portal",
     "reason": "each built style's portal turns (x, z) into its own grid's frame (Grain), looks up its own room or hall there and turns its middle back; the frame is the one seam (src/gen/grainLines.ts), the grids and rooms differ"
   },
@@ -66,10 +62,6 @@
   {
     "key": "idiom: [.faster .mode] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts",
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
-  },
-  {
-    "key": "idiom: [.fetch .gait Promise] in dunfinity/render/creatures/cricketView.ts + dunfinity/render/creatures/dogView.ts + dunfinity/render/creatures/ratView.ts",
-    "reason": "the RiggedFigure overrides and the Rigged.fetch loader, one per species view: each species turns its own gait phase into metres for RiggedFigure (rigged.ts), the seam these override"
   },
   {
     "key": "idiom: [.gait .move .steer] in dunfinity/creatures/crickets.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts",
@@ -244,16 +236,8 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population, Steer and pick.ts"
   },
   {
-    "key": "same name: dunfinity/creatures/dogs.ts#act + dunfinity/creatures/touched.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/dogs.ts#denIn + dunfinity/creatures/eels.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/dogs.ts#denIn + dunfinity/creatures/foreman.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
   {
     "key": "same name: dunfinity/creatures/dogs.ts#denIn + dunfinity/creatures/rats.ts#denIn",
@@ -266,10 +250,6 @@
   {
     "key": "same name: dunfinity/creatures/dogs.ts#denIn + dunfinity/creatures/slimes.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/dogs.ts#denIn + dunfinity/creatures/tallOne.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population, Steer and pick.ts"
   },
   {
     "key": "same name: dunfinity/creatures/dogs.ts#hatch + dunfinity/creatures/eels.ts#hatch",
@@ -438,10 +418,6 @@
   {
     "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/tallOne.ts#denIn",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population, Steer and pick.ts"
-  },
-  {
-    "key": "same name: dunfinity/creatures/rats.ts#denIn + dunfinity/creatures/touched.ts#denIn",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act are the abstract hooks it asks for; shared work lives in Population, Steer and pick.ts"
   },
   {
     "key": "same name: dunfinity/creatures/rats.ts#hatch + dunfinity/creatures/shrooms.ts#hatch",
@@ -1876,15 +1852,7 @@
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#create + dunfinity/render/creatures/dogView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/cricketView.ts#create + dunfinity/render/creatures/eelView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#create + dunfinity/render/creatures/ratView.ts#create",
     "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
   },
   {
@@ -1904,24 +1872,12 @@
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
   },
   {
-    "key": "same name: dunfinity/render/creatures/dogView.ts#create + dunfinity/render/creatures/eelView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/dogView.ts#create + dunfinity/render/creatures/ratView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/dogView.ts#travelled + dunfinity/render/creatures/ratView.ts#travelled",
     "reason": "each species turns its own gait phase into metres for RiggedFigure (rigged.ts), the seam these override"
   },
   {
     "key": "same name: dunfinity/render/creatures/eelView.ts#clipFor + dunfinity/render/creatures/shroomView.ts#clipFor",
     "reason": "each species maps its own modes to its own clips; the shared part (placing, fading, pacing, the flinch) is RiggedFigure in rigged.ts, which these override"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/eelView.ts#create + dunfinity/render/creatures/ratView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
   },
   {
     "key": "same name: dunfinity/render/creatures/eelView.ts#travelled + dunfinity/render/creatures/shroomView.ts#travelled",
@@ -3216,10 +3172,6 @@
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population"
   },
   {
-    "key": "same name: dunfinity/creatures/dogs.ts#act + dunfinity/creatures/ghosts.ts#act",
-    "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
-  },
-  {
     "key": "same name: dunfinity/creatures/eels.ts#act + dunfinity/creatures/ghosts.ts#act",
     "reason": "each kind's own part of the Population seam (src/creatures/population.ts): denIn/hatch/act/sleep are the hooks it asks for; shared work lives in Population (sites, floorFor, brood, roamFrom), Steer and pick.ts"
   },
@@ -3310,10 +3262,6 @@
   {
     "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/creatures/touchedView.ts#deriveSeed",
     "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
-  },
-  {
-    "key": "clone: dunfinity/creatures/dogs.ts#constructor + dunfinity/creatures/foreman.ts#constructor + dunfinity/creatures/scavengers.ts#constructor + dunfinity/creatures/shrooms.ts#constructor + dunfinity/creatures/slimes.ts#constructor",
-    "reason": "constructors that only pass the kind's name, numbers and gait to Population"
   },
   {
     "key": "clone: dunfinity/world/neighbour.ts#constructor + dunfinity/world/stranger.ts#constructor",
@@ -3758,10 +3706,6 @@
   {
     "key": "clone: dunfinity/render/spells.ts#saltFalls + dunfinity/render/spells.ts#snap",
     "reason": "each spell's own burst of sparks from SpellView's pools (its pool, count, speeds and life); the shared part is Pool.emit"
-  },
-  {
-    "key": "idiom: [.all .fetch Promise] in dunfinity/render/creatures/petView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/slimeView.ts",
-    "reason": "loading several Blender creatures at once through Rigged.fetch, the one loader"
   },
   {
     "key": "idiom: [.biteT .radius .windup] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts",
@@ -4732,15 +4676,7 @@
     "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
   },
   {
-    "key": "same name: dunfinity/render/creatures/dogView.ts#create + dunfinity/render/humans/nobody.ts#create",
-    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/eelView.ts#create + dunfinity/render/humans/nobody.ts#create",
-    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/ratView.ts#create + dunfinity/render/humans/nobody.ts#create",
     "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
   },
   {
@@ -4762,6 +4698,30 @@
   {
     "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
     "reason": "each creature kind turns towards its heading at its own rate (a clamped atan2 step on its yaw); found on main before the village PR, not touched by it"
+  },
+  {
+    "key": "clone: dunfinity/creatures/foreman.ts#constructor + dunfinity/creatures/scavengers.ts#constructor + dunfinity/creatures/shrooms.ts#constructor + dunfinity/creatures/slimes.ts#constructor",
+    "reason": "constructors that only pass the kind's name, numbers and gait to Population"
+  },
+  {
+    "key": "idiom: [.all .fetch Promise] in dunfinity/render/creatures/petView.ts + dunfinity/render/creatures/rigged.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/slimeView.ts",
+    "reason": "Each view loads its own glbs in parallel at start-up."
+  },
+  {
+    "key": "idiom: [.count .countIn] in dunfinity/creatures/dogs.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/scavengers.ts",
+    "reason": "Each population counts its den with the shared Population.countIn."
+  },
+  {
+    "key": "same name: dunfinity/creatures/critters.ts#denIn + dunfinity/creatures/dogs.ts#denIn",
+    "reason": "Population hook: each kind says where its dens are."
+  },
+  {
+    "key": "same name: dunfinity/creatures/dogs.ts#denIn + dunfinity/creatures/scavengers.ts#denIn",
+    "reason": "Population hook: each kind says where its dens are."
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/rigged.ts#draw + dunfinity/render/props/doorView.ts#draw",
+    "reason": "A view posing its figures each frame: the common verb, unrelated jobs."
   },
   {
     "key": "idiom: [.kind .pts .roads] in dunfinity/gen/townProps.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",

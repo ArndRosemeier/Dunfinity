@@ -80,3 +80,17 @@ test('it mends like you do; it dies and falls back into salt; left far behind, i
   for (let t = 0; t < PET.crumble + 0.1; t += DT) pets.accompany(DT, owner, [], null, new Rng(1));
   assert.equal(pets.list.length, 0, 'gone to salt');
 });
+
+test('down (or up) a level it comes along, as hurt as it was, and stands up at your side', () => {
+  const pets = new Pets(level), owner = dummy(ax, az), p = pets.summon('dog', along(1), owner.y, az, 0);
+  p.mode = 'heel';
+  p.hurt(30, 'rat');
+  const below = new Level(1, 2), [bx, by, bz] = below.arrival, you = dummy(bx, bz);
+  you.y = by;
+  pets.moveTo(below);
+  pets.accompany(DT, you, [], null, new Rng(1));
+  assert.equal(pets.alive, p, 'the same pet');
+  assert.equal(p.mode, 'form');
+  assert.ok(Math.abs(p.health - (PETS.dog.health - 30)) < 0.01, `kept its health (${p.health})`);
+  assert.ok(Math.hypot(you.x - p.x, you.z - p.z) < 3, 'at your side');
+});

@@ -1,5 +1,5 @@
 /**
- * Everything that lives on a level, together: the rats, the Salt-Touched, the cave crickets, the
+ * Everything that lives on a level, together: the rats (and the town's own rats and dogs above), the Salt-Touched, the cave crickets, the
  * two slime factions, the feral dogs, the brine eels, the scavengers, the goblins of the warrens, the ghosts of the dwarves and elves in their halls, the toadstools and puffcaps of the fungal grotto, on level 5 the Foreman and his crew, and on level 10 the Tall One. Made in one go for a level (or a
  * new grandchild), stepped in one go, and asked in one place whom a blow can hit and whether
  * something is after you.
@@ -32,6 +32,9 @@ const THREAT = 14;
 
 export class Fauna {
   readonly rats: Rats;
+  /** The town's ordinary rats and village dogs (level 0): they let you be unless you hurt them. */
+  readonly townRats: Rats;
+  readonly townDogs: Dogs;
   readonly touched: SaltTouched;
   readonly crickets: Crickets;
   readonly lumen: Slimes;
@@ -51,6 +54,8 @@ export class Fauna {
 
   constructor(level: Level) {
     this.rats = new Rats(level);
+    this.townRats = new Rats(level, true);
+    this.townDogs = new Dogs(level, true);
     this.touched = new SaltTouched(level);
     this.crickets = new Crickets(level);
     this.lumen = new Slimes(level, 'lumen');
@@ -71,7 +76,7 @@ export class Fauna {
 
   /** The props in the way: they all walk round them. */
   set blockers(b: Blockers | null) {
-    this.rats.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = this.goblins.blockers = this.ghosts.blockers = this.tall.blockers = this.toadstools.blockers = this.critters.blockers = b;
+    this.rats.blockers = this.townRats.blockers = this.townDogs.blockers = this.touched.blockers = this.crickets.blockers = this.lumen.blockers = this.murk.blockers = this.foreman.blockers = this.dogs.blockers = this.scavengers.blockers = this.goblins.blockers = this.ghosts.blockers = this.tall.blockers = this.toadstools.blockers = this.critters.blockers = b;
   }
 
   /** The salt poured on the level (grandma's Salt Line): those that heed it will not step in. */
@@ -87,6 +92,8 @@ export class Fauna {
   /** Step them all by dt; `lamp`: your headlamp (the crickets shun it); `facing`: which way you face (the dogs go for your back). Returns whether a heavy blow (a pick, a crowbar) landed on you. */
   advance(dt: number, prey: Fighter, lamp: Lamp, facing: number): boolean {
     this.rats.advance(dt, prey);
+    this.townRats.advance(dt, prey);
+    this.townDogs.advance(dt, prey, facing);
     const struck = this.touched.advance(dt, prey) + this.foreman.advance(dt, prey, this.touched) + this.scavengers.advance(dt, prey) + this.tall.advance(dt, prey) + this.toadstools.advance(dt, prey) > 0;
     this.crickets.advance(dt, prey, lamp);
     this.lumen.advance(dt, prey, this.murk.list);
@@ -102,7 +109,7 @@ export class Fauna {
 
   /** Everyone a blow can hit (the dead included). */
   foes(): Foe[] {
-    return [...this.rats.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list, ...this.scavengers.list, ...this.goblins.list, ...this.tall.list, ...this.toadstools.list, ...this.puffcaps.list, ...this.critters.list];
+    return [...this.rats.list, ...this.townRats.list, ...this.townDogs.list, ...this.touched.list, ...this.crickets.list, ...this.lumen.list, ...this.murk.list, ...this.foreman.list, ...this.dogs.list, ...this.eels.list, ...this.scavengers.list, ...this.goblins.list, ...this.tall.list, ...this.toadstools.list, ...this.puffcaps.list, ...this.critters.list];
   }
 
   /** The ones you killed since the last call, by kind (a population's name) and where they fell. */
@@ -115,7 +122,7 @@ export class Fauna {
   }
 
   private get all() {
-    return [this.rats, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.goblins, this.ghosts, this.tall, this.toadstools, this.puffcaps, this.critters] as const;
+    return [this.rats, this.townRats, this.townDogs, this.touched, this.crickets, this.lumen, this.murk, this.foreman, this.dogs, this.eels, this.scavengers, this.goblins, this.ghosts, this.tall, this.toadstools, this.puffcaps, this.critters] as const;
   }
 
   /**
@@ -133,7 +140,7 @@ export class Fauna {
       ...this.rats.list.filter((r) => (r.mode === 'chase' || r.mode === 'bite') && near(r)),
       ...[...this.touched.list, ...this.foreman.list].filter((t) => t.angry && near(t)),
       ...this.crickets.list.filter((c) => c.angry && c.mode !== 'perch' && near(c)),
-      ...this.dogs.list.filter((g) => g.hunting && near(g)),
+      ...[...this.dogs.list, ...this.townDogs.list].filter((g) => g.hunting && g.mode !== 'flee' && near(g)),
       ...this.eels.list.filter((e) => e.mode !== 'cruise' && near(e)),
       ...this.toadstools.list.filter((s) => s.up && near(s)),
       ...this.puffcaps.list.filter((p) => p.mode === 'puff' && near(p)),
@@ -152,6 +159,7 @@ export class Fauna {
     if (slimes) lines.push(`slimes killed: ${slimes}`);
     if (this.crickets.killed) lines.push(`cave crickets killed: ${this.crickets.killed}`);
     if (this.dogs.killed) lines.push(`feral dogs killed: ${this.dogs.killed}`);
+    if (this.townRats.killed + this.townDogs.killed) lines.push(`town animals killed: ${this.townRats.killed + this.townDogs.killed}`);
     if (this.eels.killed) lines.push(`brine eels killed: ${this.eels.killed}`);
     if (this.toadstools.killed) lines.push(`toadstools killed: ${this.toadstools.killed}`);
     if (this.puffcaps.killed) lines.push(`puffcaps killed: ${this.puffcaps.killed}`);

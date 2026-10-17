@@ -167,7 +167,7 @@ export class GameSounds {
   private creatures(s: SoundScene): void {
     const f = s.fauna, b = s.body;
     const pops: [string, readonly { x: number; y: number; z: number; mode: string; hurtT: number; dead: boolean }[]][] = [
-      ['rats', f.rats.list], ['crickets', f.crickets.list], ['dogs', f.dogs.list], ['eels', f.eels.list], ['lumen', f.lumen.list],
+      ['rats', [...f.rats.list, ...f.townRats.list]], ['crickets', f.crickets.list], ['dogs', [...f.dogs.list, ...f.townDogs.list]], ['eels', f.eels.list], ['lumen', f.lumen.list],
       ['murk', f.murk.list], ['touched', f.touched.list], ['foreman', f.foreman.list], ['scavengers', f.scavengers.list], ['goblins', f.goblins.list], ['tall', f.tall.list],
     ];
     for (const [kind, list] of pops) {

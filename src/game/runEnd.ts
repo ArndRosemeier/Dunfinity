@@ -17,6 +17,7 @@ export const HURT: Readonly<Record<string, readonly [string, string]>> = {
   rat: ['a rat bites', 'The rats got you.'],
   cricket: ['a cave cricket', 'The cave crickets got you.'],
   dog: ['a feral dog bites', 'The dogs pulled you down.'],
+  'village dog': ['a dog bites', 'You should have left the dogs alone.'],
   eel: ['a brine eel strikes', 'Something in the water took you.'],
   lumen: ['a Lumen slime', 'The Lumen did not forgive you.'],
   toadstool: ['a toadstool slams', 'A toadstool crushed you. It was only a mushroom.'],

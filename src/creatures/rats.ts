@@ -5,6 +5,10 @@
  * and the whole nest comes for you: they run faster than you walk (but not than you sprint), spread
  * round you and bite. They cannot climb, so a ledge saves you. A badly hurt rat may bolt for a moment.
  *
+ * The town above has rats too (Arnd 2026-10-17): ordinary ones (`new Rats(level, true)`), a few to
+ * a hole along the house walls of the village. They pay you no mind, scurry off when you come right
+ * up to them, and bolt from a blow; they drop no salt (src/loot/tin.ts).
+ *
  * Pure: positions on the level's floor, blows through src/combat. Nests are fixed by the seed; the
  * rats of a nest exist only while you are near it, and the ones you killed stay dead on this visit.
  */
@@ -15,6 +19,7 @@ import { thwarted } from './steer';
 import type { Level } from '../gen/level';
 import { damage, type Fighter, noticed } from '../combat/combat';
 import { CANDLE } from '../combat/thrown';
+import { VILLAGE, nearestHouse, townGround } from '../gen/town';
 
 export const RAT = {
   /** Body radius and height at size 1, metres. */
@@ -57,6 +62,9 @@ export const RAT = {
   drop: 1.6,
 } as const;
 
+/** The town's ordinary rats: holes per cell along the house walls (within `wall` metres of one), how close you come before one scurries off, metres. */
+export const TOWN_RAT = { ...RAT, cell: 30, chance: 0.35, quiet: 12, count: [2, 4] as const, roam: 3, wall: [0.3, 2.5] as const, shy: 2.6, wake: 45, sleep: 60 } as const;
+
 export type RatMode = 'sniff' | 'scurry' | 'alert' | 'chase' | 'bite' | 'flee' | 'dead';
 
 export interface Nest extends Den {
@@ -91,9 +99,11 @@ export class Rat extends Creature<RatMode> {
 export class Rats extends Population<Nest, Rat> {
   private readonly chance: number;
 
-  constructor(level: Level) {
-    super(level, 'rats', RAT, { arrive: RAT.arrive, still: RAT.still, step: RAT.step, drop: RAT.drop, accel: 10, turn: 12, face: 15 });
-    this.chance = level.depth ? Math.min(0.8, RAT.chance + 0.08 * (level.depth - 1)) : 0; // (none in grandma's cellar)
+  /** `town`: the town's ordinary rats (only on level 0), not the quarry's. */
+  constructor(level: Level, readonly town = false) {
+    super(level, town ? 'town-rats' : 'rats', town ? TOWN_RAT : RAT, { arrive: RAT.arrive, still: RAT.still, step: RAT.step, drop: RAT.drop, accel: 10, turn: 12, face: 15 });
+    if (town) this.chance = level.depth ? 0 : TOWN_RAT.chance;
+    else this.chance = level.depth ? Math.min(0.8, RAT.chance + 0.08 * (level.depth - 1)) : 0; // (none in grandma's cellar)
     this.apart = 1;
   }
 
@@ -113,11 +123,24 @@ export class Rats extends Population<Nest, Rat> {
 
   /** Where in cell (i, j) a nest is, if any: open, dry floor, away from the arrival and the shafts. */
   protected denIn(key: number, i: number, j: number): Nest | null {
+    if (this.town) return this.holeIn(key, i, j);
     for (const [x, z] of this.sites(i, j, this.chance)) {
       const col = this.level.columnAt(x, z);
       if (col.pillarD < 2 || col.wall < 2) continue;
       const y = this.floorFor(x, z, 0.6, 0.4);
       if (y !== null) return { key, x, z, y, count: this.countIn(i, j, RAT.count), alarmed: false };
+    }
+    return null;
+  }
+
+  /** A town rats' hole in cell (i, j), if any: on the open ground of the village, close along a house wall. */
+  private holeIn(key: number, i: number, j: number): Nest | null {
+    const V = VILLAGE.spec, [near, far] = TOWN_RAT.wall;
+    for (const [x, z] of this.sites(i, j, this.chance)) {
+      if (Math.hypot(x - V.x, z - V.z) > V.r) continue;
+      const y = townGround(x, z).y, d = nearestHouse(x, y + 0.3, z).d;
+      if (d < near || d > far || this.level.sdf(x, y + 0.6, z) < 0.3) continue;
+      return { key, x, z, y, count: this.countIn(i, j, TOWN_RAT.count), alarmed: false };
     }
     return null;
   }
@@ -130,9 +153,10 @@ export class Rats extends Population<Nest, Rat> {
     const provoked = r.provoked;
     r.provoked = false;
     r.balk = provoked ? 0 : Math.max(0, r.balk - dt);
-    if (provoked) r.nest.alarmed = true;
+    if (provoked && !this.town) r.nest.alarmed = true;
     if (r.dead) return this.lieDead(r, dt, 6);
     const dx = prey.x - r.x, dz = prey.z - r.z, d = Math.hypot(dx, dz);
+    if (this.town) return this.mind(r, prey, provoked, d, dt);
     const sees = !prey.dead && noticed(prey, d, RAT.notice) && Math.abs(prey.y - r.y) < 2.5;
     if (sees && !r.balk && r.mode !== 'chase' && r.mode !== 'bite' && r.mode !== 'flee') r.nest.alarmed = true;
     const hunting = r.nest.alarmed && !r.balk && !prey.dead && d < RAT.forget && Math.abs(prey.y - r.y) < 4;
@@ -198,6 +222,31 @@ export class Rats extends Population<Nest, Rat> {
       this.slide(r, dt);
     } else r.gait += this.steer.move(r, gx, gz, speed, dt, faceYou ? Math.atan2(-dx, -dz) : null) / (0.09 * r.size);
     return bit;
+  }
+
+  /**
+   * A town rat's step: about its hole, paying you no mind; it scurries off when you come right up
+   * to it and bolts from a blow (a rat cannot fight you, so it runs: Arnd's rule). Returns 0.
+   */
+  private mind(r: Rat, prey: Fighter, provoked: boolean, d: number, dt: number): number {
+    if (provoked) { r.mode = 'flee'; r.t = this.rng.range(2.5, 4); r.fx = NaN; }
+    else if (r.mode !== 'flee' && !prey.dead && d < TOWN_RAT.shy + prey.radius && Math.abs(prey.y - r.y) < 1.5) { r.mode = 'flee'; r.t = this.rng.range(1, 1.6); r.fx = NaN; }
+    let speed = 0, gx = r.x, gz = r.z;
+    switch (r.mode) {
+      case 'flee':
+        gx = 2 * r.x - prey.x; gz = 2 * r.z - prey.z; speed = RAT.run;
+        if ((r.t -= dt) <= 0) { r.mode = 'sniff'; r.t = this.rng.range(0.8, 2.5); }
+        break;
+      case 'scurry':
+        gx = r.tx; gz = r.tz; speed = RAT.walk * (1 + 0.6 * Math.max(0, Math.sin(r.gait * 0.13)));
+        if ((r.t -= dt) <= 0 || Math.hypot(r.tx - r.x, r.tz - r.z) < 0.3) { r.mode = 'sniff'; r.t = this.rng.range(0.8, 3.5); }
+        break;
+      default:
+        r.mode = 'sniff';
+        if ((r.t -= dt) <= 0) { [r.tx, r.tz] = this.roamFrom(r.nest, TOWN_RAT.roam); r.mode = 'scurry'; r.t = 4; }
+    }
+    r.gait += this.steer.move(r, gx, gz, speed, dt, null) / (0.09 * r.size);
+    return 0;
   }
 
   /** Move by the velocity where the floor allows; the gait follows the distance. */
