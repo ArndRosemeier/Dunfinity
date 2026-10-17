@@ -3228,10 +3228,6 @@
     "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
   },
   {
-    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/loot/findView.ts#draw",
-    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
-  },
-  {
     "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/watchers.ts#draw",
     "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
   },

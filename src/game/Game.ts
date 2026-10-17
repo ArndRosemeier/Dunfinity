@@ -9,6 +9,7 @@ import { Practice, SKILLS, type Skill } from '../loot/practice';
 import { activeFamily, families, goStraightIn, loadByHand, manualSaves, newFamily, readFamily, saveByHand, setActiveFamily, takeStraightIn, writeFamily, MODE_NAMES, type GameMode, type GrandchildData, type SaveData } from '../persist/save';
 import { Explored } from '../world/explored';
 import { MapView } from '../app/mapView';
+import { inVillage } from '../app/villageMap';
 import { ReadView } from '../app/readView';
 import { DiaryView } from '../app/diaryView';
 import { GRANDMA_KERF, Key } from '../lore/key';
@@ -1137,7 +1138,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     }
     view.torch = torchOn && kit.has('flashlight') && !body.dead;
     lamp.cos = Math.cos(view.headlamp.angle);
-    if (controls.tap('KeyM') || (mapView.open && controls.tap('Escape'))) mapView.toggle(level.name);
+    if (controls.tap('KeyM') || (mapView.open && controls.tap('Escape'))) mapView.toggle(level.name, inVillage(level, body.y));
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
     else if (controls.tap('KeyJ') && !tinView.open) { diaryView.show((d) => tin.hasPage(d)); tick('diary'); }
