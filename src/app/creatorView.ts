@@ -1,26 +1,29 @@
 /**
  * The character creator's overlay (src/game/creator.ts plays it; adapted from Scale's, which came
  * from Norgo's): beside the grandchild standing in grandma's round room, a panel of tabs (body, face,
- * hair, skin and eyes) with sliders, choices and colours, a dice for a stranger, and "Go down",
+ * hair, skin and eyes, clothes) with sliders, choices and colours, a dice for a stranger, and "Go down",
  * which wakes once the game's shaders are all built. Dragging on the room turns the grandchild;
  * the wheel (or the Face / Body buttons) looks at the face or the whole body.
  *
- * It only edits a look (`HumanoidAppearance`) and says when it changed; the game rebuilds the figure.
- * The clothes are not chosen: a grandchild goes down in what they stand up in (the rags).
+ * It only edits a look (`HumanoidAppearance`) and an outfit (today's clothes, src/loot/outfit.ts)
+ * and says when they changed; the game rebuilds the figure.
  */
 import { BEARD_STYLES, BROW_STYLES, HAIR_STYLES, type HumanoidAppearance } from '@futuremagic/humanoid';
 import { clamp } from '@futuremagic/core';
 import { addStyle, button, child } from './panel';
 import { growOn } from './growth';
+import { BOTTOMS, DENIM, FABRIC, HATS, OUTERS, PATTERNS, SHOE, SHOES, TOPS, type OutfitSpec } from '../loot/outfit';
 
 type Look = HumanoidAppearance;
 type FaceKey = keyof Look['face'];
 type BodyKey = keyof Look['body'];
-type Tab = 'body' | 'face' | 'hair' | 'skin';
+type Tab = 'body' | 'face' | 'hair' | 'skin' | 'clothes';
+/** What the creator makes: a look and what they wear. */
+export interface Made { look: Look; outfit: OutfitSpec }
 type Rgb = [number, number, number];
 export type Framing = 'body' | 'face';
 
-const TABS: readonly [Tab, string][] = [['body', 'Body'], ['face', 'Face'], ['hair', 'Hair'], ['skin', 'Skin & eyes']];
+const TABS: readonly [Tab, string][] = [['body', 'Body'], ['face', 'Face'], ['hair', 'Hair'], ['skin', 'Skin & eyes'], ['clothes', 'Clothes']];
 const FACE: readonly [FaceKey, string][] = [
   ['headRound', 'Head shape'], ['foreheadSlope', 'Forehead'], ['browRidge', 'Brow ridge'], ['eyeSize', 'Eye size'], ['eyeSpacing', 'Eye spacing'],
   ['noseSize', 'Nose size'], ['noseWidth', 'Nose width'], ['noseBridge', 'Nose bridge'], ['cheekbones', 'Cheekbones'], ['jaw', 'Jaw'],
@@ -38,7 +41,10 @@ const MARKS: readonly [string, string][] = [
   ['scar_cheek', 'Cheek scar'], ['scar_brow', 'Brow scar'], ['scar_lip', 'Lip scar'], ['scar_eye', 'Eye scar'], ['scar_chin', 'Chin scar'],
   ['freckle_patch', 'Freckle patch'], ['tattoo_face', 'Face tattoo'],
 ];
-const LABEL: Record<string, string> = { none: 'None', mustache: 'Moustache', mutton: 'Mutton chops', chinstrap: 'Chinstrap', unibrow: 'Unibrow' };
+const LABEL: Record<string, string> = {
+  none: 'None', mustache: 'Moustache', mutton: 'Mutton chops', chinstrap: 'Chinstrap', unibrow: 'Unibrow',
+  tshirt: 'T-shirt', raincoat: 'Rain jacket', sneakers: 'Trainers',
+};
 
 /** Skin, eye and hair colours to pick from (the character's own colours, not the interface's). */
 const SKIN = ['#f6dcc8', '#efcdb4', '#eac2a1', '#ddae8a', '#d9a47c', '#c99068', '#bf8560', '#a8734f', '#9c6644', '#865637', '#7a4b2f', '#5a3522', '#4a2c1c', '#3f2519'];
@@ -102,14 +108,14 @@ const CSS = `
 
 /** What the creator tells the game. */
 export interface CreatorHooks {
-  /** The look changed (the figure is rebuilt in it). */
-  changed(look: Look): void;
+  /** The look or the clothes changed (the figure is rebuilt in them). */
+  changed(made: Made): void;
   /** Turn the grandchild by `by` radians (dragged). */
   turn(by: number): void;
   /** Look at the whole body or the face. */
   frame(f: Framing): void;
-  /** A stranger's look (the dice): seeded by the game. */
-  stranger(): Look;
+  /** A stranger's look and clothes (the dice): seeded by the game. */
+  someoneElse(): Made;
 }
 
 interface Slider { readonly el: HTMLElement; set(v: number): void }
@@ -123,12 +129,15 @@ export class CreatorView {
   private readonly go: HTMLButtonElement;
   private readonly lamps: HTMLDivElement;
   private tab: Tab = 'body';
-  /** The look made, once "Go down" is pressed. */
-  readonly done: Promise<Look>;
+  /** The look and clothes made, once "Go down" is pressed. */
+  readonly done: Promise<Made>;
+  private look: Look;
+  private outfit: OutfitSpec;
 
-  constructor(host: HTMLElement, private look: Look, private readonly hooks: CreatorHooks) {
+  constructor(host: HTMLElement, made: Made, private readonly hooks: CreatorHooks) {
     addStyle(CSS);
-    this.look = structuredClone(look);
+    this.look = structuredClone(made.look);
+    this.outfit = structuredClone(made.outfit);
     this.root = child(host, 'div');
     this.root.id = 'creator';
     const room = child(this.root, 'div', 'room');
@@ -146,11 +155,11 @@ export class CreatorView {
     for (const [t, text] of TABS) button(this.tabs, text, () => this.setTab(t), 'ui-btn small').dataset.tab = t;
     this.editor = child(side, 'div', 'ui-scroll');
     const foot = child(side, 'div', 'foot');
-    button(foot, '\u{1F3B2} Someone else', () => { this.look = structuredClone(this.hooks.stranger()); this.hooks.changed(this.look); this.render(); }, 'ui-btn small');
+    button(foot, '\u{1F3B2} Someone else', () => { const m = structuredClone(this.hooks.someoneElse()); this.look = m.look; this.outfit = m.outfit; this.edited(); this.render(); }, 'ui-btn small');
     this.lamps = child(foot, 'div', 'lamps', 'Lighting the lamps…');
-    let resolve!: (l: Look) => void;
+    let resolve!: (m: Made) => void;
     this.done = new Promise((r) => { resolve = r; });
-    this.go = button(foot, 'Go down', () => { this.root.classList.add('leaving'); resolve(structuredClone(this.look)); }, 'ui-btn primary go');
+    this.go = button(foot, 'Go down', () => { this.root.classList.add('leaving'); resolve(structuredClone({ look: this.look, outfit: this.outfit })); }, 'ui-btn primary go');
     this.go.disabled = true; // until the game's shaders are all built (src/render/stage.ts warmLater): play must not stutter
     growOn(side, 'creator', { amount: 0.7 });
     side.classList.add('ui-grown');
@@ -195,17 +204,24 @@ export class CreatorView {
     for (const b of this.tabs.querySelectorAll<HTMLElement>('button')) b.classList.toggle('on', b.dataset.tab === t);
     this.render();
     this.editor.scrollTop = 0;
-    this.setFocus(t === 'body' ? 'body' : 'face');
+    this.setFocus(t === 'body' || t === 'clothes' ? 'body' : 'face');
   }
 
   /** A change made: the game hears of it. */
   private edited(): void {
-    this.hooks.changed(this.look);
+    this.hooks.changed({ look: this.look, outfit: this.outfit });
   }
 
   private set<K extends keyof Look>(k: K, v: Look[K]): void {
     this.look[k] = v;
     this.edited();
+  }
+
+  /** Change a garment or a colour; `again`: show the tab anew (what can be chosen depends on it). */
+  private pickGarment<K extends keyof OutfitSpec>(k: K, v: OutfitSpec[K], again = false): void {
+    this.outfit[k] = v;
+    this.edited();
+    if (again) this.render();
   }
 
   private render(): void {
@@ -266,6 +282,34 @@ export class CreatorView {
         });
         this.marks(field(s, 'Marks'));
         swatches(field(section(e, 'Eyes'), 'Colour'), EYES, a.eyeColor, (c) => this.set('eyeColor', c));
+        break;
+      }
+      case 'clothes': {
+        const o = this.outfit, fabric = FABRIC.map(hex);
+        const top = section(e, 'Top');
+        chips(top, TOPS, o.top, (v) => this.pickGarment('top', v, true));
+        swatches(field(top, 'Colour'), fabric, o.topColor, (c) => this.pickGarment('topColor', c));
+        chips(field(top, 'Pattern'), PATTERNS, o.topPattern, (v) => this.pickGarment('topPattern', v));
+        swatches(field(top, 'Trim and pattern colour'), fabric, o.topColor2, (c) => this.pickGarment('topColor2', c));
+        const outer = section(e, 'Over it');
+        chips(outer, OUTERS, o.outer, (v) => this.pickGarment('outer', v, true));
+        if (o.outer !== 'none') swatches(field(outer, 'Colour'), fabric, o.outerColor, (c) => this.pickGarment('outerColor', c));
+        if (o.outer === 'jacket') chips(field(outer, 'Material'), ['Cloth', 'Leather'], o.outerLeather ? 'Leather' : 'Cloth', (v) => this.pickGarment('outerLeather', v === 'Leather'));
+        const legs = section(e, 'Legs');
+        if (o.top === 'dress') child(legs, 'p', 'note', 'The dress is worn without trousers or a skirt.');
+        else {
+          chips(legs, BOTTOMS, o.bottom, (v) => this.pickGarment('bottom', v, true));
+          swatches(field(legs, 'Colour'), (o.bottom === 'jeans' ? DENIM : FABRIC).map(hex), o.bottomColor, (c) => this.pickGarment('bottomColor', c));
+        }
+        const feet = section(e, 'Shoes');
+        chips(feet, SHOES, o.shoes, (v) => this.pickGarment('shoes', v));
+        swatches(field(feet, 'Colour'), SHOE.map(hex), o.shoesColor, (c) => this.pickGarment('shoesColor', c));
+        const hat = section(e, 'Hat');
+        chips(hat, HATS, o.hat, (v) => this.pickGarment('hat', v, true));
+        if (o.hat !== 'none') swatches(field(hat, 'Colour'), fabric, o.hatColor, (c) => this.pickGarment('hatColor', c));
+        const cut = section(e, 'Cut');
+        button(cut, 'Another cut', () => this.pickGarment('seed', (this.outfit.seed + 1) >>> 0), 'ui-btn small');
+        child(cut, 'p', 'note', 'Skirt and dress length, sleeves. A hard hat found below goes on in place of a hat.');
         break;
       }
     }

@@ -9,7 +9,8 @@ import { deriveSeed } from '@futuremagic/core';
 import type { Body } from '../../world/traverse/body';
 import type { Level } from '../../gen/level';
 import type { Item } from '../../loot/items';
-import { WARDROBE, hidesHair, rags } from './wardrobe';
+import { WARDROBE, grandchildsClothes, hidesHair } from './wardrobe';
+import type { OutfitSpec } from '../../loot/outfit';
 import { moveOf, SWIM, swimLift } from './move';
 
 /** Where Vite serves the package's assets (vite.config.ts). */
@@ -39,9 +40,9 @@ export class Nobody {
   /** The level the feet stand on (changes on the way down). */
   level: Level;
 
-  /** `look`: the one made in the creator (src/game/creator.ts), else the seed's. */
-  static async create(seed: number, level: Level, look: HumanoidAppearance = nobodyLook(seed)): Promise<Nobody> {
-    return new Nobody(await Nobody.dressed(look, rags(seed)), level, seed);
+  /** `look` and `outfit`: the ones made in the creator (src/game/creator.ts), else the seed's look and the rags. */
+  static async create(seed: number, level: Level, look: HumanoidAppearance = nobodyLook(seed), outfit?: OutfitSpec): Promise<Nobody> {
+    return new Nobody(await Nobody.dressed(look, grandchildsClothes(outfit, seed)), level, seed, outfit);
   }
 
   private static async dressed(look: HumanoidAppearance, clothes: EquipmentVisuals): Promise<Humanoid> {
@@ -54,12 +55,16 @@ export class Nobody {
   get human(): Humanoid { return this.human_; }
   /** The look it was built from. */
   get look(): HumanoidAppearance { return this.human_.app; }
+  /** What it wears (none: the rags). */
+  get outfit(): OutfitSpec | undefined { return this.outfit_; }
 
   /**
-   * Rebuild the figure in a new look (the creator), dressed as now: built, compiled by `prepare`
-   * (src/render/stage.ts: a cache hit for what the old one drew with) and only then swapped in.
+   * Rebuild the figure in a new look and new clothes (the creator), with the kit on as now: built,
+   * compiled by `prepare` (src/render/stage.ts) and only then swapped in.
    */
-  async restyle(look: HumanoidAppearance, prepare: (o: Object3D) => Promise<void>): Promise<void> {
+  async restyle(look: HumanoidAppearance, outfit: OutfitSpec | undefined, prepare: (o: Object3D) => Promise<void>): Promise<void> {
+    this.outfit_ = outfit;
+    this.dressAgain();
     const next = await Nobody.dressed(look, this.clothes);
     await prepare(next.object);
     const old = this.human_;
@@ -79,12 +84,21 @@ export class Nobody {
     const key = `${lid}|${items.map((i) => `${i.kind}:${i.quality}`).join(',')}`;
     if (key === this.worn) return;
     this.worn = key;
-    this.hidesHair = hidesHair(items);
-    this.clothes = rags(this.seed, lid, items);
+    this.lid = lid;
+    this.items = items;
+    this.dressAgain();
     this.human_.dress(this.clothes);
   }
 
+  /** The clothes for the outfit, the lid and the kit as they are now. */
+  private dressAgain(): void {
+    this.hidesHair = hidesHair(this.items) || (!!this.outfit_ && this.outfit_.hat !== 'none');
+    this.clothes = grandchildsClothes(this.outfit_, this.seed, this.lid, this.items);
+  }
+
   private worn = 'false|';
+  private lid = false;
+  private items: readonly Item[] = [];
 
   /** How far the figure is drawn over the body's feet now (`swimLift` while swimming, else 0, eased). */
   lift = 0;
@@ -92,9 +106,10 @@ export class Nobody {
   /** What it wears now (a new look is dressed in it too). */
   private clothes: EquipmentVisuals;
 
-  private constructor(private human_: Humanoid, level: Level, private readonly seed: number) {
+  private constructor(private human_: Humanoid, level: Level, private readonly seed: number, private outfit_: OutfitSpec | undefined) {
     this.level = level;
-    this.clothes = rags(seed);
+    this.clothes = grandchildsClothes(outfit_, seed);
+    this.hidesHair = !!outfit_ && outfit_.hat !== 'none';
     this.root.add(human_.object);
     this.head.position.y = human_.height - 0.1;
     human_.object.add(this.head);

@@ -11,6 +11,7 @@ import { propModel } from '../../gen/models';
 import { meshFromData } from '../meshes';
 import { METAL, VERTEX_COLOR_SOLID } from '../materials';
 import { QUALITY, type Item, type ItemKind } from '../../loot/items';
+import type { OutfitSpec } from '../../loot/outfit';
 
 type Rgb = [number, number, number];
 
@@ -45,8 +46,71 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
     case 'miners-helmet': return { layers: [{ kind: 'rigid', socket: 'head', build: hardHat }], hideHair: true };
     /** Work gloves: leather over the hands, a cuff over the wrist. */
     case 'work-gloves': return shell([{ region: 'hand.L' }, { region: 'hand.R' }, { region: 'forearm.L', from: 0.85 }, { region: 'forearm.R', from: 0.85 }], 0.006, 3, cloth(v, 'leather', { roughness: 0.7 }));
+    default: return everyday(defId, v);
+  }
+}
+
+/** Both sleeves or trouser legs covering `to` of the limb (0..1: the upper part first, then the lower). */
+const limbs = (upper: 'upperarm' | 'thigh', lower: 'forearm' | 'shin', to: number): ShellLayer['regions'] => [
+  { region: `${upper}.L`, to: Math.min(1, to * 2) }, { region: `${upper}.R`, to: Math.min(1, to * 2) },
+  ...(to > 0.5 ? [{ region: `${lower}.L` as const, to: (to - 0.5) * 2 }, { region: `${lower}.R` as const, to: (to - 0.5) * 2 }] : []),
+];
+const ARMS = (to: number): ShellLayer['regions'] => limbs('upperarm', 'forearm', to);
+const LEGS = (to: number): ShellLayer['regions'] => [{ region: 'pelvis' }, { region: 'buttocks' }, ...limbs('thigh', 'shin', to)];
+const FEET: ShellLayer['regions'] = [{ region: 'foot.L' }, { region: 'foot.R' }];
+const shade = (c: Rgb, k: number): Rgb => [c[0] * k, c[1] * k, c[2] * k];
+
+/**
+ * Today's clothes (Scale's city wardrobe, src/loot/outfit.ts names them): the item's
+ * pattern in `visual.material` ('cloth' is plain), the fine cut from its seed. Null: not one of these.
+ */
+function everyday(defId: string, v: ItemVisual): WearableSpec | null {
+  const c = v.primary, c2 = v.secondary;
+  const pat = (v.material === 'cloth' ? 'plain' : v.material) as ShellMaterial['pattern'];
+  const fab = (pattern: ShellMaterial['pattern'], o: Partial<ShellMaterial> = {}): ShellMaterial => cloth(v, pattern, { roughness: 0.85, sheen: 0.3, ...o });
+  switch (defId) {
+    case 'tshirt': return shell([...TORSO, ...ARMS(0.22)], 0.004, 1, fab(pat, { roughness: 0.9 }), { trim: { width: 0.006, color: c2 } });
+    case 'shirt': return shell([...TORSO, ...ARMS(0.97)], 0.004, 1, fab(pat, { roughness: 0.75, sheen: 0.2 }), { trim: { width: 0.01, color: shade(c, 0.9) } });
+    case 'sweater': return shell([...TORSO, { region: 'neck', to: 0.3 }, ...ARMS(0.95)], 0.008, 2, fab(pat === 'plain' ? 'quilted' : pat, { roughness: 0.95, patternScale: 14, sheen: 0.5 }), { trim: { width: 0.015, color: c2 } });
+    /** A hoodie: thick plain fleece to the wrists, a ribbed band at the hem and cuffs. */
+    case 'hoodie': return shell([...TORSO, { region: 'neck', to: 0.45 }, ...ARMS(0.97)], 0.01, 2, fab(pat, { roughness: 0.97, sheen: 0.45 }), { trim: { width: 0.022, color: shade(c, 0.8) } });
+    case 'dress': return shell([...TORSO, { region: 'pelvis' }, { region: 'buttocks' }, ...ARMS(v.seed % 2 ? 0.2 : 0)], 0.006, 2, fab(pat, { roughness: 0.75, sheen: 0.5 }), { skirt: { length: 0.55 + (v.seed % 3) * 0.1, flare: 0.35 } });
+    case 'jacket': return shell([...TORSO, ...ARMS(0.95)], 0.014, 3, fab(pat, { roughness: pat === 'leather' ? 0.55 : 0.8 }), { trim: { width: 0.02, color: c2 } });
+    /** A rain jacket: shiny, to the waist. */
+    case 'raincoat': return shell([...TORSO, ...ARMS(0.97)], 0.016, 3, fab('plain', { roughness: 0.3, sheen: 0.1 }), { trim: { width: 0.02, color: shade(c, 0.75) } });
+    case 'blazer': return shell([...TORSO, ...ARMS(0.97)], 0.012, 3, fab('plain', { roughness: 0.7, sheen: 0.35 }), { skirt: { length: 0.22, flare: 0.05, slits: 1 }, trim: { width: 0.02, color: shade(c, 0.7) } });
+    case 'coat': return shell([...TORSO, ...ARMS(0.97)], 0.02, 4, fab(pat, { roughness: 0.9, sheen: 0.4 }), { skirt: { length: 0.72, flare: 0.25, slits: 1 }, trim: { width: 0.03, color: c2 } });
+    case 'jeans': return shell(LEGS(0.97), 0.006, 1, fab('plain', { roughness: 0.92 }));
+    case 'chinos': return shell(LEGS(0.98), 0.007, 1, fab(pat, { roughness: 0.8 }));
+    case 'shorts': return shell(LEGS(0.4), 0.006, 1, fab(pat));
+    case 'skirt': return shell([{ region: 'pelvis', from: 0.5 }, { region: 'buttocks', from: 0.4 }], 0.008, 2, fab(pat, { roughness: 0.8 }), { skirt: { length: 0.45 + (v.seed % 3) * 0.12, flare: 0.3 } });
+    case 'sneakers': return shell(FEET, 0.012, 1, fab('plain', { roughness: 0.7 }), { trim: { width: 0.02, color: [0.95, 0.95, 0.95] } });
+    case 'shoes': return shell(FEET, 0.01, 1, fab('leather', { roughness: 0.4 }));
+    case 'boots': return shell([...FEET, { region: 'shin.L', from: 0.65 }, { region: 'shin.R', from: 0.65 }], 0.012, 2, fab('leather', { roughness: 0.5 }));
+    /** A knitted beanie (Scale's): a dome over the crown on the head socket, the hair tucked under. */
+    case 'beanie': return { layers: [{ kind: 'rigid', socket: 'head', build: (fit) => beanie(fit, c) }], hideHair: true };
+    /** A baseball cap (Scale's): a shallow dome and a stiff peak forward, on the head socket. */
+    case 'cap': return { layers: [{ kind: 'rigid', socket: 'head', build: (fit) => cap(fit, c) }], hideHair: true };
     default: return null;
   }
+}
+
+/**
+ * A beanie in head-socket space (+z forward, y up, from between the ears): a dome over the skull
+ * (whose centre sits a little up and back from there), its rim tipped up at the brow and down at the nape.
+ */
+function beanie(fit: BodyFit, c: Rgb): Object3D {
+  const r = fit.headRadius;
+  return held((knit) => knit.ellipsoid(0, r * 0.3, -r * 0.08, r * 1.12, r * 1.25, r * 1.22, c, 18, -0.25, 0.5));
+}
+
+/** A cap in head-socket space: a shallow dome over the skull and a flat peak over the brow (half inside the dome). */
+function cap(fit: BodyFit, c: Rgb): Object3D {
+  const r = fit.headRadius;
+  return held((cloth) => {
+    cloth.ellipsoid(0, r * 0.35, -r * 0.06, r * 1.1, r * 1.12, r * 1.18, c, 18, -0.15, 0.5);
+    cloth.ellipsoid(0, r * 0.42, r * 1.1, r * 0.8, 0.006, r * 0.62, shade(c, 0.85), 16, 0.15);
+  });
 }
 
 /** What each worn item looks like on the body: its slot, colours and how worn it is when sound. Items not here are not seen (held ones are). */
@@ -166,12 +230,12 @@ export const WARDROBE: Wardrobe = {
   disposeItem: (o) => o.traverse((m) => (m as Mesh).geometry?.dispose()),
 };
 
-const visual = (seed: number, primary: Rgb, secondary: Rgb, wear: number): ItemVisual =>
-  ({ shape: 'cloth', seed, primary, secondary, accent: secondary, material: 'cloth', glow: 0, wear });
+const visual = (seed: number, primary: Rgb, secondary: Rgb, wear: number, pattern = 'cloth'): ItemVisual =>
+  ({ shape: 'cloth', seed, primary, secondary, accent: secondary, material: pattern, glow: 0, wear });
 
-/** An outfit: chest, legs and feet as (garment, primary, secondary, wear), and what is in the hand. */
+/** An outfit: head, chest, outer layer (back), legs and feet as (garment, primary, secondary, wear, pattern?), and what is in the hand. */
 interface Outfit {
-  clothes: readonly (readonly ['head' | 'chest' | 'legs' | 'feet', string, Rgb, Rgb, number])[];
+  clothes: readonly (readonly ['head' | 'chest' | 'back' | 'legs' | 'feet', string, Rgb, Rgb, number, string?])[];
   hand: readonly [string, Rgb, Rgb, number] | null;
 }
 
@@ -242,13 +306,14 @@ const SHROUD: Outfit = {
 
 function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals {
   const eq: EquipmentVisuals = {};
+  o.clothes.forEach(([slot, defId, a, b, wear, pattern], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear, pattern) }; });
+  // The kit goes on over the clothes (the hard hat in place of a cap).
   for (const it of items) {
     const look = WORN[it.kind];
     if (!look) continue;
     const [slot, a, b, wear] = look;
     eq[slot] = { defId: it.kind, visual: visual(seed + 7, a, b, Math.min(1, wear / QUALITY[it.quality].factor)) };
   }
-  o.clothes.forEach(([slot, defId, a, b, wear], k) => { eq[slot] = { defId, visual: visual(seed + k, a, b, wear) }; });
   const weapon = items.find((it) => TOOLS[it.kind]);
   if (weapon) eq.mainhand = { defId: weapon.kind, visual: { ...visual(seed + 3, [0.3, 0.29, 0.28], [0.3, 0.22, 0.14], Math.min(1, 0.5 / QUALITY[weapon.quality].factor)), shape: TOOLS[weapon.kind][1], material: 'metal' } };
   else if (o.hand) {
@@ -266,6 +331,21 @@ export const hidesHair = (items: readonly Item[]): boolean =>
 
 /** A grandchild's rags and grandma's knife; `lid`: and her pot lid (the Pot Lid card); `items`: what of their kit they have on. */
 export const rags = (seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals => dressIn(RAGS, seed, lid, items);
+
+/**
+ * A grandchild in the clothes chosen in the creator (src/loot/outfit.ts; none: the rags),
+ * grandma's knife in hand, `lid` and the kit `items` as with the rags.
+ */
+export function grandchildsClothes(outfit: OutfitSpec | undefined, seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals {
+  if (!outfit) return rags(seed, lid, items);
+  const o = outfit, wear = 0.15, s = o.seed >>> 0;
+  const clothes: Outfit['clothes'][number][] = [['chest', o.top, o.topColor, o.topColor2, wear, o.topPattern]];
+  if (o.top !== 'dress') clothes.push(['legs', o.bottom, o.bottomColor, o.bottomColor, o.bottom === 'jeans' ? 0.35 : wear]);
+  if (o.outer !== 'none') clothes.push(['back', o.outer, o.outerColor, shade(o.outerColor, 0.8), wear, o.outerLeather && o.outer === 'jacket' ? 'leather' : 'plain']);
+  clothes.push(['feet', o.shoes, o.shoesColor, [1, 1, 1], wear]);
+  if (o.hat !== 'none') clothes.push(['head', o.hat, o.hatColor, o.hatColor, wear]);
+  return dressIn({ clothes, hand: RAGS.hand }, s, lid, items);
+}
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
 export const goblinsClothes = (seed: number, look: number): EquipmentVisuals => dressIn(GOBLINS[look % GOBLINS.length], seed);
