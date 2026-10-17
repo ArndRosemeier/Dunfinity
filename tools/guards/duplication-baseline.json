@@ -1,5 +1,9 @@
 [
   {
+    "key": "idiom: [.hypot .r .x .z Math] in dunfinity/gen/descents.ts + dunfinity/gen/lair.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",
+    "reason": "distance from a point to a round thing's centre against its radius: each its own round thing (a shaft's rim, a lair, a green, a villager); one line, nothing to fold"
+  },
+  {
     "key": "same name: dunfinity/creatures/pets.ts#data + dunfinity/loot/tin.ts#data",
     "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
   },
@@ -1820,8 +1824,8 @@
     "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
   },
   {
-    "key": "same name: dunfinity/render/creatures/scavengerView.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
-    "reason": "each creature view's own part of the FigurePool seam (src/render/creatures/figures.ts): its own meshes and poses; same per-frame verb"
+    "key": "same name: dunfinity/render/creatures/rigged.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
+    "reason": "a rigged creature's per-frame pose vs a climb segment's pose(u) callback: same verb, unrelated things"
   },
   {
     "key": "same name: dunfinity/render/creatures/shroomView.ts#clipFor + dunfinity/render/creatures/slimeView.ts#clipFor",

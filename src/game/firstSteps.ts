@@ -31,7 +31,7 @@ export const STEP_GROUPS: readonly { readonly title: string; readonly oneByOne: 
       { id: 'circle', text: 'Stand still in her salt circle', keys: [], how: 'Nothing comes into it. Resting there mends you, like a fire.' },
       { id: 'cook', text: 'Open her tin and cook a recipe card', keys: ['T', 'W', 'S', 'E'], how: 'The first card is a good start. Infused salt pays for it.' },
       { id: 'diary', text: 'Look into her diary', keys: ['J'], how: 'Most pages are torn out. She left them down there.' },
-      { id: 'down', text: 'Go through the arch and down the old shaft', keys: ['E'], how: 'At the top of the ladder.' },
+      { id: 'down', text: 'Go through the arch and down the old shaft', keys: ['E'], how: 'Anywhere at the edge of the shaft.' },
     ],
   },
   {

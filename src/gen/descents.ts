@@ -90,6 +90,25 @@ export function ladderTop(s: Shaft, out: [number, number] = [0, 0]): [number, nu
   return out;
 }
 
+/**
+ * How near a ladder one must be to climb it, metres: anywhere within `rim` of a way down's rim (the
+ * climb walks round the hole to the ladder), within `foot` of where one gets on the way up; once
+ * offered, the offer holds `hold` farther out (no flicker at its edge); and it stays `offFloor`
+ * seconds after the feet leave the floor.
+ */
+export const LADDER_REACH = { rim: 1.7, foot: 2.2, hold: 0.5, offFloor: 0.3 } as const;
+
+/** Whether one standing at (x, y, z) may get on shaft s's ladder; `held`: it was offered a moment ago. */
+export function offersLadder(s: Shaft, x: number, y: number, z: number, held: boolean): boolean {
+  const hold = held ? LADDER_REACH.hold : 0;
+  if (s.up) {
+    const [lx, lz] = ladderTop(s);
+    return Math.hypot(x - lx, z - lz) < LADDER_REACH.foot + hold && Math.abs(y - s.floor) < 1.2;
+  }
+  const d = Math.hypot(x - s.x, z - s.z);
+  return d > s.r - 0.2 && d < s.r + LADDER_REACH.rim + hold && Math.abs(y - s.top) < 1.2;
+}
+
 /** The way up: shaft radius, how far its ladder stands off the pillar, its air above the ceiling. */
 export const ASCENT = { radius: 1.5, standoff: 0.45, above: 24 } as const;
 

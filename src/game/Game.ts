@@ -36,7 +36,7 @@ import { TABLET_GRAPHICS, readGraphicsSettings, readKeySettings, writeGraphicsSe
 import { QUALITY_NOTES } from '../render/quality';
 import { SettingsView } from '../app/settingsView';
 import { parseViewParams, titleWanted } from '../app/params';
-import { ladderOf, ladderTop, type Shaft } from '../gen/descents';
+import { ladderOf, ladderTop, offersLadder, LADDER_REACH, type Shaft } from '../gen/descents';
 import type { Spot } from '../render/prepared';
 import { LadderClimb, faceYaw, type ClimbStep } from '../render/humans/ladderClimb';
 import { DRAFT_RANGE, draftLine, homeLine } from './draft';
@@ -130,8 +130,6 @@ import { Singing, type Sung } from '../world/singing';
 const STEP = 1 / 120;
 /** What a fall into a floating level's void costs, health (`level.fellOut`; never the last point). */
 const VOID_FALL = 25;
-/** How close to where one gets on a ladder the nobody must stand to climb it, metres. */
-const LADDER_REACH = 1.6;
 /** How much of the ladder is climbed on each level when going from one to the other, metres. */
 const CLIMB_SHOWN = 4.5;
 /** Living stalagmites' drops are heard this close (m). */
@@ -851,27 +849,39 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     return best;
   };
   const ladder: [number, number] = [0, 0];
-  /** The shaft whose ladder the nobody stands at (a way down or the way up), or null. */
+  /** The shaft offered last frame (held a little farther out, so the prompt never flickers at its edge), and when the feet were last on the floor. */
+  let offered: Shaft | null = null, flooredAt = -1;
+  /**
+   * The shaft whose ladder the nobody may get on now (a way down or the way up), or null. A way down
+   * is offered anywhere round its rim (the climb walks round the hole to the ladder); the way up near
+   * its foot. A moment off the floor (a bump, a step) does not take the offer away.
+   */
   const atLadder = (): Shaft | null => {
-    if (body.dead || body.mode !== 'walk' || !body.grounded) return null;
-    const s = level.descents.at(body.x, body.z, LADDER_REACH + 3);
-    if (!s) return null;
-    ladderTop(s, ladder);
-    return Math.hypot(body.x - ladder[0], body.z - ladder[1]) < LADDER_REACH ? s : null;
+    if (body.dead || body.mode !== 'walk') return (offered = null);
+    const now = timer.getElapsed();
+    if (body.grounded) flooredAt = now;
+    if (now - flooredAt > LADDER_REACH.offFloor) return (offered = null);
+    const s = level.descents.at(body.x, body.z, LADDER_REACH.rim + LADDER_REACH.hold + 3);
+    if (!s) return (offered = null);
+    return (offered = offersLadder(s, body.x, body.y, body.z, s === offered) ? s : null);
   };
   /**
    * Climb shaft s's ladder to the level below (a way down) or above (the way up): the first few
    * metres on this level, a fade while the next one streams in, the last few metres there.
    */
-  const climbFrom = (s: Shaft): void => {
+  const climbFrom = (s: Shaft, caught = false): void => {
     const here = ladderOf(s), health = body.health;
     const other = new Level(params.seed, level.depth + (s.up ? -1 : 1), params.style);
-    const steps: ClimbStep[] = [{ kind: 'walk', ladder: here }];
-    if (s.up) {
-      steps.push({ kind: 'foot', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: here.floor, to: here.floor + CLIMB_SHOWN, fade: 'out' });
+    const steps: ClimbStep[] = [];
+    if (caught) {
+      // Fallen into the shaft: hands on the rungs at once, and on down.
+      const at = Math.max(here.lo + CLIMB_SHOWN, Math.min(body.y, here.floor - 0.6));
+      steps.push({ kind: 'climb', ladder: here, from: at, to: at - CLIMB_SHOWN, fade: 'out' });
+    } else if (s.up) {
+      steps.push({ kind: 'walk', ladder: here }, { kind: 'foot', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: here.floor, to: here.floor + CLIMB_SHOWN, fade: 'out' });
     } else {
       const top = climb.rimFeet(here);
-      steps.push({ kind: 'rim', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: top, to: top - CLIMB_SHOWN, fade: 'out' });
+      steps.push({ kind: 'walk', ladder: here, around: [s.x, s.z, s.r] }, { kind: 'rim', ladder: here, dir: 'on' }, { kind: 'climb', ladder: here, from: top, to: top - CLIMB_SHOWN, fade: 'out' });
     }
     const to = cameOut(other, s.up);
     steps.push({
@@ -1509,8 +1519,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         body.hurt(body.health - hp, 'fall');
         say('You fell into the dark, and climbed back out, bruised.', 3);
       }
-      // At the top of a climb: pull up over the edge (played out, then the body stands on the ledge).
-      if (body.ledge) {
+      // Fallen into a way down: the nobody grabs its ladder and climbs on down, never falls to the bottom.
+      const shaft = body.dead || pocket || homeTo !== null || body.vy > -1 ? null : level.descents.at(body.x, body.z);
+      if (shaft && !shaft.up && body.y < shaft.top - 0.6) {
+        climbFrom(shaft, true);
+        say('You fall into the shaft and catch hold of the ladder.', 3);
+      } else if (body.ledge) {
+        // At the top of a climb: pull up over the edge (played out, then the body stands on the ledge).
         climb.play([{ kind: 'ledge', ledge: body.ledge, feet: body.y }], body.x, body.y, body.z, body.facing);
         onLanded = () => body.overLedge();
       }
