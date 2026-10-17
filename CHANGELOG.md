@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.208 — Your salt pet's health under yours
+
+- While a salt pet is with you, the HUD shows its name and health bar under your health and stamina, in the veins' blue.
+
 ## v0.207 — Grandma's salt circle, quiet and alive
 
 - The circle of salt round grandma's armchair, and the ward traced round it, no longer shine as a bright ring. They glow softly on the flagstones, with a faint halo spilling round them.
