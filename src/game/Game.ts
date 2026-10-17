@@ -404,6 +404,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   if (!titled) await castWarm;
   /** The headlamp, as the crickets see it (they scatter from it). */
   const lamp: Lamp = { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: -1, cos: Math.cos(view.headlamp.angle) };
+  /** Kemal's flashlight switched on (it shines only while it is in the off hand). */
+  let torchOn = false;
   const lampDir = new Vector3();
   const hearth = new Hearth(hearthParts());
   hearth.root.visible = false;
@@ -986,6 +988,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
+    // Kemal's flashlight (in the off hand): L switches it on and off.
+    if (controls.tap('KeyL')) {
+      if (!kit.has('flashlight')) say("You have no flashlight. Kemal sells them, next door to grandma's.", 3);
+      else { torchOn = !torchOn; sounds.play('pencil_tick', null, 0.7, 0.6); }
+    }
+    view.torch = torchOn && kit.has('flashlight') && !body.dead;
+    lamp.cos = Math.cos(view.headlamp.angle);
     if (controls.tap('KeyM') || (mapView.open && controls.tap('Escape'))) mapView.toggle(level.name);
     // Grandma's diary, from the tin: open anywhere, J or Escape to close.
     if (diaryView.open && (controls.tap('KeyJ') || controls.tap('Escape'))) diaryView.hide();
