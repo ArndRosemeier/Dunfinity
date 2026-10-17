@@ -70,6 +70,11 @@ export const HUNTING = {
   together: 2,
 } as const;
 
+/** How long an animal's tell takes before its blow lands, s: a peaceful one's when it fights back; a hunting kind's by its fighting style, whether it hunts or fights back. */
+export function windupOf(n: Nature): number {
+  return n.peaceful ? CALM.windup : HUNTING.windup[n.temper.strategy];
+}
+
 /** What an animal is, as far as how it acts goes (a species of the bestiary; a quarry rat, a feral dog). */
 export interface Nature {
   /** 0..1: flees only, fights back when hurt, comes for you (AGGRESSION); `peaceful`: it does not come for you. */
@@ -247,7 +252,7 @@ export abstract class Animals<D extends Den & { readonly y: number }, C extends 
       if (!c.harmless) c.yaw += angleDiff(c.yaw, toYou) * Math.min(1, dt * 3);
       brake(c, 6, dt);
       this.steer.slide(c, dt);
-      if (!c.struck && c.actionT * H.strike >= H.windup) {
+      if (!c.struck && c.actionT * H.strike >= windupOf(sp)) {
         c.struck = true;
         const ahead = Math.abs(angleDiff(c.yaw, toYou)) < 1.1;
         if (!c.harmless && ahead && near && d - prey.radius - c.radius < len * H.reach + 0.2) {
@@ -475,7 +480,7 @@ export abstract class Animals<D extends Den & { readonly y: number }, C extends 
 
     // No way to you (up a ledge, past a drop): it gives up a while and goes home.
     if (c.mode === 'stalk' && thwarted(c)) { c.balk = H.balk; c.mode = 'wander'; c.t = 4; c.action = ''; [c.tx, c.tz] = this.roamFrom(c.den, Math.max(CALM.roamMin, len * CALM.roam)); return 0; }
-    const windup = H.windup[plan];
+    const windup = windupOf(sp);
     if (c.action && c.harmless) {
       // Reared up at you before it comes (harmless), eyes on you.
       c.yaw += angleDiff(c.yaw, toYou) * Math.min(1, dt * 6);

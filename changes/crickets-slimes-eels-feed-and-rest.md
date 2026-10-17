@@ -7,3 +7,4 @@
 - New Blender clips: Graze and Rest for the cricket and the eel, Feed and Sleep for the slimes.
 - Animals no longer get stuck short of their food: when the straight way is blocked, they walk round the rock to it, and their food spots are only ones they can actually reach.
 - Animals are no longer placed in water or shoved into rock by their herd while they feed or rest.
+- A hunting creature that fights back now shows its full tell before the blow lands, the same as when it hunts.
