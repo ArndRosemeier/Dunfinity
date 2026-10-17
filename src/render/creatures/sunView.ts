@@ -53,7 +53,7 @@ export class SunView {
         // A slow turn, so its boiling face rolls (smooth: never a flicker).
         p.body.rotation.set(0.3 * Math.sin(s.phase * 6.283), s.age * 0.06 + s.phase * 6.283, 0);
         p.halo.position.set(s.x, s.y, s.z);
-        p.halo.scale.set(r * 3.2, 0.9 + 0.1 * Math.sin(s.age * 0.9 + s.phase * 9), 1);
+        p.halo.scale.set(r * 4.5, 1.8 + 0.2 * Math.sin(s.age * 0.9 + s.phase * 9), 1);
         const l = lightOf(s), g = p.glow;
         g.x = s.x; g.y = s.y; g.z = s.z; g.intensity = l.intensity; g.reach = l.reach;
         this.lit.push(g);

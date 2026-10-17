@@ -702,8 +702,9 @@ export const SUN = defineKind('sun', ['position', 'normal', 'color'], () => {
   m.positionNode = n.mul(boil.mul(0.16).add(ripple.mul(0.04)).add(1));
   const facing = abs(dot(normalize(normalView), vec3(0, 0, 1)));
   const granule = float(1).sub(mx_worley_noise_float(n.mul(9).add(flow.mul(3))));
-  const hot = mix(vec3(1.0, 0.42, 0.1), vec3(1.0, 0.86, 0.55), facing.pow(0.6));
-  m.colorNode = hot.mul(granule.mul(0.6).add(1.1)).mul(vertexColor()).mul(2.2);
+  // Orange at the limb, a hot yellow in the middle; not so bright that it clips to white.
+  const hot = mix(vec3(1.0, 0.3, 0.04), vec3(1.0, 0.75, 0.32), facing.pow(0.8));
+  m.colorNode = hot.mul(granule.mul(0.7).add(0.75)).mul(vertexColor()).mul(1.1);
   return m;
 }, { cast: false, receive: false });
 
