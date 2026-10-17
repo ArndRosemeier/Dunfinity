@@ -77,5 +77,17 @@
   ],
   "fade": 6,
   "prompt": "A grandchild did not come back: a short, very sad elegy on solo cello and piano, slow and quiet, ending softly, 60 BPM."
+ },
+ "title": {
+  "kind": "loop",
+  "window": [
+   38,
+   140
+  ],
+  "length": [
+   40,
+   80
+  ],
+  "prompt": "The game's title theme: a memorable, haunting main melody on music box and celesta over soft cello and felt piano, wistful and a little eerie, like an old lullaby grandma used to hum in a salt-mining town, gently rocking, steady tempo all the way through, 72 BPM."
  }
 }
