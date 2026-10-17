@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.258 — Minimap names fit
+
+- The minimap names places short (Grandma, Kemal's, Ilse's, Weber) and puts a name on the other side of its dot when it would run off the edge, so every name reads whole.
+
 ## v0.257 — A gift waits in every thin-place pocket
 
 - Stepping through a thin place, a crystal of that deeper world glows on the floor a few steps ahead, and a thread of rising salt leads to it. Take it before the pocket lets go of you.
