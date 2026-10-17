@@ -380,8 +380,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let made = saved?.look;
   const nobody = await Nobody.create(params.seed, level, made);
   // The dogs too: skinned, their shaders are their own, so they compile in the warm-up with the humans.
-  const dogView = await DogView.create();
-  const ratView = await RatView.create();
+  const dogView = await DogView.load();
+  const ratView = await RatView.load();
   const cricketView = await CricketView.create();
   const slimeView = await SlimeView.create();
   const eelView = await EelView.create();
@@ -743,7 +743,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get thin() { return thin; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -887,13 +887,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
 
   /** Draw everything living on the level shown (the nearest of each kind to `at`). */
   const drawLife = (f: Fauna, at: { readonly x: number; readonly y: number; readonly z: number }, dt: number, now: number): void => {
-    ratView.draw(f.rats.list, now, at);
+    ratView.draw(f.rats.list, f.townRats.list, now, at);
     touchedView.draw(f.touched.list, at.x, at.z, dt, now);
     foremanView.draw(f.foreman.list[0] ?? null, f.foreman.hall, dt, now);
     cricketView.draw(f.crickets.list, now, at);
     slimeView.lumen.draw(f.lumen.list, now, at);
     slimeView.murk.draw(f.murk.list, now, at);
-    dogView.draw(f.dogs.list, now, at);
+    dogView.draw(f.dogs.list, f.townDogs.list, now, at);
     eelView.draw(f.eels.list, now, at);
     shroomView.toadstools.draw(f.toadstools.list, now, at);
     shroomView.puffcaps.draw(f.puffcaps.list, now, at);

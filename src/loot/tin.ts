@@ -12,8 +12,8 @@
 export const SALT = {
   /** What the tin holds at the start (recipe-box.md §8: three pinches). */
   start: 3,
-  /** The first kill of a kind, per population name (src/creatures/*). */
-  kills: { rats: 1, crickets: 2, 'slimes-lumen': 2, 'slimes-murk': 2, dogs: 3, eels: 3, toadstools: 3, puffcaps: 3, scavengers: 3, goblins: 3, critters: 2, touched: 4, foreman: 15, 'tall-one': 25 } as Readonly<Record<string, number>>,
+  /** The first kill of a kind, per population name (src/creatures/*); the town's ordinary animals give none. */
+  kills: { rats: 1, 'town-rats': 0, 'town-dogs': 0, crickets: 2, 'slimes-lumen': 2, 'slimes-murk': 2, dogs: 3, eels: 3, toadstools: 3, puffcaps: 3, scavengers: 3, goblins: 3, critters: 2, touched: 4, foreman: 15, 'tall-one': 25 } as Readonly<Record<string, number>>,
   /** A new depth: base, and per level of depth. */
   depth: [2, 0.5] as const,
   /** One of grandma's camps, its note read. */
@@ -26,12 +26,13 @@ export const SALT = {
 
 /** What each kind is called on the HUD. */
 const KIND: Readonly<Record<string, string>> = {
-  rats: 'rat', crickets: 'cave cricket', 'slimes-lumen': 'Lumen slime', 'slimes-murk': 'Murk slime', dogs: 'feral dog', eels: 'brine eel', toadstools: 'toadstool', puffcaps: 'puffcap', critters: 'cave animal',
+  rats: 'rat', 'town-rats': 'rat', 'town-dogs': 'dog', crickets: 'cave cricket', 'slimes-lumen': 'Lumen slime', 'slimes-murk': 'Murk slime', dogs: 'feral dog', eels: 'brine eel', toadstools: 'toadstool', puffcaps: 'puffcap', critters: 'cave animal',
   scavengers: 'scavenger', goblins: 'goblin', touched: 'Salt-Touched', foreman: 'Foreman', 'tall-one': 'Tall One',
 };
 
 /** Pinches for the k-th time (1-based) of something worth `base` the first time. */
 export function pinches(k: number, base: number): number {
+  if (base <= 0) return 0;
   if (k <= 3) return Math.ceil(base / k);
   return (SALT.pinch as readonly number[]).includes(k) ? 1 : 0;
 }
