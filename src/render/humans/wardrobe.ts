@@ -219,6 +219,16 @@ const CARDIGAN: Outfit = {
   hand: null,
 };
 
+/** The townsfolk out by day (1966): a brown jacket and grey trousers, a blue work coat, a red dress, a green cardigan, a beige coat, a navy suit; their shoes; nothing in the hand. */
+const TOWNSFOLK: readonly Outfit[] = [
+  { clothes: [['chest', 'tunic', [0.3, 0.2, 0.12], [0.22, 0.15, 0.1], 0.3], ['legs', 'trousers', [0.3, 0.3, 0.31], [0.22, 0.22, 0.23], 0.25], ['feet', 'footwraps', [0.12, 0.08, 0.06], [0.08, 0.06, 0.04], 0.2]], hand: null },
+  { clothes: [['chest', 'tunic', [0.16, 0.24, 0.4], [0.12, 0.17, 0.28], 0.35], ['legs', 'trousers', [0.16, 0.2, 0.3], [0.12, 0.15, 0.22], 0.35], ['feet', 'footwraps', [0.1, 0.08, 0.07], [0.07, 0.06, 0.05], 0.3]], hand: null },
+  { clothes: [['chest', 'tunic', [0.55, 0.14, 0.12], [0.75, 0.68, 0.6], 0.15], ['legs', 'trousers', [0.5, 0.14, 0.12], [0.35, 0.1, 0.09], 0.15], ['feet', 'footwraps', [0.2, 0.12, 0.08], [0.14, 0.08, 0.06], 0.2]], hand: null },
+  { clothes: [['chest', 'tunic', [0.22, 0.34, 0.2], [0.16, 0.24, 0.14], 0.25], ['legs', 'trousers', [0.24, 0.2, 0.16], [0.18, 0.15, 0.12], 0.25], ['feet', 'footwraps', [0.16, 0.1, 0.07], [0.11, 0.07, 0.05], 0.25]], hand: null },
+  { clothes: [['chest', 'tunic', [0.58, 0.5, 0.36], [0.42, 0.36, 0.26], 0.2], ['legs', 'trousers', [0.26, 0.24, 0.22], [0.2, 0.18, 0.16], 0.2], ['feet', 'footwraps', [0.1, 0.07, 0.05], [0.07, 0.05, 0.04], 0.2]], hand: null },
+  { clothes: [['chest', 'tunic', [0.1, 0.12, 0.2], [0.75, 0.75, 0.78], 0.1], ['legs', 'trousers', [0.1, 0.12, 0.2], [0.08, 0.09, 0.15], 0.1], ['feet', 'footwraps', [0.06, 0.05, 0.05], [0.04, 0.04, 0.04], 0.1]], hand: null },
+];
+
 /** The Tall One's shroud: a long, dark, worn cloth, and nothing in the hand. */
 const SHROUD: Outfit = {
   clothes: [['chest', 'tunic', [0.06, 0.06, 0.07], [0.04, 0.04, 0.05], 0.95], ['legs', 'trousers', [0.05, 0.05, 0.06], [0.04, 0.04, 0.05], 0.95]],
@@ -258,3 +268,4 @@ export const ghostsClothes = (seed: number, race: 'dwarf' | 'elf'): EquipmentVis
 export const travellersClothes = (seed: number): EquipmentVisuals => dressIn(TRAVELLER, seed);
 export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);
 export const cardigan = (seed: number): EquipmentVisuals => dressIn(CARDIGAN, seed);
+export const townsfolksClothes = (seed: number, look: number): EquipmentVisuals => dressIn(TOWNSFOLK[look % TOWNSFOLK.length], seed);

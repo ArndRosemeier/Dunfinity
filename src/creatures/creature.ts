@@ -4,6 +4,7 @@
  * clocks of being hurt and of death. Its sim reacts to a blow on its next step (`provoked`); one
  * bitten by a salt pet turns on it (`grudge`), as every creature fights back when attacked.
  */
+import { angleDiff } from '@futuremagic/core';
 import type { Fighter } from '../combat/combat';
 import type { Walker } from './steer';
 
@@ -47,6 +48,11 @@ export abstract class Creature<Mode extends string> implements Fighter, Walker {
     if (cause !== GRUDGE) this.grudge = null;
     if (this.dead) { this.mode = 'dead' as Mode; this.deadT = 0; }
   }
+}
+
+/** A yaw turned towards `want` by at most `step` radians (the short way round). */
+export function turnTowards(yaw: number, want: number, step: number): number {
+  return yaw + Math.max(-step, Math.min(step, angleDiff(yaw, want)));
 }
 
 /** How fast something moves over the floor, metres per second. */
