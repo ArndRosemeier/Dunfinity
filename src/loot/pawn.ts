@@ -15,9 +15,14 @@ const LINES: readonly ((paid: number, n: number) => string)[] = [
   (paid, n) => `"Hm." Ilse weighs ${n === 1 ? 'it' : 'them'} in her hand, and pays €${paid}. "Your grandmother sold me a spoon like this once."`,
 ];
 
-/** Sell everything in the pack: it is emptied, and what Ilse pays and says comes back. */
+/** What Ilse says paying €`paid` for `n` things on `visit`. */
+export function ilsePays(paid: number, n: number, visit: number): string {
+  return LINES[Math.floor(hash3f(1949, visit, n, paid) * LINES.length)](paid, n);
+}
+
+/** Sell every find in the pack: they are gone, and what Ilse pays and says comes back. */
 export function sell(pack: Pack, visit: number): { paid: number; line: string } {
   const n = pack.items.length, paid = pack.worth;
   pack.items.length = 0;
-  return { paid, line: LINES[Math.floor(hash3f(1949, visit, n, paid) * LINES.length)](paid, n) };
+  return { paid, line: ilsePays(paid, n, visit) };
 }

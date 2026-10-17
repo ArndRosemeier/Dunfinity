@@ -19,8 +19,8 @@ import { canRead } from '../gen/inscriptions';
 import { CELLAR, daylightAt } from '../gen/cellar';
 import { TOWN } from '../gen/town';
 import { temperLine } from '../creatures/temper';
-import { sell } from '../loot/pawn';
-import { GEAR, GEAR_ORDER, buyGear, hasGear, ilseSells, kitFromGear } from '../loot/hardware';
+import { sellFinds, shopRows, townMerchant, trade, type Merchant } from '../loot/shop';
+import { GEAR_ORDER, kitFromGear } from '../loot/hardware';
 import { Kit, freshKit, isItem, packRows, rummage, withRucksack } from '../loot/items';
 import { fallenAt, heirName, notaryLetter, notaryList, type Fallen } from '../gen/notary';
 import { DeathView, DEATH, NEXT } from '../app/deathView';
@@ -89,6 +89,7 @@ import { HavenView } from '../render/props/havenView';
 import { growthAt, setGrowth } from '../app/growth';
 import { TinView } from '../app/tinView';
 import { PackView } from '../app/packView';
+import { ShopView } from '../app/shopView';
 import { SpellView } from '../render/spells';
 import { SnapdragonView } from '../render/snapdragons';
 import { Snapdragons } from '../combat/snapdragon';
@@ -633,6 +634,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The pack open (I), and the find chosen in it. */
   const packView = new PackView(document.body);
   let packSel = 0;
+  /** A shop's counter open (E at it): whose, the line chosen, and what they said as one stepped up. */
+  const shopView = new ShopView(document.body);
+  let shopAt: { m: Merchant; keeper: Shopkeeper } | null = null, shopSel = 0, shopGreet = '';
   const readView = new ReadView(document.body);
   const diaryView = new DiaryView(document.body);
   const mapView = new MapView(document.body);
@@ -644,8 +648,6 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (a.hold) controls.latch(a.key, !controls.isLatched(a.key));
     else controls.press(a.key);
   }, (i, id) => tinView.ask({ kind: 'slot', i, id }), (i) => tinView.ask({ kind: 'tap', i }), keyName);
-  /** At Kemal's counter (last frame): 1, 2, 3 buy there, not use the bar. */
-  let atCounter = false;
   /** The Tab target (none: blows turn to the nearest foe where the camera looks), and its health when picked. */
   let target: Foe | null = null, targetFull = 1;
   /** The foes Tab has been round since the cycle began (each seen one gets its turn before the first again). */
@@ -977,7 +979,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get suns() { return suns; }, get riding() { return riding; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get suns() { return suns; }, get riding() { return riding; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, get euros() { return euros; }, set euros(v: number) { euros = v; }, tin, get cooked() { return cooked; }, thrown, garden, radish, pets, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -1108,7 +1110,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     });
     before = cam.distance;
     cam.distance = Math.max(cam.distance, 3.5);
-    tinView.hide(); packView.hide(); readView.hide(); diaryView.hide();
+    tinView.hide(); packView.hide(); shopView.hide(); readView.hide(); diaryView.hide();
     aimAt(null);
     document.exitPointerLock?.();
   };
@@ -1193,7 +1195,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   view.renderer.setAnimationLoop(() => {
     timer.update();
     // (Only when nothing else is open that Escape would close: then it is theirs.)
-    const others = tinView.open || packView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || settingsView.open || body.dead || !!prologue || !!document.querySelector('#whatsnew.open');
+    const others = tinView.open || packView.open || shopView.open || readView.open || diaryView.open || letterView.open || mapView.open || debug.open || settingsView.open || body.dead || !!prologue || !!document.querySelector('#whatsnew.open');
     if (!others && !document.pointerLockElement && performance.now() - freedAt > 300 && controls.tap('Escape')) {
       if (pause.open) goOn();
       else pause.showMenu();
@@ -1258,10 +1260,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (controls.tap('Backquote')) debug.toggle();
     // The bar's slots answer to 1–8 (not at Kemal's counter, nor with the tin open: there they buy, or put a card in a slot); a dead grandchild holds nothing.
     const bar = barOf(mainBar);
-    controls.alias(atCounter || tinView.open ? [] : bar.flatMap((a, i) => (a ? [[SLOT_KEYS[i], a.key] as const] : [])));
+    controls.alias(shopView.open || tinView.open ? [] : bar.flatMap((a, i) => (a ? [[SLOT_KEYS[i], a.key] as const] : [])));
     if (body.dead) for (const a of ABILITIES) controls.latch(a.key, false);
-    /** Rummaging in the tin or the pack: no blows, no casting, no walking off. */
-    const handsBusy = tinView.open || packView.open;
+    /** Rummaging in the tin or the pack, or dealing at a counter: no blows, no casting, no walking off. */
+    const handsBusy = tinView.open || packView.open || shopView.open;
     // Tab targeting: Tab picks (and then goes round) the foes near where the camera looks; Escape lets go.
     if (controls.tap('Tab') && !body.dead) {
       const t = nextTarget(inView(), target, tabbed);
@@ -1406,23 +1408,40 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       return keepers[shop].canHear(body.x, body.y, body.z); // (at the counter)
     };
     const nearPawn = atShop('pawn'), nearKemal = atShop('hardware');
-    /** Ilse's counter: her salt feather, and what the stranger from below brought her once it is in town. */
-    const ilse = ilseSells(Stranger.here({ deepest: tin.deepest, fallen: fallen.length }));
-    const counter = nearKemal ? { order: GEAR_ORDER, keeper: keepers.hardware } : nearPawn ? { order: ilse, keeper: keepers.pawn } : null;
-    atCounter = !!counter;
+    /** The counter one stands at: Kemal's, or Ilse's (with what the stranger from below brought her once it is in town). */
+    const counterAt = nearKemal ? 'hardware' : nearPawn ? 'pawn' : null;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
     const nearStranger = strangerHere() && !busy && !nearLadder && !nearFind && !nearNote && !nearWeber && body.grounded && stranger.canHear(body.x, body.y, body.z);
     const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : [...level.inscriptions, ...view.props.inscriptions].find((i) => canRead(i, body.x, body.y, body.z));
     if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
     const nearDoor = busy || nearLadder || nearFind || nearNote || nearMarks || !body.grounded ? null : doors.near(body.x, body.y, body.z);
-    // A shop counter: 1, 2, 3 ... buy what is on it.
-    if (counter) counter.order.forEach((k, i) => {
-      if (!controls.tap(`Digit${i + 1}`)) return;
-      const r = buyGear(kit, k, euros);
-      if (r.euros !== euros) { readAt = now; counter.keeper.deal(now); } // (stooping over the counter)
-      euros = r.euros;
-      say(r.line, 6);
-    });
+    // A shop's counter open: W/S choose a line, E buys or sells it; by mouse a line's button does.
+    const shopKeys = { up: keyName('KeyW'), down: keyName('KeyS'), use: keyName('KeyE'), close: 'Esc' };
+    const dealing = shopView.open;
+    if (shopView.open && shopAt) {
+      const { m, keeper } = shopAt, clicks = shopView.take();
+      if (controls.tap('Escape') || body.dead || clicks.some((c) => 'close' in c)) { shopView.hide(); shopAt = null; }
+      else {
+        const n = shopRows(m, pack).length;
+        let said: string | null = null, act = controls.tap('KeyE');
+        if (n && controls.tap('KeyW')) { shopSel = (shopSel + n - 1) % n; said = ''; }
+        if (n && controls.tap('KeyS')) { shopSel = (shopSel + 1) % n; said = ''; }
+        let all = false;
+        for (const c of clicks) {
+          if ('all' in c) all = true;
+          else if ('row' in c) { shopSel = c.row; act ||= c.act; said = ''; }
+        }
+        const rows = shopRows(m, pack);
+        const r = all ? sellFinds(m, pack, euros, sales++) : act && rows[shopSel] ? trade(m, rows[shopSel], kit, pack, euros, rows[shopSel].what === 'buy' ? 0 : sales++) : null;
+        if (r) {
+          if (r.done) { readAt = now; keeper.deal(now); sounds.play('coins'); } // (stooping over the counter)
+          euros = r.euros;
+          said = r.line;
+          shopSel = Math.max(0, Math.min(shopSel, shopRows(m, pack).length - 1));
+        }
+        if (said !== null) shopView.show(m, pack, kit, euros, shopSel, shopKeys, shopGreet, said);
+      }
+    }
     // Grandma's tin, open by the fire: choose a card, cook it, arrange the bar; by key or with the mouse (the mouse is let go while it is open).
     if (tinView.open) {
       const acts = tinView.take();
@@ -1508,7 +1527,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       packView.show(pack, kit, packSel, packKeys);
     }
     if (letterView.open && (!nearNote || controls.tap('Escape'))) letterView.hide();
-    if (controls.tap('KeyE') && !packView.open) {
+    if (controls.tap('KeyE') && !packView.open && !dealing) {
       if (letterView.open) letterView.hide();
       else if (riding) dropFromSun();
       else if (nearLadder) climbFrom(nearLadder);
@@ -1516,14 +1535,16 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       else if (nearFind) pickUp(nearFind, now);
       else if (nearWeber) say(weber.talk({ deepest: tin.deepest, fallen: fallen.length }, now), 7);
       else if (nearStranger) say(stranger.talk(now), 6);
-      else if (nearPawn && pack.items.length) {
-        const r = sell(pack, sales++);
-        euros += r.paid; readAt = now; // (stooping over her counter)
-        keepers.pawn.deal(now);
-        sounds.play('coins');
-        say(r.line, 6);
-      } else if (nearPawn) say(keepers.pawn.talk(now), 6);
-      else if (nearKemal) say(keepers.hardware.talk(now), 6);
+      else if (counterAt) {
+        // Up to the counter: they say something, and what is on it opens (the mouse let go to point).
+        const keeper = keepers[counterAt];
+        shopAt = { m: townMerchant(counterAt, Stranger.here({ deepest: tin.deepest, fallen: fallen.length })), keeper };
+        shopGreet = keeper.talk(now);
+        shopSel = 0;
+        shopView.take();
+        shopView.show(shopAt.m, pack, kit, euros, shopSel, shopKeys, shopGreet);
+        document.exitPointerLock?.();
+      }
       else if (nearDoor) {
         const line = doors.toggle(nearDoor, now);
         if (line) say(line, 4);
@@ -1922,9 +1943,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearFind) lines.push(pack.full ? `Your pack is full. ${keyName('KeyI')}: leave something to make room for ${FINDS[nearFind.kind].name}` : `${E}: pick up ${FINDS[nearFind.kind].name}`);
     else if (nearWeber) lines.push(weber.talking(now) ? '' : `${E}: call on Frau Weber`);
     else if (nearStranger) lines.push(stranger.talking(now) ? '' : `${E}: speak to the stranger`);
-    else if (nearKemal) lines.push(`Kemal's counter (purse €${euros}, ${E}: talk): ` + GEAR_ORDER.map((k, i) => `${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(' · '));
-    else if (nearPawn) lines.push((pack.items.length ? `${E}: sell your finds to Ilse (about €${pack.worth})` : `${E}: talk to Ilse (you have nothing to sell her yet)`)
-      + ilse.map((k, i) => ` · ${i + 1} ${GEAR[k].name} €${GEAR[k].price}${hasGear(kit, k) ? ' (yours)' : ''}`).join(''));
+    else if (shopView.open) lines.push('');
+    else if (nearKemal) lines.push(`${E}: step up to Kemal's counter (purse €${euros})`);
+    else if (nearPawn) lines.push(`${E}: step up to Ilse's counter (purse €${euros}${pack.items.length ? `, your finds about €${pack.worth}` : ''})`);
     else if (nearMarks && !readView.open) lines.push(`${E}: read the marks`);
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
@@ -1969,7 +1990,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     };
     targetMark.paint(view.camera, target?.x ?? 0, (target?.y ?? 0) + (target?.height ?? 0) + 0.3, target?.z ?? 0, target ? target.health / targetFull : null);
     abilityBar.paint(bar, bar.map((a) => (a ? slot(a) : null)), passivesOf(cooked), body.dead, tinView.open);
-    touchPad.reflect(controls.byTouch && !body.dead && !pause.open, tinView.open || packView.open || readView.open || diaryView.open || letterView.open || mapView.open || settingsView.open, campfire.resting);
+    touchPad.reflect(controls.byTouch && !body.dead && !pause.open, tinView.open || packView.open || shopView.open || readView.open || diaryView.open || letterView.open || mapView.open || settingsView.open, campfire.resting);
     stepsView.pin(steps, now);
     hudView.render({
       health: body.health, maxHealth: MOVE.maxHealth, stamina: body.stamina, maxStamina: MOVE.stamina,
