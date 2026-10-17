@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.239 — Quiet mouse capture
+
+- Capturing the mouse goes through one place (`Controls.capture`): it asks only when the browser allows it (right after a click or a key other than Escape) and a refusal no longer shows errors in the console.
+- Leaving the pause menu or Grandma's tin with Escape leaves the mouse free; one click on the game captures it again.
+
 ## v0.238 — Footsteps in time with the feet
 
 - Footsteps now sound when the figure's heel actually comes down in the walk, jog, sprint and crouch animations, two a gait cycle. They used to sound every 0.75 m walked, much faster than the feet.
