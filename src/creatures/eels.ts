@@ -39,6 +39,9 @@ export const EEL = {
   under: 0.3,
   surface: 0.04,
   out: 0.45,
+  /** Foraging along the bottom: its share of the cruise; how much deeper than its back's usual depth it goes then and at rest, metres. */
+  forage: 0.35,
+  low: 0.5,
   /** Water it needs: to lie in (its den), and to swim at all, metres deep. */
   deep: 1.0,
   wet: 0.3,
@@ -133,18 +136,21 @@ export class Eels extends Population<Pool, Eel> {
     // It can get at you if you are in water it can swim, or at the edge of it.
     const sx = prey.x - (dx / (d || 1)) * (E.reach * 0.7), sz = prey.z - (dz / (d || 1)) * (E.reach * 0.7);
     const reachable = !prey.dead && Math.abs(prey.y - water) < 1.6 && this.depthAt(sx, sz) >= E.wet;
-    if (e.mode === 'cruise' && reachable && noticed(prey, d, E.notice)) e.mode = 'hunt';
+    if (e.mode === 'cruise' && reachable && noticed(prey, d, E.notice * this.wakeful(e))) e.mode = 'hunt';
     if ((e.mode === 'hunt') && (!reachable || d > E.forget)) { e.mode = 'cruise'; e.t = 0; }
 
     let bit = 0, rise = 0;
     switch (e.mode) {
-      case 'cruise':
+      case 'cruise': {
+        // Its life between it all (src/creatures/life.ts): nosing slowly along the bottom for food, or lying still in its pool's hours of rest.
+        const life = this.liveInPlace(e, e.pool, dt) ? e.pose : '';
         if (e.t <= 0 || Math.hypot(e.tx - e.x, e.tz - e.z) < 1) {
           [e.tx, e.tz] = this.roamFrom(e.pool, E.roam);
           e.t = 8;
         }
-        this.swimStep(e, Math.atan2(-(e.tx - e.x), -(e.tz - e.z)), E.cruise, dt);
+        this.swimStep(e, Math.atan2(-(e.tx - e.x), -(e.tz - e.z)), life === 'rest' ? 0 : life === 'feed' ? E.cruise * E.forage : E.cruise, dt);
         break;
+      }
       case 'hunt': {
         // To just short of you, then rear up.
         const gap = d - prey.radius - e.radius;
@@ -175,7 +181,9 @@ export class Eels extends Population<Pool, Eel> {
         if (e.t >= E.sink) e.mode = reachable ? 'hunt' : 'cruise';
         break;
     }
-    e.under += ((e.mode === 'cruise' ? E.under : E.surface) - e.under) * Math.min(1, dt * 2);
+    // (Down at the bottom while it forages or rests, as deep as its water lets it.)
+    const low = e.pose ? Math.min(E.under + E.low, Math.max(E.under, this.depthAt(e.x, e.z) - E.radius - 0.05)) : E.under;
+    e.under += ((e.mode === 'cruise' ? low : E.surface) - e.under) * Math.min(1, dt * 2);
     const target = water - e.under + rise * (e.under + E.out);
     e.y += (target - e.y) * Math.min(1, dt * 8);
     this.drawOut(e);

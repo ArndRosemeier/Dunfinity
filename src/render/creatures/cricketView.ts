@@ -25,6 +25,8 @@ const CLIPS: Record<string, ClipUse> = {
   Scuttle: { loop: true, stride: 0.32 },
   Hop: { loop: true, stride: 0.7 },
   Crouch: { loop: true },
+  Graze: { loop: true },
+  Rest: { loop: true },
   Leap: { loop: false },
   Bite: { loop: false },
   Die: { loop: false },
@@ -56,6 +58,11 @@ class CricketFigure extends RiggedFigure<Cricket> {
       case 'bite': return 'Bite';
       case 'crouch': return 'Crouch';
       case 'leap': return 'Leap';
+    }
+    // Nibbling its rock's salt, or asleep on it (src/creatures/life.ts).
+    if (c.pose === 'feed' && !moving) return 'Graze';
+    if (c.pose === 'rest' && !moving) return 'Rest';
+    switch (c.mode) {
       case 'perch': return c.angry ? 'Alert' : 'Idle';
       default: return moving ? (hopping ? 'Hop' : 'Scuttle') : c.angry ? 'Alert' : 'Idle';
     }

@@ -10,7 +10,7 @@
  */
 import { DOG_COAT } from '../materials';
 import type { Dog } from '../../creatures/dogs';
-import { CALM, HUNTING } from '../../creatures/animals';
+import { CALM, windupOf } from '../../creatures/animals';
 import { RiggedFigure, WildAndTame, type ClipUse } from './rigged';
 
 /** How many can be drawn at once: the deep's, and the town's. */
@@ -40,7 +40,7 @@ class DogFigure extends RiggedFigure<Dog> {
     if (g.dead) return 'Die';
     // Its bite (src/creatures/animals.ts): down on its haunches in the wind-up (the tell), the lunge, the snap.
     if (g.action) {
-      const at = g.actionT * CALM.strike, windup = g.mode === 'fight' ? CALM.windup : HUNTING.windup[g.nature.temper.strategy];
+      const at = g.actionT * CALM.strike, windup = windupOf(g.nature);
       return at < windup ? 'Crouch' : at < windup + 0.25 ? 'Lunge' : 'Bite';
     }
     if (g.mode === 'back') return 'Bite';

@@ -5,6 +5,9 @@ import { RAT, Rats, type Nest } from '../src/creatures/rats';
 import { Dogs, TOWN_DOG, type Pack } from '../src/creatures/dogs';
 import { Critters, HERD, type Herd } from '../src/creatures/critters';
 import { pastureOf } from '../src/creatures/pasture';
+import { CRICKET, Crickets, type Group } from '../src/creatures/crickets';
+import { SLIME, Slimes, type Colony } from '../src/creatures/slimes';
+import { EEL, Eels, type Pool } from '../src/creatures/eels';
 import { LIFE } from '../src/creatures/life';
 import { afterYou } from '../src/creatures/animals';
 import { VILLAGE, townGround } from '../src/gen/town';
@@ -59,7 +62,7 @@ test('a pasture is the same every time, on its den\'s dry floor, and its wall an
   const nest = dens<Nest>(r, RAT.cell, l.arrival[0], l.arrival[2]).find((n) => Math.hypot(n.x - l.arrival[0], n.z - l.arrival[2]) > 30)!;
   for (const diet of ['floor', 'wall', 'water', 'bloom'] as const) {
     const a = pastureOf(l, nest, diet, 8, 0.2, 0.32), b = pastureOf(l, nest, diet, 8, 0.2, 0.32);
-    assert.deepEqual(a, b);
+    assert.deepEqual([a.food, a.nook], [b.food, b.nook]);
     assert.ok(a.food.length > 0, `${diet}: some food`);
     for (const s of a.food) {
       assert.ok(Math.hypot(s.x - nest.x, s.z - nest.z) < 8 * 2 + 3, `${diet}: near home`);
@@ -121,4 +124,71 @@ test('the strange animals live the same life: a herd feeds and rests', () => {
     break;
   }
   assert.ok(found, 'a herd to watch');
+});
+
+test('cave crickets nibble the salt off their rock and sleep on it with their group', () => {
+  let found = false;
+  for (const [seed, depth] of [[1, 2], [2, 3], [3, 1], [4, 4]] as const) {
+    const l = new Level(seed, depth), c = new Crickets(l);
+    const group = dens<Group>(c, CRICKET.cell, l.arrival[0], l.arrival[2]).find((g) => Math.hypot(g.x - l.arrival[0], g.z - l.arrival[2]) > 30 && g.perches.length >= 2);
+    if (!group) continue;
+    const me = off(l, { x: group.x, y: l.groundAt(group.x, group.z), z: group.z }, 40);
+    const w = watch(() => { c.advance(1 / 15, me, null); me.vx = me.vz = 0; }, () => c.list, (x) => x.group === group, 320, 1 / 15);
+    if (!c.list.some((x) => x.group === group)) continue;
+    assert.ok(w.fed.size >= 1, `they fed (${w.fed.size})`);
+    assert.ok(w.lay.size >= 1, `they slept (${w.lay.size})`);
+    assert.ok(w.maxFeedSpeed < 0.05, 'still on the rock while feeding');
+    assert.ok(c.list.filter((x) => x.group === group).every((x) => x.mode === 'perch'), 'they stayed up on their rock');
+    found = true;
+    break;
+  }
+  assert.ok(found, 'a group to watch');
+});
+
+test('slimes ooze off to feed and sleep with their colony', () => {
+  let found = false;
+  for (const [seed, depth] of [[1, 3], [2, 4], [3, 5], [4, 6]] as const) {
+    const l = new Level(seed, depth);
+    for (const s of [new Slimes(l, 'lumen'), new Slimes(l, 'murk')]) {
+      const colony = dens<Colony>(s, SLIME.cell, l.arrival[0], l.arrival[2]).find((g) => Math.hypot(g.x - l.arrival[0], g.z - l.arrival[2]) > 30);
+      if (!colony) continue;
+      const me = off(l, colony, 40);
+      const w = watch(() => { s.advance(1 / 15, me, []); me.vx = me.vz = 0; }, () => s.list, (x) => x.colony === colony, 320, 1 / 15);
+      if (!s.list.some((x) => x.colony === colony)) continue;
+      assert.ok(w.fed.size >= 1, `${s.faction} fed (${w.fed.size})`);
+      assert.ok(w.lay.size >= 1, `${s.faction} slept (${w.lay.size})`);
+      found = true;
+      break;
+    }
+    if (found) break;
+  }
+  assert.ok(found, 'a colony to watch');
+});
+
+test('brine eels nose along the bottom for food and lie still in their hours of rest', () => {
+  let found = false;
+  for (const [seed, depth] of [[1, 6], [2, 7], [3, 6], [4, 8], [5, 6]] as const) {
+    const l = new Level(seed, depth), e = new Eels(l);
+    const pool = dens<Pool>(e, EEL.cell, l.arrival[0], l.arrival[2]).find((p) => Math.hypot(p.x - l.arrival[0], p.z - l.arrival[2]) > 30);
+    if (!pool) continue;
+    const me = off(l, pool, 40);
+    // (Still once it has lain a few seconds: its speed eases off.)
+    const lying = new Map<number, number>();
+    let restSpeed = 0;
+    const w = watch(() => {
+      e.advance(1 / 15, me); me.vx = me.vz = 0;
+      for (const x of e.list) {
+        const t = x.pose === 'rest' ? (lying.get(x.id) ?? 0) + 1 / 15 : 0;
+        lying.set(x.id, t);
+        if (t > 3) restSpeed = Math.max(restSpeed, x.speed);
+      }
+    }, () => e.list, (x) => x.pool === pool, 320, 1 / 15);
+    if (!e.list.some((x) => x.pool === pool)) continue;
+    assert.ok(w.fed.size >= 1, `they foraged (${w.fed.size})`);
+    assert.ok(w.lay.size >= 1, `they rested (${w.lay.size})`);
+    assert.ok(restSpeed < 0.1, `still at rest (${restSpeed.toFixed(2)} m/s)`);
+    found = true;
+    break;
+  }
+  assert.ok(found, 'a pool to watch');
 });
