@@ -16,13 +16,13 @@ import type { FamilyEntry } from '../persist/save';
 const TIMING = { reveal: 1.2, leave: 0.8 };
 /** The set's sound: the hiss (and how much louder a rough signal makes it), a slip's crackle, and how soon after it comes on its clunk still plays (s). */
 const SOUND = { hiss: 0.45, rough: 0.5, crackle: 0.8, clunk: 2 };
+/** Seconds: a voice is not begun this close to its end. */
+const VOICE = { tail: 0.8 };
 
 /** What the title needs from the game, once the game is set up (the set comes on before that). */
 export interface TitleGame {
   /** Resolves once everything play needs is compiled (src/render/stage.ts warmLater); Continue waits for it (New Game goes to the creator, which waits too). */
   readonly ready: Promise<void>;
-  /** The game's sound (it starts on the first touch or key: then the set hisses). */
-  readonly sound: SoundEngine;
   /** Shader builds so far (src/render/shaders/monitor.ts): each new one slips the picture. */
   builds(): number;
   /** Once a frame: the game's level streams in behind the title (nothing is drawn). */
@@ -38,6 +38,8 @@ export interface TitleCast {
   readonly families: readonly FamilyEntry[];
   /** Hold on this shot of the report (`?title&shot=<n>`, for screenshots), or null. */
   readonly pinned: number | null;
+  /** The game's sound, made before the set comes on (it starts on the first touch or key: then the set hisses and the presenter speaks). */
+  readonly sound: SoundEngine;
   /** The game, once set up: the set plays while it loads, and a choice made before then waits for it. */
   readonly game: Promise<TitleGame>;
   /** The set is on (the loading screen can go). */
@@ -51,7 +53,7 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
   const from = cast.canContinue ? shotStart(new Rng(deriveSeed(cast.seed, 'title', Math.floor(performance.timeOrigin))).int(1, REPORT.length - 1)) : 0;
   const tv = new TvSet(screen.back, cast.seed, from, cast.pinned);
   await tv.loaded.catch(() => {}); // a missing picture leaves its shot dark, nothing worse
-  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null, said = '';
+  let chosen: TitleChoice | null = null, chosenAt = 0, revealed = false, hiss: SoundLoop | null = null, spoken = -1;
   let game: TitleGame | null = null, gameAt = 0;
   const now = (): number => performance.now() / 1000;
   const start = now();
@@ -69,15 +71,19 @@ export async function playTitle(host: HTMLElement, cast: TitleCast): Promise<Tit
       if (chosen !== null && game) tv.off(Math.max(chosenAt, gameAt)); // (once: it keeps the first)
       const slipped = tv.frameAt(t, game?.builds() ?? 0);
       game?.stream(t);
-      const sound = game?.sound;
+      const sound = cast.sound;
       // The sound, once the browser lets it start: the clunk if the set has only just come on, its hiss, a crackle when the picture slips.
-      if (!hiss && chosen === null && sound?.ctx && (hiss = sound.loop('tv_static')) && t - start < SOUND.clunk) sound.play('tv_on', null);
+      if (!hiss && chosen === null && sound.ctx && (hiss = sound.loop('tv_static')) && t - start < SOUND.clunk) sound.play('tv_on', null);
       hiss?.set(0, 0, -1, (SOUND.hiss + SOUND.rough * tv.trouble) * (1 - leaving));
-      if (slipped) sound?.play('tv_glitch', null, SOUND.crackle);
-      // The presenter reads each shot's words as it comes up (a later visit switches on at a shot's start).
-      const air = tv.playing, line = air ? `${air.shot}:${air.line}` : null, voice = air && voiceOf(air);
-      if (line !== null && line !== said && voice && air!.t < 1 && chosen === null && sound?.ctx) sound.play(voice, null); // (only from the start of his words: never out of step)
-      said = line ?? '';
+      if (slipped) sound.play('tv_glitch', null, SOUND.crackle);
+      // The presenter reads each shot's words. His clip begins as far in as the shot is (a set switched on
+      // late, a sound started late, a slow frame), so he is never out of step; he is played at his own pitch.
+      const air = tv.playing, voice = air && voiceOf(air);
+      if (air && voice && air.shot !== spoken && chosen === null && sound.ctx) {
+        const len = sound.length(voice); // (decoding: next frame)
+        if (len && air.t < len - VOICE.tail) { sound.play(voice, null, 1, 1, 3, 0, air.t); spoken = air.shot; }
+      }
+      if (air && sound.ctx) { const next = REPORT[(air.shot + 1) % REPORT.length]?.voice; if (next) sound.length(next); } // (the next one ready in time)
       (globalThis as { __ready?: boolean }).__ready = revealed && chosen === null;
       if (leaving >= 1) {
         hiss?.stop();

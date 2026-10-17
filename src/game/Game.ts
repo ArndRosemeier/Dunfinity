@@ -176,10 +176,13 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   /** The game opens on the title screen (src/game/title.ts), unless the last visit asked to go straight on (a load, Save and quit's way back). */
   const titled = !takeStraightIn() && titleWanted(location.search);
   // The title's television comes on at once; the game sets itself up behind it and joins it when ready (below).
+  /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. Made first: the title's set plays them. */
+  const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
+  const soundsIn = sounds.init();
   let joinTitle: (g: TitleGame) => void = () => {};
   const titling = titled ? playTitle(host, {
     seed: params.seed, canContinue: !!saved, families: keep ? families() : [], pinned: q.has('shot') ? Math.max(0, Number(q.get('shot')) || 0) : null,
-    game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
+    sound: sounds.engine, game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
     shown: () => { if (loading.open) loading.hide(); },
   }) : null;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
@@ -739,8 +742,6 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const pain = document.createElement('div');
   pain.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,0,0,0.85) 100%)';
   host.appendChild(pain);
-  /** Sound effects, ambience and music (src/audio): N mutes everything, B turns the music off. */
-  const sounds = new GameSounds(params.seed, import.meta.env.BASE_URL);
   const settingsView = new SettingsView(document.body, {
     sound: () => sounds.engine.settings,
     setSound: (s) => sounds.engine.set(s),
@@ -756,7 +757,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     modeLine: () => `This family plays ${MODE_NAMES[mode]} (chosen at New Game)`,
   });
   loading.step('Tuning the sounds', 0.6);
-  await sounds.init();
+  await soundsIn;
   const timer = new Timer();
   let acc = 0;
   const climb = new LadderClimb(nobody);
@@ -1045,7 +1046,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   // television plays while the game's level streams in and its shaders build, then hands over in the black.
   if (titled) {
     joinTitle({
-      ready: castWarm, sound: sounds.engine,
+      ready: castWarm,
       builds: () => view.stage.monitor.events.length,
       stream: (now) => view.frame(body.x, body.y, body.z, now, false),
     });
