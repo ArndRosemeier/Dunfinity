@@ -30,7 +30,7 @@ export const QUALITY: Readonly<Record<Quality, { readonly name: string; readonly
   master: { name: 'master', factor: 1.5 },
 };
 
-export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar' | 'flashlight' | 'rucksack' | 'army-rucksack' | 'salt-satchel';
+export type ItemKind = 'kitchen-knife' | 'work-gloves' | 'miners-helmet' | 'hatchet' | 'pick' | 'crowbar' | 'flashlight' | 'rucksack' | 'army-rucksack' | 'salt-satchel' | 'umbrella' | 'owl-cloak' | 'salt-feather';
 
 export interface ItemDef {
   readonly name: string;
@@ -41,6 +41,8 @@ export interface ItemDef {
   readonly move?: Move;
   /** A rucksack: how many things the pack holds with it on the back, sound (its quality scales it). */
   readonly room?: number;
+  /** Lets one float down: the fastest one falls with it on, m/s, sound (under 14 no landing hurts; its quality slows it more). */
+  readonly featherfall?: number;
   /** What climbing costs with it on (0.75: a quarter less). */
   readonly climb?: number;
   /** What it does, in a few words for the pack. */
@@ -58,6 +60,9 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDef>> = {
   rucksack: { name: 'a canvas rucksack', slot: 'back', room: PACK.room, what: `holds ${PACK.room} things` },
   'army-rucksack': { name: 'an army rucksack', slot: 'back', room: 14, what: 'holds 14 things' },
   'salt-satchel': { name: 'a salt-woven satchel', slot: 'back', room: 40, what: 'holds far more than it is big (40 things); it hums' },
+  umbrella: { name: 'a big black umbrella', slot: 'off', featherfall: 9, what: 'snaps open when you fall: you land unhurt' },
+  'owl-cloak': { name: 'an owl-down cloak', slot: 'body', featherfall: 4, what: 'you sink like a feather from any height' },
+  'salt-feather': { name: 'a salt feather', slot: 'trinket', featherfall: 11, what: 'a feather grown in salt: falls are slowed to a safe landing' },
 };
 
 /** Grandma's knife: never in the pack, never lost from the belt. */
@@ -145,6 +150,16 @@ export class Kit {
   get room(): number {
     const bag = this.worn.back;
     return bag ? roomWith(bag) : PACK.pockets;
+  }
+
+  /** The fastest one falls with what is worn (the slowest of their featherfalls), m/s, or null when nothing worn slows a fall. */
+  get featherfall(): number | null {
+    let f: number | null = null;
+    for (const i of this.items) {
+      const v = ITEMS[i.kind].featherfall;
+      if (v !== undefined) f = Math.min(f ?? Infinity, v / QUALITY[i.quality].factor);
+    }
+    return f;
   }
 
   /** What climbing costs. */
