@@ -1,7 +1,7 @@
 /**
  * The stranger at Ilse's (town-and-first-strata.md §3: "later, the town reacts as you go deeper";
  * Ilse "slowly becomes a collector of the strange"): once the family has been below level 10, one
- * of the peoples of the deep (src/creatures/folk.ts) has come up and stands at night by the pawn
+ * of the peoples of the deep (src/creatures/folk.ts) has come up and stands by the pawn
  * shop's door in a dark travelling coat, selling Ilse things from below. It turns to whoever comes near, and talks
  * when called on (E): a few words almost like ours. Pure.
  */

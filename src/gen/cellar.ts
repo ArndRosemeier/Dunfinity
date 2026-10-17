@@ -54,6 +54,21 @@ export const CELLAR = {
 /** The old shaft: the way down to the Quarry, its ladder on the far (east) side. */
 export const CELLAR_SHAFT: Shaft = { x: 15, z: 0, r: 1.25, top: 0, bottom: -40, ladder: 0, up: false, floor: 0 };
 
+/** How much daylight reaches her house's ground floor (through its windows and the open front door). */
+const HOUSE_DAY = 0.45;
+
+/**
+ * How much of the day reaches (x, y, z) at depth 0: 1 out in the village (always day there), some in
+ * her house, none down in the cellar and the passage to the shaft. Out in the fields the land falls
+ * below the street's level, so "below" is only her cellar's own stretch.
+ */
+export function daylightAt(x: number, y: number, z: number): number {
+  const C = CELLAR, h = C.house;
+  if (x >= h.x[0] && x <= h.x[1] && z >= h.z[0] && z <= h.z[1]) return y < TOWN.ground - 0.5 ? 0 : HOUSE_DAY;
+  const below = y < TOWN.ground - 0.5 && x > C.stairs.x[0] - 1 && x < C.chamber.x + C.chamber.r + 1 && Math.abs(z) < C.chamber.r + 1;
+  return below ? 0 : 1;
+}
+
 /** The cellar's own seed, for the roughness of its rock. */
 const CELLAR_SEED = 1966;
 

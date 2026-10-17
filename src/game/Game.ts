@@ -14,7 +14,7 @@ import { DiaryView } from '../app/diaryView';
 import { GRANDMA_KERF, Key } from '../lore/key';
 import { letter, breakLines } from '../lore/scripts';
 import { canRead } from '../gen/inscriptions';
-import { CELLAR } from '../gen/cellar';
+import { CELLAR, daylightAt } from '../gen/cellar';
 import { TOWN, shopDoor } from '../gen/town';
 import { PAWN, sell } from '../loot/pawn';
 import { GEAR, GEAR_ORDER, buyGear, hasGear, kitFromGear } from '../loot/hardware';
@@ -1580,7 +1580,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (!body.dead && !climb.active && body.grounded && body.health < MOVE.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {
       // Out in the village no draft is felt: the line points the way home instead.
-      const out = level.depth === 0 && GameSounds.place(level, body) === 'town';
+      const out = level.depth === 0 && daylightAt(body.x, body.y, body.z) === 1;
       const s = out ? null : level.descents.nearest(body.x, body.z, DRAFT_RANGE);
       const hint = out ? homeLine(body.x, body.z, cam.yaw, TOWN.door.x[0], 0) : s && draftLine(body.x, body.z, cam.yaw, s.x, s.z);
       if (hint) lines.push(hint);
