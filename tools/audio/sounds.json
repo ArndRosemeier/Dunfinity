@@ -471,5 +471,85 @@
   "gain": 0.9,
   "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: And yet, eight days on, no dog in that town will walk down Lindenstrasse. Good night.",
   "seed": "cut from one take of all six lines (one voice); see the hand-cuts note in the PR"
+ },
+ "report_1": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: Good evening. Tonight, a small salt-mining town that has asked us not to say its name, and what walked down its streets eight nights ago.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_2": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: A baker on his way to the ovens saw it under the last street lamp. 'Taller than the lamp,' he says. 'Thin as a rake. It walked with its head bent, as if the sky was a ceiling.'",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_3": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: Every dog in the town howled until it was light. Two of them ran into the river and would not come out.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_4": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: A light came up through a cellar grating, she says. Blue, like the hands of a watch in the dark. It was gone before our camera came.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_5": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: On Sunday morning the milk on three doorsteps had turned to salt. The milkman is changing his round.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_6": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: In the salt dust by the old mine gate, footprints. Each one as long as a man's arm, and nineteen paces apart.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_7": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: The mine has been shut since 1947, when a whole shift went down and did not come up. The company's answer to our questions: no comment.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_8": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: At four in the morning a young woman was bricking up the arch in her cellar. She would not talk to us. She did not stop working while we were there.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_9": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: The police found nothing. The mayor calls it a prank by students from the city.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
+ },
+ "report_10": {
+  "kind": "shot",
+  "max": 15.0,
+  "files": 1,
+  "gain": 0.9,
+  "sound": "Horst Weidner, presenter of The Unexplained (1966), on a TV loudspeaker: And yet, eight days on, no dog in that town will walk down Lindenstraße. Good night.",
+  "seed": "cut from one take of all ten lines (one voice); see /mnt/project-files/dunfinity/sounds/hand-cuts-report.py"
  }
 }

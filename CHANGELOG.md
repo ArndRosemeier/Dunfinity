@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.204 — Full narration for the title TV report
+
+- The presenter of "The Unexplained" now has a recording of every caption, word for word: ten clips `report_1` to `report_10`, one per shot, in one voice with the same 1960s TV-speaker sound. They replace the six partial `news_*` lines once the title screen switches to them.
+
 ## v0.203 — Goblin camps all the way down
 
 - Below level 10 the scavenger camps are goblins too, no longer the old peoples of the buried worlds: the only living people in the dark are goblins.
