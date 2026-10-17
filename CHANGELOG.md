@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.242 — The title's report airs once, then snow and a melody
+
+- The TV report on the title plays once instead of looping; afterwards the set shows snow and hisses on.
+- A title melody plays quietly under the report and swells to the foreground once it ends (track `title`, made by the sound thread; silent until it is in the music list).
+
 ## v0.241 — The village on the map
 
 - Up in the village the map (M) shows all of it from the start: the streets, gardens and fields, every house outlined in salt, the quarry hill in contour lines. Below, it still shows only what you have seen.
