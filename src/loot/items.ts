@@ -92,14 +92,14 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDef>> = {
   'owl-cloak': { name: 'an owl-down cloak', slot: 'body', featherfall: 4, what: 'you sink like a feather from any height' },
   'salt-feather': { name: 'a salt feather', slot: 'trinket', featherfall: 11, what: 'a feather grown in salt: falls are slowed to a safe landing' },
   // What the miners left (the sheds, the Quarry floor) and, deeper, what others did.
-  'hobnail-boots': { name: 'hobnail boots', slot: 'feet', gifts: { pace: 0.07 }, worth: 14, what: 'iron-studded soles: quicker on your feet' },
-  'rope-soles': { name: 'rope-soled shoes', slot: 'feet', gifts: { leap: 0.12 }, worth: 12, what: 'light and springy: you jump higher' },
-  'knee-pads': { name: "a miner's knee pads", slot: 'legs', gifts: { footwork: 1 }, worth: 10, what: 'leather and felt: rolling comes easier (Footwork +1)' },
-  moleskins: { name: 'moleskin trousers', slot: 'legs', gifts: { stamina: 3 }, worth: 12, what: 'thick and warm: more stamina' },
-  'leather-apron': { name: 'a leather apron', slot: 'body', armour: 0.08, gifts: { knife: 1 }, worth: 15, what: "a butcher's: a little armour, and Kitchen Work +1" },
-  sling: { name: 'a sling', slot: 'off', gifts: { throwing: 1 }, worth: 8, what: 'a boy\'s leather sling: your throws fly truer (Throwing +1)' },
-  'snuff-tin': { name: 'a tin of snuff', slot: 'trinket', gifts: { wind: 0.25 }, worth: 9, what: 'one pinch and your head clears: stamina comes back faster' },
-  'barbara-medal': { name: "a St Barbara's medal", slot: 'trinket', gifts: { health: 12 }, worth: 20, what: "the miners' saint, worn thin: more health" },
+  'hobnail-boots': { name: 'hobnail boots', slot: 'feet', gifts: { pace: 0.07 }, worth: 14, what: 'iron-studded soles' },
+  'rope-soles': { name: 'rope-soled shoes', slot: 'feet', gifts: { leap: 0.12 }, worth: 12, what: 'light and springy' },
+  'knee-pads': { name: "a miner's knee pads", slot: 'legs', gifts: { footwork: 1 }, worth: 10, what: 'leather and felt: rolling comes easier' },
+  moleskins: { name: 'moleskin trousers', slot: 'legs', gifts: { stamina: 3 }, worth: 12, what: 'thick and warm' },
+  'leather-apron': { name: 'a leather apron', slot: 'body', armour: 0.08, gifts: { knife: 1 }, worth: 15, what: "a butcher's, a little armour" },
+  sling: { name: 'a sling', slot: 'off', gifts: { throwing: 1 }, worth: 8, what: 'a boy\'s leather sling: your throws fly truer' },
+  'snuff-tin': { name: 'a tin of snuff', slot: 'trinket', gifts: { wind: 0.25 }, worth: 9, what: 'one pinch and your head clears' },
+  'barbara-medal': { name: "a St Barbara's medal", slot: 'trinket', gifts: { health: 12 }, worth: 20, what: "the miners' saint, worn thin" },
 };
 
 /** Grandma's knife: never in the pack, never lost from the belt. */
