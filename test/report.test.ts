@@ -31,16 +31,16 @@ test('a caption shows in whole sentences, a line at a time, all of it in order',
   assert.deepEqual(seen, linesOf(REPORT[i].caption));
 });
 
-test('the presenter speaks each voiced line as it comes up, and only then', () => {
+test('the presenter reads every shot, in order, each voice heard while its own shot is on', () => {
   const sounds = JSON.parse(readFileSync('public/sounds/manifest.json', 'utf8'));
   const heard: string[] = [];
-  let last = '';
+  let last = -1;
   for (let t = 0; t < AIRING; t += 0.05) {
-    const air = onAir(t), key = `${air.shot}:${air.line}`;
-    if (key !== last) { const v = voiceOf(air); if (v) heard.push(v); }
-    last = key;
+    const air = onAir(t);
+    if (air.shot !== last) { const v = voiceOf(air); if (v) heard.push(v); }
+    last = air.shot;
   }
-  const voiced = REPORT.filter((s) => s.voice).map((s) => s.voice!.id);
+  const voiced = REPORT.filter((s) => s.voice).map((s) => s.voice!);
   assert.deepEqual(heard, voiced);
   for (const id of voiced) assert.ok(sounds[id], `${id} in the sound manifest`);
 });
