@@ -182,7 +182,7 @@ export class Dogs extends Population<Pack, Dog, number> {
     if (g.dead) return this.lieDead(g, dt, 6);
     const dx = prey.x - g.x, dz = prey.z - g.z, d = Math.hypot(dx, dz), toYou = Math.atan2(-dx, -dz);
     // A village dog lets you be (until it is hit); a feral one comes for you once it has seen you.
-    if (!this.town && !prey.dead && noticed(prey, d, D.notice) && Math.abs(prey.y - g.y) < 2.5) p.hunting = true;
+    if (!this.town && !prey.dead && noticed(prey, d, D.notice * this.wakeful(g)) && Math.abs(prey.y - g.y) < 2.5) p.hunting = true;
     if (p.hunting && (prey.dead || d > D.forget || Math.abs(prey.y - g.y) > 4)) p.hunting = false;
     const pack = this.living(p), k = pack.indexOf(g);
     if (this.town && k === 0 && p.hunting && (p.calm = (p.calm ?? 0) - dt) <= 0) p.hunting = false;
@@ -193,12 +193,15 @@ export class Dogs extends Population<Pack, Dog, number> {
     if (p.hunting && (g.mode === 'rest' || g.mode === 'trot')) g.mode = 'circle';
     if (!p.hunting && g.mode !== 'rest' && g.mode !== 'trot') { g.mode = 'trot'; g.tx = p.x; g.tz = p.z; g.t = 8; }
 
+    // Its life about the den: feeding, sleeping with its pack (src/creatures/life.ts).
+    if (!p.hunting && (g.mode === 'rest' || g.mode === 'trot') && this.live(g, p, dt, D.trot, D.roam * 1.5)) { g.gait += g.life.moved / (0.16 * g.size); return 0; }
     let bit = 0;
     switch (g.mode) {
       case 'rest':
         brake(g, 5, dt);
         this.steer.slide(g, dt);
         if (g.t <= 0) {
+          if (this.toFood(g, p, D.trot, D.roam * 1.5)) { g.t = this.rng.range(1, 3); break; }
           [g.tx, g.tz] = this.roamFrom(p, D.roam);
           g.mode = 'trot'; g.t = 6;
         }

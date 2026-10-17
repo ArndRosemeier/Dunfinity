@@ -157,7 +157,7 @@ export class Rats extends Population<Nest, Rat> {
     if (r.dead) return this.lieDead(r, dt, 6);
     const dx = prey.x - r.x, dz = prey.z - r.z, d = Math.hypot(dx, dz);
     if (this.town) return this.mind(r, prey, provoked, d, dt);
-    const sees = !prey.dead && noticed(prey, d, RAT.notice) && Math.abs(prey.y - r.y) < 2.5;
+    const sees = !prey.dead && noticed(prey, d, RAT.notice * this.wakeful(r)) && Math.abs(prey.y - r.y) < 2.5;
     if (sees && !r.balk && r.mode !== 'chase' && r.mode !== 'bite' && r.mode !== 'flee') r.nest.alarmed = true;
     const hunting = r.nest.alarmed && !r.balk && !prey.dead && d < RAT.forget && Math.abs(prey.y - r.y) < 4;
     if (!hunting && (r.mode === 'chase' || r.mode === 'bite')) { r.mode = 'scurry'; r.t = 0; r.nest.alarmed = r.nest.alarmed && !prey.dead && d < RAT.forget; }
@@ -168,14 +168,12 @@ export class Rats extends Population<Nest, Rat> {
     const glare = r.mode === 'flee' ? null : this.glaring(r, CANDLE.shun);
     if (glare) { r.mode = 'flee'; r.t = this.rng.range(1.2, 1.8); r.fx = glare.x; r.fz = glare.z; }
 
+    // Its life about the nest: feeding, sleeping with the rest (src/creatures/life.ts).
+    if ((r.mode === 'sniff' || r.mode === 'scurry') && this.live(r, r.nest, dt, RAT.walk, RAT.roam)) { r.gait += r.life.moved / (0.09 * r.size); return 0; }
     let speed = 0, gx = r.x, gz = r.z, bit = 0;
     switch (r.mode) {
       case 'sniff':
-        if ((r.t -= dt) <= 0) {
-          // Off somewhere near the nest.
-          [r.tx, r.tz] = this.roamFrom(r.nest, RAT.roam);
-          r.mode = 'scurry'; r.t = 4;
-        }
+        if ((r.t -= dt) <= 0) this.onward(r, RAT.roam);
         break;
       case 'scurry':
         gx = r.tx; gz = r.tz; speed = RAT.walk * (1 + 0.6 * Math.max(0, Math.sin(r.gait * 0.13)));
@@ -230,7 +228,8 @@ export class Rats extends Population<Nest, Rat> {
    */
   private mind(r: Rat, prey: Fighter, provoked: boolean, d: number, dt: number): number {
     if (provoked) { r.mode = 'flee'; r.t = this.rng.range(2.5, 4); r.fx = NaN; }
-    else if (r.mode !== 'flee' && !prey.dead && d < TOWN_RAT.shy + prey.radius && Math.abs(prey.y - r.y) < 1.5) { r.mode = 'flee'; r.t = this.rng.range(1, 1.6); r.fx = NaN; }
+    else if (r.mode !== 'flee' && !prey.dead && d < TOWN_RAT.shy * this.wakeful(r) + prey.radius && Math.abs(prey.y - r.y) < 1.5) { r.mode = 'flee'; r.t = this.rng.range(1, 1.6); r.fx = NaN; }
+    if ((r.mode === 'sniff' || r.mode === 'scurry') && this.live(r, r.nest, dt, RAT.walk, TOWN_RAT.roam)) { r.gait += r.life.moved / (0.09 * r.size); return 0; }
     let speed = 0, gx = r.x, gz = r.z;
     switch (r.mode) {
       case 'flee':
@@ -243,10 +242,17 @@ export class Rats extends Population<Nest, Rat> {
         break;
       default:
         r.mode = 'sniff';
-        if ((r.t -= dt) <= 0) { [r.tx, r.tz] = this.roamFrom(r.nest, TOWN_RAT.roam); r.mode = 'scurry'; r.t = 4; }
+        if ((r.t -= dt) <= 0) this.onward(r, TOWN_RAT.roam);
     }
     r.gait += this.steer.move(r, gx, gz, speed, dt, null) / (0.09 * r.size);
     return 0;
+  }
+
+  /** Done sniffing: off to feed now and then, else somewhere near the nest. */
+  private onward(r: Rat, roam: number): void {
+    if (this.toFood(r, r.nest, RAT.walk, roam)) { r.t = this.rng.range(0.8, 2.5); return; }
+    [r.tx, r.tz] = this.roamFrom(r.nest, roam);
+    r.mode = 'scurry'; r.t = 4;
   }
 
   /** Move by the velocity where the floor allows; the gait follows the distance. */

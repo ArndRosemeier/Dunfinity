@@ -23,6 +23,7 @@ const CLIPS: Record<string, ClipUse> = {
   Stalk: { loop: true, stride: 0.55 },
   Lie: { loop: true },
   Crouch: { loop: true },
+  Graze: { loop: true },
   Lunge: { loop: false },
   Bite: { loop: false },
   Die: { loop: false },
@@ -35,13 +36,16 @@ const GALLOP = [3.4, 2.6] as const;
 class DogFigure extends RiggedFigure<Dog> {
   protected clipFor(g: Dog): string {
     const moving = this.faster('moving', MOVING), galloping = this.faster('gallop', GALLOP);
+    // Feeding, or lying down in its pack's hours of rest (src/creatures/life.ts).
+    if (g.pose === 'feed' && !moving) return 'Graze';
+    if (g.pose === 'rest' && !moving) return 'Lie';
     switch (g.mode) {
       case 'dead': return 'Die';
       case 'crouch': return 'Crouch';
       case 'lunge': return 'Lunge';
       case 'back': return 'Bite';
       case 'circle': return galloping ? 'Gallop' : 'Stalk';
-      case 'rest': return moving ? 'Trot' : 'Lie';
+      case 'rest': return moving ? 'Trot' : 'Idle';
       default: return moving ? (galloping ? 'Gallop' : 'Trot') : 'Idle';
     }
   }

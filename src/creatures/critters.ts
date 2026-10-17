@@ -15,7 +15,9 @@
  * How each species lives comes from its temper (src/creatures/temper.ts), grown with its body: its
  * pace, its flock (a cluster, a procession in single file, a scatter, loners), how curious or shy
  * it is, what its herd does in alarm (bolt, scatter, freeze, bunch up), its nerve and its warning,
- * its habits while it grazes, and what it makes of your headlamp.
+ * its habits while it grazes, and what it makes of your headlamp; and between all that, its life
+ * as every animal's (src/creatures/life.ts): off to feed, by its diet, and lying down with its herd
+ * in their hours of rest.
  *
  * Levels 1 to 10 have them rarely (the hand-made foes rule there); deeper, more often.
  *
@@ -31,6 +33,8 @@ import { brake } from './steer';
 import { AGGRESSION, bestiaryOf, type Species } from './bestiary';
 import { habitAction, temperOf, type Flock, type Pace, type Strategy, type Temper } from './temper';
 import type { Lamp } from './crickets';
+import { LIFE } from './life';
+import type { Diet } from './temper';
 
 export const HERD = {
   /** Herds: cell size, chance per cell on levels 1–10 and deeper, none this close to the arrival. */
@@ -235,7 +239,7 @@ export class Critters extends Population<Herd, Critter, Lamp | null> {
     // One that attacks comes for you once you are within its range (or it is hurt, or already at you); else it lives as the rest do.
     if (!sp.peaceful) {
       const range = rangeOf(sp, len), lurking = c.mode === 'lurk';
-      const spots = (lurking || this.idle(c)) && !prey.dead && near && noticed(prey, d, range);
+      const spots = (lurking || this.idle(c)) && !prey.dead && near && noticed(prey, d, range * this.wakeful(c, LIFE.wake));
       if (spots) for (const o of this.herdOf(c)) if (o.mode !== 'flee' && o.mode !== 'stalk' && o.mode !== 'back') { o.mode = 'stalk'; o.action = o.harmless ? '' : o.action; o.harmless = false; }
       if (spots || lurking || c.mode === 'stalk' || c.mode === 'back' || (c.provoked && c.cause === 'knife')) return this.hunt(c, prey, dt, dx, dz, d, toYou, len, near, range);
     }
@@ -257,13 +261,14 @@ export class Critters extends Population<Herd, Critter, Lamp | null> {
     const shy = this.shyOf(c, len, T);
     c.bored = Math.max(0, c.bored - dt);
     c.warned = Math.max(0, c.warned - dt);
-    if (!prey.dead && near && d < shy && this.idle(c) && c.mode !== 'watch') {
+    if (!prey.dead && near && d < shy * this.wakeful(c) && this.idle(c) && c.mode !== 'watch') {
       if (T.bluff && bold && !c.warned) { this.warn(c); }
       else if (sp.role === 'watcher' || T.curious > 0.35 || c.mode === 'approach') { c.mode = 'watch'; c.t = 3; }
       else {
         // It startles, and its herd with it.
         this.alarm(c, T, 2 + H.flee * 0.4);
-        for (const o of this.herdOf(c)) if (o !== c && this.idle(o) && Math.hypot(o.x - c.x, o.z - c.z) < 12) this.alarm(o, T, 2 + H.flee * 0.4);
+        // (A sleeping herd wakes all together.)
+        for (const o of this.herdOf(c)) if (o !== c && this.idle(o) && (Math.hypot(o.x - c.x, o.z - c.z) < 12 || o.pose === 'rest')) this.alarm(o, T, 2 + H.flee * 0.4);
       }
     }
     // Pushed on after its warning: it goes for you.
@@ -274,7 +279,13 @@ export class Critters extends Population<Herd, Critter, Lamp | null> {
       c.mode = 'approach'; c.t = this.rng.range(8, 18) * (0.5 + T.curious);
     }
     // The headlamp: drawn to it, or out of its beam.
-    if (lamp && T.lamp !== 'none' && (c.mode === 'graze' || c.mode === 'wander' || c.mode === 'drawn')) this.lampFor(c, lamp, T, shy, len);
+    if (lamp && T.lamp !== 'none' && (c.mode === 'graze' || c.mode === 'wander' || c.mode === 'drawn') && c.pose !== 'rest') this.lampFor(c, lamp, T, shy, len);
+    // Its life between it all: feeding, resting with its herd.
+    if ((c.mode === 'graze' || c.mode === 'wander') && !c.action && this.live(c, c.herd, dt, sp.walkSpeed * c.size * 0.7, this.reachOf(len))) {
+      c.running = false;
+      c.watching = c.pose === 'feed' && !prey.dead && d < shy * 1.5;
+      return 0;
+    }
 
     c.watching = c.mode === 'watch' || c.mode === 'fight' || c.mode === 'approach' || c.mode === 'bunch' && bold || (d < shy * 2.5 && sp.role !== 'giant' && !prey.dead && c.mode !== 'freeze');
     let struck = 0;
@@ -430,9 +441,20 @@ export class Critters extends Population<Herd, Critter, Lamp | null> {
     return h.length ? [x / h.length, z / h.length] : [c.herd.x, c.herd.z];
   }
 
-  /** Done grazing: on somewhere new, as its pace and flock say (a darter dashes on to where it was going). */
+  /** Its herd's diet (its temper). */
+  protected override dietOf(h: Herd): Diet {
+    return temperOf(h.species).diet;
+  }
+
+  /** How far out its herd's pasture reaches. */
+  private reachOf(len: number): number {
+    return Math.max(HERD.roamMin * 2, len * HERD.roam * 1.5);
+  }
+
+  /** Done grazing: on somewhere new, as its pace and flock say (a darter dashes on to where it was going), or off to feed. */
   private onward(c: Critter, T: Temper, len: number): void {
     const P = PACE[T.pace], F = FLOCK[T.flock], roam = Math.max(HERD.roamMin, len * HERD.roam) * P.roam * F.roam;
+    if (!c.going && !this.follows(c, T) && this.toFood(c, c.herd, c.species.walkSpeed * c.size * 0.7, this.reachOf(len))) { c.mode = 'graze'; c.t = this.rng.range(1, 3); return; }
     if (!c.going) {
       if (T.flock === 'cluster') {
         // The herd drifts together: round its middle, the middle drawn back towards home.

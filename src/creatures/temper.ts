@@ -17,6 +17,9 @@
  * - `habit`: what it does now and then while it grazes: pecks at the floor, rears up to look round
  *   (a sentry), shows off (a tail flick, a claw wave), or nothing.
  * - `lamp`: drawn to your headlamp like a moth, shuns its beam, or minds it not.
+ * - `diet`: where it feeds when it is about its own business (src/creatures/pasture.ts): it crops
+ *   the floor, licks the salt off the walls, drinks and filters at the water's edge, or browses the
+ *   salt blooms.
  * - `strategy`: how it fights once it comes for you (its aggression, src/creatures/bestiary.ts, says
  *   whether and from how far): a pack that takes turns round you, an ambusher still as the rock until
  *   you are close, a swarm of small ones, or a charger that walks straight in and slams.
@@ -32,6 +35,7 @@ export type Alarm = 'bolt' | 'scatter' | 'freeze' | 'bunch';
 export type Habit = 'peck' | 'sentry' | 'display' | 'none';
 export type LampSense = 'moth' | 'shun' | 'none';
 export type Strategy = 'pack' | 'ambush' | 'swarm' | 'charge';
+export type Diet = 'floor' | 'wall' | 'water' | 'bloom';
 
 export interface Temper {
   readonly pace: Pace;
@@ -43,6 +47,7 @@ export interface Temper {
   readonly habit: Habit;
   readonly lamp: LampSense;
   readonly strategy: Strategy;
+  readonly diet: Diet;
 }
 
 export const PACES: readonly Pace[] = ['plod', 'steady', 'dart', 'restless'];
@@ -51,6 +56,7 @@ export const ALARMS: readonly Alarm[] = ['bolt', 'scatter', 'freeze', 'bunch'];
 export const HABITS: readonly Habit[] = ['peck', 'sentry', 'display', 'none'];
 export const LAMPS: readonly LampSense[] = ['moth', 'shun', 'none'];
 export const STRATEGIES: readonly Strategy[] = ['pack', 'ambush', 'swarm', 'charge'];
+export const DIETS: readonly Diet[] = ['floor', 'wall', 'water', 'bloom'];
 
 const tempers = new WeakMap<Species, Temper>();
 
@@ -107,7 +113,14 @@ function grownTemper(sp: Species): Temper {
     r === 'swarmer' ? 4 : sp.group[1] >= 5 ? 2 : 0.2,
     r === 'brute' ? 4 : sp.mass > 100 ? 2 : 0.5,
   ][i]);
-  return { pace, flock, curious, alarm, nerve, bluff, habit, lamp, strategy };
+  // Drawn last, so the draws before it stay as they were.
+  const diet = rng.weighted(DIETS, (_, i) => [
+    r === 'grazer' || r === 'giant' ? 3 : 1.5,
+    p === 'slug' || jointed ? 2.5 : 0.8,
+    p === 'serpent' || p === 'radial' || sp.integument === 'fur' ? 2 : 1,
+    (p === 'floater' ? 2 : 0.8) + s,
+  ][i]);
+  return { pace, flock, curious, alarm, nerve, bluff, habit, lamp, strategy, diet };
 }
 
 /** What its habit plays (a rig action): a peck, a sentry's rearing up, a tail flick or claw wave; '' none. */
@@ -125,5 +138,5 @@ export function temperLine(sp: Species): string {
   const t = temperOf(sp), a = sp.aggression;
   const dial = a < AGGRESSION.retaliate ? 'only flees' : a < AGGRESSION.attack ? 'fights back when hurt' : `attacks (${t.strategy})`;
   const mood = t.curious > 0.35 ? 'curious' : t.curious < -0.35 ? 'shy' : 'wary';
-  return `Aggression ${a.toFixed(2)}: ${dial}. ${t.pace}, ${t.flock}, ${mood}; in alarm ${t.alarm}${t.bluff ? ', bluffs' : ''}; habit ${t.habit}; headlamp ${t.lamp}.`;
+  return `Aggression ${a.toFixed(2)}: ${dial}. ${t.pace}, ${t.flock}, ${mood}; in alarm ${t.alarm}${t.bluff ? ', bluffs' : ''}; habit ${t.habit}; feeds ${t.diet}; headlamp ${t.lamp}.`;
 }

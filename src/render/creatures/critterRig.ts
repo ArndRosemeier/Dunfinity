@@ -43,6 +43,8 @@ export interface RigInput {
   readonly lookAt: readonly [number, number, number] | null;
   /** Running (a faster gait). */
   readonly running: boolean;
+  /** At rest: 'feed' (head down, chewing, cropping or licking) or 'rest' (lying down, breathing slow); '' none. */
+  readonly pose?: '' | 'feed' | 'rest';
   readonly time: number;
   readonly scale: number;
 }
@@ -126,6 +128,9 @@ export class CritterRig {
   private headYaw = 0;
   private headPitch = 0;
   private deadT = 0;
+  /** How far into feeding and lying down at rest (0..1, eased in and out). */
+  private feedA = 0;
+  private restA = 0;
   private wavePhase = 0;
   private earTimer = 0;
   private earTwitch = 0;
@@ -251,6 +256,10 @@ export class CritterRig {
     this.speedS = lerp(this.speedS, hSpeed, damp(6, dt));
     const dead = inp.dead;
     this.deadT = dead ? Math.min(1, this.deadT + dt * 1.6) : Math.max(0, this.deadT - dt * 2);
+    const pose = dead ? '' : inp.pose ?? '';
+    this.feedA = clamp(this.feedA + (pose === 'feed' ? dt * 2 : -dt * 3), 0, 1);
+    this.restA = clamp(this.restA + (pose === 'rest' ? dt * 0.8 : -dt * 1.5), 0, 1);
+    const feed = smoothstep(0, 1, this.feedA), rest = smoothstep(0, 1, this.restA);
     const running = inp.running;
     this.offsets(running, damp(5, dt));
     const duty = this.duty(running);
@@ -298,6 +307,10 @@ export class CritterRig {
       }
     }
 
+    // Feeding: the head down to the floor (or the wall, the water, the bloom), the jaw working.
+    headP += feed * 0.6 + rest * 0.25;
+    jawOpen += feed * Math.max(0, Math.sin(t * 7 + this.seedF * 5)) * 0.35;
+
     // ---- the body, on the root bone
     const L = this.legLen;
     const gk = this.gaitKind(running);
@@ -310,7 +323,7 @@ export class CritterRig {
       else if (gk === 'stride' || gk === 'waddle') { bob = Math.abs(Math.sin(ph)) * 0.04 * L - 0.02 * L; rollOsc = Math.sin(ph) * (gk === 'waddle' ? 0.12 : 0.04); }
       else { bob = Math.sin(ph * 2) * 0.025 * L; rollOsc = Math.sin(ph) * 0.02; }
     }
-    const breathe = Math.sin(t * (2.4 + amp * 4) + this.seedF * 7) * 0.015;
+    const breathe = Math.sin(t * (2.4 + amp * 4) + this.seedF * 7) * 0.015 * (1 + rest * 1.5);
 
     // Pitch and roll from where the feet stand.
     let targetPitch = 0, targetRoll = 0, targetLift = 0;
@@ -332,7 +345,8 @@ export class CritterRig {
     this.bodyLift = lerp(this.bodyLift, targetLift, damp(8, dt));
 
     const ph = this.body.pelvisHeight;
-    const lie = this.deadT;
+    // Lying down: dead, or at rest (folded, not rolled over).
+    const lie = Math.max(this.deadT, rest * 0.55);
     const deathRoll = smoothstep(0, 1, this.deadT) * (Math.PI / 2 - 0.25) * (this.seedF > 0.5 ? 1 : -1) * (this.walker && this.legs.length <= 4 ? 1 : 0.15);
     const sinkTo = Math.min(ph, sp.length * sp.girth * sp.bodyHeight * 0.9);
     const rootY = this.bodyLift + bob + this.hopLift - crouch * ph - lie * (ph - sinkTo) * (this.floater ? 0 : 1);
