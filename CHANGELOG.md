@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.245 — The title's hiss fades as the melody comes up
+
+- Once the TV report is over, the set's hiss and its crackles fade to a whisper while the title melody swells to the foreground (it used to get louder).
+
 ## v0.244 — Targeting what you see
 
 - Tab now only picks creatures you can actually see: on screen and not behind rock or a house. Before, it also went through creatures hidden behind walls, so a rat right in front of you could stay out of reach of Tab.
