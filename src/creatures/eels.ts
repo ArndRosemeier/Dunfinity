@@ -11,7 +11,7 @@
 import { angleDiff } from '@futuremagic/core';
 import type { Level } from '../gen/level';
 import { damage, type Fighter, noticed } from '../combat/combat';
-import { Creature } from './creature';
+import { Creature, turnTowards } from './creature';
 import { Population, type Den } from './population';
 
 export const EEL = {
@@ -189,7 +189,7 @@ export class Eels extends Population<Pool, Eel> {
    */
   private swimStep(e: Eel, heading: number, speed: number, dt: number, lunge = false): void {
     const E = EEL;
-    if (!lunge) e.yaw += Math.max(-E.turn * dt, Math.min(E.turn * dt, angleDiff(e.yaw, heading)));
+    if (!lunge) e.yaw = turnTowards(e.yaw, heading, E.turn * dt);
     e.speed = lunge ? speed : e.speed + (speed - e.speed) * Math.min(1, dt * 3);
     const ahead = 0.6 + e.speed * 0.3;
     if (this.depthAt(e.x - Math.sin(e.yaw) * ahead, e.z - Math.cos(e.yaw) * ahead) < E.wet) {

@@ -1,5 +1,62 @@
 # Changelog
 
+## v0.224 — The presenter speaks every shot again, in step
+
+- The title's presenter no longer skips shots or starts late: his next clip is decoded before its shot comes, and a clip begins as far into it as the shot already is (after a late start of the sound, a slow frame, or a set switched on partway).
+- He speaks at his own pitch: the random detune for repeated effects no longer touches his voice.
+- The first click or key on the title starts the sound even while the game is still setting up (it used to be lost, leaving the set silent until the next one).
+
+## v0.223 — Gates in the walls
+
+- Now and then a thin place hangs still, flat in a rock wall: a gate. Through it you see the world it leads to, the level above or the level below. A blue rim leads down, a green rim leads up.
+- Walk into it and you come out of its twin on that level, a few hundred metres from where its own ladder would bring you. The twin hangs behind you, so every gate has a way back.
+- The other end of the gate nearest you is prepared in the background, so going through is quick.
+- No gate leads into grandma's cellar.
+
+## v0.222 — Walk-in shops for Kemal and Ilse
+
+- Kemal's hardware store and Ilse's pawn shop are open: their doors stand folded back and one walks in off the street into a small room.
+- Kemal stands behind his counter in a brown shop coat, among shelves of boxes and tins, his hatchets, crowbar and pick hung on the wall behind him, a barrel of handles, buckets, rope and shovels on the floor.
+- Ilse stands behind a glass-topped counter of rings and watches, among shelves of jars, candlesticks and vases, sideboards crowded with clocks, a gramophone by the window.
+- One deals across the counter now, not at the door: buy from Kemal with 1–7, sell finds to Ilse with E. Both turn to whoever comes in, talk with their hands over a deal, and say a few words when called on (E).
+- The day reaches in, and a lamp hangs over each counter.
+- The debug menu's places list both counters.
+
+## v0.221 — The next levels are ready before you get there
+
+- While the level you are on is loaded, the level below and the level above are built in the background, round where a ladder would bring you out on them.
+- Climbing down or up then only has to show what is already built, so the black between levels is much shorter.
+- Lately seen rock and props are kept too (within a fixed amount of memory), so going back up a ladder you just came down is quick as well.
+
+## v0.220 — Rogue like and Adventure, and several families at once
+
+- New Game asks how the family will play: Rogue like (the default) or Adventure. The families you already have stay kept, so several runs can go on side by side.
+- Rogue like: each grandchild has one save, and it is gone when they die (grandma's tin, her purse and the notary's list carry on to the next grandchild, as before). Save and quit in the menu keeps the game and takes you back to the title.
+- Adventure: Save in the menu keeps the game as it stands, as often as you like (the last eight are kept). Load goes back to any of them at any time, even after a death. Quit to title keeps where you are.
+- The title has Load: every family with its mode, grandchild, depth and when it was last played, to play or forget.
+- Settings shows the mode of the family you are playing. A family kept from before plays Rogue like.
+
+## v0.219 — Step through a thin place
+
+- Walk into a thin place while it is open and you stand in the world it shows, 8 to 40 levels down: its stone, its light, its air, on open floor near where that world's ladder comes in.
+- Nothing there wakes or can hurt you, and nothing there counts as reached; the way back hangs open behind you.
+- After a short while the pocket grows unstable: the way back flickers, the edges of sight shake and go blue. Then it lets go and you are back where you stepped in. Walk into the way back to go home sooner.
+- Thin places stay open a little longer, so there is time to reach one.
+
+## v0.218 — The townsfolk of today
+
+- The game happens today: the village's people now wear present-day clothes (jeans and a hoodie, a yellow rain jacket, a puffer and leggings, a fleece, a red parka, a white shirt; trainers and boots) instead of 1966 ones.
+- The lore bible has a Timeline section: the town and the player are of today, and the past shows only through grandma's diary, the 1966 TV report and the old mine.
+
+## v0.217 — People in the village
+
+- Townsfolk walk the village's streets by day: twenty of them in 1966 clothes, young and old, on the right of the road. They turn into other streets, cross the square, now and then stop to look about, and turn back where a street leaves the village.
+- They never walk into you: they stop, turn to you with a smile and wait until you step aside.
+
+## v0.216 — Your salt pet is kept in the save
+
+- A salt pet that is out when you leave comes back when you return, as hurt as it was, standing up out of salt at your side.
+
 ## v0.215 — Creatures with tempers of their own
 
 - Every strange creature now has a temper grown with its body. Some plod and graze for ages, some dart and freeze like lizards, some never settle. Herds keep together, walk in single file behind a leader, spread out, or live alone.

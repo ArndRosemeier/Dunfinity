@@ -219,6 +219,21 @@ const CARDIGAN: Outfit = {
   hand: null,
 };
 
+/** The shopkeepers: Kemal's brown shop coat over grey work trousers; Ilse's bottle-green cardigan over a dark skirt. Nothing in their hands. */
+const KEEPERS: Readonly<Record<'hardware' | 'pawn', Outfit>> = {
+  hardware: { clothes: [['chest', 'tunic', [0.34, 0.24, 0.14], [0.2, 0.15, 0.1], 0.35], ['legs', 'trousers', [0.24, 0.24, 0.25], [0.16, 0.16, 0.17], 0.4], ['feet', 'footwraps', [0.12, 0.09, 0.07], [0.08, 0.06, 0.05], 0.3]], hand: null },
+  pawn: { clothes: [['chest', 'tunic', [0.14, 0.26, 0.18], [0.1, 0.18, 0.13], 0.3], ['legs', 'trousers', [0.13, 0.11, 0.12], [0.1, 0.08, 0.09], 0.3], ['feet', 'footwraps', [0.16, 0.08, 0.06], [0.1, 0.05, 0.04], 0.3]], hand: null },
+};
+/** The townsfolk out by day, people of today: jeans and a grey hoodie, a yellow rain jacket, a navy puffer and black leggings, a green fleece and chinos, a red parka, a white shirt and dark suit trousers; trainers and boots; nothing in the hand. */
+const TOWNSFOLK: readonly Outfit[] = [
+  { clothes: [['chest', 'tunic', [0.42, 0.43, 0.45], [0.3, 0.31, 0.33], 0.15], ['legs', 'trousers', [0.16, 0.24, 0.42], [0.12, 0.18, 0.32], 0.2], ['feet', 'footwraps', [0.85, 0.85, 0.83], [0.6, 0.6, 0.6], 0.15]], hand: null },
+  { clothes: [['chest', 'tunic', [0.85, 0.66, 0.1], [0.6, 0.45, 0.08], 0.1], ['legs', 'trousers', [0.12, 0.12, 0.14], [0.09, 0.09, 0.1], 0.15], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.2]], hand: null },
+  { clothes: [['chest', 'tunic', [0.1, 0.13, 0.25], [0.07, 0.09, 0.18], 0.1], ['legs', 'trousers', [0.05, 0.05, 0.06], [0.04, 0.04, 0.05], 0.1], ['feet', 'footwraps', [0.9, 0.9, 0.9], [0.7, 0.3, 0.3], 0.1]], hand: null },
+  { clothes: [['chest', 'tunic', [0.18, 0.36, 0.26], [0.12, 0.26, 0.18], 0.15], ['legs', 'trousers', [0.62, 0.55, 0.4], [0.45, 0.4, 0.3], 0.15], ['feet', 'footwraps', [0.22, 0.15, 0.1], [0.15, 0.1, 0.07], 0.2]], hand: null },
+  { clothes: [['chest', 'tunic', [0.62, 0.12, 0.12], [0.2, 0.2, 0.22], 0.1], ['legs', 'trousers', [0.2, 0.28, 0.45], [0.14, 0.2, 0.32], 0.2], ['feet', 'footwraps', [0.12, 0.12, 0.13], [0.8, 0.8, 0.8], 0.15]], hand: null },
+  { clothes: [['chest', 'tunic', [0.86, 0.87, 0.88], [0.7, 0.72, 0.75], 0.05], ['legs', 'trousers', [0.12, 0.13, 0.16], [0.09, 0.1, 0.12], 0.05], ['feet', 'footwraps', [0.08, 0.06, 0.05], [0.05, 0.04, 0.04], 0.05]], hand: null },
+];
+
 /** The Tall One's shroud: a long, dark, worn cloth, and nothing in the hand. */
 const SHROUD: Outfit = {
   clothes: [['chest', 'tunic', [0.06, 0.06, 0.07], [0.04, 0.04, 0.05], 0.95], ['legs', 'trousers', [0.05, 0.05, 0.06], [0.04, 0.04, 0.05], 0.95]],
@@ -258,3 +273,5 @@ export const ghostsClothes = (seed: number, race: 'dwarf' | 'elf'): EquipmentVis
 export const travellersClothes = (seed: number): EquipmentVisuals => dressIn(TRAVELLER, seed);
 export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);
 export const cardigan = (seed: number): EquipmentVisuals => dressIn(CARDIGAN, seed);
+export const keepersClothes = (seed: number, shop: 'hardware' | 'pawn'): EquipmentVisuals => dressIn(KEEPERS[shop], seed);
+export const townsfolksClothes = (seed: number, look: number): EquipmentVisuals => dressIn(TOWNSFOLK[look % TOWNSFOLK.length], seed);

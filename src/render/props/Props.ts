@@ -14,9 +14,23 @@ import type { Stage } from '../stage';
 import type { LampLights } from './lamps';
 import { Blockers } from '../../world/blockers';
 import type { Inscription } from '../../gen/inscriptions';
+import type { Prepared } from '../prepared';
+import type { Gate } from '../../gen/gates';
 
 /** Props show within this distance of the viewer, metres. */
 export const PROPS_RADIUS = 200;
+
+/** The tiles (tx, tz) whose props show from (x, z), nearest first. */
+export function tilesAround(x: number, z: number): [number, number][] {
+  const r = Math.ceil(PROPS_RADIUS / PROP_TILE);
+  const cx = Math.floor(x / PROP_TILE), cz = Math.floor(z / PROP_TILE);
+  const wanted: [number, number, number][] = [];
+  for (let tz = cz - r; tz <= cz + r; tz++) for (let tx = cx - r; tx <= cx + r; tx++) {
+    const d = Math.hypot((tx + 0.5) * PROP_TILE - x, (tz + 0.5) * PROP_TILE - z);
+    if (d < PROPS_RADIUS + PROP_TILE * 0.71) wanted.push([d, tx, tz]);
+  }
+  return wanted.sort((a, b) => a[0] - b[0]).map(([, tx, tz]) => [tx, tz]);
+}
 
 interface Tile {
   tx: number;
@@ -26,6 +40,7 @@ interface Tile {
   lamps: Float32Array;
   watchers: Float32Array;
   inscriptions: readonly Inscription[];
+  gates: readonly Gate[];
   triangles: number;
   done: boolean;
 }
@@ -39,26 +54,21 @@ export class Props {
   stats = { tiles: 0, triangles: 0, lamps: 0, pending: 0 };
   /** Writing in the old scripts on the built tiles (`PropTile.inscriptions`), for the game to read. */
   readonly inscriptions: Inscription[] = [];
+  /** The gates on the built tiles' walls (`PropTile.gates`), for the game to draw and walk through. */
+  readonly gates: Gate[] = [];
   /** The props in the way, for the tiles that are built (bodies and creatures ask it). */
   readonly blockers = new Blockers();
   /** Lights that belong to no tile (a Sunday candle on the floor): x, y, z each, set by the game every frame. */
   loose: Float32Array = new Float32Array(0);
 
-  constructor(private readonly stage: Stage, private readonly group: Object3D, readonly level: LevelKey, private readonly lights: LampLights) {
+  /** `prepared`: tiles built before (src/render/prepared.ts), taken first and kept. */
+  constructor(private readonly stage: Stage, private readonly group: Object3D, readonly level: LevelKey, private readonly lights: LampLights, private readonly prepared: Prepared | null = null) {
     this.pool = createPropsPool();
   }
 
   /** Call every frame with the viewer position and the time in seconds. */
   update(x: number, y: number, z: number, time: number): void {
-    const r = Math.ceil(PROPS_RADIUS / PROP_TILE);
-    const cx = Math.floor(x / PROP_TILE), cz = Math.floor(z / PROP_TILE);
-    const wanted: [number, number, number][] = [];
-    for (let tz = cz - r; tz <= cz + r; tz++) for (let tx = cx - r; tx <= cx + r; tx++) {
-      const d = Math.hypot((tx + 0.5) * PROP_TILE - x, (tz + 0.5) * PROP_TILE - z);
-      if (d < PROPS_RADIUS + PROP_TILE * 0.71) wanted.push([d, tx, tz]);
-    }
-    wanted.sort((a, b) => a[0] - b[0]);
-    for (const [, tx, tz] of wanted) {
+    for (const [tx, tz] of tilesAround(x, z)) {
       if (this.pool.inFlight >= this.pool.size * 2) break;
       const id = `${tx},${tz}`;
       if (!this.tiles.has(id)) this.request(id, tx, tz);
@@ -70,6 +80,7 @@ export class Props {
     this.lampLists.length = 0;
     this.watcherLists.length = 0;
     this.inscriptions.length = 0;
+    this.gates.length = 0;
     let tiles = 0, triangles = 0, lamps = 0, pending = 0;
     for (const t of this.tiles.values()) {
       if (!t.done) { pending++; continue; }
@@ -77,6 +88,7 @@ export class Props {
       if (t.lamps.length) this.lampLists.push(t.lamps);
       if (t.watchers.length) this.watcherLists.push(t.watchers);
       this.inscriptions.push(...t.inscriptions);
+      this.gates.push(...t.gates);
     }
     this.stats = { tiles, triangles, lamps, pending };
     if (this.loose.length) this.lampLists.push(this.loose);
@@ -89,9 +101,11 @@ export class Props {
   }
 
   private request(id: string, tx: number, tz: number): void {
-    const tile: Tile = { tx, tz, group: null, lamps: new Float32Array(0), watchers: new Float32Array(0), inscriptions: [], triangles: 0, done: false };
+    const tile: Tile = { tx, tz, group: null, lamps: new Float32Array(0), watchers: new Float32Array(0), inscriptions: [], gates: [], triangles: 0, done: false };
     this.tiles.set(id, tile);
-    void this.pool.run({ level: this.level, tx, tz }).then(async (data) => {
+    const kept = this.prepared?.tile(this.level, tx, tz);
+    const built = kept ? Promise.resolve(kept) : this.pool.run({ level: this.level, tx, tz }).then((t) => { this.prepared?.keepTile(this.level, tx, tz, t); return t; });
+    void built.then(async (data) => {
       if (this.tiles.get(id) !== tile) return;
       const group = new Group();
       for (const [mesh, kind] of [[data.solid, VERTEX_COLOR_SOLID], [data.glow, GLOW], [data.water, WATER], [data.flow, FLOW], [data.stones, ROCK], [data.house, HOUSE], [data.sky, GLOWWORM]] as const) {
@@ -105,6 +119,7 @@ export class Props {
       tile.lamps = data.lamps;
       tile.watchers = data.watchers;
       tile.inscriptions = data.inscriptions;
+      tile.gates = data.gates;
       this.blockers.set(id, data.blockers);
       tile.done = true;
     }, (err: unknown) => {

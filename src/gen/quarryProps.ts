@@ -22,6 +22,7 @@ import { furnishCellar } from './cellarProps';
 import { PropBuilder, local, type PropMesh, type Rgb, type V3 } from './propMesh';
 import { propModel, type Model } from './models';
 import { acrossFace, alongPath, inscribe, inscribeLettering, type Inscription } from './inscriptions';
+import type { Gate } from './gates';
 import { latin } from '../lore/scripts';
 import type { Mark } from '../lore/diary';
 import { markLine, type PageSpot } from './diaryPages';
@@ -53,6 +54,8 @@ export interface PropTile {
   watchers: Float32Array;
   /** Writing in the old scripts on the tile's props (src/gen/inscriptions.ts), for the game to read. */
   inscriptions: Inscription[];
+  /** The gates hanging on the tile's walls (src/gen/gates.ts): slow to work out, so the props worker adds them (empty from `quarryProps` itself). */
+  gates: Gate[];
   counts: { sleepers: number; carts: number; lamps: number; lit: number; shacks: number; wet: number; shafts: number; stones: number; leftovers: number; derricks: number; statues: number; watchers: number; chapels: number; hanging: number; machines: number; ruins: number; uphill: number; chalk: number; dressed: number; skies: number };
 }
 
@@ -205,7 +208,7 @@ class TileBuilder {
   }
 
   private done(): PropTile {
-    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), house: this.house.build(), sky: this.sky.mesh(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), inscriptions: this.inscriptions, counts: this.counts };
+    return { solid: this.solid.build(), glow: this.glow.build(), water: this.water.build(), flow: this.flow.build(), stones: this.stones.build(), house: this.house.build(), sky: this.sky.mesh(), lamps: new Float32Array(this.lamps), blockers: new Float32Array(this.blocks), watchers: new Float32Array(this.watchers), inscriptions: this.inscriptions, gates: [], counts: this.counts };
   }
 
   /** Stones and chippings over the floor of the tile (see DEBRIS). */

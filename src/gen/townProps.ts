@@ -6,9 +6,10 @@
  * asked for.
  */
 import { hash3f, v3cross, v3madd, v3norm, v3scale, type Vec3 } from '@futuremagic/core';
-import { HOUSES, TOWN, VILLAGE, houseColors, townGround, type House } from './town';
+import { HOUSES, SHOP, TOWN, VILLAGE, houseColors, shopRoom, townGround, type House } from './town';
 import { ridgeHeight } from './village';
 import { alongPolyline, polylineLength } from './polyline';
+import { propModel } from './models';
 import { local, type PropBuilder, type Rgb } from './propMesh';
 import type { Furnish } from './cellarProps';
 
@@ -109,8 +110,13 @@ function fronts(f: Furnish, H: House, i: number): void {
     inFrame(s, H, 0, out + 0.03, G + h / 2, 0.04, h / 2, 0.02, IRON);
     return;
   }
-  if (H.role === 'pawn' || H.role === 'hardware') shopFront(f, H, out);
-  if (H.role === 'weber') {
+  if (isShop(H)) { shopFront(f, H, out); shopInside(f, H); }
+  if (isShop(H)) {
+    // The shop is open: its door stands folded back against the front, on the shop itself.
+    const D = SHOP.door;
+    inFrame(s, H, H.door - D.hw - 0.04, out + D.hw, G + D.top / 2, 0.03, D.top / 2, D.hw, DOOR);
+    inFrame(s, H, H.door, out - 0.03, G + D.top + 0.06, D.hw + 0.08, 0.06, 0.05, FRAME); // the lintel
+  } else if (H.role === 'weber') {
     // Frau Weber's door stands open on her hall, the leaf folded back against the front.
     inFrame(s, H, H.door, out - 0.02, G + 1.05, 0.5, 1.05, 0.01, HALL);
     inFrame(s, H, H.door - 0.53, out + 0.5, G + 1.05, 0.03, 1.05, 0.5, DOOR);
@@ -121,7 +127,7 @@ function fronts(f: Furnish, H: House, i: number): void {
   let k = 0;
   const upstairs = H.eaves > G + 5;
   for (let u = -H.hu + 1.2; u < H.hu - 1; u += 2.1) {
-    if (Math.abs(u - H.door) > (H.role === 'pawn' || H.role === 'hardware' ? 2.4 : 1)) pane(u, out, G + 1.6, k++, false);
+    if (Math.abs(u - H.door) > (isShop(H) ? 2.4 : 1)) pane(u, out, G + 1.6, k++, false);
     if (upstairs) pane(u, out, G + 4.3, k++, false);
     // The back: fewer windows, mostly dark (not where it stands in the hill).
     if ((k & 1) === 0 && townGround(...back(H, u)).y < G + 1) pane(u, -out, G + 1.6, k++, true);
@@ -164,18 +170,20 @@ const unit = (a: Vec3, k = 1): Vec3 => v3scale(v3norm(a), k);
 /**
  * A building's walls and roof as flat slabs standing SHELL out of the field's surface (which rounds
  * its corners at the mesh's metre cells), the gables filled, a stone plinth round its foot. Grandma's
- * keeps her front door open.
+ * keeps her front door open, and so do the two shops.
  */
 function shell(f: Furnish, H: House, hers: boolean): void {
   const s = f.house, G = H.base, { wall, roof } = houseColors(H); // (plaster and tiles: src/render/materials.ts `HOUSE`)
   const y0 = G - 0.4;
   // The walls: front and back (along its side axis), its two ends.
   const groundUnder = (side: number, fwd: number) => Math.min(...[-1, 0, 1].map((t) => townGround(...(fwd ? local(H.cx, H.cz, H.yaw)(t * H.hu, fwd) : local(H.cx, H.cz, H.yaw)(side, t * H.hv))).y));
+  // Her front door (TOWN.door: across z, which is her side axis), or a shop's, cut out of the front.
+  const cut = hers ? { a: TOWN.door.z[0], b: TOWN.door.z[1], top: G + TOWN.door.top }
+    : isShop(H) ? { a: H.door - SHOP.door.hw, b: H.door + SHOP.door.hw, top: G + SHOP.door.top } : null;
   for (const fwd of [-H.hv, H.hv]) {
     const yb = Math.max(y0, groundUnder(0, fwd) - 0.4), cy = (yb + H.eaves) / 2, hy = (H.eaves - yb) / 2;
-    if (hers && fwd > 0) {
-      // Her front door cut out (TOWN.door: across z, which is her side axis).
-      const D = TOWN.door, top = G + D.top, a = D.z[0], b = D.z[1];
+    if (cut && fwd > 0) {
+      const { a, b, top } = cut;
       inFrame(s, H, (-H.hu - SHELL + a) / 2, fwd, cy, (a + H.hu + SHELL) / 2, hy, SHELL, wall);
       inFrame(s, H, (H.hu + SHELL + b) / 2, fwd, cy, (H.hu + SHELL - b) / 2, hy, SHELL, wall);
       inFrame(s, H, (a + b) / 2, fwd, (top + H.eaves) / 2, (b - a) / 2, (H.eaves - top) / 2, SHELL, wall);
@@ -195,13 +203,13 @@ function shell(f: Furnish, H: House, hers: boolean): void {
   const outside = (side: number, fwd: number) => townGround(...local(H.cx, H.cz, H.yaw)(side, fwd)).y < P.top;
   for (const fwd of [-H.hv, H.hv]) {
     if (!outside(0, fwd + Math.sign(fwd))) continue;
-    if (hers && fwd > 0) {
-      const D = TOWN.door;
-      plinth((-H.hu - P.out + D.z[0]) / 2, fwd, (D.z[0] + H.hu + P.out) / 2, P.out);
-      plinth((H.hu + P.out + D.z[1]) / 2, fwd, (H.hu + P.out - D.z[1]) / 2, P.out);
-    } else plinth(0, fwd, H.hu + P.out, P.out);
+    const o = (Math.sign(fwd) * P.out) / 2; // (out from the wall only: not into a shop)
+    if (cut && fwd > 0) {
+      plinth((-H.hu - P.out + cut.a) / 2, fwd + o, (cut.a + H.hu + P.out) / 2, P.out / 2);
+      plinth((H.hu + P.out + cut.b) / 2, fwd + o, (H.hu + P.out - cut.b) / 2, P.out / 2);
+    } else plinth(0, fwd + o, H.hu + P.out, P.out / 2);
   }
-  for (const side of [-H.hu, H.hu]) if (outside(side + Math.sign(side), 0)) plinth(side, 0, P.out, H.hv + P.out);
+  for (const side of [-H.hu, H.hu]) if (outside(side + Math.sign(side), 0)) plinth(side + (Math.sign(side) * P.out) / 2, 0, P.out / 2, H.hv + P.out);
 
   const es: Vec3 = [Math.cos(H.yaw), 0, -Math.sin(H.yaw)], ef: Vec3 = [Math.sin(H.yaw), 0, Math.cos(H.yaw)], up: Vec3 = [0, 1, 0];
   const c: Vec3 = [H.cx, 0, H.cz], over = 0.35;
@@ -281,4 +289,155 @@ function shopFront(f: Furnish, H: House, out: number): void {
   const lu = H.door + 0.85;
   inFrame(s, H, lu, out + 0.15, G + 2.25, 0.06, 0.02, 0.12, IRON);
   inFrame(s, H, lu, out + 0.2, G + 2.1, 0.07, 0.11, 0.07, LANTERN);
+}
+
+const isShop = (H: House) => H.role === 'pawn' || H.role === 'hardware';
+
+const COUNTER: Rgb = [0.24, 0.15, 0.08], COUNTER_TOP: Rgb = [0.34, 0.23, 0.13], GLASS: Rgb = [0.3, 0.36, 0.38];
+const FLOOR: Rgb = [0.3, 0.2, 0.11], SHADE: Rgb = [0.55, 0.48, 0.3], BULB: Rgb = [1, 0.86, 0.6], FACE: Rgb = [0.8, 0.76, 0.64];
+const BOXES: readonly Rgb[] = [[0.42, 0.32, 0.18], [0.2, 0.3, 0.42], [0.5, 0.18, 0.12], [0.55, 0.5, 0.36], [0.18, 0.3, 0.22]];
+const TINS: readonly Rgb[] = [[0.45, 0.46, 0.48], [0.2, 0.25, 0.4], [0.5, 0.42, 0.16]];
+const TRINKETS: readonly Rgb[] = [BRASS, [0.62, 0.6, 0.55], [0.3, 0.12, 0.1], [0.2, 0.32, 0.4], [0.45, 0.28, 0.08], [0.15, 0.1, 0.07]];
+/** The shelf's boards (furn_cellar_shelf: 1.6 m long, 0.42 deep). */
+const BOARDS = [0.35, 0.95, 1.55] as const;
+
+/**
+ * Inside a shop (the room carved by `shopAir`, src/gen/town.ts): the counter across it with the
+ * keeper's place behind (`shopKeeper`), shelves of goods along the back and the sides, a lamp over
+ * the counter. Kemal's are tools, boxes and tins, his own tools hung on the back wall; Ilse's are
+ * pawned things: clocks, brass, jars, a glass case of small things.
+ */
+function shopInside(f: Furnish, H: House): void {
+  const s = f.solid, R = shopRoom(H), F = R.floor, C = SHOP.counter, kemal = H.role === 'hardware';
+  const at = local(H.cx, H.cz, H.yaw), roll = (a: number, b: number, k: number) => hash3f(TOWN_PROPS + 7, a, b, k + (kemal ? 0 : 50));
+  // Lined inside (over the field's rough metre-cell surface): boards underfoot, dark wood panelling to
+  // the dado, papered walls and a plastered ceiling over it.
+  const L = 0.03, W = R.u - L, V0 = R.v0 + L, V1 = R.v1 - L, top = F + SHOP.height - L, D = SHOP.door, dado = F + 0.9;
+  const paper: Rgb = kemal ? [0.52, 0.48, 0.38] : [0.42, 0.46, 0.4], ceiling: Rgb = [0.62, 0.59, 0.5];
+  inFrame(s, H, 0, (V0 + V1) / 2, F + 0.01, W, 0.012, (V1 - V0) / 2, FLOOR);
+  for (let k = -W + 0.11; k < W; k += 0.22) inFrame(s, H, k, (V0 + V1) / 2, F + 0.023, 0.004, 0.001, (V1 - V0) / 2, COUNTER);
+  inFrame(f.house, H, 0, (V0 + V1) / 2, top, W, 0.012, (V1 - V0) / 2, ceiling);
+  const wall = (u: number, v: number, hs: number, hf: number, y0: number, y1: number) => {
+    inFrame(s, H, u, v, (y0 + Math.min(y1, dado)) / 2, hs, (Math.min(y1, dado) - y0) / 2, hf, COUNTER);
+    if (y1 > dado) inFrame(f.house, H, u, v, (dado + y1) / 2, hs, (y1 - dado) / 2, hf, paper);
+    const [x, z] = at(u, v);
+    f.block(x, z, H.yaw, hs, hf + 0.02, y0, y1); // (the field's own wall is further out)
+  };
+  wall(0, V0, W, 0.012, F, top);
+  for (const side of [-1, 1]) wall(side * W, (V0 + V1) / 2, 0.012, (V1 - V0) / 2, F, top);
+  // The front, round the door.
+  const a = H.door - D.hw, b = H.door + D.hw;
+  wall((-W + a) / 2, V1, (a + W) / 2, 0.012, F, top);
+  wall((W + b) / 2, V1, (W - b) / 2, 0.012, F, top);
+  inFrame(f.house, H, H.door, V1, (F + D.top + top) / 2, D.hw, (top - F - D.top) / 2, 0.012, paper);
+
+  // The counter, wall to wall.
+  const cv = R.v0 + C.at;
+  inFrame(s, H, 0, cv, F + (C.high - 0.04) / 2, R.u, (C.high - 0.04) / 2, C.deep - 0.03, COUNTER);
+  inFrame(s, H, 0, cv, F + C.high - 0.02, R.u, 0.02, C.deep, kemal ? COUNTER_TOP : GLASS);
+  const [kx, kz] = at(0, cv);
+  f.block(kx, kz, H.yaw, R.u, C.deep, F, F + C.high);
+  // On it: the till, and a bell to ring.
+  inFrame(s, H, H.door + 0.9, cv - 0.04, F + C.high + 0.12, 0.16, 0.12, 0.13, kemal ? IRON : BRASS);
+  inFrame(s, H, H.door + 0.9, cv + 0.07, F + C.high + 0.26, 0.15, 0.03, 0.04, FACE);
+  const bell = framePoint(H, H.door - 0.6, cv + 0.1, F + C.high + 0.04);
+  s.ellipsoid(bell[0], bell[1], bell[2], 0.05, 0.04, 0.05, BRASS, 8);
+  if (!kemal) {
+    // Ilse's counter is a glass case: under the glass, rings, watches and medals on dark cloth.
+    for (let k = 0; k < 14; k++) {
+      const p = framePoint(H, -R.u + 0.3 + k * ((2 * R.u - 0.6) / 13), cv + (roll(k, 1, 0) - 0.5) * 0.3, F + C.high - 0.07);
+      s.ellipsoid(p[0], p[1], p[2], 0.025 + 0.02 * roll(k, 2, 0), 0.012, 0.025 + 0.02 * roll(k, 3, 0), TRINKETS[Math.floor(roll(k, 4, 0) * TRINKETS.length)], 6);
+    }
+  }
+
+  // Shelves: two along the back wall either side of the keeper, one down each side wall.
+  const shelves: [number, number, number][] = [[H.door - 1.75, R.v0 + 0.23, 0], [H.door + 1.75, R.v0 + 0.23, 0]];
+  const sideV = (cv + C.deep + R.v1) / 2;
+  for (const side of [-1, 1]) shelves.push([side * (R.u - 0.23), sideV, -side * Math.PI / 2]);
+  shelves.forEach(([u, v, turn], i) => {
+    const [x, z] = at(u, v), yaw = H.yaw + turn, along = local(x, z, yaw);
+    if (!kemal && i >= 2) {
+      // Ilse's sides: a sideboard, its top crowded with clocks, and pictures over it.
+      s.stamp(propModel('furn_sideboard'), x, F, z, yaw);
+      f.block(x, z, yaw, 0.92, 0.27, F, F + 0.95);
+      for (let k = 0; k < 4; k++) {
+        const [px, pz] = along(-0.65 + k * 0.43, 0), r = 0.08 + 0.05 * roll(i, k, 5);
+        s.upright(px, F + 0.9 + r + 0.03, pz, yaw, r * 0.9, r + 0.03, 0.06, k & 1 ? COUNTER : BRASS);
+        const [fx, fz] = along(-0.65 + k * 0.43, 0.065);
+        s.upright(fx, F + 0.9 + r + 0.05, fz, yaw, r * 0.7, r * 0.7, 0.005, FACE);
+        const [wx, wz] = along(-0.6 + k * 0.4, -0.26);
+        s.upright(wx, F + 1.55 + 0.2 * roll(i, k, 6), wz, yaw, 0.12 + 0.06 * roll(i, k, 7), 0.15, 0.01, TRINKETS[(i + k) % TRINKETS.length]);
+      }
+      return;
+    }
+    s.stamp(propModel('furn_cellar_shelf'), x, F, z, yaw);
+    f.block(x, z, yaw, 0.8, 0.22, F, F + 1.9);
+    for (const y of BOARDS) for (let k = 0; k < 6; k++) {
+      const r = roll(i * 7 + k, y * 10, 0);
+      if (r < 0.2) continue;
+      const [px, pz] = along(-0.62 + k * 0.25, 0.02), g = F + y + 0.015;
+      const pick = roll(i * 7 + k, y * 10, 1);
+      if (kemal) {
+        if (pick < 0.5) { const w = 0.06 + 0.04 * r, t = 0.05 + 0.08 * roll(i, k, y); s.upright(px, g + t, pz, yaw + (r - 0.5) * 0.3, w, t, 0.1, BOXES[Math.floor(pick * 10) % BOXES.length]); }
+        else { const c = 0.05 + 0.02 * r; s.cylinder(px, g + c * 1.3, pz, c, c * 1.3, TINS[Math.floor(pick * 10) % TINS.length], 8); }
+      } else if (pick < 0.45) {
+        const c = 0.04 + 0.025 * r;
+        s.cylinder(px, g + c * 1.6, pz, c, c * 1.6, TRINKETS[Math.floor(pick * 20) % TRINKETS.length], 8, 0.15);
+      } else if (pick < 0.75) {
+        s.cylinder(px, g + 0.11, pz, 0.018, 0.11, BRASS, 6); // a candlestick
+        s.cylinder(px, g + 0.01, pz, 0.05, 0.01, BRASS, 8);
+      } else s.ellipsoid(px, g + 0.07, pz, 0.08, 0.07, 0.07, TRINKETS[Math.floor(pick * 20) % TRINKETS.length], 8); // a teapot, a vase
+    }
+  });
+
+  // The back wall behind the keeper: Kemal's tools hung up for sale; Ilse's clocks.
+  const tools = ['held_hatchet', 'held_crowbar', 'held_pick', 'held_hatchet'] as const;
+  for (let k = 0; k < 4; k++) {
+    const u = H.door - 0.6 + k * 0.4, [x, z] = at(u, R.v0 + 0.04);
+    if (kemal) s.stamp(propModel(tools[k]), x, F + 1.15, z, H.yaw);
+    else {
+      const r = 0.1 + 0.05 * roll(k, 9, 9), p = framePoint(H, u, R.v0 + 0.04, F + 1.5 + 0.25 * (k & 1));
+      s.upright(p[0], p[1], p[2], H.yaw, r, r, 0.03, COUNTER);
+      inFrame(s, H, u, R.v0 + 0.08, p[1], r * 0.75, r * 0.75, 0.005, FACE);
+    }
+  }
+  if (kemal) {
+    // Out front on his floor: a barrel of handles, a stack of buckets, a coil of rope, shovels.
+    const corner = (side: number) => at(side * (R.u - 0.45), R.v1 - 0.55);
+    const [bx, bz] = corner(-1);
+    s.stamp(propModel('prop_barrel'), bx, F, bz, H.yaw);
+    for (let k = 0; k < 3; k++) {
+      const a = framePoint(H, -(R.u - 0.45) + (k - 1) * 0.12, R.v1 - 0.55 + (k - 1) * 0.08, F + 0.85), b = framePoint(H, -(R.u - 0.45) + (k - 1) * 0.2, R.v1 - 0.55 + (k - 1) * 0.1, F + 1.45);
+      s.beam(a[0], a[1], a[2], b[0], b[1], b[2], 0.02, 0.02, WOOD_HANDLE);
+    }
+    f.block(bx, bz, H.yaw, 0.34, 0.34, F, F + 0.9);
+    const [ux, uz] = corner(1);
+    for (let k = 0; k < 3; k++) s.stamp(propModel('prop_bucket'), ux, F + k * 0.1, uz, H.yaw + k);
+    s.stamp(propModel('prop_rope_coil'), ux, F + 0.31, uz, H.yaw + 0.4);
+    f.block(ux, uz, H.yaw, 0.2, 0.2, F, F + 0.45);
+    for (const du of [-0.25, 0.25]) {
+      const [sx, sz] = at(R.u - 0.04, sideV - 1.3 + du);
+      s.stamp(propModel('prop_shovel'), sx, F, sz, H.yaw - Math.PI / 2, { lean: 0.15 });
+    }
+  } else {
+    // A gramophone on a little table by the window, its horn turned to the door; a coat stand.
+    const t = framePoint(H, -(R.u - 0.4), R.v1 - 0.5, F);
+    s.cylinder(t[0], F + 0.35, t[2], 0.03, 0.35, COUNTER, 6);
+    s.cylinder(t[0], F + 0.72, t[2], 0.28, 0.02, COUNTER, 10);
+    inFrame(s, H, -(R.u - 0.4), R.v1 - 0.5, F + 0.82, 0.15, 0.08, 0.15, COUNTER);
+    const a = framePoint(H, -(R.u - 0.45), R.v1 - 0.45, F + 0.92), b = framePoint(H, -(R.u - 0.55), R.v1 - 0.25, F + 1.25);
+    s.tube(a[0], a[1], a[2], b[0], b[1], b[2], 0.02, BRASS, 6);
+    s.cylinder(b[0], b[1] + 0.04, b[2], 0.16, 0.06, BRASS, 12, 0, -0.8);
+    f.block(t[0], t[2], H.yaw, 0.3, 0.3, F, F + 1.3);
+    const [cx, cz] = at(R.u - 0.4, R.v1 - 0.45);
+    s.stamp(propModel('furn_coat_stand'), cx, F, cz, H.yaw);
+    f.block(cx, cz, 0, 0.17, 0.17, F, F + 1.8);
+  }
+
+  // The lamp over the counter, on its cord from the ceiling.
+  const l = framePoint(H, H.door, cv, top);
+  s.upright(l[0], top - 0.2, l[2], 0, 0.006, 0.2, 0.006, IRON);
+  s.cylinder(l[0], top - 0.48, l[2], 0.22, 0.08, SHADE, 12, 0, -0.6);
+  f.glow.ellipsoid(l[0], top - 0.55, l[2], 0.05, 0.06, 0.05, BULB, 8);
+  f.light(l[0], top - 0.65, l[2]);
 }

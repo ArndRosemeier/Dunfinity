@@ -1,5 +1,13 @@
 [
   {
+    "key": "same name: dunfinity/creatures/pets.ts#data + dunfinity/loot/tin.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pets.ts#data + dunfinity/lore/key.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
     "key": "clone: core/noise.ts#cellular2 + core/noise.ts#cellular3",
     "reason": "2D and 3D variants of the same noise in one file; merging them would cost the hot path a dimension branch."
   },
@@ -3400,10 +3408,6 @@
     "reason": "every view's per-frame draw of its own thing; the things differ"
   },
   {
-    "key": "same name: dunfinity/render/props/watchers.ts#draw + dunfinity/render/thinView.ts#draw",
-    "reason": "every view's per-frame draw of its own thing; the things differ"
-  },
-  {
     "key": "same name: dunfinity/gen/dwarven.ts#put + dunfinity/loot/items.ts#put",
     "reason": "different things put: a dwarven hall piece on a level, an item on a grandchild (its slot, or grandma's knife in the belt)"
   },
@@ -3524,20 +3528,12 @@
     "reason": "building a fixed pool of meshes once: SlotPool for seeded things, figures and thrown missiles keep their own pools (different meshes per slot vs shared)"
   },
   {
-    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
-    "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
-  },
-  {
     "key": "idiom: [.cell .depth .level .seed] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
     "reason": "each SiteField seeds itself from its level and its cell size (one line in each constructor)"
   },
   {
     "key": "idiom: [.phase .sin Math] in dunfinity/creatures/wisps.ts + dunfinity/render/horseradish.ts + dunfinity/render/snapdragons.ts",
     "reason": "a slow sine sway by phase in unrelated things (wisps, plants)"
-  },
-  {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
-    "reason": "placing an object at a thing's position: the three.js idiom"
   },
   {
     "key": "idiom: [.range .tries] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/glowworms.ts",
@@ -3618,10 +3614,6 @@
   {
     "key": "same name: dunfinity/render/props/bloomView.ts#shown + dunfinity/render/props/dripView.ts#shown",
     "reason": "each view's things drawn now, read for their sounds; the things differ"
-  },
-  {
-    "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/thinView.ts#draw",
-    "reason": "every view's per-frame draw of its own thing; the things differ"
   },
   {
     "key": "clone: dunfinity/loot/recipes.ts#flour + dunfinity/loot/recipes.ts#pet",
@@ -4212,14 +4204,6 @@
     "reason": "a seeded wait between two events: the Rng is the seam"
   },
   {
-    "key": "idiom: [.pool .root] in dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
-    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
-  },
-  {
-    "key": "idiom: [.pool .slots] in dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
-    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
-  },
-  {
     "key": "same name: dunfinity/creatures/population.ts#advance + dunfinity/world/singing.ts#advance",
     "reason": "the per-frame step of a simulation, same verb (singing crystals vs a creature population)"
   },
@@ -4620,10 +4604,6 @@
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
   {
-    "key": "idiom: [.atan2 .min .yaw Math] in dunfinity/creatures/crickets.ts + dunfinity/creatures/pets.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/shrooms.ts + dunfinity/creatures/slimes.ts",
-    "reason": "each creature kind turns towards its heading at its own rate (a clamped atan2 step on its yaw); found on main before the village PR, not touched by it"
-  },
-  {
     "key": "clone: dunfinity/creatures/foreman.ts#constructor + dunfinity/creatures/scavengers.ts#constructor + dunfinity/creatures/shrooms.ts#constructor + dunfinity/creatures/slimes.ts#constructor",
     "reason": "constructors that only pass the kind's name, numbers and gait to Population"
   },
@@ -4648,6 +4628,82 @@
     "reason": "A view posing its figures each frame: the common verb, unrelated jobs."
   },
   {
+    "key": "idiom: [.cx .cz] in dunfinity/gen/quarry.ts + dunfinity/gen/town.ts + dunfinity/gen/village.ts",
+    "reason": "each passes its own record's centre (a working, a house, a building) to the one frame seam unlocal/local (src/gen/propMesh.ts); nothing more to share"
+  },
+  {
+    "key": "idiom: [.kind .pts .roads] in dunfinity/gen/townProps.ts + dunfinity/gen/village.ts + dunfinity/world/villagers.ts",
+    "reason": "each walks VILLAGE.roads for its own end (the layout lays houses, the props stand lamps, the walkers find their streets); the roads are the one seam"
+  },
+  {
+    "key": "idiom: [.things] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/goblin.ts",
+    "reason": "each style furnishes from its own constants' things table (T = STYLE.things): the shared shape is only the alias; found on main, not touched by the townsfolk PR"
+  },
+  {
+    "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
+    "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
+  },
+  {
+    "key": "idiom: [.abs .dry .floorAt .groundAt Math] in dunfinity/gen/blooms.ts + dunfinity/gen/drips.ts + dunfinity/gen/gates.ts + dunfinity/gen/glowworms.ts + dunfinity/world/thinPlaces.ts",
+    "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
+  },
+  {
+    "key": "idiom: [.array .pool .slots] in dunfinity/render/gateView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
+    "reason": "the same verb for a different thing"
+  },
+  {
+    "key": "idiom: [.pool .root] in dunfinity/render/gateView.ts + dunfinity/render/humView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
+    "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
+  },
+  {
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/gateView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
+    "reason": "placing an object at a thing's position: the three.js idiom"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/gen/cellMemo.ts#near + dunfinity/gen/gates.ts#near",
+    "reason": "the field query \"what is near (x, z)\", the same verb across seeded fields"
+  },
+  {
+    "key": "same name: dunfinity/gen/gates.ts#near + dunfinity/loot/finds.ts#near",
+    "reason": "the field query \"what is near (x, z)\", the same verb across seeded fields"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/gateView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/loot/findView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/props/dripView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/props/watchers.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
     "key": "idiom: [.hypot .tx .tz .x .z Math] in dunfinity/creatures/critters.ts + dunfinity/creatures/dogs.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/population.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
     "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
   },
@@ -4662,10 +4718,6 @@
   {
     "key": "idiom: [.roamFrom .tx .tz] in dunfinity/creatures/critters.ts + dunfinity/creatures/eels.ts + dunfinity/creatures/rats.ts + dunfinity/creatures/slimes.ts",
     "reason": "each animal kind's own steering towards its target (tx, tz) and its seeded pauses: the mind differs per kind (one shared animal mind is the planned next step); the shared idle life is Population.live"
-  },
-  {
-    "key": "idiom: [.things] in dunfinity/gen/bones.ts + dunfinity/gen/dwarven.ts + dunfinity/gen/goblin.ts",
-    "reason": "each built style keeps its own list of placed things (bones, a dwarven hall's, a goblin camp's); reading .things is the style contract, not a copy"
   },
   {
     "key": "same name: dunfinity/render/creatures/petView.ts#clipFor + dunfinity/render/creatures/ratView.ts#clipFor",

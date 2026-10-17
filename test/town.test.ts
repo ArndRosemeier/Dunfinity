@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { CELLAR } from '../src/gen/cellar';
-import { HOUSES, TOWN, VILLAGE, houseDistance, landAt, newLand, townGround } from '../src/gen/town';
+import { HOUSES, TOWN, VILLAGE, houseDistance, landAt, newLand, shopAir, townGround } from '../src/gen/town';
+import { local } from '../src/gen/propMesh';
 import { ridgeHeight } from '../src/gen/village';
 import { boxesOverlap } from '../src/gen/polyline';
 import { quarryProps } from '../src/gen/quarryProps';
@@ -18,7 +19,9 @@ test("grandma's street: open sky over the cobbles, the houses solid, the cellar 
     assert.ok(Math.abs(level.groundAt(-19, z) - G) < 0.1, `street level at z ${z}`);
   }
   for (const h of HOUSES.slice(1)) {
-    assert.ok(level.sdf(h.cx, h.base + 1.5, h.cz) < 0, `house at ${h.cx.toFixed(1)}, ${h.cz.toFixed(1)} is solid`);
+    // (A shop's front room is open: look behind it.)
+    const [x, z] = shopAir(h.cx, h.base + 1.5, h.cz) > 0 ? local(h.cx, h.cz, h.yaw)(0, -h.hv + 0.8) : [h.cx, h.cz];
+    assert.ok(level.sdf(x, h.base + 1.5, z) < 0, `house at ${x.toFixed(1)}, ${z.toFixed(1)} is solid`);
     assert.ok(houseDistance(h, h.cx, ridgeHeight(h) + 1, h.cz) > 0, 'the sky above its roof');
   }
   // No building stands in another, on a road or on the square.

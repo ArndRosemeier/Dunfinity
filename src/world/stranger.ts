@@ -6,7 +6,7 @@
  * when called on (E): a few words almost like ours. Pure.
  */
 import { shopDoor } from '../gen/town';
-import { Townsperson } from './townsperson';
+import { Talker } from './townsperson';
 import type { Known } from './neighbour';
 
 /** Its blocker's key. */
@@ -30,13 +30,11 @@ const LINES: readonly string[] = [
   '"Do not sell the humming things. Ilse keeps them. Ilse is wrong."',
 ];
 
-export class Stranger extends Townsperson {
-  private calls = 0;
-
+export class Stranger extends Talker {
   constructor() {
     const d = shopDoor('pawn');
     // Beside the shop's door, a step off its threshold, looking out at the street.
-    super(d.x - d.nx * 0.2 + d.sx * 2.2, d.z - d.nz * 0.2 + d.sz * 2.2, Math.atan2(-d.nx, -d.nz), STRANGER);
+    super(d.x - d.nx * 0.2 + d.sx * 2.2, d.z - d.nz * 0.2 + d.sz * 2.2, Math.atan2(-d.nx, -d.nz), STRANGER, LINES);
   }
 
   /** Whether it is in the town at all. */
@@ -44,9 +42,4 @@ export class Stranger extends Townsperson {
     return known.deepest >= STRANGER.from;
   }
 
-  /** Call on it at `now`: what it says. */
-  talk(now: number): string {
-    this.talkAt = now;
-    return LINES[this.calls++ % LINES.length];
-  }
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Tin } from '../src/loot/tin';
 import { Cooked } from '../src/loot/recipes';
 import { Practice } from '../src/loot/practice';
-import { readSave } from '../src/persist/save';
+import { activeFamily, deleteFamily, families, goStraightIn, loadByHand, manualSaves, MANUAL_SAVES, newFamily, readFamily, saveByHand, takeStraightIn, writeFamily, type SaveData } from '../src/persist/save';
 
 test('the tin, the cards and the practice come back as they were kept (through JSON)', () => {
   const tin = new Tin();
@@ -27,5 +27,75 @@ test('the tin, the cards and the practice come back as they were kept (through J
 });
 
 test('no storage, no save (and no throw)', () => {
-  assert.equal(readSave(1), null);
+  assert.equal(readFamily('x'), null);
+  assert.deepEqual(families(), []);
+  assert.equal(activeFamily(), null);
+  assert.equal(takeStraightIn(), false);
+});
+
+/** A localStorage for one test (node has none). */
+function withStorage(run: (store: Map<string, string>) => void): void {
+  const store = new Map<string, string>();
+  const g = globalThis as { localStorage?: unknown };
+  g.localStorage = {
+    get length() { return store.size; },
+    key: (i: number) => [...store.keys()][i] ?? null,
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => { store.set(k, v); },
+    removeItem: (k: string) => { store.delete(k); },
+  };
+  try { run(store); } finally { delete g.localStorage; }
+}
+
+const save = (heir: number, depth: number | null, extra: Partial<SaveData> = {}): SaveData => ({
+  v: 1, heir, tin: { ...new Tin().data, deepest: depth ?? 0 }, taken: [],
+  child: depth === null ? null : { depth, pos: [0, 0, 0], facing: 0, health: 10, stamina: 10, reached: depth, cooked: {}, practice: {}, pack: [] },
+  ...extra,
+});
+
+test('families: several side by side, each in its mode, the last played first; forgetting one', () => {
+  withStorage(() => {
+    const a = newFamily(1, 'rogue', 1000);
+    writeFamily(a, 1, save(0, 3), 1000);
+    const b = newFamily(1, 'adventure', 2000);
+    writeFamily(b, 1, save(2, null, { mode: 'adventure' }), 2000);
+    assert.notEqual(a, b);
+    assert.deepEqual(families().map((f) => [f.id, f.mode, f.heir, f.depth]), [[b, 'adventure', 2, null], [a, 'rogue', 0, 3]]);
+    assert.equal(activeFamily()?.id, b, 'the newest is the one played');
+    writeFamily(a, 1, save(1, 4), 3000);
+    assert.equal(families()[0].id, a, 'kept last: first in the list');
+    assert.equal(readFamily(a)?.child?.depth, 4);
+    deleteFamily(b);
+    assert.deepEqual(families().map((f) => f.id), [a]);
+    assert.equal(readFamily(b), null);
+  });
+});
+
+test('a family kept the old way (one per seed) is taken into the list once, as Rogue like', () => {
+  withStorage((store) => {
+    store.set('dunfinity:save:7', JSON.stringify(save(4, 2)));
+    const [f] = families();
+    assert.equal(f.seed, 7);
+    assert.equal(f.mode, 'rogue');
+    assert.equal(readFamily(f.id)?.heir, 4);
+    assert.equal(activeFamily()?.id, f.id);
+    assert.equal(families().length, 1, 'not taken in twice');
+  });
+});
+
+test('Adventure: saves by hand, newest first, at most MANUAL_SAVES; loading one makes it the family save', () => {
+  withStorage(() => {
+    const id = newFamily(1, 'adventure', 1);
+    for (let i = 0; i < MANUAL_SAVES + 2; i++) saveByHand(id, 1, save(0, i, { mode: 'adventure' }), 100 + i);
+    const all = manualSaves(id);
+    assert.equal(all.length, MANUAL_SAVES);
+    assert.equal(all[0].data.child?.depth, MANUAL_SAVES + 1);
+    writeFamily(id, 1, save(1, null, { mode: 'adventure' }), 500); // the grandchild died since
+    assert.equal(loadByHand(id, all[3].at, 600), true);
+    assert.equal(readFamily(id)?.child?.depth, all[3].data.child?.depth);
+    assert.equal(loadByHand(id, 12345, 700), false);
+    goStraightIn(true);
+    assert.equal(takeStraightIn(), true);
+    assert.equal(takeStraightIn(), false, 'asked once');
+  });
 });

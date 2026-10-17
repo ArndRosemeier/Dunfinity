@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Rng } from '@futuremagic/core';
 import { Level } from '../src/gen/level';
-import { PET, PETS, Pets } from '../src/creatures/pets';
+import { PET, PETS, Pets, type PetData } from '../src/creatures/pets';
 import { Rats } from '../src/creatures/rats';
 import { Cooked } from '../src/loot/recipes';
 import { byYou, type Fighter } from '../src/combat/combat';
@@ -108,4 +108,26 @@ test('what your pet (or a card) kills counts as yours, for the tally and the sal
   assert.equal(rats.fallen.length, 1, 'one to give salt for');
   for (const c of ['knife', 'fire', 'force', 'flour', 'match', 'snapdragon', 'horseradish', GRUDGE]) assert.ok(byYou(c), c);
   assert.ok(!byYou('dog') && !byYou('spores'));
+});
+
+test('a pet that is out is kept in the save and comes back as hurt as it was, at your side', () => {
+  const pets = new Pets(level), owner = dummy(ax, az), p = pets.summon('dog', along(1), owner.y, az, 0);
+  p.mode = 'heel';
+  p.hurt(25, 'rat');
+  const kept: PetData = JSON.parse(JSON.stringify(pets.data));
+  assert.deepEqual(kept, { kind: 'dog', health: PETS.dog.health - 25 });
+  const back = new Pets(level);
+  back.restore(kept);
+  back.restore(kept); // only ever one
+  back.accompany(DT, owner, [], null, new Rng(1));
+  assert.equal(back.list.length, 1);
+  const q = back.alive!;
+  assert.equal(q.kind, 'dog');
+  assert.equal(q.health, PETS.dog.health - 25);
+  assert.equal(q.mode, 'form');
+  assert.ok(Math.hypot(owner.x - q.x, owner.z - q.z) < 3, 'at your side');
+  back.restore({ kind: 'wolf', health: 5 } as never);
+  assert.equal(back.list.length, 1, 'a broken save brings no pet');
+  p.hurt(999, 'rat');
+  assert.equal(pets.data, null, 'a dead pet is not kept');
 });

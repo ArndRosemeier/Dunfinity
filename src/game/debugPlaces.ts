@@ -5,7 +5,7 @@
  * to stand near each.
  */
 import { CELLAR, CELLAR_SHAFT } from '../gen/cellar';
-import { TOWN, homeDoor, shopDoor } from '../gen/town';
+import { TOWN, homeDoor, shopDoor, shopKeeper } from '../gen/town';
 import { HOUSE_DOORS } from '../gen/doorways';
 import { ladderTop, type Shaft } from '../gen/descents';
 import { openFloor } from '../gen/searchOut';
@@ -52,6 +52,11 @@ function atLadder(name: string, s: Shaft): Place {
 function home(level: Level): Place[] {
   /** Before a house's door on the street, facing it. */
   const out = (name: string, d: ReturnType<typeof shopDoor>): Place => ({ name, x: d.x, y: level.groundAt(d.x, d.z), z: d.z, yaw: towards(d.x, d.z, d.x - d.nx, d.z - d.nz) });
+  /** In a shop, before its counter, facing its keeper. */
+  const counter = (name: string, shop: 'pawn' | 'hardware'): Place => {
+    const k = shopKeeper(shop), fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw), x = k.x + fx * 2.1, z = k.z + fz * 2.1;
+    return { name, x, y: TOWN.ground, z, yaw: towards(x, z, k.x, k.z) };
+  };
   const street = TOWN.street.x[1] - 1.5;
   const door = HOUSE_DOORS[0], house = CELLAR.house;
   return [
@@ -62,6 +67,8 @@ function home(level: Level): Place[] {
     { name: 'The street outside her door', x: street, y: level.groundAt(street, 0), z: 0, yaw: -Math.PI / 2 },
     out('Ilse\'s pawn shop', shopDoor('pawn')),
     out('Kemal\'s hardware store', shopDoor('hardware')),
+    counter('Kemal\'s counter (inside)', 'hardware'),
+    counter('Ilse\'s counter (inside)', 'pawn'),
     out('Frau Weber', homeDoor('weber')),
     atLadder('The old shaft (way down)', CELLAR_SHAFT),
   ];

@@ -1,10 +1,11 @@
 /**
- * Someone standing in the town one can call on (Frau Weber, the stranger at Ilse's): where they
+ * Someone standing in the town one can call on (Frau Weber, the stranger at Ilse's, Kemal and Ilse behind their counters): where they
  * stand, turning to whoever comes near and back to the street, whether one is near enough to talk,
  * whether they are talking, and their blocker so one does not walk through them. Pure.
  */
 import { TOWN } from '../gen/town';
 import { BLOCKER_STRIDE } from './blockers';
+import { turnTowards } from '../creatures/creature';
 
 /** How near one must stand to talk; how near one must come for them to turn to you, and how fast they turn (radians a second); seconds they go on talking. */
 export interface Manner {
@@ -49,7 +50,21 @@ export class Townsperson {
   /** Turn by `dt` towards someone at (x, z) if they are near, else back to the street. */
   turn(x: number, z: number, dt: number): void {
     const M = this.manner, want = Math.hypot(x - this.x, z - this.z) < M.notice ? Math.atan2(-(x - this.x), -(z - this.z)) : this.street;
-    const d = Math.atan2(Math.sin(want - this.yaw), Math.cos(want - this.yaw));
-    this.yaw += Math.max(-M.turn * dt, Math.min(M.turn * dt, d));
+    this.yaw = turnTowards(this.yaw, want, M.turn * dt);
+  }
+}
+
+/** A Townsperson with a few lines they say in turn when called on (the stranger at Ilse's, the shopkeepers). */
+export class Talker extends Townsperson {
+  private calls = 0;
+
+  constructor(x: number, z: number, street: number, manner: Manner, private readonly lines: readonly string[]) {
+    super(x, z, street, manner);
+  }
+
+  /** Call on them at `now`: what they say. */
+  talk(now: number): string {
+    this.talkAt = now;
+    return this.lines[this.calls++ % this.lines.length];
   }
 }
