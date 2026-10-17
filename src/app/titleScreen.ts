@@ -62,8 +62,9 @@ export class TitleScreen {
     child(card, 'div', 'line', 'Grandma left you her kitchen knife, and a way down that never ends.');
     const menu = this.menu = child(card, 'div', 'menu');
     this.black = child(this.root, 'div', 'black');
+    let going = null as HTMLButtonElement | null;
     this.chosen = new Promise((resolve) => {
-      if (canContinue) choice(menu, 'Continue', 'primary', () => resolve('continue'));
+      if (canContinue) going = choice(menu, 'Continue', 'primary', () => resolve('continue'));
       const fresh = choice(menu, 'New Game', canContinue ? '' : 'primary', () => {
         if (!canContinue) { resolve('new'); return; }
         // A new family forgets the kept one: ask once.
@@ -73,19 +74,27 @@ export class TitleScreen {
         button(row, 'Yes, start again', () => resolve('new'), 'ui-btn primary small');
         button(row, 'No', () => { ask.remove(); fresh.disabled = false; }, 'ui-btn small');
       });
-      // Greyed out until the game's shaders are ready (src/render/stage.ts warmLater), so play never stutters.
-      for (const b of menu.querySelectorAll('button')) b.disabled = true;
     });
-    this.lamps = child(menu, 'div', 'lamps', 'Lighting the lamps\u2026');
+    // Continue is greyed out until the game's shaders are ready (src/render/stage.ts warmLater), so play
+    // never stutters. New Game is not: the character creator (src/game/creator.ts) comes first, and they
+    // go on building while it shows.
+    if (going) going.disabled = true;
+    this.going = going;
+    this.lamps = child(menu, 'div', 'lamps', canContinue ? 'Lighting the lamps\u2026' : '');
   }
 
-  /** The game is ready to play: the menu wakes up. */
+  /** Continue, while it waits for the shaders (null: no family to go on with). */
+  private readonly going: HTMLButtonElement | null;
+
+  /** The game is ready to play: Continue wakes up. */
   ready(): void {
     if (this.lamps.classList.contains('done')) return;
     this.lamps.classList.add('done');
     setTimeout(() => this.lamps.remove(), 1300);
-    for (const b of this.menu.querySelectorAll<HTMLButtonElement>(':scope > button')) b.disabled = false;
-    this.menu.querySelector<HTMLButtonElement>(':scope > button')?.focus({ preventScroll: true });
+    if (this.going) {
+      this.going.disabled = false;
+      this.going.focus({ preventScroll: true });
+    }
   }
 
   /** Show the name and the menu (once the set is on); the salt grows in over the buttons. */
@@ -93,6 +102,7 @@ export class TitleScreen {
     if (this.root.classList.contains('shown')) return;
     this.root.classList.add('shown');
     for (const b of this.root.querySelectorAll('.menu > .ui-btn')) b.classList.add('ui-grown');
+    this.menu.querySelector<HTMLButtonElement>(':scope > button:not([disabled])')?.focus({ preventScroll: true });
   }
 
   /** How black the screen is, 0..1 (after the choice it fades to black). */

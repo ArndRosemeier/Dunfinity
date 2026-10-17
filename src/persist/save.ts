@@ -13,6 +13,7 @@ import type { Find } from '../loot/finds';
 import type { Fallen } from '../gen/notary';
 import type { KeyData } from '../lore/key';
 import type { FirstStepsData } from '../game/firstSteps';
+import type { HumanoidAppearance } from '@futuremagic/humanoid';
 
 export interface GrandchildData {
   readonly depth: number;
@@ -53,6 +54,8 @@ export interface SaveData {
   readonly key?: KeyData;
   /** The first steps done (src/game/firstSteps.ts), or true when the list is over. A save without it is a family from before the list: over. */
   readonly steps?: FirstStepsData;
+  /** The grandchildren's look, made in the character creator (src/game/creator.ts); none: the seed's own. */
+  readonly look?: HumanoidAppearance;
 }
 
 const key = (seed: number) => `dunfinity:save:${seed}`;

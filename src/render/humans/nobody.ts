@@ -3,7 +3,7 @@
  * body's movement by the package's animator (mocap walk, run, climb, swim, fall, death).
  */
 import { Group, type Mesh, type Object3D } from 'three/webgpu';
-import { randomAppearance, setHumanAssetBase, type HumanoidAppearance } from '@futuremagic/humanoid';
+import { randomAppearance, setHumanAssetBase, type EquipmentVisuals, type HumanoidAppearance } from '@futuremagic/humanoid';
 import { Humanoid, type ActionAnim, type MoveState } from '@futuremagic/humanoid/three';
 import { deriveSeed } from '@futuremagic/core';
 import type { Body } from '../../world/traverse/body';
@@ -31,18 +31,47 @@ export function floorUnder(level: () => Level | null): (x: number, y: number, z:
 }
 
 export class Nobody {
-  /** Put this into the scene (it moves with the body). */
-  readonly root: Object3D;
+  /** Put this into the scene (the human in it moves with the body; a new look swaps the human inside it). */
+  readonly root = new Group();
   /** At eye height, turning with the body: things like the headlamp hang here. */
   readonly head = new Group();
   private readonly ground: (x: number, y: number, z: number) => number | null;
   /** The level the feet stand on (changes on the way down). */
   level: Level;
 
-  static async create(seed: number, level: Level): Promise<Nobody> {
-    const h = await Humanoid.create(nobodyLook(seed), { wardrobe: WARDROBE, expressions: true });
-    h.dress(rags(seed));
-    return new Nobody(h, level, seed);
+  /** `look`: the one made in the creator (src/game/creator.ts), else the seed's. */
+  static async create(seed: number, level: Level, look: HumanoidAppearance = nobodyLook(seed)): Promise<Nobody> {
+    return new Nobody(await Nobody.dressed(look, rags(seed)), level, seed);
+  }
+
+  private static async dressed(look: HumanoidAppearance, clothes: EquipmentVisuals): Promise<Humanoid> {
+    const h = await Humanoid.create(look, { wardrobe: WARDROBE, expressions: true });
+    h.dress(clothes);
+    return h;
+  }
+
+  /** The human drawn now (a new look builds another). */
+  get human(): Humanoid { return this.human_; }
+  /** The look it was built from. */
+  get look(): HumanoidAppearance { return this.human_.app; }
+
+  /**
+   * Rebuild the figure in a new look (the creator), dressed as now: built, compiled by `prepare`
+   * (src/render/stage.ts: a cache hit for what the old one drew with) and only then swapped in.
+   */
+  async restyle(look: HumanoidAppearance, prepare: (o: Object3D) => Promise<void>): Promise<void> {
+    const next = await Nobody.dressed(look, this.clothes);
+    await prepare(next.object);
+    const old = this.human_;
+    next.object.position.copy(old.object.position);
+    next.object.rotation.copy(old.object.rotation);
+    next.object.add(this.head);
+    this.head.position.y = next.height - 0.1;
+    this.root.add(next.object);
+    this.human_ = next;
+    if (!this.shown_) next.object.traverse((o) => { if ((o as Mesh).isMesh) o.visible = false; });
+    else if (this.hidesHair) next.char.setHairHidden(true, false);
+    old.dispose(); // after the new one is in: what they share stays compiled
   }
 
   /** Dress in grandma's pot lid on the arm (the Pot Lid card) or not, and what of the kit is on (src/loot/items.ts). Re-dresses only when it changes. */
@@ -51,7 +80,8 @@ export class Nobody {
     if (key === this.worn) return;
     this.worn = key;
     this.hidesHair = hidesHair(items);
-    this.human.dress(rags(this.seed, lid, items));
+    this.clothes = rags(this.seed, lid, items);
+    this.human_.dress(this.clothes);
   }
 
   private worn = 'false|';
@@ -59,11 +89,15 @@ export class Nobody {
   /** How far the figure is drawn over the body's feet now (`swimLift` while swimming, else 0, eased). */
   lift = 0;
 
-  private constructor(readonly human: Humanoid, level: Level, private readonly seed: number) {
+  /** What it wears now (a new look is dressed in it too). */
+  private clothes: EquipmentVisuals;
+
+  private constructor(private human_: Humanoid, level: Level, private readonly seed: number) {
     this.level = level;
-    this.root = human.object;
-    this.head.position.y = human.height - 0.1;
-    this.root.add(this.head);
+    this.clothes = rags(seed);
+    this.root.add(human_.object);
+    this.head.position.y = human_.height - 0.1;
+    human_.object.add(this.head);
     this.ground = floorUnder(() => this.level);
   }
 

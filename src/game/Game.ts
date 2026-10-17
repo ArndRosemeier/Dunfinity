@@ -75,6 +75,7 @@ import type { StyleId } from '../gen/style';
 import { positionReport, readPosition } from './report';
 import { VERSION } from '../app/whatsNew';
 import { playTitle } from './title';
+import { playCreator } from './creator';
 import { SALT_LINE, SaltLine } from '../world/saltLine';
 import { SaltLineView } from '../render/props/saltLine';
 import { growthAt, setGrowth } from '../app/growth';
@@ -360,14 +361,16 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
       cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart,
     };
-    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data });
+    writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made });
   };
   let keptAt = 0, keptDead = false;
   addEventListener('pagehide', keepGame);
   cam.follow(body.x, body.y + 1.6, body.z, 1);
 
   // The nobody is built before the warm-up, which compiles its materials with the rest.
-  const nobody = await Nobody.create(params.seed, level);
+  /** The grandchildren's look, made in the creator (src/game/creator.ts); none: the seed's. */
+  let made = saved?.look;
+  const nobody = await Nobody.create(params.seed, level, made);
   // The dogs too: skinned, their shaders are their own, so they compile in the warm-up with the humans.
   const dogView = await DogView.create();
   const ratView = await RatView.create();
@@ -891,6 +894,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     herd.drawHerds(f.critters.list, { x: at.x, y: at.y + 1.6, z: at.z }, dt, now);
   };
 
+  /** The character creator (src/game/creator.ts): the first grandchild's look. */
+  const makeGrandchild = () => playCreator(host, { seed: params.seed, view, nobody, ready: castWarm, floor: (x, z) => level.groundAt(x, z) });
   // The title screen (plain visits; a link with a seed, depth, place or style goes straight in): the
   // television plays while the game's level streams in and its shaders build, then hands over in the black.
   if (titled) {
@@ -902,7 +907,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       stream: (now) => view.frame(body.x, body.y, body.z, now, false),
     });
     if (choice === 'new' && saved) freshFamily();
-    if (choice === 'new') beginIntro(); // the introduction (src/game/prologue.ts) for every new family
+    if (choice === 'new') {
+      // The first grandchild is made (the rest of the shaders build meanwhile), then the introduction (src/game/prologue.ts).
+      made = await makeGrandchild();
+      beginIntro();
+    }
     fauna = new Fauna(level);
     wisps = new Wisps(level);
     thin = new ThinPlaces(level);
@@ -912,6 +921,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     controls.takeLook(); controls.takeWheel(); controls.endFrame();
     timer.update();
     noticeUntil = timer.getElapsed() + 5;
+  }
+  // The creator alone (?creator, for screenshots of it): played over the level, then on into the game.
+  if (!titled && q.has('creator')) {
+    if (loading.open) loading.hide();
+    made = await makeGrandchild();
   }
   let frameMs = 16, frameShown = 16, frameShownAt = -Infinity;
   // The first level streams in behind the loading screen, as any later one behind the black.
