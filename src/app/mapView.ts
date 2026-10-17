@@ -33,13 +33,7 @@ const rgba = (hex: string, a: number) => `${hex.slice(0, 7)}${Math.round(a * 255
 
 export class MapView extends Modal {
   private readonly canvas = document.createElement('canvas');
-  /** What changes only when the shapes are made again (the ground, the floor, the walls, the ways down), a margin round the view. */
-  private readonly layer = document.createElement('canvas');
-  private readonly floor = document.createElement('canvas');
-  private readonly cellsPx = document.createElement('canvas');
-  private grain: CanvasPattern | null = null;
-  private cells: MapCells | null = null;
-  private made: { x: number; z: number; seen: number; zoom: number; w: number; h: number; walls: Path2D; village: boolean } | null = null;
+  private readonly painter = new MapPainter();
   private zoom: number = MAP.zoom;
   private drawnAt = -Infinity;
 
@@ -80,7 +74,28 @@ export class MapView extends Modal {
   draw(level: Level, seen: Explored, x: number, y: number, z: number, yaw: number, fire: { x: number; z: number } | null, now: number): void {
     if (!this.open || now - this.drawnAt < MAP.every) return;
     this.drawnAt = now;
-    const dpr = Math.min(2, devicePixelRatio || 1), w = Math.min(760, innerWidth - 64), h = Math.min(580, innerHeight - 150), cv = this.canvas;
+    const w = Math.min(760, innerWidth - 64), h = Math.min(580, innerHeight - 150);
+    this.painter.paint(this.canvas, w, h, MAP.zooms[this.zoom], false, level, seen, x, y, z, yaw, fire, now);
+  }
+}
+
+/**
+ * Paints the map onto a canvas (the map's own, the minimap's on the HUD, src/app/minimap.ts): what
+ * stays put onto a layer with a margin, made again only when the nobody has moved `MAP.remake`
+ * metres, seen more, or the scale or size changed; each paint blits it and adds what moves.
+ */
+export class MapPainter {
+  /** What changes only when the shapes are made again (the ground, the floor, the walls, the ways down), a margin round the view. */
+  private readonly layer = document.createElement('canvas');
+  private readonly floor = document.createElement('canvas');
+  private readonly cellsPx = document.createElement('canvas');
+  private grain: CanvasPattern | null = null;
+  private cells: MapCells | null = null;
+  private made: { x: number; z: number; seen: number; S: number; w: number; h: number; walls: Path2D; village: boolean } | null = null;
+
+  /** Paint `cv` (w × h css px, at S px per metre; `small`: the minimap, no compass or scale bar, smaller names) for the nobody at (x, y, z) looking along `yaw`. */
+  paint(cv: HTMLCanvasElement, w: number, h: number, S: number, small: boolean, level: Level, seen: Explored, x: number, y: number, z: number, yaw: number, fire: { x: number; z: number } | null, now: number): void {
+    const dpr = Math.min(2, devicePixelRatio || 1);
     if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
       cv.width = Math.round(w * dpr);
       cv.height = Math.round(h * dpr);
@@ -89,19 +104,19 @@ export class MapView extends Modal {
     }
     const g = cv.getContext('2d');
     if (!g) return;
-    const S = MAP.zooms[this.zoom], margin = Math.ceil(MAP.remake * S) + 4, L = SALT;
+    const margin = Math.ceil(MAP.remake * S) + 4, L = SALT;
     // Up in the village the map shows all of it (src/app/villageMap.ts); below, what was seen.
     const village = inVillage(level, y);
     if (this.cells?.level !== level || (this.made?.village ?? village) !== village) { this.cells = new MapCells(level, village ? VILLAGE_KNOWN : undefined); this.made = null; }
     let k = this.made;
-    if (!k || Math.hypot(x - k.x, z - k.z) > MAP.remake || seen.cells(level.depth) !== k.seen || this.zoom !== k.zoom || w !== k.w || h !== k.h) {
+    if (!k || Math.hypot(x - k.x, z - k.z) > MAP.remake || seen.cells(level.depth) !== k.seen || S !== k.S || w !== k.w || h !== k.h) {
       k = this.made = { ...this.make(level, seen, L, x, y, z, w + 2 * margin, h + 2 * margin, S, dpr), w, h, village };
     }
     const ox = (k.x - x) * S - margin, oz = (k.z - z) * S - margin;
     reset(g, dpr);
     g.clearRect(0, 0, w, h);
     g.drawImage(this.layer, ox, oz, w + 2 * margin, h + 2 * margin);
-    const p: Paint = { g, w, h, S, x, y, z, yaw, now: still() ? 0 : now, moving: !still(), sheet: null, level, seed: hashString(`map${level.depth}`) };
+    const p: Paint = { g, w, h, S, x, y, z, yaw, now: still() ? 0 : now, moving: !still(), sheet: null, level, seed: hashString(`map${level.depth}`), small };
     if (!village) L.lamp(p);
     g.save();
     g.translate(ox, oz);
@@ -123,7 +138,7 @@ export class MapView extends Modal {
     reset(fg, dpr);
     g.clearRect(0, 0, w, h);
     fg.clearRect(0, 0, w, h);
-    const p: Paint = { g, w, h, S, x, y, z, yaw: 0, now: 0, moving: false, sheet, level, seed: hashString(`map${level.depth}`) };
+    const p: Paint = { g, w, h, S, x, y, z, yaw: 0, now: 0, moving: false, sheet, level, seed: hashString(`map${level.depth}`), small: false };
     this.ground(p, L);
     this.floorLayer(p, fg, L);
     g.drawImage(this.floor, 0, 0, w, h);
@@ -135,7 +150,7 @@ export class MapView extends Modal {
       if (!seenAt(s.x + s.r + 1, s.z) && !seenAt(s.x - s.r - 1, s.z) && !seenAt(s.x, s.z + s.r + 1) && !seenAt(s.x, s.z - s.r - 1)) continue;
       L.shaft(p, sx(s.x), sz(s.z), Math.max(5, s.r * S), s.up);
     }
-    return { x, z, seen: seen.cells(level.depth), zoom: this.zoom, w, h, walls };
+    return { x, z, seen: seen.cells(level.depth), S, w, h, walls };
   }
 
   /** The rock under everything, grained, the grain fixed to the world. */
@@ -206,6 +221,8 @@ interface Paint {
   readonly sheet: Sheet | null;
   readonly level: Level;
   readonly seed: number;
+  /** The minimap: only an N for a compass, no scale bar, smaller names. */
+  readonly small: boolean;
 }
 
 type ToScreen = (v: number) => number;
@@ -312,7 +329,7 @@ function mark(p: Paint, m: MapMark, cx: number, cy: number): void {
   const { g, w, h } = p;
   if (cx < -120 || cy < -20 || cx > w + 120 || cy > h + 20) return;
   g.save();
-  g.font = `16px ${THEME.fontDisplay}`;
+  g.font = `${p.small ? 12 : 16}px ${THEME.fontDisplay}`;
   g.textAlign = m.side < 0 ? 'right' : 'left';
   g.textBaseline = 'middle';
   const colour = m.shop ? THEME.accent : THEME.vein;
@@ -338,6 +355,17 @@ function rim(p: Paint, L: LookPaint): void {
   gr.addColorStop(1, L.rim);
   g.fillStyle = gr;
   g.fillRect(0, 0, w, h);
+  if (p.small) {
+    // Only a small N at the top: the minimap is north up too.
+    g.save();
+    g.font = `12px ${font}`;
+    g.textAlign = 'center';
+    g.fillStyle = ink;
+    g.globalAlpha = 0.75;
+    g.fillText('N', w / 2, 14);
+    g.restore();
+    return;
+  }
   g.save();
   g.strokeStyle = ink;
   g.fillStyle = ink;

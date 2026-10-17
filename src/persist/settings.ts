@@ -27,11 +27,13 @@ export interface GraphicsSettings {
   readonly quality: Quality;
   /** Reduced motion: the interface keeps still (the `ui-still` class on the page). */
   readonly still: boolean;
+  /** The minimap in the HUD's corner (src/app/minimap.ts). */
+  readonly minimap: boolean;
 }
 
-export const GRAPHICS_DEFAULTS: GraphicsSettings = { quality: 'high', still: false };
+export const GRAPHICS_DEFAULTS: GraphicsSettings = { quality: 'high', still: false, minimap: true };
 /** A tablet's (a touch screen, no mouse) until the player picks: one pixel per screen point, as its GPU is a laptop's at best and its screen has twice the points. */
-export const TABLET_GRAPHICS: GraphicsSettings = { quality: 'medium', still: false };
+export const TABLET_GRAPHICS: GraphicsSettings = { quality: 'medium', still: false, minimap: true };
 
 /** Keys the player moved: an action (the key it answers to by default) → the key it answers to now. */
 export type KeySettings = Readonly<Record<string, string>>;
@@ -53,6 +55,7 @@ export const writeSoundSettings = (s: SoundSettings): void => remember('sound', 
 export const readGraphicsSettings = (defaults = GRAPHICS_DEFAULTS): GraphicsSettings => kept('graphics', defaults, (o) => ({
   quality: QUALITIES.includes(o.quality as Quality) ? (o.quality as Quality) : defaults.quality,
   still: flag(o.still, defaults.still),
+  minimap: flag(o.minimap, defaults.minimap),
 }));
 export const writeGraphicsSettings = (s: GraphicsSettings): void => remember('graphics', s);
 

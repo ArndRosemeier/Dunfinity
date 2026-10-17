@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Bindings, keyLabel } from '../src/input/bindings';
 import { FIXED_KEYS, KEY_ACTIONS, SLOT_KEYS } from '../src/game/abilities';
-import { GRAPHICS_DEFAULTS, SOUND_DEFAULTS, readGraphicsSettings, readKeySettings, readSoundSettings } from '../src/persist/settings';
+import { GRAPHICS_DEFAULTS, SOUND_DEFAULTS, TABLET_GRAPHICS, readGraphicsSettings, readKeySettings, readSoundSettings } from '../src/persist/settings';
 
 const ACTIONS = KEY_ACTIONS.map((a) => a.key);
 
@@ -63,4 +63,9 @@ test('no storage: the settings are their defaults (and nothing throws)', () => {
   assert.deepEqual(readSoundSettings(), SOUND_DEFAULTS);
   assert.deepEqual(readGraphicsSettings(), GRAPHICS_DEFAULTS);
   assert.deepEqual(readKeySettings(), {});
+});
+
+test('the minimap is on by default, on a tablet too', () => {
+  assert.equal(GRAPHICS_DEFAULTS.minimap, true);
+  assert.equal(TABLET_GRAPHICS.minimap, true);
 });

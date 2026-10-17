@@ -23,6 +23,9 @@ export interface SettingsHooks {
   /** Reduced motion (the interface keeps still). */
   still(): boolean;
   setStill(on: boolean): void;
+  /** The minimap in the HUD's corner. */
+  minimap(): boolean;
+  setMinimap(on: boolean): void;
   /** What each quality means. */
   readonly qualityNotes: Readonly<Record<Quality, string>>;
   /** Opened or closed (the game stops and starts listening). */
@@ -194,5 +197,6 @@ export class SettingsView extends Modal {
       child(b, 'span', '', this.hooks.qualityNotes[q]);
     }
     this.check(body, 'Reduced motion (the interface keeps still)', this.hooks.still(), (on) => this.hooks.setStill(on));
+    this.check(body, 'Minimap (the map small in a corner)', this.hooks.minimap(), (on) => this.hooks.setMinimap(on));
   }
 }

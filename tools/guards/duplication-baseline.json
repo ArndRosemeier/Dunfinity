@@ -3224,22 +3224,6 @@
     "reason": "the save idiom: each kept thing gives its `data` and takes it back with `from` (docs/ARCHITECTURE.md, Keep the game)"
   },
   {
-    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/humanPool.ts#draw",
-    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
-  },
-  {
-    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/shroomView.ts#draw",
-    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
-  },
-  {
-    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/watchers.ts#draw",
-    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
-  },
-  {
-    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/dripView.ts#draw",
-    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
-  },
-  {
     "key": "same name: dunfinity/app/debugMenu.ts#toggle + dunfinity/app/mapView.ts#toggle",
     "reason": "each panel opens and closes its own way; the map fills its header and canvas as it opens"
   },
@@ -4452,10 +4436,6 @@
     "reason": "each SlotPool view reads its pool's root and slots: the SlotPool is the seam"
   },
   {
-    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/gateView.ts#draw",
-    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
-  },
-  {
     "key": "same name: dunfinity/gen/cellMemo.ts#near + dunfinity/gen/gates.ts#near",
     "reason": "the field query \"what is near (x, z)\", the same verb across seeded fields"
   },
@@ -4680,10 +4660,6 @@
     "reason": "a moving point's position and velocity; each sim moves its own kind of thing"
   },
   {
-    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/sunView.ts#draw",
-    "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/creatures/sunView.ts#draw",
     "reason": "the per-frame convention (advance a sim, draw a view, reach/bear/drift/gap as each sim's own words); different contents"
   },
@@ -4774,5 +4750,37 @@
   {
     "key": "same name: dunfinity/render/thinView.ts#draw + dunfinity/render/wayView.ts#draw",
     "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/app/abilityBar.ts#paint + dunfinity/app/mapView.ts#paint",
+    "reason": "each paints its own thing; the map painter draws the seen level from above on a canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/app/minimap.ts#draw",
+    "reason": "the big map and the minimap each throttle and hand their own canvas to the one MapPainter"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/figures.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/creatures/ghostView.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/props/saltLine.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/mapView.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "each view draws its own thing per frame; the map draws the seen level from above on its own canvas"
+  },
+  {
+    "key": "same name: dunfinity/app/minimap.ts#draw + dunfinity/render/creatures/ghostView.ts#draw",
+    "reason": "each view draws or shows its own thing; the minimap paints the map small in the HUD corner"
+  },
+  {
+    "key": "same name: dunfinity/app/minimap.ts#show + dunfinity/render/props/saltLine.ts#show",
+    "reason": "each view draws or shows its own thing; the minimap paints the map small in the HUD corner"
   }
 ]
