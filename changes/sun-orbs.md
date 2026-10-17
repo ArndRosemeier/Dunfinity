@@ -7,3 +7,4 @@
 - Stand under one and press E to hang on and fly along. It climbs high with you. Press E to let go; when it fades you fall. The fall can kill you.
 - New `Body.featherfall` hook for worn items that let you float down.
 - Debug menu: "Call a sun".
+- Sounds: a warm swell as one rises, a hiss where a drop splashes, a low roar near a sun.

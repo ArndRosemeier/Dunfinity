@@ -99,7 +99,7 @@ import { SaltDrift } from '../render/loot/saltDrift';
 import { WispView } from '../render/creatures/wispView';
 import { Wisps } from '../creatures/wisps';
 import { SunView } from '../render/creatures/sunView';
-import { SUN, Suns, hangOf, type Sun } from '../creatures/suns';
+import { SUN, Suns, hangOf, sizeOf, type Sun } from '../creatures/suns';
 import { THROW, Thrown } from '../combat/thrown';
 import { FLOUR, Flour } from '../combat/flour';
 import { GameSounds } from '../audio/gameSounds';
@@ -1775,7 +1775,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     for (const w of wisps.popped.splice(0)) sounds.play('wisp_pop', w, 0.7);
     wispView.draw(wisps);
     suns.advance(dt, body.x, body.y + 1.5, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
-    suns.risen.length = suns.splashed.length = 0; // (no sounds of their own yet)
+    for (const sn of suns.risen.splice(0)) sounds.play('sun_rise', sn, 0.9);
+    for (const f of suns.splashed.splice(0)) sounds.play('sun_drip', f, 0.7);
+    for (let i = 0; i < SUN.most; i++) { const sn = suns.list[i]; sounds.hum(i, sn && sn.age < sn.life ? sn : null, sn ? Math.min(1.4, sizeOf(sn) / 1.25) : 0); }
     sunView.draw(suns);
     if (pocket) {
       // In another world: the way back hangs open, then flickers; the edges of sight shake; then it lets go.
