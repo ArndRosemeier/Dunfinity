@@ -6,6 +6,8 @@
 import { addStyle, button, child } from './panel';
 import { useTheme } from './theme';
 import { growOn } from './growth';
+import { VERSION } from './whatsNew';
+import { writeToUs } from './contact';
 
 export type TitleChoice = 'continue' | 'new';
 
@@ -25,6 +27,15 @@ const CSS = `
   #title .ui-btn[disabled] { color: var(--ui-ink-faint); border-color: var(--ui-line); box-shadow: none; cursor: default; }
   #title .lamps { margin-top: 4px; font: italic 14px/1.3 var(--ui-font); color: var(--ui-ink-faint); text-shadow: var(--ui-text-shadow); transition: opacity 1.2s; }
   #title .lamps.done { opacity: 0; }
+  /* The alpha note: a stamp over the name's corner and a line on what that means; a quiet contact button. */
+  #title .name { position: relative; display: inline-block; }
+  #title .stamp { position: absolute; right: -0.4em; top: -1.6em; transform: rotate(-8deg); font: 700 clamp(22px, 2.6vw, 40px)/1 var(--ui-font); letter-spacing: .18em; padding: .14em .4em .1em .55em; color: var(--ui-accent); border: 3px solid var(--ui-accent); border-radius: 6px; background: color-mix(in srgb, var(--ui-dark) 70%, transparent); box-shadow: 0 0 18px color-mix(in srgb, var(--ui-accent) 25%, transparent); text-shadow: var(--ui-text-shadow); opacity: 0; transition: opacity 1.2s 1.2s; }
+  #title.shown .stamp { opacity: 1; }
+  #title .alpha { margin: -22px 0 26px 4px; max-width: 30em; font: 14px/1.45 var(--ui-font); color: var(--ui-ink-dim); text-shadow: var(--ui-text-shadow); opacity: 0; transition: opacity 2s 1.2s; }
+  #title .alpha b { color: var(--ui-accent); font-weight: 700; }
+  #title.shown .alpha { opacity: 1; }
+  #title .contact { margin-top: 18px; opacity: 0; transition: opacity 1.5s 2s; }
+  #title.shown .contact { opacity: 1; }
   #title .ask { max-width: 26em; padding: 12px 16px; font: 15px/1.45 var(--ui-font); color: var(--ui-ink-dim); }
   #title .ask .ui-btn { margin: 10px 8px 0 0; }
   /* Upright screens: the set above, the name and menu under it. */
@@ -33,6 +44,8 @@ const CSS = `
     #title .card { top: auto; bottom: clamp(20px, 5vh, 60px); transform: none; max-width: none; right: 24px; }
     #title h1 { font-size: clamp(36px, 12vw, 72px); }
     #title .line { margin-bottom: 20px; }
+    #title .alpha { margin: -12px 0 14px 2px; }
+    #title .stamp { top: -1.7em; right: 0; }
   }
   #title.gone { transition: opacity 0.6s; opacity: 0; }
   /* The game's own HUD waits under the title (vitals, help, the ability bar, its Menu and Settings buttons). */
@@ -58,9 +71,14 @@ export class TitleScreen {
     this.back = child(this.root, 'div', 'back');
     child(this.root, 'div', 'shade');
     const card = child(this.root, 'div', 'card');
-    child(card, 'h1', '', 'DUNFINITY');
+    const name = child(card, 'div', 'name');
+    child(name, 'h1', '', 'DUNFINITY');
+    child(name, 'div', 'stamp', 'ALPHA');
     child(card, 'div', 'line', 'Grandma left you her kitchen knife, and a way down that never ends.');
+    child(card, 'div', 'alpha').innerHTML = `<b>Alpha ${VERSION}.</b> An early test: expect bugs, gaps and changes, and a family that may not survive an update. Tell us what you find.`;
     const menu = this.menu = child(card, 'div', 'menu');
+    const contact = child(card, 'div', 'contact');
+    button(contact, 'Contact us', () => writeToUs(VERSION), 'ui-btn small');
     this.black = child(this.root, 'div', 'black');
     let going = null as HTMLButtonElement | null;
     this.chosen = new Promise((resolve) => {
