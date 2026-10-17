@@ -4672,10 +4672,6 @@
     "reason": "asking the level's field at a point (groundAt/sdf): the one seam is Level itself"
   },
   {
-    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/sunView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/gateView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts",
-    "reason": "placing pooled meshes at a sim's points each frame: three's own way, no helper is shorter"
-  },
-  {
     "key": "idiom: [.sdf .x .y .z] in dunfinity/combat/thrown.ts + dunfinity/creatures/spores.ts + dunfinity/creatures/suns.ts",
     "reason": "asking the level's field at a point (groundAt/sdf): the one seam is Level itself"
   },
@@ -4730,5 +4726,53 @@
   {
     "key": "same name: dunfinity/creatures/suns.ts#gap + dunfinity/creatures/wisps.ts#gap",
     "reason": "wisps and suns are two wonders over the glowing rock: both seed an Rng per level, wait a gap scaled by glowOf's strength (the one seam) and bear out of the rock; their births, motions and lives differ"
+  },
+  {
+    "key": "idiom: [.half .scale .set] in dunfinity/render/gateView.ts + dunfinity/render/thinView.ts + dunfinity/render/wayView.ts",
+    "reason": "the same verb for a different thing"
+  },
+  {
+    "key": "idiom: [.position .set .x .y .z] in dunfinity/game/Game.ts + dunfinity/render/creatures/figures.ts + dunfinity/render/creatures/scavengerView.ts + dunfinity/render/creatures/shroomView.ts + dunfinity/render/creatures/sunView.ts + dunfinity/render/creatures/wispView.ts + dunfinity/render/gateView.ts + dunfinity/render/humans/thrownView.ts + dunfinity/render/loot/findView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts + dunfinity/render/props/lamps.ts + dunfinity/render/props/saltLine.ts + dunfinity/render/thinView.ts + dunfinity/render/wayView.ts",
+    "reason": "placing pooled meshes at a sim's points each frame: three's own way, no helper is shorter"
+  },
+  {
+    "key": "same name: dunfinity/game/prologue.ts#frame + dunfinity/render/LevelView.ts#frame",
+    "reason": "the same verb for a different thing"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/gateView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/props/dripView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/props/watchers.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/thinView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
   }
 ]

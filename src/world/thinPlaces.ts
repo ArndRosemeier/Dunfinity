@@ -72,11 +72,11 @@ export interface Glimpse {
   readonly height: number;
 }
 
-/** How open a thin place is at its age (0 shut, 1 open), and whether it is over. */
-export function openness(age: number): number {
+/** How open a thin place (or another window held open `hold` s: Way Home's) is at its age (0 shut, 1 open), and whether it is over. */
+export function openness(age: number, hold: number = THIN.hold): number {
   if (age < THIN.open) return smoothstep(0, THIN.open, age);
-  if (age < THIN.open + THIN.hold) return 1;
-  return 1 - smoothstep(THIN.open + THIN.hold, THIN.open + THIN.hold + THIN.close, age);
+  if (age < THIN.open + hold) return 1;
+  return 1 - smoothstep(THIN.open + hold, THIN.open + hold + THIN.close, age);
 }
 
 /** The whole life of a thin place (s). */
@@ -139,8 +139,8 @@ function openFloor(l: Level, rng: Rng): [number, number, number] {
 }
 
 /** Whether feet at (x, y, z) are walking into thin place `p`: near its face, inside its frame, and it open enough. */
-export function steppedIn(p: ThinPlace, x: number, y: number, z: number, open = openness(p.age)): boolean {
-  return open >= THIN.enough && inFrame(p, x, y, z, THIN.half[0], THIN.over, -THIN.through, THIN.through);
+export function steppedIn(p: Pick<ThinPlace, 'x' | 'y' | 'z' | 'yaw' | 'age'>, x: number, y: number, z: number, open = openness(p.age), half: number = THIN.half[0], over: number = THIN.over): boolean {
+  return open >= THIN.enough && inFrame(p, x, y, z, half, over, -THIN.through, THIN.through);
 }
 
 /**

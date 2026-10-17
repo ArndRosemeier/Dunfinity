@@ -7,7 +7,7 @@
  * vertex attributes or uniforms, never in a new material. (When a kind needs per-mesh values,
  * Scale's sharedGraph pattern comes in: clones that share the node graph.)
  */
-import { AdditiveBlending, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
+import { AdditiveBlending, FramebufferTexture, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
 import { PULSE } from '../gen/veinPulse';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
 import { Fn, If, abs, attribute, modelPosition, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
@@ -901,6 +901,8 @@ interface Hall {
   light: Node<'vec3'>;
   haze: Node<'vec3'>;
   rim: Node<'vec3'>;
+  /** What is seen instead of the hall, if anything: from the ray (start, direction, in metres in the quad's frame), a colour and how much of it (a picture, `WAY`). */
+  beyond?: (o: Node<'vec3'>, d: Node<'vec3'>) => Node<'vec4'>;
 }
 
 /**
@@ -908,7 +910,8 @@ interface Hall {
  * in the quad's own frame, is run into a long hall behind it (a flagged floor, walls of pillars in
  * bays, a ribbed roof, a glowing doorway at the far end), lit and hazed in that world's colours. Its
  * edge ripples and glows `rim` while it opens and closes. `position` is the quad's corner (x, y in
- * -1..1, the mesh scaled to its half size). The thin places and the gates both look through it.
+ * -1..1, the mesh scaled to its half size). The thin places, the gates and Way Home all look through it
+ * (Way Home sees a picture there instead, `beyond`).
  */
 function hallThrough(h: Hall): { color: Node<'vec3'>; opacity: Node<'float'> } {
   const { open, age, bay, high } = h;
@@ -938,7 +941,8 @@ function hallThrough(h: Hall): { color: Node<'vec3'>; opacity: Node<'float'> } {
   const glow = float(1).div(p.z.sub(back).abs().mul(0.12).add(1));
   const lit = h.stone.mul(shade).mul(corner.mul(0.6).add(0.4)).mul(h.light.mul(1.6).add(h.haze.mul(glow.mul(2.5))));
   const hazed = mix(lit, h.haze, float(1).sub(t.mul(-0.03).exp()).mul(0.6));
-  const inside = isBack.select(mix(hazed, h.haze.mul(1.8), door), hazed);
+  const hall = isBack.select(mix(hazed, h.haze.mul(1.8), door), hazed);
+  const seen = h.beyond?.(o, d), inside = seen ? mix(hall, seen.xyz, seen.w) : hall;
   // Its edge: a ragged ellipse that ripples, a rim of `rim`; only as open as it is.
   const r = length(uv), ragged = mx_noise_float(vec3(uv.mul(3), age.mul(0.5))).mul(0.12);
   const edge = r.add(ragged).add(float(1).sub(open).mul(1.1));
@@ -946,6 +950,61 @@ function hallThrough(h: Hall): { color: Node<'vec3'>; opacity: Node<'float'> } {
   const rim = smoothstep(0.08, 0.0, abs(edge.sub(0.95))).mul(open.mul(0.6).add(0.4)).mul(smoothstep(0.0, 0.3, open));
   return { color: inside.mul(mask).add(h.rim.mul(rim.mul(1.5))), opacity: max(mask.mul(0.92), rim).mul(open.greaterThan(0.001).select(float(1), float(0))) };
 }
+
+/**
+ * Grandma's Way Home (src/game/wayHome.ts), set by `WayView`: the window's state as `THIN_STATE`'s
+ * (open, age, bay, height; floor), the hall's colours (seen when there is no picture), and the
+ * picture seen through it: `pic` (how much of it 0–1, which: 0 home 1 back, tan of half the vertical
+ * field of view, aspect), `eye` (where it is looked at from, in the window's frame: height over the
+ * window's middle, metres before it, pitch; the depth of the plane the picture is laid on behind
+ * the window).
+ */
+export const WAY_STATE = {
+  open: uniform(new Vector4(0, 0, 3, 3)),
+  floor: uniform(-1.15),
+  stone: uniform(new Vector3(0.4, 0.38, 0.35)),
+  light: uniform(new Vector3(0.3, 0.32, 0.36)),
+  haze: uniform(new Vector3(0.5, 0.35, 0.2)),
+  rim: uniform(new Vector3(0.35, 0.9, 0.55)),
+  pic: uniform(new Vector4(0, 0, 0.5, 1.6)),
+  eye: uniform(new Vector4(1, 4, 0, 2)),
+};
+
+/**
+ * The pictures Way Home shows: grandma's room by her armchair (an image shipped with the game,
+ * public/portal/home.jpg) and the place one left to go home (copied from the screen as one shut
+ * one's eyes there: `LevelView.capture`). Fixed textures, so a new picture is no new shader.
+ */
+export const WAY_PICTURES = { home: new Texture(), back: new FramebufferTexture(1, 1) };
+WAY_PICTURES.home.colorSpace = SRGBColorSpace;
+WAY_PICTURES.back.colorSpace = SRGBColorSpace;
+
+/**
+ * Way Home's window: the thin places' (`hallThrough`), its rim `WAY_STATE.rim`, but what is seen
+ * through it is a picture of where it leads, laid on a plane behind the window and looked at from
+ * where the picture was taken, so it shifts a little as one moves. The picture is already lit and
+ * tone mapped: not again.
+ */
+export const WAY = defineKind('way', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, fog: false });
+  m.toneMapped = false;
+  const W = WAY_STATE, o = W.open, pic = W.pic, eye = W.eye;
+  const beyond = (o0: Node<'vec3'>, d: Node<'vec3'>): Node<'vec4'> => {
+    // Where the ray meets the picture's plane, as seen from the camera that took it (looking into the window, pitched).
+    const t = eye.w.negate().sub(o0.z).div(min(d.z, -1e-4)), h = o0.add(d.mul(t));
+    const rel = h.sub(vec3(0, eye.x, eye.y)), sp = sin(eye.z), cp = cos(eye.z);
+    const fz = rel.y.mul(sp).sub(rel.z.mul(cp)), fy = rel.y.mul(cp).add(rel.z.mul(sp));
+    const uv = vec2(rel.x.div(fz.mul(pic.z).mul(pic.w)), fy.div(fz.mul(pic.z))).mul(0.5).add(0.5);
+    const at = uv.clamp(0, 1), home = texture(WAY_PICTURES.home, at).rgb, back = texture(WAY_PICTURES.back, at).rgb;
+    // Its edges fade into the hall's haze.
+    const edge = smoothstep(0, 0.06, min(min(uv.x, float(1).sub(uv.x)), min(uv.y, float(1).sub(uv.y))));
+    return vec4(mix(home, back, pic.y), pic.x.mul(edge));
+  };
+  const hall = hallThrough({ open: o.x, age: o.y, bay: o.z, high: o.w, floor: W.floor, stone: W.stone, light: W.light, haze: W.haze, rim: W.rim, beyond });
+  m.colorNode = hall.color;
+  m.opacityNode = hall.opacity;
+  return m;
+}, { cast: false, receive: false });
 
 /** Gates drawn at once (the nearest), and their state: four vec4 each (src/render/gateView.ts). */
 export const GATE_SLOTS = 4;
