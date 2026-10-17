@@ -33,4 +33,5 @@ test('up in the village the map shows all of it, buildings as walls, and names t
   assert.equal(at(-11, 0), null, "grandma's house is a building");
   assert.ok(sheet.walls.length > 10, 'the houses outlined');
   assert.deepEqual(VILLAGE_MARKS.map((m) => m.name).sort(), ["Frau Weber", "Grandma's house", "Ilse's pawn shop", "Kemal's hardware store"]);
+  assert.deepEqual(VILLAGE_MARKS.map((m) => m.short).sort(), ["Grandma", "Ilse's", "Kemal's", "Weber"]);
 });

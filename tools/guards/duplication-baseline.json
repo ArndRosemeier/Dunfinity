@@ -52,6 +52,10 @@
     "reason": "styles stamp their prop models into the tile's solid builder (d.solid.stamp, PropBuilder.stamp): the one way to place a model, called from each style's props"
   },
   {
+    "key": "same name: dunfinity/app/packView.ts#show + dunfinity/app/shopView.ts#show",
+    "reason": "two different panels' drawing (the pack's slots and finds; a merchant's goods and offers), both on the one Modal (showHtml) and the theme's classes"
+  },
+  {
     "key": "same name: dunfinity/gen/level.ts#trace + dunfinity/world/blockers.ts#trace",
     "reason": "the same question (how far a ray gets, kept a skin clear) of two different things: the rock field (sphere tracing) and the props' boxes (slab test); OrbitCamera takes the nearer"
   },
@@ -4416,10 +4420,6 @@
     "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
   },
   {
-    "key": "same name: dunfinity/game/prologue.ts#advance + dunfinity/world/thinPlaces.ts#advance",
-    "reason": "the per-frame step of a simulation, same verb (a different thing stepped)"
-  },
-  {
     "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
     "reason": "async factories of the human views: each builds its own humans (the nobody in the saved look and clothes)"
   },
@@ -4798,5 +4798,45 @@
   {
     "key": "same name: dunfinity/app/mapView.ts#paint + dunfinity/app/saltSight.ts#paint",
     "reason": "the views' convention: `paint` draws a view's current state each frame; different views"
+  },
+  {
+    "key": "same name: dunfinity/app/minimap.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/figures.ts#draw + dunfinity/render/hallView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/foremanView.ts#draw + dunfinity/render/hallView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/wispView.ts#draw + dunfinity/render/hallView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/humView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/props/bloomView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/thinView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/render/hallView.ts#draw + dunfinity/render/wayView.ts#draw",
+    "reason": "a view's once-a-frame draw, same verb (a different thing drawn)"
+  },
+  {
+    "key": "same name: dunfinity/world/hall.ts#walk + dunfinity/world/traverse/body.ts#walk",
+    "reason": "the same verb for a different thing"
   }
 ]

@@ -9,8 +9,9 @@
  */
 import { AdditiveBlending, FramebufferTexture, MeshBasicNodeMaterial, MeshStandardNodeMaterial, NoColorSpace, SRGBColorSpace, Texture, Vector2, Vector3, Vector4, type Material, type Node } from 'three/webgpu';
 import { PULSE } from '../gen/veinPulse';
+import { HALL as HALL_WALK } from '../world/hall';
 import { RECIPE_SIZE, ROCK_PRESETS, ROCK_SLOTS, ROCK_TYPES, packRecipe, type RockRecipe } from '../gen/rockTypes';
-import { Fn, If, abs, attribute, modelPosition, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
+import { Fn, If, abs, attribute, modelPosition, modelScale, modelWorldMatrix, modelWorldMatrixInverse, normalGeometry, transformNormalToView, cameraPosition, cameraProjectionMatrix, cameraProjectionMatrixInverse, cameraViewMatrix, cameraWorldMatrix, cos, dot, faceDirection, float, length, max, min, mix, mod, mx_fractal_noise_float, mx_fractal_noise_vec3, mx_cell_noise_float, mx_noise_float, mx_noise_vec3, mx_worley_noise_float, mx_worley_noise_vec2, hue, saturation, normalize, normalView, normalMap, normalWorld, positionGeometry, positionLocal, positionView, positionWorld, smoothstep, sin, texture, time, uniform, uniformArray, varying, vec2, vec3, vec4, vertexColor } from 'three/tsl';
 
 export interface MaterialKind {
   readonly name: string;
@@ -890,10 +891,8 @@ export const THIN = defineKind('thin', ['position', 'normal', 'color'], () => {
   return m;
 }, { cast: false, receive: false });
 
-/** What `hallThrough` draws: how open the window is, its ripples' clock, the hall's bays and height, its floor (in the quad's frame), its world's colours, its rim's. */
-interface Hall {
-  open: Node<'float'>;
-  age: Node<'float'>;
+/** The hall's bays and height, its floor (in the frame it is seen in), its world's colours, the rim's of the window into it. */
+interface HallLook {
   bay: Node<'float'>;
   high: Node<'float'>;
   floor: Node<'float'>;
@@ -901,8 +900,48 @@ interface Hall {
   light: Node<'vec3'>;
   haze: Node<'vec3'>;
   rim: Node<'vec3'>;
+}
+
+/** What `hallThrough` draws: the hall, how open the window is, its ripples' clock. */
+interface Hall extends HallLook {
+  open: Node<'float'>;
+  age: Node<'float'>;
   /** What is seen instead of the hall, if anything: from the ray (start, direction, in metres in the quad's frame), a colour and how much of it (a picture, `WAY`). */
   beyond?: (o: Node<'vec3'>, d: Node<'vec3'>) => Node<'vec4'>;
+}
+
+/**
+ * The hall itself, seen along the ray from `o` in direction `d` (metres, in the hall's frame: x
+ * across, y up, -z down it; its floor at `h.floor`, 8 m wide, `h.high` high), its far doorway at z
+ * = `back`, glowing `door` bright, and, if `front` is given, a wall at z = `front` behind with the
+ * window one came through in it. Flagged floor, pillars in bays, a ribbed roof, lit and hazed in
+ * its world's colours. Shared by the windows into it (`hallThrough`) and the walk down it (`HALL`).
+ */
+function hallSeen(h: HallLook, o: Node<'vec3'>, d: Node<'vec3'>, back: Node<'float'>, front: Node<'float'> | null, door: Node<'float'>): Node<'vec3'> {
+  const { bay, high } = h;
+  const floorY = h.floor, roofY = floorY.add(high), halfW = float(4);
+  const big = float(1e5);
+  const tFloor = d.y.lessThan(0).select(floorY.sub(o.y).div(d.y), big), tRoof = d.y.greaterThan(0).select(roofY.sub(o.y).div(d.y), big);
+  const tWall = halfW.mul(d.x.sign()).sub(o.x).div(d.x), tBack = back.sub(o.z).div(min(d.z, -1e-4));
+  const tFront = front ? d.z.greaterThan(0).select(front.sub(o.z).div(max(d.z, 1e-4)), big) : big;
+  const t = min(min(min(tFloor, tRoof), min(tWall, tBack)), tFront), p = o.add(d.mul(t));
+  const isFloor = tFloor.lessThanEqual(t.add(1e-3)), isRoof = tRoof.lessThanEqual(t.add(1e-3)), isBack = tBack.lessThanEqual(t.add(1e-3));
+  const isFront = tFront.lessThanEqual(t.add(1e-3)), isEnd = isBack.or(isFront);
+  // Floor: flagstones. Walls: a pillar at each bay, arches between. Roof: a rib at each bay. Ends: a doorway full of haze.
+  const flag = thinLine(min(p.x.fract(), p.z.mul(0.8).fract()).mul(1.2), float(0.03));
+  const inBay = p.z.div(bay).fract(), pillar = smoothstep(0.18, 0.12, abs(inBay.sub(0.5)).sub(0.32).abs());
+  const archTop = roofY.sub(abs(inBay.sub(0.5)).mul(bay).pow(2).mul(0.25)).sub(0.4);
+  const wall = mix(float(0.45), float(1), pillar).mul(p.y.greaterThan(archTop).select(float(0.6), float(1)));
+  const rib = smoothstep(0.08, 0.0, abs(inBay.sub(0.5)).sub(0.45).abs());
+  const doorTop = floorY.add(high.mul(0.6)), doorway = smoothstep(1.0, 0.85, abs(p.x)).mul(smoothstep(0.1, -0.1, p.y.sub(doorTop.sub(p.x.mul(p.x).mul(0.6)))));
+  const shade = isEnd.select(float(0.5), isFloor.select(float(0.7).sub(flag.mul(0.3)), isRoof.select(float(0.35).add(rib.mul(0.3)), wall)));
+  // Lit from the doorway's glow down the hall and a little from that world's sky; then its haze with distance.
+  // Corners darker (the walls meet the floor and the roof), so the hall reads as a room.
+  const corner = smoothstep(0.0, 1.4, min(halfW.sub(abs(p.x)), min(p.y.sub(floorY), roofY.sub(p.y))));
+  const glow = door.div(p.z.sub(back).abs().mul(0.12).add(1));
+  const lit = h.stone.mul(shade).mul(corner.mul(0.6).add(0.4)).mul(h.light.mul(1.6).add(h.haze.mul(glow.mul(2.5))));
+  const hazed = mix(lit, h.haze, float(1).sub(t.mul(-0.03).exp()).mul(0.6));
+  return isBack.select(mix(hazed, h.haze.mul(door.mul(1.8)), doorway), isFront.select(mix(hazed, h.rim.mul(1.4), doorway.mul(0.8)), hazed));
 }
 
 /**
@@ -914,34 +953,14 @@ interface Hall {
  * (Way Home sees a picture there instead, `beyond`).
  */
 function hallThrough(h: Hall): { color: Node<'vec3'>; opacity: Node<'float'> } {
-  const { open, age, bay, high } = h;
+  const { open, age } = h;
   // The ray in the quad's frame (metres: the mesh is scaled to its size, so undo it).
   const scale = modelScale, uv = positionLocal.xy;
   const o = vec3(uv.mul(scale.xy), 0), cam = modelWorldMatrixInverse.mul(vec4(cameraPosition, 1)).xyz.mul(scale);
   const shimmer = mx_noise_vec3(vec3(uv.mul(2.5), age.mul(0.7))).xy.mul(float(1).sub(open).mul(0.25).add(0.02));
   const d = normalize(o.sub(cam).add(vec3(shimmer, 0)));
-  // The hall: its floor level with ours (`floor` under the middle), its roof `high` over it, 8 m wide, 32 m long.
-  const floorY = h.floor, roofY = floorY.add(high), halfW = float(4), back = float(-32);
-  const big = float(1e5);
-  const tFloor = d.y.lessThan(0).select(floorY.sub(o.y).div(d.y), big), tRoof = d.y.greaterThan(0).select(roofY.sub(o.y).div(d.y), big);
-  const tWall = halfW.mul(d.x.sign()).sub(o.x).div(d.x), tBack = back.sub(o.z).div(min(d.z, -1e-4));
-  const t = min(min(tFloor, tRoof), min(tWall, tBack)), p = o.add(d.mul(t));
-  const isFloor = tFloor.lessThanEqual(t.add(1e-3)), isRoof = tRoof.lessThanEqual(t.add(1e-3)), isBack = tBack.lessThanEqual(t.add(1e-3));
-  // Floor: flagstones. Walls: a pillar at each bay, arches between. Roof: a rib at each bay. Back: a doorway full of haze.
-  const flag = thinLine(min(p.x.fract(), p.z.mul(0.8).fract()).mul(1.2), float(0.03));
-  const inBay = p.z.div(bay).fract(), pillar = smoothstep(0.18, 0.12, abs(inBay.sub(0.5)).sub(0.32).abs());
-  const archTop = roofY.sub(abs(inBay.sub(0.5)).mul(bay).pow(2).mul(0.25)).sub(0.4);
-  const wall = mix(float(0.45), float(1), pillar).mul(p.y.greaterThan(archTop).select(float(0.6), float(1)));
-  const rib = smoothstep(0.08, 0.0, abs(inBay.sub(0.5)).sub(0.45).abs());
-  const doorTop = floorY.add(high.mul(0.6)), door = smoothstep(1.0, 0.85, abs(p.x)).mul(smoothstep(0.1, -0.1, p.y.sub(doorTop.sub(p.x.mul(p.x).mul(0.6)))));
-  const shade = isBack.select(float(0.5), isFloor.select(float(0.7).sub(flag.mul(0.3)), isRoof.select(float(0.35).add(rib.mul(0.3)), wall)));
-  // Lit from the doorway's glow down the hall and a little from that world's sky; then its haze with distance.
-  // Corners darker (the walls meet the floor and the roof), so the hall reads as a room.
-  const corner = smoothstep(0.0, 1.4, min(halfW.sub(abs(p.x)), min(p.y.sub(floorY), roofY.sub(p.y))));
-  const glow = float(1).div(p.z.sub(back).abs().mul(0.12).add(1));
-  const lit = h.stone.mul(shade).mul(corner.mul(0.6).add(0.4)).mul(h.light.mul(1.6).add(h.haze.mul(glow.mul(2.5))));
-  const hazed = mix(lit, h.haze, float(1).sub(t.mul(-0.03).exp()).mul(0.6));
-  const hall = isBack.select(mix(hazed, h.haze.mul(1.8), door), hazed);
+  // The hall: its floor level with ours (`floor` under the middle), 32 m long, nothing behind the window.
+  const hall = hallSeen(h, o, d, float(-32), null, float(1));
   const seen = h.beyond?.(o, d), inside = seen ? mix(hall, seen.xyz, seen.w) : hall;
   // Its edge: a ragged ellipse that ripples, a rim of `rim`; only as open as it is.
   const r = length(uv), ragged = mx_noise_float(vec3(uv.mul(3), age.mul(0.5))).mul(0.12);
@@ -1003,6 +1022,42 @@ export const WAY = defineKind('way', ['position', 'normal', 'color'], () => {
   const hall = hallThrough({ open: o.x, age: o.y, bay: o.z, high: o.w, floor: W.floor, stone: W.stone, light: W.light, haze: W.haze, rim: W.rim, beyond });
   m.colorNode = hall.color;
   m.opacityNode = hall.opacity;
+  return m;
+}, { cast: false, receive: false });
+
+/**
+ * The hall between worlds one walks down (src/world/hall.ts), set by `HallView`: `eye` (where one
+ * stands in it: x across, height over its floor, z along; the way it runs, as a camera yaw),
+ * `look` (its bays m, its height m, its length m, how bright its doorway: dim while that world is
+ * not ready), its world's stone, light and haze, the rim's colour of the window one came through,
+ * and how much of it still shows (fading as one comes out).
+ */
+export const HALL_STATE = {
+  eye: uniform(new Vector4(0, 1.6, 0, 0)),
+  look: uniform(new Vector4(3, 5, 16, 0.4)),
+  stone: uniform(new Vector3(0.4, 0.38, 0.35)),
+  light: uniform(new Vector3(0.3, 0.32, 0.36)),
+  haze: uniform(new Vector3(0.5, 0.35, 0.2)),
+  rim: uniform(new Vector3(0.3, 0.6, 1.0)),
+  shown: uniform(1),
+};
+
+/**
+ * The hall between worlds, all round one: a quad over the whole screen (its corners are where they
+ * are drawn, -1..1), drawn over everything else, each pixel's view ray (the camera's, turned into
+ * the hall's frame) run down the hall (`hallSeen`) from where one stands in it.
+ */
+export const HALL = defineKind('hall', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, depthTest: false, fog: false });
+  const S = HALL_STATE, at = varying(positionGeometry.xy, 'vHallAt');
+  m.vertexNode = vec4(positionGeometry.xy, 0.5, 1);
+  // The view ray: from the screen through the camera's lens into the world, then into the hall's frame (its yaw undone).
+  const v = cameraProjectionMatrixInverse.mul(vec4(at, 1, 1)), w = normalize(cameraWorldMatrix.mul(vec4(v.xyz.div(v.w), 0)).xyz);
+  const c = cos(S.eye.w), s = sin(S.eye.w);
+  const d = vec3(c.mul(w.x).sub(s.mul(w.z)), w.y, s.mul(w.x).add(c.mul(w.z)));
+  const look = { bay: S.look.x, high: S.look.y, floor: float(0), stone: S.stone, light: S.light, haze: S.haze, rim: S.rim };
+  m.colorNode = hallSeen(look, S.eye.xyz, d, S.look.z.negate(), float(HALL_WALK.behind), S.look.w);
+  m.opacityNode = S.shown;
   return m;
 }, { cast: false, receive: false });
 

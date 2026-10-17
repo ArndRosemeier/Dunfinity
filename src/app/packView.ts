@@ -7,7 +7,7 @@
  */
 import { FINDS, type Pack } from '../loot/finds';
 import { ITEMS, SLOT_NAME, itemName, packRows, rowUse, type Kit } from '../loot/items';
-import { Modal, esc, keycap } from './panel';
+import { AskingModal, esc, keycap } from './panel';
 
 const STYLE = `
   #pack { width: min(820px, calc(100vw - 32px)); }
@@ -37,22 +37,15 @@ export interface PackKeys {
   readonly close: string;
 }
 
-export class PackView extends Modal {
-  private tapped: number[] = [];
-
+/** The pack's asks by mouse or touch: the lines tapped, in order. */
+export class PackView extends AskingModal<number> {
   constructor(host: HTMLElement) {
     super(host, 'pack', STYLE, 'dark');
-    this.el.addEventListener('click', (e) => {
-      const row = (e.target as HTMLElement).closest<HTMLElement>('[data-row]');
-      if (row) this.tapped.push(Number(row.dataset.row));
-    });
   }
 
-  /** The lines tapped since the last call, in order. */
-  take(): number[] {
-    const t = this.tapped;
-    this.tapped = [];
-    return t;
+  protected read(t: HTMLElement): number | null {
+    const row = t.closest<HTMLElement>('[data-row]');
+    return row ? Number(row.dataset.row) : null;
   }
 
   /** Open (or redraw) the pack with line `sel` of `packRows(pack)` chosen; `said`: what was just done. */

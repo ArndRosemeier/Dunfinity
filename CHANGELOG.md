@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.260 — Buying and selling across the counter
+
+- Stepping up to Kemal's or Ilse's counter (E) now opens a proper shop window: what they sell, with its price and what it does, beside what of your pack they would buy, and grandma's purse at the top.
+- Buy or sell one line at a time (W/S and E, or click its button); at Ilse's, sell all your finds in one go.
+- Ilse now also buys spare items from your pack, for half what Kemal asks for them new. Kemal still buys nothing used.
+- The shop window is one counter for any merchant, so a trader met below can use it later.
+
+## v0.259 — The hall between worlds
+
+- Stepping through a thin place, its way back, a gate or Way Home's door no longer cuts to black: you stand in a long hall of the world you are going to, the window you came through glowing behind you.
+- Walk down it while that world is built behind it. Its far doorway lights up once the world is ready; until then the hall goes on.
+- Walk through the lit doorway and you are there, as the hall fades. Nothing there moves while you are in the hall.
+- A thin place's pocket only starts counting down once you are out of the hall.
+
+## v0.258 — Minimap names fit
+
+- The minimap names places short (Grandma, Kemal's, Ilse's, Weber) and puts a name on the other side of its dot when it would run off the edge, so every name reads whole.
+
+## v0.257 — A gift waits in every thin-place pocket
+
+- Stepping through a thin place, a crystal of that deeper world glows on the floor a few steps ahead, and a thread of rising salt leads to it. Take it before the pocket lets go of you.
+- The crystal is a find like the others: it goes in your rucksack and the shops buy it, worth more the deeper the world it came from.
+
 ## v0.256 — A minimap
 
 - A small map in the bottom right corner of the screen, north up and centred on you, in the map's salt-vein look: what you have seen below, the whole village with its shops and grandma's house up top.
