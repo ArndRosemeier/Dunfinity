@@ -1778,7 +1778,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     for (const sn of suns.risen.splice(0)) sounds.play('sun_rise', sn, 0.9);
     for (const f of suns.splashed.splice(0)) sounds.play('sun_drip', f, 0.7);
     for (let i = 0; i < SUN.most; i++) { const sn = suns.list[i]; sounds.hum(i, sn && sn.age < sn.life ? sn : null, sn ? Math.min(1.4, sizeOf(sn) / 1.25) : 0); }
-    sunView.draw(suns);
+    sunView.draw(suns, view.camera.position.x, view.camera.position.y, view.camera.position.z);
     if (pocket) {
       // In another world: the way back hangs open, then flickers; the edges of sight shake; then it lets go.
       const k = pocket.stay, shake = k.instability;

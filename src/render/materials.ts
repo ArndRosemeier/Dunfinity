@@ -679,7 +679,9 @@ export const WISP = defineKind('wisp', ['position', 'normal', 'color'], () => {
   const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false });
   const size = modelScale.x, view = cameraViewMatrix.mul(vec4(modelPosition, 1));
   const toward = min(size.mul(0.6), view.z.negate().mul(0.5));
-  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(positionLocal.xy.mul(size)), view.z.add(toward), view.w));
+  // Pulled towards the eye along its line of sight (its centre stays where it is on the screen), so rock close behind it never cuts it.
+  const along = view.z.add(toward).div(view.z);
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.mul(along).add(positionLocal.xy.mul(size)), view.z.add(toward), view.w));
   const r = length(varying(positionLocal.xy, 'vWispCorner'));
   const core = smoothstep(0.2, 0.0, r), halo = float(1).sub(r).clamp(0, 1).pow(2.2);
   const far = smoothstep(size.mul(120).add(40), size.mul(50).add(15), length(view.xyz));
