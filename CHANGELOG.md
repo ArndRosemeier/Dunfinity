@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.210 — Your salt pet comes along down and up the levels
+
+- Taking stairs, a ladder or a gate to another level no longer kills your salt pet: it follows you, keeps the health it had, and stands up out of salt at your side.
+
 ## v0.209 — Glowing eyes in the deep, ordinary rats and dogs in the town
 
 - The quarry rats and feral dogs of the deep now have the salt in their eyes: a hot blue-white glow in the veins' blue with a soft halo round each eye, flickering a little, so they read as no ordinary animals. The light goes out when one dies.
