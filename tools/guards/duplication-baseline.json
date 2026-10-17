@@ -940,7 +940,7 @@
     "reason": "CaveThings (src/gen/caveThings.ts) is the seam the cave styles call from their own column/at; same names on purpose, one implementation"
   },
   {
-    "key": "same name: dunfinity/gen/caveThings.ts#column + dunfinity/gen/styledField.ts#column",
+    "key": "same name: dunfinity/gen/caveThings.ts#column + dunfinity/gen/roots.ts#column",
     "reason": "CaveThings (src/gen/caveThings.ts) is the seam the cave styles call from their own column/at; same names on purpose, one implementation"
   },
   {
@@ -4466,10 +4466,6 @@
   {
     "key": "same name: dunfinity/gen/catacombs.ts#f + dunfinity/gen/floating.ts#f",
     "reason": "a local one-letter hash helper inside each style's own feature roll"
-  },
-  {
-    "key": "same name: dunfinity/gen/caveThings.ts#column + dunfinity/gen/floating.ts#column",
-    "reason": "CaveThings (src/gen/caveThings.ts) is the seam the cave styles call from their own column/at; same names on purpose, one implementation"
   },
   {
     "key": "same name: dunfinity/gen/collapse.ts#climbable + dunfinity/gen/floating.ts#climbable",
