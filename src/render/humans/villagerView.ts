@@ -1,5 +1,5 @@
 /**
- * The village's people on screen (src/world/villagers.ts): Scale's humans in their 1966 clothes,
+ * The village's people on screen (src/world/villagers.ts): Scale's humans in today's clothes,
  * young and old, walking the streets, stopping to look about, turned friendly to whoever stands in
  * their way. A `HumanPool` (built before the warm-up: its `figures` go to `view.start`) draws the
  * nearest of them.
