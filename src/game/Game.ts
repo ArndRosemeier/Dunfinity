@@ -201,6 +201,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let wisps: Wisps;
   /** Grandma's Salt Pet: the one at the nobody's heel (and one crumbling), when the last was poured, and the dead ones already seen fall to salt. */
   const pets = new Pets(level);
+  pets.restore(saved?.child?.pet);
   let petAt = -Infinity;
   const crumbled = new WeakSet<object>();
   /** Glimpses of other worlds opening in the air (src/world/thinPlaces.ts). */
@@ -367,7 +368,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (!keep) return;
     const child: GrandchildData | null = body.dead ? null : {
       depth: level.depth, pos: [body.x, body.y, body.z], facing: body.facing, health: body.health, stamina: body.stamina, reached,
-      cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart,
+      cooked: cooked.data, bar: mainBar.data, practice: practice.data, pack: [...pack.items], spare: [...pack.spare], kit: kit.data, explored: explored.data, saltAtStart, pet: pets.data ?? undefined,
     };
     writeSave(params.seed, { v: 1, heir, tin: tin.data, taken: [...taken].map(([d, ids]) => [d, [...ids]]), child, fallen, euros, key: key.data, steps: steps.data, look: made });
   };

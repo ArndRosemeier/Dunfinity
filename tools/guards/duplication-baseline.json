@@ -1,5 +1,13 @@
 [
   {
+    "key": "same name: dunfinity/creatures/pets.ts#data + dunfinity/loot/tin.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
+    "key": "same name: dunfinity/creatures/pets.ts#data + dunfinity/lore/key.ts#data",
+    "reason": "the kept-things convention: whatever is saved gives its plain `data` (src/persist); different contents"
+  },
+  {
     "key": "clone: core/noise.ts#cellular2 + core/noise.ts#cellular3",
     "reason": "2D and 3D variants of the same noise in one file; merging them would cost the hot path a dimension branch."
   },

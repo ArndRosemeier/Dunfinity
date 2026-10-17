@@ -75,6 +75,12 @@ export class Pet extends Creature<PetMode> {
   }
 }
 
+/** The pet kept in the save (src/persist/save.ts): what it is and how hurt. */
+export interface PetData {
+  readonly kind: PetKind;
+  readonly health: number;
+}
+
 /** Whom the pet keeps by: where they are and which way they face. */
 export type Owner = Fighter & { readonly facing?: number };
 
@@ -110,6 +116,20 @@ export class Pets {
   /** The living pet, if any. */
   get alive(): Pet | null {
     return this.list.find((p) => !p.dead) ?? null;
+  }
+
+  /** The living pet, for the save (null: none). */
+  get data(): PetData | null {
+    const p = this.alive;
+    return p ? { kind: p.kind, health: p.health } : null;
+  }
+
+  /** The kept pet comes back (as hurt as it was), standing up at the nobody's side on the next step. */
+  restore(d: PetData | null | undefined): void {
+    if (!d || !Object.hasOwn(PETS, d.kind) || this.alive) return;
+    const p = this.summon(d.kind, 0, 0, 0, 0);
+    p.health = Math.min(p.maxHealth, Math.max(1, d.health));
+    this.moved = true;
   }
 
   /** Salt poured at (x, y, z) stands up as a pet of `kind` facing `yaw`. */
