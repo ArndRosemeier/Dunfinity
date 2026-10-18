@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.273 — A stranger hall between worlds
+
+- The hall you walk between worlds is open between its pillars and its roof's ribs, with ragged, eaten edges, onto a slowly turning void of that world's haze with stars that are not ours.
+- Salt veins in the portal's colour creep over its stone, and a pulse of light runs along them towards the far doorway.
+- Salt motes hang and drift up in the air.
+
+## v0.272 — Pocket gifts you can find, and hunters in some pockets
+
+- The crystal waiting in a thin place's pocket is now as long as a hand, with a faint thread of light standing over it, so it can be seen from across a cave.
+- Salt rises at your feet and streams off to the crystal, showing the way. Before, the salt flew back to you, so it seemed to follow you.
+- Not every pocket holds a gift any more: about six in ten do. When there is no room ahead, it lies somewhere else nearby.
+- A quarter of the pockets hold one of that deeper world's hunters, as strong as it is down there, near the gift it guards, and you are told something has caught your scent. Those pockets always hold a gift. You can die there.
+
 ## v0.271 — Season a skill with salt
 
 - Salt keeps its worth once every card is cooked: in grandma's tin, each skill you have practised has a "Season · 1 pinch" button.
