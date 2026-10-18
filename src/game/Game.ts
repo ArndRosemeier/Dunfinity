@@ -1443,13 +1443,14 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         sounds.play('snap_sprout', r, 0.7, 0.8);
       }
     }
-    // Grandma's Salt Pet: kneel and pour salt from the tin; it stands up as the animal (one at a time).
+    // Grandma's Salt Pet: kneel and pour salt from the tin; it stands up as the animal (one at a time: a pet of a lower rank's kind falls back into salt for the new one).
     const petting = cooked.pet;
     if (controls.tap(useOf('salt-pet')) && petting && canCast && now - petAt > petting.every) {
-      if (pets.alive) say('It is still with you.', 2);
+      if (pets.alive?.kind === petting.kind) say('It is still with you.', 2);
       else if (tin.salt < petting.pinches) say(`Not enough salt in the tin: it takes ${petting.pinches} pinches.`, 2.5);
       else if (cast('stoop', 0, '')) {
         tin.salt -= petting.pinches;
+        pets.toSalt();
         petAt = now; castYaw = body.facing;
         const x = body.x - Math.sin(castYaw) * 1.1, z = body.z - Math.cos(castYaw) * 1.1, g = level.groundAt(x, z, body.y + 1), y = Math.abs(g - body.y) < 1 ? g : body.y;
         const p = pets.summon(petting.kind, x, y, z, castYaw + Math.PI);

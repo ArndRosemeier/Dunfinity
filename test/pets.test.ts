@@ -28,6 +28,15 @@ test('by rank, the card pours a salt rat or a salt dog, for pinches of the tin',
   assert.equal(Cooked.from({}).pet, null);
 });
 
+test('the rat falls back into salt when the card, cooked up a rank, pours a dog', () => {
+  const pets = new Pets(level), rat = pets.summon('rat', 0, 0, 0, 0);
+  pets.toSalt();
+  const dog = pets.summon('dog', 0, 0, 0, 0);
+  assert.ok(rat.dead && rat.mode === 'dead', 'the old one crumbles');
+  assert.equal(pets.alive, dog);
+  assert.equal(pets.data?.kind, 'dog');
+});
+
 test('it stands up out of the salt, follows to heel and stands still there (no jitter)', () => {
   const pets = new Pets(level), owner = dummy(ax, az), p = pets.summon('rat', along(1), owner.y, az, 0);
   for (let t = 0; t < PET.form + 0.1; t += DT) pets.accompany(DT, owner, [], null, new Rng(1));
