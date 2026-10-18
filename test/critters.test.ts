@@ -58,3 +58,19 @@ test('flesh is a closed, skinned mesh with its weights summing to one', () => {
   }
   for (const i of f.indices) assert.ok(i < n);
 });
+
+test('a pocket\'s hunter: stalk wakes one of the level\'s hunters a little way off', async () => {
+  const { Level } = await import('../src/gen/level');
+  const { Critters } = await import('../src/creatures/critters');
+  // Seed 1 depth 15 has only peaceful kinds: its most quarrelsome one is turned mean.
+  for (const [seed, depth] of [[1, 15], [3, 20], [3, 30]]) {
+    const level = new Level(seed, depth), [x, , z] = level.arrival, cr = new Critters(level);
+    assert.ok(cr.stalk(x, z, 14, 22), `depth ${depth}: room for a hunter`);
+    const me = { x, y: level.groundAt(x, z), z, vx: 0, vz: 0, radius: 0.35, height: 1.75, taken: 0, get dead() { return false; }, hurt(a: number) { this.taken += a; } };
+    cr.advance(1 / 60, me, null);
+    const h = cr.list.find((c) => !c.species.peaceful && c.herd.key < 0);
+    assert.ok(h, 'it wakes');
+    const d0 = Math.hypot(h!.x - x, h!.z - z);
+    assert.ok(d0 >= 12 && d0 <= 70, `${d0.toFixed(1)} m off`);
+  }
+});

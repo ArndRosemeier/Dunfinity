@@ -77,11 +77,13 @@ function shape(kind: FindKind, m: PropBuilder, s: PropBuilder, g: PropBuilder): 
       m.upright(-0.01, 0.1, 0.02, 0.3, 0.016, 0.004, 0.012, BRASS); // a buckle
       break;
     case 'crystal':
-      // A little cluster of the deep world's salt, its points leaning out, glowing the veins' blue.
-      for (let k = 0; k < 5; k++) {
-        const a = (k / 5) * Math.PI * 2 + 0.4, lean = k ? 0.012 : 0, h = k ? 0.03 + 0.01 * (k % 2) : 0.05;
-        g.ellipsoid(Math.cos(a) * lean, h * 0.5, Math.sin(a) * lean, 0.007, h * 0.5, 0.007, [0.45, 0.75, 1.0], 6);
+      // A cluster of the deep world's salt as long as a hand, its points leaning out, glowing the
+      // veins' blue, and a faint thread of light standing over it: seen from across a cave.
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * Math.PI * 2 + 0.4, lean = k ? 0.035 : 0, h = k ? 0.08 + 0.03 * (k % 3) : 0.16;
+        g.ellipsoid(Math.cos(a) * lean, h * 0.5, Math.sin(a) * lean, 0.018, h * 0.5, 0.018, [0.45, 0.75, 1.0], 6);
       }
+      g.ellipsoid(0, 0.9, 0, 0.012, 0.75, 0.012, [0.25, 0.45, 0.7], 6);
       break;
   }
 }

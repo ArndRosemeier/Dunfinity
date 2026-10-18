@@ -46,6 +46,11 @@ export const THIN = {
   /** The gift waiting in a pocket lies this far from where one comes out (m, min and max), within this of where one faces (radians). */
   gift: [6, 11] as const,
   giftTurn: 0.6,
+  /** Failing a spot ahead, the nearest it may lie anywhere round one (m). */
+  giftNear: 4,
+  /** Share of pockets holding a gift, and of those where something of that world hunts (Arnd 2026-10-18: a quarter). */
+  giftChance: 0.6,
+  hunted: 0.25,
   /** The way back hangs this far from where one comes out (m, min and max). */
   back: [3, 6] as const,
   /** One comes out within this of the other world's arrival (m), where there is the most air round one's head (enough at `headroom` m). */
@@ -128,8 +133,9 @@ function roomFor(l: Level, rng: Rng, x: number, y: number, z: number, ux: number
 
 /** Open, dry floor `THIN.gift` m from feet (x, y, z) looking along `facing`, in sight of the eyes, or null. */
 function giftSpot(l: Level, rng: Rng, x: number, y: number, z: number, facing: number): [number, number, number] | null {
-  for (let k = 0; k < 16; k++) {
-    const d = rng.range(THIN.gift[0], THIN.gift[1]), a = facing + rng.range(-THIN.giftTurn, THIN.giftTurn);
+  // Ahead first; failing that, anywhere round one, a little nearer.
+  for (let k = 0; k < 48; k++) {
+    const ahead = k < 24, d = rng.range(ahead ? THIN.gift[0] : THIN.giftNear, THIN.gift[1]), a = facing + (ahead ? rng.range(-THIN.giftTurn, THIN.giftTurn) : rng.range(-Math.PI, Math.PI));
     const px = x - Math.sin(a) * d, pz = z - Math.cos(a) * d, g = l.groundAt(px, pz, y + 2);
     if (Math.abs(g - l.floorAt(px, pz)) > 0.5 || Math.abs(g - y) > 3 || !l.dry(px, pz, 0.3) || l.sdf(px, g + 0.5, pz) < 0.3) continue;
     const ex = px - x, ey = g + 0.2 - (y + 1.6), ez = pz - z, e = Math.hypot(ex, ey, ez);
@@ -171,6 +177,8 @@ export class Pocket {
   readonly way: ThinPlace | null;
   readonly facing: number;
   readonly gift: readonly [number, number, number] | null;
+  /** Whether something of that world hunts here (`THIN.hunted` of them): the game wakes one of its hunters a little way off. */
+  readonly hunted: boolean;
 
   constructor(readonly home: number, readonly through: ThinPlace, readonly there: Level) {
     const rng = new Rng(deriveSeed(there.seed, 'pocket', home, through.glimpse.depth));
@@ -179,7 +187,10 @@ export class Pocket {
     this.way = room ? { ...room, age: THIN.open, glimpse: homeGlimpse(there.seed, home) } : null;
     // Facing away from the way back: into the world.
     this.facing = room ? Math.atan2(room.x - x, room.z - z) : a;
-    this.gift = giftSpot(there, rng, x, y, z, this.facing);
+    // Not every pocket holds a gift; one with a hunter in it always does.
+    const risk = new Rng(deriveSeed(there.seed, 'pocket risk', home, through.glimpse.depth));
+    this.hunted = risk.float() < THIN.hunted;
+    this.gift = this.hunted || risk.float() < THIN.giftChance ? giftSpot(there, rng, x, y, z, this.facing) : null;
   }
 
   /** 0 steady, rising to 1 as the pocket lets go. */
