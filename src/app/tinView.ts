@@ -11,14 +11,14 @@
  * back in it. Keys: W/S choose, A/D chapter, E cook, T or Escape close; or the mouse. What the
  * mouse asks for waits in `take()` for the game to do, the same as a key.
  */
-import { SKILLS, skillOf, usesFor, type Practice } from '../loot/practice';
+import { SKILLS, skillOf, usesFor, type Practice, type Skill } from '../loot/practice';
 import { BAR, SLOT_KEYS, abilityOf, type MainBar } from '../game/abilities';
 import { CARDS, CHAPTERS, card, type CardId, type Cooked } from '../loot/recipes';
 import type { Tin } from '../loot/tin';
 import { AskingModal, esc, keycap } from './panel';
 
 /** What the mouse asked of the tin: choose a card, cook the chosen one, close it, or put a card in (or take one off) a bar slot. */
-export type TinAct = { kind: 'choose'; id: CardId } | { kind: 'cook' } | { kind: 'close' } | { kind: 'slot'; i: number; id: CardId | null } | { kind: 'tap'; i: number };
+export type TinAct = { kind: 'choose'; id: CardId } | { kind: 'cook' } | { kind: 'close' } | { kind: 'slot'; i: number; id: CardId | null } | { kind: 'tap'; i: number } | { kind: 'season'; skill: Skill };
 
 /** What is dragged (src/app/abilityBar.ts reads it too): a card from the tin, or the card in a bar slot. */
 export const DRAG = { card: 'card:', slot: 'slot:', type: 'text/plain' } as const;
@@ -56,6 +56,7 @@ const STYLE = `
   #tin .skill b { font: 700 18px var(--ui-font); color: var(--ui-paper-blue); font-variant-numeric: tabular-nums; }
   #tin .skill i { grid-column: 1 / -1; height: 4px; margin: 3px 0 1px; border-radius: 2px; background: linear-gradient(90deg, var(--ui-vein-glow) var(--p), var(--ui-paper-line) var(--p)); }
   #tin .skill .cost { grid-column: 1 / -1; color: var(--ui-paper-dim); font: 12px/1.25 var(--ui-font); }
+  #tin .skill .season { grid-column: 1 / -1; justify-self: start; margin-top: 4px; }
   #tin .card .skilled { margin-top: 8px; font: 13px var(--ui-font); color: var(--ui-paper-dim); }
 
   #tin .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; align-content: start; padding: 6px 6px 10px 2px; }
@@ -137,6 +138,7 @@ export class TinView extends AskingModal<TinAct> {
     if (act) (act as HTMLButtonElement).blur();
     if (act?.dataset.act === 'cook') return (act as HTMLButtonElement).disabled ? null : { kind: 'cook' };
     if (act?.dataset.act === 'close') return { kind: 'close' };
+    if (act?.dataset.act === 'season') return (act as HTMLButtonElement).disabled ? null : { kind: 'season', skill: act.dataset.skill as Skill };
     if (tile) return { kind: 'choose', id: tile.dataset.id as CardId };
     if (t.closest('[data-practice]')) { this.el.querySelector('.chapter[data-for="practice"]')?.scrollIntoView({ block: 'start' }); return null; }
     const first = tab ? TinView.chapterCards(tab.dataset.ch!, this.cooked)[0] : undefined;
@@ -165,12 +167,14 @@ export class TinView extends AskingModal<TinAct> {
   }
 
   /** The skills practised so far: each one's level, a bar towards the next, and the count behind it. */
-  private static practised(practice: Practice): string {
+  private static practised(practice: Practice, salt: number): string {
     const done = practice.practised;
     if (!done.length) return '<div class="none">Nothing yet. Everything you do well gets better with use, and there is no end to it.</div>';
     return done.map((k) => {
       const l = practice.level(k), next = Math.ceil(usesFor(k, l + 1) - practice.count(k));
-      return `<div class="skill"><span class="name">${esc(SKILLS[k].name)}</span><b>${l}</b><i style="--p: ${Math.round(practice.progress(k) * 100)}%"></i><span class="cost">${Math.floor(practice.count(k))} ${esc(SKILLS[k].counts)}; ${next} more to ${l + 1}</span></div>`;
+      const pinches = practice.pinchesToNext(k);
+      return `<div class="skill"><span class="name">${esc(SKILLS[k].name)}</span><b>${l}</b><i style="--p: ${Math.round(practice.progress(k) * 100)}%"></i><span class="cost">${Math.floor(practice.count(k))} ${esc(SKILLS[k].counts)}; ${next} more to ${l + 1}</span>`
+        + `<button class="ui-btn small season" data-act="season" data-skill="${k}"${salt < 1 ? ' disabled' : ''} title="A pinch is worth ${SKILLS[k].step} ${esc(SKILLS[k].counts)}; ${pinches} ${pinches === 1 ? 'pinch' : 'pinches'} to ${l + 1}">Season · 1 pinch</button></div>`;
     }).join('');
   }
 
@@ -204,7 +208,7 @@ export class TinView extends AskingModal<TinAct> {
       });
     }
     // What this grandchild has practised (recipe-box.md §3), after the cards (its divider jumps here).
-    html += `<div class="chapter" data-for="practice" style="--ink: var(--ui-vein)"><span class="ui-title">Practice</span></div>${TinView.practised(practice)}`;
+    html += `<div class="chapter" data-for="practice" style="--ink: var(--ui-vein)"><span class="ui-title">Practice</span></div>${TinView.practised(practice, tin.salt)}`;
     html += '</div></div>';
     // The chosen card in full, and cooking it.
     const cost = cooked.costOf(sel), cant = cooked.cantCook(sel, tin, tin.deepest), skill = skillOf(sel);

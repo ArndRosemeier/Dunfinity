@@ -1548,6 +1548,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
             if (mainBar.slots[a.i] === tinSel) mainBar.clear(a.i);
             else if (cooked.rank(tinSel) > 0) mainBar.set(a.i, tinSel);
             redraw = true;
+          // A pinch of the tin's salt seasons a skill practised (worth that skill's step of uses).
+          } else if (a.kind === 'season' && tin.salt >= 1 && practice.count(a.skill) > 0) {
+            tin.salt -= 1;
+            const l = practice.season(a.skill);
+            if (l) say(`${SKILLS[a.skill].name} ${l}. The salt works into it.`, 2.5);
+            redraw = true;
           }
         }
         if (cookNow) {
