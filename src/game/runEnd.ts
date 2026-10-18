@@ -75,7 +75,7 @@ export function runEnd(s: RunState): RunEnd {
     s.euros ? `Her purse: €${s.euros}.` : '',
     s.taken ? `What the family took stays taken: ${plural(s.taken, 'find')}.` : '',
   ].filter(Boolean);
-  const cards = CARDS.filter((c) => s.cooked.rank(c.id) > 0).map((c) => `${c.title}${s.cooked.rank(c.id) > 1 ? ` (rank ${s.cooked.rank(c.id)})` : ''}`);
+  const cards = CARDS.filter((c) => !c.known && s.cooked.rank(c.id) > 0).map((c) => `${c.title}${s.cooked.rank(c.id) > 1 ? ` (rank ${s.cooked.rank(c.id)})` : ''}`);
   const skills = s.practice.practised.filter((k) => s.practice.level(k) > 0).map((k) => `${SKILLS[k].name} ${s.practice.level(k)}`);
   // (Not a plain kitchen knife: the block in her kitchen has an endless supply of them, D11.)
   const worn = s.kit.items.filter((i) => i.kind !== 'kitchen-knife' || i.quality !== 'sound');

@@ -1317,7 +1317,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     input.yaw = cam.yaw;
     if (controls.tap('Space')) input.jump = true;
     if (controls.tap('KeyF')) view.dark = !view.dark;
-    if (controls.tap('KeyG') && !body.dead) {
+    if ((controls.tap('KeyG') || controls.tap(useOf('salt-sight'))) && !body.dead) {
       saltSight = !saltSight;
       if (saltSight && tin.firstTime('salt-sight')) say('Grandma\'s salt pricks your eyes: what lives here stands out, ringed by how much of a fight it is. Kinds you never brought down give only a rough read; it sharpens with every one you kill. Your breath does not come back while you look.', 9);
       else say(saltSight ? `Salt Sight on (${keyName('KeyG')}).` : 'Salt Sight off.', 2);
@@ -2128,6 +2128,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
           return { ready: c && saltLine.pouring(now) ? ready(c.at, SALT_LINE.pour) : 1, on: !!c && !saltLine.pouring(now), dim: false, count: c && !saltLine.pouring(now) ? `${Math.ceil(c.at + SALT_LINE.pour + c.keeps - now)} s` : '' };
         }
         case 'way-home': return { ready: homeTo !== null ? ready(homeAt, homeDur()) : 1, on: homeTo !== null, dim: false };
+        case 'salt-sight': return { ready: 1, on: saltSight, dim: false };
         default: return { ready: 1, on: false, dim: false };
       }
     };

@@ -35,7 +35,7 @@ test('a kept bar comes back, without cards no longer cooked; an older save fills
   const bar = MainBar.from([null, 'candle', 'nonsense', 'tenderising', 'duck', 'candle'], cooked);
   assert.deepEqual(bar.slots, [null, 'candle', null, null, 'duck', null, null, null]);
   assert.deepEqual(MainBar.from(JSON.parse(JSON.stringify(bar.data)), cooked).slots, bar.slots);
-  assert.deepEqual(MainBar.from(undefined, cooked).slots.filter(Boolean), ['duck', 'stove-flame', 'candle']);
+  assert.deepEqual(MainBar.from(undefined, cooked).slots.filter(Boolean), ['duck', 'stove-flame', 'candle', 'salt-sight'], 'Salt Sight is known from the start');
 });
 
 test('the cards that take no slot are the passives and the moves; every card is one or the other', () => {

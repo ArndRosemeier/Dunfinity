@@ -38,9 +38,17 @@ test('cards change the numbers: the knife, resting, climbing', () => {
 test('every card belongs to a chapter of the tin, with a line for each rank after the first and a cost and effect per rank', () => {
   for (const k of CARDS) {
     assert.ok(CHAPTERS.includes(k.chapter), k.title);
-    assert.equal(k.ranks.length, k.cost.length - 1, k.title);
-    assert.equal(k.does.length, k.cost.length, k.title);
+    // (A card known from the start has nothing to cook: no cost, one line of what it does.)
+    assert.equal(k.ranks.length, Math.max(0, k.cost.length - 1), k.title);
+    assert.equal(k.does.length, k.known ? 1 : k.cost.length, k.title);
   }
+});
+
+test('Salt Sight is known from the start: rank 1, nothing to cook, a slot of its own', () => {
+  const c = new Cooked();
+  assert.equal(c.rank('salt-sight'), 1);
+  assert.equal(c.costOf('salt-sight'), null);
+  assert.equal(c.data['salt-sight'], undefined, 'nothing to keep in the save');
 });
 
 test('Chicken Soup: wounds close faster resting by the fire', () => {

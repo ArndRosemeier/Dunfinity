@@ -42,6 +42,7 @@ export const ABILITIES: readonly Ability[] = [
   ability('salt-pet', 'Salt pet'),
   ability('salt-line', 'Salt line'),
   ability('way-home', 'Way home'),
+  ability('salt-sight', 'Salt sight'),
 ];
 
 /** The cards that make a move better: no slot, the move's own key (Space jumps, Z sneaks). */
