@@ -95,6 +95,12 @@ const CSS = `
   #creator .foot .lamps { flex: 1; font: italic 13px/1.3 var(--ui-font); color: var(--ui-ink-faint); }
   #creator .foot .go { position: relative; }
   #creator .ui-btn[disabled] { color: var(--ui-ink-faint); border-color: var(--ui-line); box-shadow: none; cursor: default; }
+  /* At first only the short card: who they are by the dice, and Go down; the tabs open on asking. */
+  #creator .side.simple { height: auto; }
+  #creator .side.simple .tabs, #creator .side.simple > .ui-scroll { display: none; }
+  #creator .side:not(.simple) .quick, #creator .side.simple .foot .dice { display: none; }
+  #creator .quick { padding: 6px 18px 14px; display: flex; flex-direction: column; gap: 8px; }
+  #creator .quick p { margin: 0 0 4px; color: var(--ui-ink-dim); font-size: 14px; }
   #creator .black { position: absolute; inset: 0; background: #000; pointer-events: none; opacity: 1; }
   #creator.leaving { pointer-events: none; }
   /* The game's own HUD waits under it, as under the title (src/app/titleScreen.ts). */
@@ -151,11 +157,17 @@ export class CreatorView {
     const head = child(side, 'div', 'head');
     child(head, 'h2', 'ui-title', 'The grandchild');
     child(head, 'p', '', 'Before the notary’s letter came: who are you?');
+    // At first a short card: the dice for someone else, a way into the full editor, and Go down.
+    side.classList.add('simple');
+    const quick = child(side, 'div', 'quick');
+    child(quick, 'p', '', 'This is the grandchild the letter found. Roll the dice for someone else, or shape them yourself.');
+    button(quick, '\u{1F3B2} Someone else', () => this.dice(), 'ui-btn');
+    button(quick, 'Shape them yourself', () => { side.classList.remove('simple'); this.render(); }, 'ui-btn');
     this.tabs = child(side, 'div', 'tabs');
     for (const [t, text] of TABS) button(this.tabs, text, () => this.setTab(t), 'ui-btn small').dataset.tab = t;
     this.editor = child(side, 'div', 'ui-scroll');
     const foot = child(side, 'div', 'foot');
-    button(foot, '\u{1F3B2} Someone else', () => { const m = structuredClone(this.hooks.someoneElse()); this.look = m.look; this.outfit = m.outfit; this.edited(); this.render(); }, 'ui-btn small');
+    button(foot, '\u{1F3B2} Someone else', () => this.dice(), 'ui-btn small dice');
     this.lamps = child(foot, 'div', 'lamps', 'Lighting the lamps…');
     let resolve!: (m: Made) => void;
     this.done = new Promise((r) => { resolve = r; });
@@ -166,6 +178,13 @@ export class CreatorView {
     this.black = child(this.root, 'div', 'black');
     this.setFocus('body');
     this.setTab('body');
+  }
+
+  /** A stranger by the dice. */
+  private dice(): void {
+    const m = structuredClone(this.hooks.someoneElse());
+    this.look = m.look; this.outfit = m.outfit;
+    this.edited(); this.render();
   }
 
   /** The game is ready to play: "Go down" wakes up. */

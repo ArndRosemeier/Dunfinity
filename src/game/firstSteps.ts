@@ -1,9 +1,10 @@
 /**
  * First steps (the introduction's second half): after the prologue, a short list of things to do,
- * each ticked off when the player does it, so that a new player learns the basics by playing. In the
- * cellar one at a time (read the letter, her salt circle, the tin, the diary, the way down); on
- * level 1 all at once, in any order (stab, climb, pick up, a fire, the next way down). Then the
- * list says goodbye.
+ * each ticked off when the player does it, so that a new player learns the basics by playing. Only
+ * what makes the hook (the core-loop pass, Arnd 2026-10-17): in the cellar one at a time (read the
+ * letter, cook from her tin, the way down); on level 1 both at once (stab, the next way down). The
+ * rest (her circle, the diary, climbing, finds, fires) the HUD's own lines teach as they come up.
+ * Then the list says goodbye. Old steps (`circle`, `diary`, ...) are no longer on it: ticking one does nothing.
  *
  * Pure: the steps are data; `FirstSteps` knows which are done (kept in the family's save, so a new
  * family sees it again and later grandchildren do not) and which show.
@@ -28,21 +29,16 @@ export const STEP_GROUPS: readonly { readonly title: string; readonly oneByOne: 
     oneByOne: true,
     steps: [
       { id: 'letter', text: 'Read the letter on her side table', keys: ['WASD', 'E'], how: 'Click the view to look round with the mouse; walk up to the table.' },
-      { id: 'circle', text: 'Stand still in her salt circle', keys: [], how: 'Nothing comes into it. Resting there mends you, like a fire.' },
-      { id: 'cook', text: 'Open her tin and cook a recipe card', keys: ['T', 'W', 'S', 'E'], how: 'The first card is a good start. Infused salt pays for it.' },
-      { id: 'diary', text: 'Look into her diary', keys: ['J'], how: 'Most pages are torn out. She left them down there.' },
+      { id: 'cook', text: 'Open her tin and cook a recipe card', keys: ['T'], how: 'The first card is a good start. Infused salt pays for it.' },
       { id: 'down', text: 'Go through the arch and down the old shaft', keys: ['E'], how: 'Anywhere at the edge of the shaft.' },
     ],
   },
   {
-    title: 'Level 1, the Quarry',
+    title: 'Level 1',
     oneByOne: false,
     steps: [
       { id: 'stab', text: 'Stab something that bites', keys: ['click'], how: 'Tab picks a target.' },
-      { id: 'climb', text: 'Climb a rock face', keys: ['W'], how: 'Walk into the rock. It costs stamina.' },
-      { id: 'pickup', text: 'Pick something up', keys: ['E'], how: 'Ilse\'s pawn shop in town buys it.' },
-      { id: 'fire', text: 'Light a fire and rest by it', keys: ['C'], how: 'It mends you, and her tin opens by it.' },
-      { id: 'deeper', text: 'Find the way down to level 2', keys: [], how: 'Feel for the draft. The map is on M.' },
+      { id: 'deeper', text: 'Find the way down to level 2', keys: [], how: 'Feel for the draft, or follow the chalk by the ladder.' },
     ],
   },
 ];
@@ -86,7 +82,7 @@ export class FirstSteps {
    * whether it was newly ticked.
    */
   tick(id: StepId): boolean {
-    if (this.over || this.done.has(id)) return false;
+    if (this.over || this.done.has(id) || !STEPS.some((s) => s.id === id)) return false; // (an old step, no longer on the list: nothing)
     this.done.add(id);
     const g = STEP_GROUPS.find((x) => x.steps[x.steps.length - 1].id === id);
     if (g) for (const s of g.steps) this.done.add(s.id);
