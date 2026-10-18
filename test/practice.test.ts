@@ -51,3 +51,18 @@ test('every card has its skill, and practice moves its numbers the right way', (
   assert.ok(keen.candleBurns > 1 && plain.candleBurns === 1);
   assert.ok(keen.climbing < plain.climbing);
 });
+
+test('a pinch of salt seasons a practised skill: worth step uses, so level n takes n pinches', () => {
+  const p = new Practice();
+  assert.equal(p.season('flame'), 0, 'never practised: no seasoning');
+  assert.equal(p.count('flame'), 0);
+  p.use('flame');
+  assert.equal(p.pinchesToNext('flame'), 1);
+  assert.equal(p.season('flame'), 1);
+  assert.equal(p.count('flame'), 1 + SKILLS.flame.step);
+  // From level 4, level 5 takes 5 pinches.
+  const q = Practice.from({ knife: usesFor('knife', 4) });
+  assert.equal(q.pinchesToNext('knife'), 5);
+  for (let k = 0; k < 4; k++) assert.equal(q.season('knife'), 0);
+  assert.equal(q.season('knife'), 5);
+});

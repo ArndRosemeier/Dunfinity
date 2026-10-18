@@ -115,6 +115,20 @@ export class Practice {
     return (this.count(s) - from) / (usesFor(s, l + 1) - from);
   }
 
+  /**
+   * Season `s` with a pinch of the tin's salt (Arnd 2026-10-18: salt still worth having once every
+   * card is cooked): a pinch is worth `step` uses, so the next level takes as many pinches as its
+   * number. Only a skill practised at all can be seasoned. Returns the new level if it went up, else 0.
+   */
+  season(s: Skill): number {
+    return this.count(s) > 0 ? this.use(s, SKILLS[s].step) : 0;
+  }
+
+  /** Pinches that season `s` up to its next level. */
+  pinchesToNext(s: Skill): number {
+    return Math.ceil((usesFor(s, this.level(s) + 1) - this.count(s)) / SKILLS[s].step);
+  }
+
   /** Count `n` more for `s`. Returns the new level if it went up, else 0. */
   use(s: Skill, n = 1): number {
     const before = this.level(s);
