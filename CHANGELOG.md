@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.270 — A stronger Salt Pet takes the old one's place
+
+- After cooking Salt Pet up a rank, pouring the salt now works even with the old pet still at your side: the salt rat falls back into salt and the salt dog stands up in its place. A pet of the same kind is still "still with you".
+
 ## v0.269 — Grandma's chalk by the ladder
 
 - Under the places chalked by the ladder, grandma has written a line of her own in blue: about her page ("I wrote it sitting on a stone, so look low."), the goblins ("Count your spoons afterwards."), a big animal ("You do not have to fight everything that is bigger than you."), a shed, a fire or the tall one.
