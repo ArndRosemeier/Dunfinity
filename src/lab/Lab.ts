@@ -5,6 +5,7 @@
 import { Timer } from 'three/webgpu';
 import { LevelView } from '../render/LevelView';
 import { Level, COLOR_MODES } from '../gen/level';
+import { loadModels } from '../gen/models';
 import { Controls } from '../input/controls';
 import { FlyCamera } from './FlyCamera';
 import { parseViewParams } from '../app/params';
@@ -22,6 +23,7 @@ import { RACE_IDS, type RaceId } from '@futuremagic/humanoid';
 export async function startLab(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
   loading.step('Laying out the level', 0.05);
+  await loadModels();
   const level = new Level(params.seed, params.depth, params.style);
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
   const { camera, stage } = view;

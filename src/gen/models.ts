@@ -1,11 +1,15 @@
 /**
  * Props made in Blender (AssetGenerator specs, packed by its `ag.py pack`): meshes with ambient
  * occlusion baked into their vertex colours, decoded once per worker from the generated pack
- * (models.pack.ts, made by `npm run props`). Placed into a tile with `PropBuilder.stamp`.
+ * (models.pack.bin, made by `npm run props`). Placed into a tile with `PropBuilder.stamp`.
+ *
+ * The pack is a file of its own, not code, so the page and every worker share one download (the
+ * browser caches it): `loadModels()` fetches it, the page before it builds a level (`startGame`,
+ * `startLab`), a worker before its first job (`serve`). Node (tests, tools) reads it from disk.
  *
  * Frame: metres, y up, the origin on the ground under the model's footprint centre, its front +z.
  */
-import { PACK, type ModelName } from './models.pack';
+import type { ModelName } from './models.pack';
 import type { V3 } from './propMesh';
 
 export type { ModelName };
@@ -23,10 +27,24 @@ export interface Model {
   max: V3;
 }
 
+const PACK_URL = new URL('./models.pack.bin', import.meta.url);
 let models: Map<string, Model> | null = null;
+let loading: Promise<void> | null = null;
+
+/** Fetch and decode the pack (once); `propModel` and `modelNames` need it first in a browser. */
+export function loadModels(): Promise<void> {
+  return (loading ??= models ? Promise.resolve() : fetch(PACK_URL).then(async (res) => {
+    if (!res.ok) throw new Error(`props pack: ${res.status} ${res.statusText}`);
+    models = decodePack(new Uint8Array(await res.arrayBuffer()));
+  }));
+}
 
 function packed(): Map<string, Model> {
-  return (models ??= decodePack(Uint8Array.from(atob(PACK), (c) => c.charCodeAt(0))));
+  if (models) return models;
+  // Node (tests, tools) reads the file at once; a browser must have awaited loadModels().
+  const fs = (globalThis as { process?: { getBuiltinModule?: (id: string) => { readFileSync(url: URL): Uint8Array } } }).process?.getBuiltinModule?.('node:fs');
+  if (!fs) throw new Error('props pack not loaded: await loadModels() first');
+  return (models = decodePack(fs.readFileSync(PACK_URL)));
 }
 
 /** The names of every packed model. */

@@ -28,6 +28,7 @@ import { DeathView, DEATH, NEXT } from '../app/deathView';
 import { Feel } from './feel';
 import { deathLine, hurtLine, runEnd } from './runEnd';
 import { Level } from '../gen/level';
+import { loadModels } from '../gen/models';
 import { CAMP, NOTE, RUBBING } from '../gen/grandmasCamp';
 import { Body, MOVE, type BodyInput } from '../world/traverse/body';
 import { LevelView } from '../render/LevelView';
@@ -178,6 +179,8 @@ const ARRIVE = { cap: 30 };
 export async function startGame(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
   loading.step('Laying out the level', 0.03);
+  /** The props pack (src/gen/models.ts) downloads while the title comes on; the level waits for it. */
+  const modelsIn = loadModels();
   // Kept between visits (src/persist/save.ts), unless the URL picks a depth or a place (a test view) or asks for a fresh start.
   const q = new URLSearchParams(location.search), keep = !q.has('depth') && !q.has('pos');
   // The family played last (a link with a seed: the last family on that world), unless a fresh start is asked for.
@@ -205,6 +208,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     sound: sounds.engine, tune: (dt, level) => sounds.music.theme(dt, level), game: new Promise<TitleGame>((resolve) => { joinTitle = resolve; }),
     shown: () => { if (loading.open) loading.hide(); },
   }) : null;
+  await modelsIn;
   let level = new Level(params.seed, saved?.child?.depth ?? params.depth, params.style);
   setGrowth(growthAt(level.depth));
   const { view, canvas, backend } = await LevelView.open(host, level, { forceWebGL: params.forceWebGL });
