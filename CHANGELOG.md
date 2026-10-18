@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.267 — Every kind of cave animal counts
+
+- Each kind of strange cave animal is now its own first in grandma's tin, not one "cave animal" for the whole family: the first striped six-legged grazer, the first glowing rock serpent and the first eye-spotted crab-legged watcher each bring their own salt.
+- The bigger and fiercer the kind, the more salt it brings: a scuttler 2 pinches, a hunter 4, a brute 5, a giant 6.
+- The HUD names it as grandma would in her field notes ("The first banded four-footed grazer you have killed."), and Salt Sight knows each kind by itself.
+
+## v0.266 — Chalked by the ladder
+
+- Every level below the cellar now chalks up to three places worth walking to, on a small card under your health: a page of grandma's diary or her camp, where the tall one stands, a miners' shed with things left inside, a goblin camp, scavengers at a fire, or the biggest animal living near ("Something big: a banded four-footed giant").
+- Each says which way it lies from where you look, and is struck through once you get there (the tall one and the big animals count once you have seen them from a little way off). The card fades when you have been to them all.
+
 ## v0.265 — Blows you can feel
 
 - When your knife (or the handle, or any weapon) lands, the world holds still for a few hundredths of a second, a little longer for a heavy blow and longest for a kill, and the view gives a small jolt.
