@@ -35,7 +35,7 @@ test('climbing counts metres, a few at a time', () => {
 });
 
 test('every card has its skill, and practice moves its numbers the right way', () => {
-  for (const c of CARDS) assert.ok(skillOf(c.id), `${c.id} has no skill`);
+  for (const c of CARDS) if (c.id !== 'salt-sight') assert.ok(skillOf(c.id), `${c.id} has no skill`); // (Salt Sight sharpens with kills of a kind instead)
   const all = Object.fromEntries(CARDS.map((c) => [c.id, c.cost.length]));
   const plain = Cooked.from(all), keen = Cooked.from(all);
   const p = Practice.from(Object.fromEntries((Object.keys(SKILLS) as Skill[]).map((s) => [s, usesFor(s, 10)])));

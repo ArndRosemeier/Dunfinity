@@ -18,7 +18,7 @@ import type { Dusting } from '../combat/flour';
 import type { Rooting } from '../combat/horseradish';
 import { UNTRAINED, type Trained } from './practice';
 
-export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'horseradish' | 'flour-bag' | 'matchstick' | 'salt-pet' | 'salt-line';
+export type CardId = 'hold-it' | 'helpings' | 'duck' | 'spring' | 'candle' | 'soup' | 'kneading' | 'tiptoe' | 'way-home' | 'tenderising' | 'pot-lid' | 'stove-flame' | 'cold-larder' | 'rolling-pin' | 'snapdragon' | 'horseradish' | 'flour-bag' | 'matchstick' | 'salt-pet' | 'salt-line' | 'salt-sight';
 
 /** What a salt pet is made as (src/creatures/pets.ts): a salt rat (rank 1) or a salt dog (rank 2). */
 export type PetKind = 'rat' | 'dog';
@@ -81,6 +81,14 @@ export const CARDS: readonly Card[] = [
     ranks: ['Two candles. It\'s a special occasion.'],
     cost: [3, 7],
     does: ['toss a lit candle that burns 40 s; rats and crickets keep 6 m away from it; one at a time', 'two at a time'],
+  },
+  {
+    id: 'salt-sight', title: 'Salt Sight', chapter: 'Light',
+    need: 'two grains of the good salt, one for each eye. It runs in the family, like the nose, but it wants waking.',
+    method: 'Rub a grain of the good salt on your eyelids and look again. What lives down there stands out, ringed by how much of a fight it would be. The ones you have never brought down, you only half see.',
+    ranks: [],
+    cost: [5],
+    does: ['every creature in sight gets a line of salt round it, coloured by how tough it is for you now (pale blue easy … red deadly); kinds the family has killed read sharper; your breath does not come back while you look; on and off (G, or its slot)'],
   },
   {
     id: 'soup', title: 'Chicken Soup', chapter: 'Grandma\'s Remedies',

@@ -43,6 +43,19 @@ test('every card belongs to a chapter of the tin, with a line for each rank afte
   }
 });
 
+test('Salt Sight is a card to cook with salt like the others, one rank, and then kept', () => {
+  const c = new Cooked();
+  assert.equal(c.rank('salt-sight'), 0, 'not known from the start (Arnd 2026-10-18)');
+  assert.equal(c.costOf('salt-sight'), 5);
+  const tin = new Tin();
+  tin.salt = 5;
+  c.cook('salt-sight', tin);
+  assert.equal(tin.salt, 0);
+  assert.equal(c.rank('salt-sight'), 1);
+  assert.equal(c.costOf('salt-sight'), null);
+  assert.equal(Cooked.from(c.data).rank('salt-sight'), 1);
+});
+
 test('Chicken Soup: wounds close faster resting by the fire', () => {
   const level = new Level(1, 1), [ax, , az] = level.arrival;
   const rest = (soup: number) => {
