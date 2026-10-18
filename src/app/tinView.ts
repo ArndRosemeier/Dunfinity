@@ -197,7 +197,7 @@ export class TinView extends AskingModal<TinAct> {
       html += `<div class="chapter" data-for="${esc(ch)}" style="${ink(ch)}"><span class="ui-title">${esc(ch)}</span></div>`;
       TinView.chapterCards(ch, cooked).forEach((id, k) => {
         const t = card(id), rank = cooked.rank(id), cost = cooked.costOf(id), opens = t.opens ?? 0, shut = tin.deepest < opens, slot = bar.slotOf(id);
-        const state = shut ? `opens at level ${opens}` : cost === null ? (t.known ? 'known from the start' : 'all of it') : `${rank ? 'next' : 'cook'}: ${cost} ${cost === 1 ? 'pinch' : 'pinches'}`;
+        const state = shut ? `opens at level ${opens}` : cost === null ? 'all of it' : `${rank ? 'next' : 'cook'}: ${cost} ${cost === 1 ? 'pinch' : 'pinches'}`;
         const can = !shut && cost !== null && cost <= tin.salt;
         const badge = rank === 0 ? '' : slot >= 0 ? keycap(keyName(SLOT_KEYS[slot])) : abilityOf(id) ? 'not on bar' : 'always on';
         const drag = rank > 0 && abilityOf(id) ? ' draggable="true"' : '';

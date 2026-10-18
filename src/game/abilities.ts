@@ -125,7 +125,7 @@ export const KEY_ACTIONS: readonly KeyAction[] = (() => {
   const fighting: KeyAction[] = [
     { key: 'Mouse0', name: 'Stab', group: 'Fighting' },
     { key: 'Tab', name: 'Pick a target', group: 'Fighting' },
-    { key: 'KeyG', name: 'Salt Sight: how tough they are (on and off)', group: 'Fighting' },
+    { key: 'KeyG', name: 'Salt Sight, once cooked: how tough they are (on and off)', group: 'Fighting' },
     ...SLOT_KEYS.map((k, i): KeyAction => ({ key: k, name: `Bar slot ${SLOT_LABELS[i]}`, group: 'Fighting' })),
   ];
   const looking: KeyAction[] = [
