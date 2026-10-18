@@ -132,6 +132,13 @@ export class Pets {
     this.moved = true;
   }
 
+  /** The living pet falls back into salt (a stronger one is being poured in its place); it crumbles as a dead one does. */
+  toSalt(): void {
+    const p = this.alive;
+    if (!p) return;
+    p.health = 0; p.mode = 'dead'; p.deadT = 0; p.quarry = null;
+  }
+
   /** Salt poured at (x, y, z) stands up as a pet of `kind` facing `yaw`. */
   summon(kind: PetKind, x: number, y: number, z: number, yaw: number): Pet {
     const p = new Pet(kind, x, y, z, yaw);
