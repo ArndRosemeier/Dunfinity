@@ -3,6 +3,7 @@
  * `{ id, error }`, handing over the result's buffers. Also keeps the worker's last few Levels.
  */
 import { Level, type LevelKey } from '../gen/level';
+import { loadModels } from '../gen/models';
 
 /** The last few levels asked for (a preparing worker goes back and forth between two). */
 const levels = new Map<string, Level>();
@@ -19,16 +20,15 @@ export function levelFor(key: LevelKey): Level {
   return level;
 }
 
-/** Handle jobs with `handle`, which returns the result and the buffers to transfer with it. */
+/** Handle jobs with `handle`, which returns the result and the buffers to transfer with it. Jobs wait for the props pack (in order). */
 export function serve<Job, Result>(handle: (job: Job) => { result: Result; transfer: Transferable[] }): void {
   const post = (msg: unknown, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(msg, transfer);
+  const ready = loadModels();
   self.onmessage = (e: MessageEvent<{ id: number; job: Job }>) => {
     const { id, job } = e.data;
-    try {
+    ready.then(() => {
       const { result, transfer } = handle(job);
       post({ id, result }, transfer);
-    } catch (err) {
-      post({ id, error: String((err as Error)?.stack ?? err) });
-    }
+    }).catch((err) => post({ id, error: String((err as Error)?.stack ?? err) }));
   };
 }

@@ -35,5 +35,12 @@ export default defineConfig(({ mode }) => ({
   resolve: { dedupe: ['three'] },
   server: { port: 5190, host: true, fs: { allow: ['.', 'vendor/assetgenerator/packages'] } },
   worker: { format: 'es' },
-  build: { target: 'es2022', sourcemap: true, chunkSizeWarningLimit: 2000 },
+  build: {
+    target: 'es2022',
+    sourcemap: true,
+    chunkSizeWarningLimit: 2000,
+    // three.js in a chunk of its own: it changes only on an upgrade, so a new deploy of the game
+    // leaves it in the browser's cache, and the entry stays under the warning limit.
+    rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'three', test: /[\\/]node_modules[\\/]three[\\/]/ }] } } },
+  },
 }));
