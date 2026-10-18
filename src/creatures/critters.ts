@@ -29,7 +29,7 @@ import { clamp, hash3f } from '@futuremagic/core';
 import { oddsAt } from '../gen/genome';
 import type { Level } from '../gen/level';
 import type { Den } from './population';
-import { bestiaryOf, type Species } from './bestiary';
+import { AGGRESSION, bestiaryOf, type Species } from './bestiary';
 import { habitAction, temperOf, type Strategy } from './temper';
 import { Animal, Animals, CALM, HUNTING, type Nature } from './animals';
 
@@ -126,6 +126,33 @@ export class Critters extends Animals<Herd, Critter> {
     // The hunters' dens come on top of the herds' (as many herds as before).
     this.chance = level.depth ? oddsAt(level.depth, HERD.chance) / (1 - this.share) : 0;
     this.apart = 1;
+  }
+
+  /**
+   * Wake one of this level's hunters a little way off (x, y, z), `near`–`far` metres, wherever its
+   * body has room (a thin place's pocket where something hunts: src/world/thinPlaces.ts `hunted`).
+   * Grown to its fair size here, so it is as strong as this level's own. Whether one was found.
+   */
+  stalk(x: number, z: number, near: number, far: number): boolean {
+    // Its hunters; a level of only peaceful kinds: its most quarrelsome ones first, one turned mean (aggression is a dial, not a type).
+    const hunters = this.species.filter((s) => !s.peaceful);
+    const kinds = hunters.length ? hunters : [...this.species].sort((a, b) => b.aggression - a.aggression);
+    for (let t = 0; t < 64; t++) {
+      const sp = kinds[hunters.length ? Math.floor(hash3f(this.seed, t, 7, 51) * kinds.length) : Math.floor(t / 16) % kinds.length];
+      // Further out the longer no spot is found.
+      const a = hash3f(this.seed, t, 7, 52) * Math.PI * 2, d = (near + (far - near) * hash3f(this.seed, t, 7, 53)) * (1 + (t % 16) / 16);
+      const hx = x + Math.cos(a) * d, hz = z + Math.sin(a) * d, scale = fitSize(sp, this.level.depth), b = bodyOf(sp, scale);
+      const y = this.floorFor(hx, hz, Math.max(1, (sp.hipHeight * 2 + sp.altitude) * scale), Math.max(0.5, b.radius * 1.5));
+      if (y === null || this.floorFor(hx, hz, b.height * 0.5625, b.radius * 1.2) === null) continue;
+      let hunter = sp;
+      if (sp.peaceful) {
+        hunter = { ...sp, aggression: Math.max(sp.aggression, AGGRESSION.attack + 0.2), peaceful: false };
+        (this.species as Species[]).push(hunter);
+      }
+      this.placed.push({ key: -1 - this.placed.length, x: hx, z: hz, y, kind: this.species.indexOf(hunter), species: hunter, scale, count: 1 });
+      return true;
+    }
+    return false;
   }
 
   protected denIn(key: number, i: number, j: number): Herd | null {

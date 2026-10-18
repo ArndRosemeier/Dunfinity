@@ -58,10 +58,8 @@ test('walking into an open thin place steps through; a pocket holds one a while,
     if (pocket.gift) {
       gifts++;
       const [gx, gy, gz] = pocket.gift, d = Math.hypot(gx - at[0], gz - at[2]);
-      assert.ok(d >= THIN.gift[0] - 1e-6 && d <= THIN.gift[1] + 1e-6, `the gift lies a few steps off (${d.toFixed(1)} m)`);
+      assert.ok(d >= THIN.giftNear - 1e-6 && d <= THIN.gift[1] + 1e-6, `the gift lies a few steps off (${d.toFixed(1)} m)`);
       assert.ok(there.dry(gx, gz, 0.3) && Math.abs(gy - there.groundAt(gx, gz, at[1] + 2)) < 1e-6, 'on dry floor');
-      // Ahead, where one looks on coming out.
-      assert.ok(-(gx - at[0]) * Math.sin(pocket.facing) - (gz - at[2]) * Math.cos(pocket.facing) > 0, 'ahead');
     }
     if (!pocket.way) continue;
     held++;
@@ -71,7 +69,17 @@ test('walking into an open thin place steps through; a pocket holds one a while,
     assert.ok(!pocket.walksBack(...at), 'not where one comes out');
   }
   assert.ok(held >= 3, `the way back has room (${held} of 6)`);
-  assert.ok(gifts >= 4, `a gift waits (${gifts} of 6)`);
+  assert.ok(gifts >= 2, `a gift waits in some (${gifts} of 6)`);
+  // Over many: some hunted (and those always hold a gift), most not; gifts in about `giftChance` of the rest.
+  let hunted = 0, givers = 0, n = 0;
+  for (const d of [2, 5, 9]) for (let k = 0; k < 12; k++) {
+    const g = glimpseOf(2, d, k), pk = new Pocket(d, { ...p, glimpse: g }, new Level(2, g.depth));
+    n++;
+    if (pk.hunted) { hunted++; assert.ok(pk.gift, 'a hunted pocket holds a gift'); }
+    if (pk.gift) givers++;
+  }
+  assert.ok(hunted >= 3 && hunted <= 18, `hunted: ${hunted} of ${n}`);
+  assert.ok(givers >= n * 0.45 && givers < n, `gifts: ${givers} of ${n}`);
   const pocket = new Pocket(3, p, new Level(1, p.glimpse.depth));
   let over = false, t = 0, low = 1;
   for (; t < THIN.stay + 1 && !over; t += 0.1) {

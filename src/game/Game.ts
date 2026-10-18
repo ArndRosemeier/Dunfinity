@@ -520,6 +520,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   const findView = new FindView();
   await view.stage.add(findView.root);
   const drift = new SaltDrift(params.seed);
+  /** Salt that rises at one's feet in a pocket and streams to the gift waiting there, showing the way. */
+  const lure = new SaltDrift(deriveSeed(params.seed, 'pocket lure'));
+  await view.stage.add(lure.root);
   const thinView = new ThinView();
   await view.stage.add(thinView.mesh);
   const wayView = new WayView();
@@ -588,7 +591,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const value = Math.round(r.range(lo, hi) * (1 + p.glimpse.depth / 60));
       gift = finds.drop({ id: -1 - p.glimpse.depth, kind: 'crystal', x: gx, y: stay.gift[1], z: gz, yaw: r.range(0, Math.PI * 2), value }, gx, gz);
     }
-    say(gift ? 'You step through. Something glows a little way ahead: take it before this world lets go of you.' : 'You step through. The air is another world\'s, and it will not hold you long.', 5);
+    // A quarter of them: one of that world's hunters is about, as strong as that deep world makes them, near the gift it guards.
+    const hunted = stay.hunted && (gift ? fauna.critters.stalk(gift.x, gift.z, 5, 11) : fauna.critters.stalk(stay.at[0], stay.at[2], 14, 22));
+    herdView?.stock(there, fauna.critters.species);
+    say((gift ? 'You step through. Something of this world glows nearby: follow the rising salt to it, and take it before this world lets go of you.' : 'You step through. The air is another world\'s, and it will not hold you long.')
+      + (hunted ? ' Something here has caught your scent.' : ''), 6);
   };
   /** The gift lying in the pocket one is in (null: none, or taken), and when its trail of salt last rose. */
   let gift: Find | null = null, giftMote = 0;
@@ -598,6 +605,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     pocket = null;
     gift = null;
     ({ level, fauna, wisps, suns, finds, doors, campfire } = k);
+    herdView?.stock(level, fauna.critters.species);
     riding = null;
     saltLine.circle = k.circle;
     hangDoors(level);
@@ -1029,7 +1037,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   let dripThen = 0;
   const dripSeen: DripLook = { height: 0, radius: 0, sunk: 0, drip: 0, wet: 0, t: 0 };
   (globalThis as { __game?: unknown }).__game = {
-    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get suns() { return suns; }, get riding() { return riding; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, get euros() { return euros; }, set euros(v: number) { euros = v; }, tin, get cooked() { return cooked; }, get practice() { return practice; }, thrown, garden, radish, pets, flour, saltLine, debug,
+    view, cam, get body() { return body; }, get nobody() { return nobody; }, get depth() { return level.depth; }, get climbing() { return climb.active; }, get rats() { return fauna.rats; }, get touched() { return fauna.touched; }, get crickets() { return fauna.crickets; }, get slimes() { return [fauna.lumen, fauna.murk]; }, get foreman() { return fauna.foreman; }, get dogs() { return fauna.dogs; }, get townRats() { return fauna.townRats; }, get townDogs() { return fauna.townDogs; }, get eels() { return fauna.eels; }, get scavengers() { return fauna.scavengers; }, get tall() { return fauna.tall; }, get critters() { return fauna.critters; }, get toadstools() { return fauna.toadstools; }, get puffcaps() { return fauna.puffcaps; }, get finds() { return finds; }, get wisps() { return wisps; }, get suns() { return suns; }, get riding() { return riding; }, get thin() { return thin; }, get pocket() { return pocket?.stay ?? null; }, get doors() { return doors; }, get pack() { return pack; }, get kit() { return kit; }, get euros() { return euros; }, set euros(v: number) { euros = v; }, tin, get cooked() { return cooked; }, get practice() { return practice; }, thrown, garden, radish, pets, flour, saltLine, debug,
     /** The introduction: the prologue playing (null: none), and the first steps. */
     get prologue() { return prologue; }, get steps() { return steps; },
     /** Grandma's ghost in the round room. */
@@ -1172,6 +1180,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
   };
   /** The next grandchild, in the cellar, with nothing but what the family keeps. */
   const sendNextDown = (): void => {
+    // Died in another world: it lets go of what is left (nothing to go back to).
+    if (pocket) { pocket = null; gift = null; rift.style.opacity = '0'; view.renderer.domElement.style.transform = ''; }
     body = nextGrandchild();
     fauna = new Fauna(level); thin = new ThinPlaces(level); campfire = new Campfire(level, MOVE.maxHealth, MOVE.stamina);
     pack = new Pack(() => kit.room); kit = freshKit(); cooked = new Cooked(); mainBar = new MainBar(); practice = new Practice(); explored = new Explored();
@@ -1847,6 +1857,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       [lamp.dx, lamp.dy, lamp.dz] = [lampDir.x, lampDir.y, lampDir.z];
       fauna.goblins.thief = snatch;
       const struck = !pocket && !crossing && fauna.advance(dt, body, lamp, body.facing);
+      // In a pocket nothing wakes, but where something hunts (`Pocket.hunted`) that world's animals do.
+      if (pocket?.stay.hunted && !crossing) fauna.critters.advance(dt, body, lamp);
       for (const d of fauna.goblins.dropped.splice(0)) finds.drop(d.loot as Find, d.x, d.z);
       for (const f of fauna.fallen()) { gained(tin.killed(f.kind, f.name, f.base), f.x, f.y + 0.2, f.z, now); tick('stab'); }
       if (body.health < health) {
@@ -1982,6 +1994,8 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     if (fire) { hearth.root.position.set(fire.x, fire.y, fire.z); hearth.flicker(now, lit >= 0 ? (lit / FIRE.kindle) ** 2 * 0.5 : campfire.left(now)); }
     findView.draw(finds.near(body.x, body.z, PICKUP.shown, shownFinds), now);
     drift.stream(now, body.x, body.y + 1, body.z);
+    if (gift) lure.stream(now, gift.x, gift.y + 0.15, gift.z);
+    else lure.stream(now, body.x, body.y + 1, body.z);
     wisps.advance(dt, body.x, body.y + 1.5, body.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
     for (const w of wisps.risen.splice(0)) sounds.play('wisp_rise', w, 0.5);
     for (const w of wisps.popped.splice(0)) sounds.play('wisp_pop', w, 0.7);
@@ -1997,12 +2011,11 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       if (!arriving && !body.dead && (k.advance(dt) || k.walksBack(body.x, body.y, body.z))) leavePocket();
       else {
         thinView.draw(k.way, k.open);
-        // A thread of rising salt from the nobody to the gift, while it lies there.
+        // Salt rising at one's feet and streaming off to the gift, while it lies there: follow it.
         if (gift && !finds.lying(gift)) gift = null;
-        if (gift && now >= giftMote) {
-          giftMote = now + 0.25;
-          const t = (now * 0.35) % 1, gx = gift.x, gz = gift.z;
-          drift.burst(body.x + (gx - body.x) * t, body.y + (gift.y - body.y) * t + 0.1, body.z + (gz - body.z) * t, 1, now);
+        if (gift && !arriving && now >= giftMote && Math.hypot(gift.x - body.x, gift.z - body.z) > 1.5) {
+          giftMote = now + 0.7;
+          lure.burst(body.x, body.y + 0.6, body.z, 0, now);
         }
         rift.style.opacity = String(shake * (0.55 + 0.35 * Math.sin(k.age * (4 + 9 * shake))));
         const j = shake * 3;

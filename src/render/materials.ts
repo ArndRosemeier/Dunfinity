@@ -917,7 +917,7 @@ interface Hall extends HallLook {
  * window one came through in it. Flagged floor, pillars in bays, a ribbed roof, lit and hazed in
  * its world's colours. Shared by the windows into it (`hallThrough`) and the walk down it (`HALL`).
  */
-function hallSeen(h: HallLook, o: Node<'vec3'>, d: Node<'vec3'>, back: Node<'float'>, front: Node<'float'> | null, door: Node<'float'>): Node<'vec3'> {
+function hallSeen(h: HallLook, o: Node<'vec3'>, d: Node<'vec3'>, back: Node<'float'>, front: Node<'float'> | null, door: Node<'float'>, between = false): Node<'vec3'> {
   const { bay, high } = h;
   const floorY = h.floor, roofY = floorY.add(high), halfW = float(4);
   const big = float(1e5);
@@ -941,7 +941,43 @@ function hallSeen(h: HallLook, o: Node<'vec3'>, d: Node<'vec3'>, back: Node<'flo
   const glow = door.div(p.z.sub(back).abs().mul(0.12).add(1));
   const lit = h.stone.mul(shade).mul(corner.mul(0.6).add(0.4)).mul(h.light.mul(1.6).add(h.haze.mul(glow.mul(2.5))));
   const hazed = mix(lit, h.haze, float(1).sub(t.mul(-0.03).exp()).mul(0.6));
-  return isBack.select(mix(hazed, h.haze.mul(door.mul(1.8)), doorway), isFront.select(mix(hazed, h.rim.mul(1.4), doorway.mul(0.8)), hazed));
+  const seen = isBack.select(mix(hazed, h.haze.mul(door.mul(1.8)), doorway), isFront.select(mix(hazed, h.rim.mul(1.4), doorway.mul(0.8)), hazed));
+  return between ? strangeHall(h, o, d, p, t, seen, pillar, rib, isFloor, isRoof, isEnd) : seen;
+}
+
+/**
+ * The hall between worlds is not of any world: between its pillars and its roof's ribs it is open
+ * (eroded, ragged edges) onto a slow void of that world's haze with strange stars; salt veins in
+ * the rim's colour creep over what stone there is, a pulse of light running down them towards the
+ * doorway; salt motes drift in the air. Only the hall one walks (`HALL`), not the windows into it.
+ */
+function strangeHall(h: HallLook, o: Node<'vec3'>, d: Node<'vec3'>, p: Node<'vec3'>, t: Node<'float'>, seen: Node<'vec3'>, pillar: Node<'float'>, rib: Node<'float'>,
+  isFloor: Node<'bool'>, isRoof: Node<'bool'>, isEnd: Node<'bool'>): Node<'vec3'> {
+  const slow = time.mul(0.04);
+  // The void: deep, a nebula of haze and rim turning slowly, and stars that are not ours.
+  const neb = mx_fractal_noise_float(d.mul(2.2).add(vec3(slow, slow.mul(0.7), slow.mul(-0.5))), 3).mul(0.5).add(0.5);
+  const swirl = mx_noise_float(d.mul(5).add(vec3(0, slow.mul(2), 0))).mul(0.5).add(0.5);
+  const deep = h.haze.mul(0.03).add(mix(h.haze.mul(0.45), h.rim.mul(0.6), swirl).mul(neb.pow(3).mul(2.2)));
+  const star = smoothstep(0.035, 0.0, mx_worley_noise_float(d.mul(55))).mul(mx_noise_float(d.mul(20).add(time.mul(0.6))).mul(0.5).add(0.5));
+  const space = deep.add(mix(vec3(1, 1, 1), h.rim, 0.4).mul(star.mul(1.8)));
+  // Where the hall is open: between the pillars over a low sill, between the roof's ribs; its edges eaten away.
+  const ragged = mx_noise_float(p.mul(0.9)).mul(0.35);
+  const isWall = isFloor.or(isRoof).or(isEnd).not();
+  const sill = smoothstep(0.5, 0.9, p.y.sub(h.floor));
+  const gap = isWall.select(float(1).sub(pillar).mul(sill), isRoof.select(float(1).sub(rib), float(0)));
+  const open = smoothstep(0.35, 0.6, gap.add(ragged));
+  const hall = mix(seen, space, open);
+  // Salt veins creeping over the stone, a pulse running down them towards the doorway.
+  const vein = smoothstep(0.022, 0.0, abs(mx_noise_float(p.mul(vec3(1.3, 1.5, 0.9)).add(vec3(0, slow.mul(3), slow.mul(-2)))))).mul(float(1).sub(open));
+  const pulse = p.z.mul(0.35).add(time.mul(1.4)).sin().mul(0.5).add(0.5).pow(3);
+  const veins = h.rim.mul(vein.mul(pulse.mul(1.1).add(0.2)).mul(isEnd.select(float(0.3), float(0.8))));
+  // Salt motes hanging in the air at a few depths along the ray, drifting up.
+  let motes: Node<'float'> = float(0);
+  for (const k of [1.6, 3.4, 6.5]) {
+    const q = o.add(d.mul(k)).add(vec3(0, time.mul(-0.12), 0));
+    motes = motes.add(smoothstep(0.06, 0.0, mx_worley_noise_float(q.mul(0.9))).mul(t.greaterThan(k).select(float(1), float(0))));
+  }
+  return hall.add(veins).add(h.rim.mul(0.5).add(0.5).mul(motes.mul(0.9)));
 }
 
 /**
@@ -1056,7 +1092,7 @@ export const HALL = defineKind('hall', ['position', 'normal', 'color'], () => {
   const c = cos(S.eye.w), s = sin(S.eye.w);
   const d = vec3(c.mul(w.x).sub(s.mul(w.z)), w.y, s.mul(w.x).add(c.mul(w.z)));
   const look = { bay: S.look.x, high: S.look.y, floor: float(0), stone: S.stone, light: S.light, haze: S.haze, rim: S.rim };
-  m.colorNode = hallSeen(look, S.eye.xyz, d, S.look.z.negate(), float(HALL_WALK.behind), S.look.w);
+  m.colorNode = hallSeen(look, S.eye.xyz, d, S.look.z.negate(), float(HALL_WALK.behind), S.look.w, true);
   m.opacityNode = S.shown;
   return m;
 }, { cast: false, receive: false });
