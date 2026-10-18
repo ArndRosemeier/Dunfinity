@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.269 — Grandma's chalk by the ladder
+
+- Under the places chalked by the ladder, grandma has written a line of her own in blue: about her page ("I wrote it sitting on a stone, so look low."), the goblins ("Count your spoons afterwards."), a big animal ("You do not have to fight everything that is bigger than you."), a shed, a fire or the tall one.
+
+## v0.268 — A quicker start
+
+- New Game no longer opens on thirty sliders: the grandchild card starts short, with the dice for someone else and Go down. "Shape them yourself" opens the full editor as before.
+- The first steps are down to the ones that make the story: in the cellar, read the letter, cook from her tin and go down the shaft; on level 1, stab something that bites and find the way down. Her circle, the diary, climbing, finds and fires are taught by the game's own hints when they come up.
+
 ## v0.267 — Every kind of cave animal counts
 
 - Each kind of strange cave animal is now its own first in grandma's tin, not one "cave animal" for the whole family: the first striped six-legged grazer, the first glowing rock serpent and the first eye-spotted crab-legged watcher each bring their own salt.
