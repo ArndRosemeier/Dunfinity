@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { Fauna } from '../src/creatures/fauna';
-import { LEADS, Leads, leadsOf } from '../src/game/leads';
+import { GRANDMA_CHALK, LEADS, Leads, grandmasChalk, leadsOf } from '../src/game/leads';
 
 test('every level below the cellar chalks a few places worth walking to, the same each time, story first', () => {
   for (const depth of [1, 2, 5, 9, 10]) {
@@ -25,4 +25,14 @@ test('a lead is found once one walks up to it, and only once', () => {
   assert.ok(leads.walk(l.x + 1, l.z).some((x) => x.id === l.id));
   assert.ok(!leads.walk(l.x, l.z).some((x) => x.id === l.id), 'found once');
   assert.ok(!leads.over || leads.list.length === 1);
+});
+
+test('grandma chalks a line under the list, about its first place, the same each visit', () => {
+  for (const depth of [1, 2, 9, 10]) {
+    const level = new Level(1, depth), list = leadsOf(level, new Fauna(level));
+    const line = grandmasChalk(level, list);
+    assert.ok(GRANDMA_CHALK[list[0].id].includes(line), `level ${depth}: "${line}"`);
+    assert.equal(grandmasChalk(level, list), line);
+  }
+  assert.ok(GRANDMA_CHALK.none.includes(grandmasChalk(new Level(1, 3), [])));
 });
