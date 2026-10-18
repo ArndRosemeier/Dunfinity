@@ -64,17 +64,16 @@ test('the nobody walks each shot\'s way on the town\'s and the cellar\'s floor: 
   }
 });
 
-test('first steps: the cellar one at a time, level 1 all at once; done ahead of its turn counts; the way on finishes its group', () => {
+test('first steps: only the hook; the cellar one at a time, level 1 at once; done ahead of its turn counts; the way on finishes its group', () => {
   const s = new FirstSteps();
   assert.deepEqual(s.showing().map((x) => x.id), ['letter']);
-  assert.ok(s.tick('diary'));
+  assert.ok(s.tick('cook'));
   assert.ok(s.tick('letter'));
-  assert.deepEqual(s.showing().map((x) => x.id), ['letter', 'circle']);
-  s.tick('circle');
-  assert.deepEqual(s.showing().map((x) => x.id), ['letter', 'circle', 'cook']);
-  s.tick('cook');
-  assert.deepEqual(s.showing().map((x) => x.id), ['letter', 'circle', 'cook', 'diary', 'down'], 'the diary, read early, shows done');
+  assert.deepEqual(s.showing().map((x) => x.id), ['letter', 'cook', 'down'], 'the tin, cooked early, shows done');
   assert.ok(!s.tick('cook'), 'ticked twice');
+  assert.ok(!s.tick('diary'), 'an old step, off the list, does nothing (no pencil sound)');
+  assert.deepEqual(s.showing().map((x) => x.id), ['letter', 'cook', 'down']);
+  assert.ok(STEPS.length <= 5, 'a short list');
   const t = new FirstSteps();
   t.tick('down');
   assert.equal(t.group, 1, 'going down finishes the cellar');
@@ -88,7 +87,7 @@ test('first steps kept: what was done comes back; over stays over; an old save w
   const s = new FirstSteps();
   s.tick('letter'); s.tick('circle');
   const back = FirstSteps.from(JSON.parse(JSON.stringify(s.data)));
-  assert.ok(back.isDone('letter') && back.isDone('circle') && !back.isDone('cook'));
+  assert.ok(back.isDone('letter') && !back.isDone('cook'));
   s.over = true;
   assert.equal(s.data, true);
   const over = FirstSteps.from(true);

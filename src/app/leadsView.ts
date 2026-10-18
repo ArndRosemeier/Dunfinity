@@ -1,6 +1,7 @@
 /**
  * The level's leads on screen (src/game/leads.ts): a small paper card under the meters, "Chalked by
- * the ladder", each place with which way it lies from where one looks now. A place come to is struck
+ * the ladder", each place with which way it lies from where one looks now, and a line of grandma's
+ * under them in her blue ink. A place come to is struck
  * through; when all are, the card fades. Hidden while there are none, in another world, or with
  * the map open.
  */
@@ -16,6 +17,8 @@ const STYLE = `
   #leads .ui-label { margin: 0 0 4px; }
   #leads .lead { padding: 2px 0; }
   #leads .lead .way { display: block; color: var(--ui-paper-dim); font-style: italic; font-size: 13px; }
+  #leads .chalk { margin-top: 6px; font-style: italic; color: var(--ui-paper-blue); }
+  #leads .chalk::after { content: ' G.'; font-style: normal; }
   #leads .lead.found { color: var(--ui-paper-dim); text-decoration: line-through; text-decoration-color: var(--ui-paper-ink); }`;
 
 /** One line of the card: the lead, which way it lies (words), whether it is found. */
@@ -28,6 +31,7 @@ export interface LeadLine {
 export class LeadsView {
   private readonly el: HTMLDivElement;
   private readonly body: HTMLDivElement;
+  private readonly note: HTMLDivElement;
   private drawn = '';
 
   constructor(host: HTMLElement) {
@@ -35,15 +39,17 @@ export class LeadsView {
     this.el.className = 'ui-paper';
     child(this.el, 'div', 'ui-label', 'Chalked by the ladder');
     this.body = child(this.el, 'div');
+    this.note = child(this.el, 'div', 'chalk');
   }
 
-  /** Show `lines` (empty: hide). Redraws only on change. */
-  chalk(lines: readonly LeadLine[]): void {
+  /** Show `lines` and grandma's chalked line `note` under them (no lines: hide). Redraws only on change. */
+  chalk(lines: readonly LeadLine[], note = ''): void {
     const open = lines.length > 0 && !lines.every((l) => l.found);
-    const key = open ? lines.map((l) => `${l.lead.id}|${l.way}|${l.found}`).join(';') : '';
+    const key = open ? lines.map((l) => `${l.lead.id}|${l.way}|${l.found}`).join(';') + note : '';
     if (key === this.drawn) return;
     this.drawn = key;
     if (!open) { this.el.classList.remove('shown'); setTimeout(() => { if (!this.drawn) this.el.classList.remove('open'); }, 800); return; }
+    this.note.textContent = note;
     this.body.innerHTML = lines.map((l) => `<div class="lead${l.found ? ' found' : ''}">${esc(l.lead.what)}${l.found ? '' : ` <span class="way">${esc(l.way)}</span>`}</div>`).join('');
     if (!this.el.classList.contains('open')) { this.el.classList.add('open'); requestAnimationFrame(() => this.el.classList.add('shown')); }
   }

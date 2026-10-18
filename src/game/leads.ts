@@ -11,6 +11,7 @@
 import type { Level } from '../gen/level';
 import type { Fauna } from '../creatures/fauna';
 import { speciesName, SPECIES_SALT } from '../creatures/bestiary';
+import { hash3f } from '@futuremagic/core';
 
 export const LEADS = {
   /** How far from the arrival a lead is looked for, metres (story leads anywhere on the level). */
@@ -75,4 +76,26 @@ export class Leads {
   get over(): boolean {
     return this.list.every((l) => this.found.has(l.id));
   }
+}
+
+/**
+ * What grandma chalked under the list, in her own words (the core-loop pass: more of her writing,
+ * near where one arrives): a line about the first thing on it, else about the level. The same
+ * level always says the same. Pure.
+ */
+export const GRANDMA_CHALK: Readonly<Record<Lead['id'] | 'none', readonly string[]>> = {
+  page: ['I left a page here. Read it before you go on.', 'One of my pages is down here. I wrote it sitting on a stone, so look low.', 'There is a page of mine on this level. I was younger than you when I wrote it.'],
+  camp: ['My camp. The fire pit still draws. Sit a while.', 'I slept here more nights than I told your great-grandmother.'],
+  lair: ['It stands at the top of the stair. Stay in my circles and it will only look.', 'It has stood there since 1963. Do not keep it company.'],
+  shed: ['The miners left their shed unlocked. Shut the door behind you and sleep.', 'There is a dry shed. Take what is useful; they will not mind now.'],
+  goblins: ['Goblins. Count your spoons afterwards.', 'The little people keep what they steal. Get it back off them, or let it go.'],
+  scavengers: ['Smoke means scavengers. They are only hungry. So are you.', 'There are people at a fire. They are not nice people.'],
+  beast: ['Something big lives here. You do not have to fight everything that is bigger than you.', 'A big one. Leave it be unless you are cleverer than me.', 'I watched the big one for an hour once. It never noticed me. Be like that.'],
+  none: ['Nothing worth chalking on this level. Go down.', 'Mind the water here. It is deeper than it looks.', 'Rest when you can. The rock does not get tired, but you do.'],
+};
+
+/** Grandma's chalked line for `level`, going by its leads. */
+export function grandmasChalk(level: Level, leads: readonly Lead[]): string {
+  const pool = GRANDMA_CHALK[leads[0]?.id ?? 'none'];
+  return pool[Math.floor(hash3f(level.seed, level.depth, 1966, 3) * pool.length) % pool.length];
 }
