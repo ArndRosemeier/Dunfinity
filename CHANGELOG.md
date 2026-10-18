@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.275 — Salt Sight is cooked from grandma's tin
+
+- Salt Sight is now a card in the tin (under Light) that costs 5 pinches of salt to cook, like her other cards. Until it is cooked, G only tells you to cook it first. Once cooked it can be dragged onto the bar, G switches it on and off, and its slot glows while it is on.
+
 ## v0.274 — Smaller download: the game's code split up
 
 - The Blender props pack is a file of its own (`src/gen/models.pack.bin`), fetched once and shared by the page and its workers, instead of 2 MB of text baked into the page's code and again into each worker's.
