@@ -4838,5 +4838,9 @@
   {
     "key": "same name: dunfinity/loot/recipes.ts#match + dunfinity/render/humans/thrownView.ts#match",
     "reason": "different things: the Matchstick card's numbers (Cooked.match) and the flying match's mesh (ThrownView.match)"
+  },
+  {
+    "key": "idiom: [.join .map] in dunfinity/app/leadsView.ts + dunfinity/app/letterView.ts + dunfinity/app/stepsView.ts",
+    "reason": "a list drawn as HTML lines (map each to its markup, join): one expression per panel, each its own markup; nothing to fold"
   }
 ]

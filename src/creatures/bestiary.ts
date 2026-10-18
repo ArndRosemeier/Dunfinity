@@ -573,3 +573,33 @@ export function rgbHue([r, g, b]: Rgb): number {
 function isEyeDark(rng: Rng): boolean {
   return rng.chance(0.35);
 }
+
+/** What each body plan is called in grandma's field notes. */
+const PLAN_NOUN: Readonly<Record<BodyPlan, string>> = {
+  quadruped: 'four-footed', biped: 'two-legged', hexapod: 'six-legged', octopod: 'eight-legged', crab: 'crab-legged',
+  myriapod: 'many-legged', serpent: 'rock serpent', slug: 'slug', radial: 'star-bodied', floater: 'floater',
+};
+const SKIN_WORD: Readonly<Record<Integument, string>> = { fur: 'furred', hide: 'bare-hided', scales: 'scaled', chitin: 'shelled', slime: 'slick', stone: 'stone-backed' };
+const PATTERN_WORD: Readonly<Record<PatternKind, string>> = { none: '', stripes: 'striped', spots: 'spotted', bands: 'banded', patches: 'patched', mottled: 'mottled', saddle: 'saddled', eyespots: 'eye-spotted' };
+const ROLE_NOUN: Readonly<Record<CritterRole, string>> = { scuttler: 'scuttler', grazer: 'grazer', floater: 'drifter', giant: 'giant', watcher: 'watcher', hunter: 'hunter', lurker: 'lurker', swarmer: 'swarmer', brute: 'brute' };
+
+/**
+ * A species as a line in grandma's field notes, from what one sees of it: its markings or its skin,
+ * its glow, its body plan and its place in the cave ("a striped six-legged grazer", "a glowing rock
+ * serpent"). The same species always gets the same name. Pure.
+ */
+export function speciesName(sp: Species): string {
+  const c = sp.colors;
+  const look = c.glowAmount > 0.4 ? 'glowing' : PATTERN_WORD[c.pattern] || SKIN_WORD[sp.integument];
+  const body = PLAN_NOUN[sp.plan];
+  const noun = sp.plan === 'serpent' || sp.plan === 'slug' || sp.plan === 'floater' ? body : `${body} ${ROLE_NOUN[sp.role]}`;
+  return `${look} ${noun}`.replace(/^(\w)/, (m) => m.toLowerCase());
+}
+
+/** The salt in grandma's tin the first time the family kills a species: bigger and fiercer ones are worth more. */
+export const SPECIES_SALT: Readonly<Record<CritterRole, number>> = { scuttler: 2, grazer: 2, floater: 2, watcher: 3, swarmer: 2, lurker: 3, hunter: 4, brute: 5, giant: 6 };
+
+/** The kind a cave animal counts as in grandma's tin and in Salt Sight: its own species, not all cave animals together. */
+export function speciesKind(sp: Species): string {
+  return `critter:${sp.id}`;
+}

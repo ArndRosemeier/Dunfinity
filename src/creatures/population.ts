@@ -55,7 +55,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
   /** Whether they keep out of poured salt (`salt`); the Salt-Touched and people do not. */
   protected heedsSalt = true;
   /** Where the ones you killed fell, since the game last took them (`Fauna.fallen`). */
-  readonly fallen: { x: number; y: number; z: number }[] = [];
+  readonly fallen: { x: number; y: number; z: number; who: C }[] = [];
   protected readonly seed: number;
   protected readonly rng: Rng;
   protected readonly steer: Steer;
@@ -104,6 +104,15 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
     return best;
   }
 
+  /** Every den within `r` metres of (x, z) (and the dens placed off the grid there). */
+  densNear(x: number, z: number, r: number): D[] {
+    const c = this.spread.cell, out: D[] = [];
+    const keep = (d: D | null) => { if (d && Math.hypot(d.x - x, d.z - z) <= r) out.push(d); };
+    for (const d of this.placed) keep(d);
+    for (let j = Math.floor((z - r) / c); j <= Math.floor((z + r) / c); j++) for (let i = Math.floor((x - r) / c); i <= Math.floor((x + r) / c); i++) keep(this.dens.at(i, j));
+    return out;
+  }
+
   /** Advance by dt seconds. `prey`: the player (blows go through combat.damage). Returns the blows landed this step. */
   advance(dt: number, prey: Fighter, ctx: Ctx = null as Ctx): number {
     this.steer.keepOff = prey;
@@ -129,7 +138,7 @@ export abstract class Population<D extends Den, C extends Creature<string> & { r
       }
       this.settle();
     }
-    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (byYou(c.cause)) { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z }); } }
+    for (const c of this.list) if (c.dead && !this.dead.has(c.id)) { this.dead.add(c.id); if (byYou(c.cause)) { this.killed++; this.fallen.push({ x: c.x, y: c.y, z: c.z, who: c }); } }
     return hits;
   }
 
