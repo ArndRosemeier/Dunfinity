@@ -41,6 +41,13 @@
   "loop": true,
   "gain": 0.35
  },
+ "amb_town_day": {
+  "files": [
+   "amb_town_day.mp3"
+  ],
+  "loop": true,
+  "gain": 0.35
+ },
  "bell": {
   "files": [
    "bell_1.ogg"
@@ -48,12 +55,28 @@
   "loop": false,
   "gain": 0.7
  },
+ "birds": {
+  "files": [
+   "birds_1.mp3",
+   "birds_2.mp3",
+   "birds_3.mp3"
+  ],
+  "loop": false,
+  "gain": 0.5
+ },
  "bloom_crackle": {
   "files": [
    "bloom_crackle_1.ogg"
   ],
   "loop": false,
   "gain": 0.35
+ },
+ "church_bell": {
+  "files": [
+   "church_bell_1.mp3"
+  ],
+  "loop": false,
+  "gain": 0.5
  },
  "coins": {
   "files": [

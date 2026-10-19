@@ -2,17 +2,19 @@
  * What the game sounds like: everything heard follows from what the world is doing, read once a
  * frame (`update`), the way Scale's music reads its signals. Footsteps on the figure's heel strikes,
  * landings, getting hurt and dying from the body; growls, squeaks, swings and deaths from each
- * creature's mode changing; the ambience bed and the music from where one is. The few things only
- * the game knows (a stab, a door, a pickup) it plays itself through `play`.
+ * creature's mode changing; the ambience bed and the music from where one is; the town's birds by
+ * day, and its church bell as one comes back up to it. The few things only the game knows (a stab,
+ * a door, a pickup) it plays itself through `play`.
  *
  * Every sound id is a public/sounds/manifest.json id (tools/audio/sounds.json).
  */
-import { Rng, deriveSeed } from '@futuremagic/core';
+import { Rng, TAU, deriveSeed } from '@futuremagic/core';
 import type { Body } from '../world/traverse/body';
 import type { Level } from '../gen/level';
 import type { Fauna } from '../creatures/fauna';
 import type { DoorSpec } from '../gen/doorways';
 import { daylightAt } from '../gen/cellar';
+import { HOUSES } from '../gen/town';
 import { SoundEngine, type SoundLoop } from './audio';
 import { Music } from './music/Music';
 import type { Place } from './music/mood';
@@ -22,6 +24,8 @@ export interface SoundScene {
   readonly dt: number;
   readonly body: Body;
   readonly level: Level;
+  /** The town by night (the prologue's one night): its old bed, and no birds. Left out by day. */
+  readonly night?: boolean;
   readonly fauna: Fauna;
   /** The doors that open and shut (their `want` flips when one is opened or shut, or shuts itself). */
   readonly doors: readonly { readonly spec: DoorSpec; readonly want: number }[];
@@ -78,10 +82,80 @@ export function footfalls(from: number, to: number): number {
   return n;
 }
 
+/** The ambience beds a place asks for: the town by day (`amb_town_day`) or by night (`amb_town`), else the place's own. The rest fade out. */
+export function bedsOf(place: Place, night: boolean, dead = false): Record<string, number> {
+  const beds: Record<string, number> = { amb_town: 0, amb_town_day: 0, amb_cellar: 0, amb_quarry: 0, amb_salt: 0, amb_cistern: 0, amb_threshold: 0 };
+  const bed = place === 'town' ? (night ? 'amb_town' : 'amb_town_day') : `amb_${place}`;
+  beds[bed] = dead ? 0.4 : 1;
+  return beds;
+}
+
+/** Where the town's birds are heard from: how often they call, how far from the ear, how high over its ground. */
+export const TOWN_BIRDS = {
+  /** Seconds from one call to the next (chosen again each time). */
+  every: [5, 13] as const,
+  /** How far from the ear a call comes from, metres. */
+  away: [8, 20] as const,
+  /** How high over the town's ground a call is heard, metres. */
+  above: [2, 8] as const,
+} as const;
+
+/** How far the town's birds and its church bell are heard at full gain, metres. */
+export const TOWN_HEARD = { birds: 6, bell: 30 } as const;
+
+/** One of the town's birds calling: where it is, and which of its takes is the `variant`. */
+export interface BirdCall { readonly x: number; readonly y: number; readonly z: number; readonly variant: number }
+
+/**
+ * The birds over the town by day (never at night nor below it): now and then one calls, from a point
+ * 8–20 m from the ear and a little over the town's ground, so the calls come from around one.
+ */
+export class TownBirds {
+  private nextIn: number;
+  private readonly rng: Rng;
+  constructor(rng: Rng) { this.rng = rng; this.nextIn = this.waitBetween(); }
+  private waitBetween(): number { return this.rng.range(TOWN_BIRDS.every[0], TOWN_BIRDS.every[1]); }
+  /** Seconds until the next call (5–13 s). */
+  get due(): number { return this.nextIn; }
+  /**
+   * A frame: the call it makes now, or null. `heard` is the town by day (nothing calls below it nor
+   * at night); `ground` says how high the town's ground is at (x, z), so the call is above it.
+   */
+  nextCall(dt: number, heard: boolean, ear: { readonly x: number; readonly y: number; readonly z: number }, ground: (x: number, z: number) => number): BirdCall | null {
+    if (!heard) return null;
+    this.nextIn -= dt;
+    if (this.nextIn > 0) return null;
+    this.nextIn = this.waitBetween();
+    const a = this.rng.range(0, TAU), d = this.rng.range(TOWN_BIRDS.away[0], TOWN_BIRDS.away[1]);
+    const x = ear.x + Math.sin(a) * d, z = ear.z + Math.cos(a) * d;
+    return { x, y: ground(x, z) + this.rng.range(TOWN_BIRDS.above[0], TOWN_BIRDS.above[1]), z, variant: this.rng.int(0, 2) };
+  }
+}
+
+/** The town's church bell: it rings once as one comes back up to the town from below. */
+export class ChurchBell {
+  private last: number | null = null;
+  /** Does it ring this frame, the level now being `depth` deep? (Not on the first frame, nor going down.) */
+  ring(depth: number): boolean {
+    const rung = this.last !== null && this.last > 0 && depth === 0;
+    this.last = depth;
+    return rung;
+  }
+}
+
+/** Where the town's bell hangs: the church tower, at the top of its walls. */
+export const TOWER_BELL: { readonly x: number; readonly y: number; readonly z: number } = (() => {
+  const tower = HOUSES.find((h) => h.kind === 'tower');
+  if (!tower) throw new Error('the town has no church tower');
+  return { x: tower.cx, y: tower.eaves, z: tower.cz };
+})();
+
 export class GameSounds {
   readonly engine: SoundEngine;
   readonly music: Music;
   private readonly rng: Rng;
+  private readonly birds: TownBirds;
+  private readonly churchBell = new ChurchBell();
   private seen = new WeakMap<object, { mode: string; hurtT: number; idleAt: number }>();
   private doorWant = new WeakMap<object, number>();
   private walked = 0;
@@ -101,6 +175,7 @@ export class GameSounds {
     this.engine = new SoundEngine(seed, base);
     this.music = new Music(seed, base, this.engine);
     this.rng = new Rng(deriveSeed(seed, 'sounds'));
+    this.birds = new TownBirds(new Rng(deriveSeed(seed, 'sounds', 'birds')));
   }
 
   init(): Promise<void> { return this.engine.init(); }
@@ -133,13 +208,16 @@ export class GameSounds {
     this.time += s.dt;
     e.listen(s.ear.x, s.ear.y, s.ear.z, s.ear.fx, s.ear.fy, s.ear.fz);
     const place = GameSounds.place(s.level, b);
+    const night = s.night ?? false;
     const after = s.fauna.after(b);
     const boss = after && (s.fauna.foreman.list.some((f) => !f.dead && f.mode !== 'wait' && f.mode !== 'home') || s.fauna.tall.list.some((t) => !t.dead && t.mode !== 'stand' && t.mode !== 'home'));
     this.music.update(s.dt, { place, danger: !!after, boss, resting: s.resting, dead: b.dead });
     // The bed of the place one is in (the others fade out).
-    const beds: Record<string, number> = { amb_town: 0, amb_cellar: 0, amb_quarry: 0, amb_salt: 0, amb_cistern: 0, amb_threshold: 0 };
-    beds[`amb_${place}`] = b.dead ? 0.4 : 1;
-    e.ambience(beds);
+    e.ambience(bedsOf(place, night, b.dead));
+    // The town's birds by day, and its church bell as one comes back up to it.
+    const call = this.birds.nextCall(s.dt, place === 'town' && !night, s.ear, (x, z) => s.level.groundAt(x, z));
+    if (call) this.engine.play('birds', call, 1, 1, TOWN_HEARD.birds, call.variant);
+    if (this.churchBell.ring(s.level.depth)) this.engine.play('church_bell', TOWER_BELL, 1, 1, TOWN_HEARD.bell);
     this.fire(s);
     for (const d of s.doors) {
       const was = this.doorWant.get(d);

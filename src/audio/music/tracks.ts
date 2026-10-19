@@ -8,7 +8,7 @@
 import type { Mood } from './mood';
 
 export const MOOD_TRACKS: Record<Mood, readonly string[]> = {
-  town: ['town'],
+  town: ['town', 'town-day'],
   cellar: ['cellar'],
   quarry: ['quarry-1', 'quarry-2'],
   salt: ['salt'],

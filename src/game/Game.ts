@@ -1156,7 +1156,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     view.camera.getWorldDirection(lampDir);
     const ear = view.camera.position;
     sounds.update({
-      dt, body, level, fauna, doors: doors.list, fire: null, resting: false, ladder: false, gait: nobody.human.animator.gaitPhase,
+      dt, body, level, night: true, fauna, doors: doors.list, fire: null, resting: false, ladder: false, gait: nobody.human.animator.gaitPhase,
       ear: { x: ear.x, y: ear.y, z: ear.z, fx: lampDir.x, fy: lampDir.y, fz: lampDir.z },
     });
     (globalThis as { __ready?: boolean }).__ready = view.settled;

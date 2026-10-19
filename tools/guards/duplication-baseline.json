@@ -80,14 +80,6 @@
     "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
   },
   {
-    "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/lab/FlyCamera.ts#update",
-    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
-  },
-  {
-    "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/render/props/Props.ts#update",
-    "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
-  },
-  {
     "key": "same name: dunfinity/audio/gameSounds.ts#update + dunfinity/render/props/lamps.ts#update",
     "reason": "a per-frame update method: same verb, unrelated jobs (sound, music player, mood director, props, lamps, fly camera)."
   },
