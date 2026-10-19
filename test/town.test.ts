@@ -33,10 +33,11 @@ test("grandma's street: open sky over the cobbles, the houses solid, the cellar 
     assert.ok(VILLAGE.roadEdge(h.cx, h.cz) > 0, `a building on a road at ${h.cx.toFixed(1)}, ${h.cz.toFixed(1)}`);
     assert.ok(VILLAGE.squareEdge(h.cx, h.cz) > 0, 'a building on the square');
   }
-  // Rock stays over every space of the cellar: none of it opens to the sky.
-  // (Over the stairs' top end is her house, on purpose.)
-  for (let x = -7; x <= 17; x += 0.5) for (const z of [-2, 0, 2]) {
+  // Rock stays over every space of the cellar: none of it opens to the sky. (Under her house the
+  // house itself roofs the cellar, its vault 0.5 m under the house's floor; the rest is under rock.)
+  for (let x = -16; x <= 9.5; x += 0.5) for (const z of [-2, 0, 2]) {
     if (level.sdf(x, 1.5, z) <= 0) continue;
+    if (x > TOWN.grandma.x[0] && x < TOWN.grandma.x[1] && Math.abs(z) < TOWN.grandma.z[1]) continue;
     let rock = 0, best = 0;
     for (let y = 1.5; y < 40 && best < 1; y += 0.1) best = Math.max(best, (rock = level.sdf(x, y, z) <= 0 ? rock + 0.1 : 0));
     assert.ok(best >= 1, `the cellar at ${x}, ${z} is roofed by ${best.toFixed(1)} m only`);

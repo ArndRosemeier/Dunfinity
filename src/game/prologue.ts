@@ -71,11 +71,11 @@ export const SHOTS: readonly Shot[] = [
       'Her cellar goes on further than a cellar should. At its end, in a small round room: her armchair, a ring of salt glowing faintly blue, her tin on the chair.',
       'And behind the chair, the arch she bricked up, broken open. Cold air comes up through it.',
     ],
-    eye: [[1.6, 1.75, 0.25], [3.3, 1.45, 0.05]],
-    at: [[8.6, 1.05, -0.2], [9.4, 1.0, 0]],
+    eye: [[-4.2, 1.75, 1.5], [-3.8, 1.45, 1.3]],
+    at: [[-3.3, 1.05, -0.25], [0, 1.0, 0]],
     stand: { x: S.x, z: S.z, yaw: S.yaw },
     // A step aside towards her side table (the letter), out of the arch's way, short of the circle.
-    acts: [{ to: [5.3, 0.6] }],
+    acts: [{ to: [S.x + 0.5, 0.6] }],
     cut: false,
   },
 ];

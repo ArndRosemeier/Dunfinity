@@ -21,8 +21,8 @@ export const WAY = {
   turn: 0.7,
   /** Air it needs round its middle (m). */
   air: 0.6,
-  /** Where the way back opens in grandma's cellar: the brick vault, clear of her chair and table (its middle under the crown). */
-  cellar: [1.2, 0] as const,
+  /** Where the way back opens in grandma's cellar: the brick vault west of the stair, clear of her chair and table (its middle under the crown). */
+  cellar: [-13.5, 0] as const,
   /** Seconds it stays open (it opens and closes as a thin place does). */
   hold: 20,
 } as const;

@@ -45,17 +45,17 @@ test("grandma's house has its doors, shut, the cellar's strange; none below the 
 
 test('a shut door stops one; opened (E), one walks through', () => {
   const w = world();
-  // The cellar door, from the foot of the stairs into the cellar.
-  const shut = walk(w, [-5.2, 0, 0], [-2, 0], 3);
-  assert.ok(shut.x < -4.3, `through the shut cellar door: x ${shut.x.toFixed(2)}`);
+  // The cellar door, from the cellar up the stair's foot.
+  const shut = walk(w, [-10.2, 0, 0.25], [-9.0, 0.25], 3);
+  assert.ok(shut.x < -9.3, `through the shut cellar door: x ${shut.x.toFixed(2)}`);
   const door = w.doors.near(shut.x, shut.y, shut.z);
   assert.equal(door?.spec.kind, 'cellar');
   w.doors.toggle(door!, 0);
   // Stand back while it swings (it will not swing through anyone), then go.
-  const back = walk(w, [shut.x, shut.y, shut.z], [-5.6, 0], 1);
+  const back = walk(w, [shut.x, shut.y, shut.z], [-10.6, 0.25], 1);
   wait(w, 1, DOOR.swing + 0.1);
-  const through = walk(w, [back.x, back.y, back.z], [-2, 0]);
-  assert.ok(through.x > -2.4, `through the open cellar door: stopped at x ${through.x.toFixed(2)}`);
+  const through = walk(w, [back.x, back.y, back.z], [-8.2, 0.25]);
+  assert.ok(through.x > -8.6, `through the open cellar door: stopped at x ${through.x.toFixed(2)}`);
   // An inner door too: hall to kitchen.
   const kitchen = w.doors.list.find((d) => d.spec.name === 'the kitchen door')!;
   const hall = walk(w, [-9.9, 2.7, 0], [-9.9, 3], 3);
@@ -70,8 +70,8 @@ test('a door does not swing through whoever stands in its way', () => {
   const w = world();
   const door = w.doors.list.find((d) => d.spec.kind === 'cellar')!;
   w.doors.toggle(door, 0);
-  // Standing just inside the cellar, where it opens to.
-  for (let t = 0; t < 2; t += 1 / 60) w.doors.step(1 / 60, t, -3.9, 0.3, 1.75, 0.0, MOVE.radius, w.blockers);
+  // Standing just inside the cellar, where it opens to (it swings west, into the cellar).
+  for (let t = 0; t < 2; t += 1 / 60) w.doors.step(1 / 60, t, -9.8, 0.3, 1.75, 0.55, MOVE.radius, w.blockers);
   assert.ok(door.open < 1, 'held');
   wait(w, 2, DOOR.swing + 0.1);
   assert.equal(door.open, 1, 'and opens once one steps away');

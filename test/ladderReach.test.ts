@@ -18,7 +18,7 @@ test("the cellar shaft's ladder is offered anywhere round its rim, not only besi
   }
   assert.ok(floors > 60, 'the chamber has floor all round the hole');
   // Coming out of the passage, the ladder is offered before one is at the hole.
-  assert.ok(offersLadder(S, 13.3, 0, 0, false));
+  assert.ok(offersLadder(S, 3.8, 0, 0, false));
 });
 
 test('the offer holds a little farther out than it starts (no flicker), and is gone well away or off the floor level', () => {
@@ -33,7 +33,7 @@ test('the offer holds a little farther out than it starts (no flicker), and is g
 test('the walk to the ladder from the far side goes round the hole, never over it, and ends where one gets on', () => {
   const [lx, lz] = ladderTop(S);
   const p: [number, number] = [0, 0];
-  for (const [x0, z0] of [[13.3, 0], [13.6, 0.4], [15, -2.2], [15, 2.3], [16.8, 0.5]]) {
+  for (const [x0, z0] of [[3.8, 0], [4.1, 0.4], [5.5, -2.2], [5.5, 2.3], [7.3, 0.5]]) {
     const len = rimWalk(x0, z0, lx, lz, [S.x, S.z, S.r], 0, p);
     assert.ok(len < 9, `a short walk round (${len.toFixed(1)} m)`);
     for (let f = 0; f <= 1; f += 0.02) {
