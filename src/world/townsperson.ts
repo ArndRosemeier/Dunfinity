@@ -15,6 +15,25 @@ export interface Manner {
   readonly talk: number;
 }
 
+/** What hearing and talking ask of a person: where they are, how near they hear, how long they talk, and when they last did. */
+export interface Person {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly manner: { readonly reach: number; readonly talk: number };
+  talkAt: number;
+}
+
+/** Whether one standing at (x, y, z) is near enough to call on `person`: on their floor and within their reach. */
+export function canHear(person: Person, x: number, y: number, z: number): boolean {
+  return Math.abs(y - person.y) < 1.2 && Math.hypot(x - person.x, z - person.z) < person.manner.reach;
+}
+
+/** Whether `person` is talking at `now` (their hands go, and they stand still for it). */
+export function talking(person: Person, now: number): boolean {
+  return now - person.talkAt < person.manner.talk;
+}
+
 export class Townsperson {
   readonly y: number = TOWN.ground;
   readonly vx = 0;
@@ -25,8 +44,8 @@ export class Townsperson {
   yaw: number;
   talkAt = -Infinity;
 
-  /** At (x, z), looking out at the street along `street` (a yaw). */
-  constructor(readonly x: number, readonly z: number, private readonly street: number, private readonly manner: Manner) {
+  /** At (x, z), looking out at the street along `street` (a yaw), with their own reach and manner. */
+  constructor(readonly x: number, readonly z: number, private readonly street: number, readonly manner: Manner) {
     this.yaw = street;
   }
 
@@ -35,16 +54,6 @@ export class Townsperson {
     const b = new Float32Array(BLOCKER_STRIDE);
     b.set([this.x, this.z, 0.25, 0.25, 1, 0, this.y, this.y + 1.6]);
     return b;
-  }
-
-  /** Whether one standing at (x, z) is near enough to talk to them. */
-  canHear(x: number, y: number, z: number): boolean {
-    return Math.abs(y - this.y) < 1.2 && Math.hypot(x - this.x, z - this.z) < this.manner.reach;
-  }
-
-  /** Whether they are talking at `now` (their hands go). */
-  talking(now: number): boolean {
-    return now - this.talkAt < this.manner.talk;
   }
 
   /** Turn by `dt` towards someone at (x, z) if they are near, else back to the street. */

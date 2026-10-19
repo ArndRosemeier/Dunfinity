@@ -14,6 +14,7 @@ import { TOWN, TOWN_SEED, VILLAGE, townGround } from '../gen/town';
 import { alongPolyline, closestOnPolyline, polylineLength } from '../gen/polyline';
 import type { Road } from '../gen/village';
 import { turnTowards } from '../creatures/creature';
+import { canHear, talking } from './townsperson';
 
 export const VILLAGERS = {
   /** How many walk the village, and how many of them start on grandma's street. */
@@ -159,6 +160,8 @@ export class Villager {
   readonly line: string;
   /** Whether they are one of the few on her street who answer E (the rest only greet). */
   readonly talks: boolean;
+  /** How near they hear, and how long they talk (the Townsperson shape: src/world/townsperson.ts). */
+  readonly manner = VILLAGERS.call;
   /** When they last greeted or were called on (s), and how long they stop for a greeting. */
   talkAt = -Infinity;
   private greetUntil = -Infinity;
@@ -211,7 +214,7 @@ export class Villager {
     // Someone just ahead: stop and wait, turned to them (no stepping back and forth). A greeting
     // or a conversation stops them a while too, facing whoever they are speaking to.
     const ax = px - this.x, az = pz - this.z, ad = Math.hypot(ax, az);
-    const held = now < this.greetUntil || this.talking(now);
+    const held = now < this.greetUntil || talking(this, now);
     this.waiting = held || (ad < VILLAGERS.wait && ax * hx + az * hz > -0.2);
     if (!this.waiting && now >= this.until && this.rng.chance(VILLAGERS.stop.chance * dt)) this.until = now + this.rng.range(...VILLAGERS.stop.s);
     let wantYaw = Math.atan2(-hx, -hz);
@@ -220,16 +223,6 @@ export class Villager {
     this.yaw = turnTowards(this.yaw, wantYaw, VILLAGERS.turn * dt);
     this.vx = dt > 0 ? (this.x - ox) / dt : 0;
     this.vz = dt > 0 ? (this.z - oz) / dt : 0;
-  }
-
-  /** Whether one standing at (x, y, z) is near enough to call on them. */
-  canHear(x: number, y: number, z: number): boolean {
-    return Math.abs(y - this.y) < 1.2 && Math.hypot(x - this.x, z - this.z) < VILLAGERS.call.reach;
-  }
-
-  /** Whether they are talking at `now` (their hands go, and they stand still for it). */
-  talking(now: number): boolean {
-    return now - this.talkAt < VILLAGERS.call.talk;
   }
 
   /** Call on them at `now`: the one line that is theirs, the same every game. */
@@ -305,7 +298,7 @@ export function villagers(): Villager[] {
 export function callableVillager(list: readonly Villager[], x: number, y: number, z: number): Villager | null {
   let best: Villager | null = null, near = Infinity;
   for (const v of list) {
-    if (!v.talks || !v.canHear(x, y, z)) continue;
+    if (!v.talks || !canHear(v, x, y, z)) continue;
     const d = (v.x - x) ** 2 + (v.z - z) ** 2;
     if (d < near) { near = d; best = v; }
   }

@@ -4838,13 +4838,5 @@
   {
     "key": "idiom: [.join .map] in dunfinity/app/leadsView.ts + dunfinity/app/letterView.ts + dunfinity/app/stepsView.ts",
     "reason": "a list drawn as HTML lines (map each to its markup, join): one expression per panel, each its own markup; nothing to fold"
-  },
-  {
-    "key": "same name: dunfinity/world/townsperson.ts#canHear + dunfinity/world/villagers.ts#canHear",
-    "reason": "the Townsperson/Talker shape the E ladder asks of both: a stander hears one within its Manner's reach, a walker within VILLAGERS.call.reach; the shape is the seam, the numbers differ"
-  },
-  {
-    "key": "same name: dunfinity/world/townsperson.ts#talking + dunfinity/world/villagers.ts#talking",
-    "reason": "the same shape again: how long they go on talking after one calls on them (a stander's Manner, a walker's VILLAGERS.call.talk); two lines each, kept as the one shape"
   }
 ]

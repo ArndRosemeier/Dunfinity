@@ -7,6 +7,7 @@ import { CHIMNEYS, chimneysOf } from '../src/gen/chimneys';
 import { puffAt, type Puff } from '../src/world/smoke';
 import { CAT, CAT_SEED, catAt, type Cat } from '../src/world/cat';
 import { callableVillager, villagers } from '../src/world/villagers';
+import { canHear } from '../src/world/townsperson';
 
 const aBird = (): Bird => ({ x: 0, y: 0, z: 0, yaw: 0, flap: 0, span: 1 });
 const aPuff = (): Puff => ({ x: 0, y: 0, z: 0, size: 0, alpha: 0, shade: 1 });
@@ -100,8 +101,8 @@ test('you can call on a villager', () => {
   const i = all.indexOf(v), again = villagers()[i];
   assert.equal(again.line, line, 'and the same every game');
   assert.equal(again.greeting, v.greeting, 'the greeting too');
-  assert.ok(v.canHear(v.x + 1.5, v.y, v.z), 'within reach');
-  assert.ok(!v.canHear(v.x + 3, v.y, v.z), 'beyond it');
+  assert.ok(canHear(v, v.x + 1.5, v.y, v.z), 'within reach');
+  assert.ok(!canHear(v, v.x + 3, v.y, v.z), 'beyond it');
   assert.equal(callableVillager([v], v.x + 1, v.y, v.z), v, 'the nearest in reach');
   assert.equal(callableVillager([v], v.x + 5, v.y, v.z), null, 'nothing when none is near');
   const quiet = all.find((x) => !x.talks)!;

@@ -14,7 +14,7 @@
  */
 import { CELLAR } from '../gen/cellar';
 import { heirName, type Fallen } from '../gen/notary';
-import { Townsperson } from './townsperson';
+import { canHear, Townsperson } from './townsperson';
 
 export const GRANDMA = {
   /** Where she rises: beside her chair, between it and the arch, in the round room. */
@@ -173,7 +173,7 @@ export class Grandma extends Townsperson {
     if (this.arrivedAt < 0) this.arrivedAt = now;
     if (this.mode !== 'away') this.turn(px, pz, dt);
     const t = now - this.since;
-    if (this.mode === 'away' && this.waiting && this.canHear(px, py, pz) && now - this.arrivedAt > GRANDMA.quiet) {
+    if (this.mode === 'away' && this.waiting && canHear(this, px, py, pz) && now - this.arrivedAt > GRANDMA.quiet) {
       this.waiting = false;
       const l = this.line(kin);
       if (l) { this.said = l; this.mode = 'rise'; this.since = now; this.yaw = Math.atan2(-(px - this.x), -(pz - this.z)); }
