@@ -34,7 +34,7 @@ test("grandma's street: open sky over the cobbles, the houses solid, the cellar 
     assert.ok(VILLAGE.squareEdge(h.cx, h.cz) > 0, 'a building on the square');
   }
   // Rock stays over every space of the cellar: none of it opens to the sky. (Under her house the
-  // house itself roofs the cellar, its vault 0.5 m under the house's floor; the rest is under rock.)
+  // house itself roofs the cellar, its vault 1.4 m under the house's floor; the rest is under rock.)
   for (let x = -16; x <= 9.5; x += 0.5) for (const z of [-2, 0, 2]) {
     if (level.sdf(x, 1.5, z) <= 0) continue;
     if (x > TOWN.grandma.x[0] && x < TOWN.grandma.x[1] && Math.abs(z) < TOWN.grandma.z[1]) continue;

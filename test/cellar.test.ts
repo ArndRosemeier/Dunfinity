@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { CELLAR, CELLAR_SHAFT, stairFloorAt, stairWell } from '../src/gen/cellar';
+import { CELLAR, CELLAR_SHAFT, stairFloorAt } from '../src/gen/cellar';
 import { quarryProps, PROP_TILE } from '../src/gen/quarryProps';
 import { heirName, notaryLetter, notaryList } from '../src/gen/notary';
 import { Campfire, type Rester } from '../src/world/fire';
@@ -9,7 +9,7 @@ import { BLOCKER_STRIDE, Blockers } from '../src/world/blockers';
 import { Body } from '../src/world/traverse/body';
 
 const level = new Level(1, 0);
-const F = CELLAR.house.floor;
+const F = CELLAR.house.floor, FC = CELLAR.cellar.floor;
 
 /** Everything in the way on the cellar's tiles (the cellar's own, the room's, the passage's and the chamber's). */
 function world(): Blockers {
@@ -29,13 +29,16 @@ function walk(start: readonly [number, number, number], path: readonly (readonly
   return b;
 }
 
+/** From the middle of the cellar through the cellar door, up the lower flight, round the half-landing and up the upper flight into the hall. */
+const UP_THE_STAIRS = [[-11.9, -1], [-7.95, -1], [-7.95, 0], [-8.5, 0], [-11.0, 0], [-11.6, 0]] as const;
+
 /**
- * Up the turned stair into the hall, from the cellar floor: where it went (a point every 0.25 m),
- * which way it faced as it set off on each leg, and where it arrived.
+ * Up the turned stair into the hall, from the middle of the cellar's floor: where it went (a point
+ * every 0.25 m), which way it faced as it set off on each leg, and where it arrived.
  */
 function climb(): { body: Body; path: [number, number, number][]; headings: number[] } {
-  const blockers = world(), b = new Body(-10.2, 0, 0.25), dt = 1 / 120;
-  const legs = [[-9.4, 0.25], [-7.9, 0.25], [-7.9, -0.65], [-8.4, -0.65], [-10.5, -0.65], [-11.2, -0.65]] as const;
+  const blockers = world(), b = new Body(-13.1, FC, -1), dt = 1 / 120;
+  const legs = UP_THE_STAIRS;
   const path: [number, number, number][] = [[b.x, b.y, b.z]], headings: number[] = [];
   for (const [tx, tz] of legs) {
     headings.push(Math.atan2(-(tx - b.x), -(tz - b.z)));
@@ -51,25 +54,37 @@ function climb(): { body: Body; path: [number, number, number][]; headings: numb
 test("depth 0 is grandma's cellar, the same for every seed", () => {
   assert.equal(level.band.id, 'cellar');
   const other = new Level(77, 0);
-  for (const [x, y, z] of [[-11, 1, 0], [-2.9, 1, 0], [2, 1, 0.3], [5.5, 1, 0]]) assert.equal(level.sdf(x, y, z), other.sdf(x, y, z));
+  for (const [x, y, z] of [[-13, 0, 0], [-9, 1, -1], [-2.9, 1, 0], [2, 1, 0.3], [5.5, 1, 0]]) assert.equal(level.sdf(x, y, z), other.sdf(x, y, z));
 });
 
 test('the cellar lies under the house', () => {
-  const H = CELLAR.house;
-  for (let x = -14.85; x <= -7.55; x += 0.35) for (let z = -2.45; z <= 2.45; z += 0.35) {
-    // (the stairwell, and the half metre of its wall, is the one place the two airs join)
-    if (stairWell(x, z) > -0.5) continue;
-    assert.ok(x >= H.x[0] && x <= H.x[1] && z >= H.z[0] && z <= H.z[1], `under the house at ${x.toFixed(1)}, ${z.toFixed(1)}`);
-    // Up the column: the cellar's air, then rock, then the house's air. The band between them is 0.5 m
-    // (a thinner one would not mesh, and the hall would open into the cellar).
-    let below = -Infinity, above = Infinity;
-    for (let y = 0.5; y < 5; y += 0.05) {
-      if (level.sdf(x, y, z) <= 0) continue;
-      if (y < H.floor - 0.3) below = y;
-      else if (above === Infinity) above = y;
+  const H = CELLAR.house, cel = CELLAR.cellar;
+  assert.ok(cel.x[0] >= H.x[0] && cel.x[1] <= H.x[1] && cel.z[0] >= H.z[0] && cel.z[1] <= H.z[1], 'its plan is inside the house');
+  for (let x = cel.x[0] + 0.15; x < cel.x[1]; x += 0.35) for (let z = cel.z[0] + 0.15; z < cel.z[1]; z += 0.35) {
+    // Up the column: the cellar's air, then rock, then the hall's air.
+    assert.ok(level.sdf(x, cel.floor + 1.2, z) > 0, `the cellar's air at ${x.toFixed(1)}, ${z.toFixed(1)}`);
+    assert.ok(level.sdf(x, 2, z) < 0, `the floor between at ${x.toFixed(1)}, ${z.toFixed(1)}`);
+    assert.ok(level.sdf(x, H.floor + 1.2, z) > 0, `the hall's air at ${x.toFixed(1)}, ${z.toFixed(1)}`);
+  }
+});
+
+test("the hall's floor and the cellar's vault are drawn where they are, on the terrain's one-metre grid", () => {
+  // The terrain is meshed from the field sampled at whole metres (src/world/chunks.ts BASE_STEP), a
+  // surface placed where the field crosses zero between two samples. Over the cellar the samples at
+  // y = 2 must be rock and the crossings land on the floor and on the vault, not between them.
+  const H = CELLAR.house, cel = CELLAR.cellar, W = CELLAR.stairs.well;
+  const cross = (x: number, z: number, y0: number): number => {
+    const a = level.sdf(x, y0, z), b = level.sdf(x, y0 + 1, z);
+    return Math.sign(a) === Math.sign(b) ? NaN : y0 + a / (a - b);
+  };
+  for (let x = Math.floor(H.x[0]) + 1; x < H.x[1]; x++) for (let z = Math.floor(H.z[0]) + 1; z < H.z[1]; z++) {
+    if (x >= W.x[0] - 0.5 && x <= W.x[1] && z >= W.z[0] - 0.5 && z <= W.z[1] + 0.5) continue; // (the stairwell and its rails)
+    const floor = cross(x, z, 2);
+    assert.ok(Math.abs(floor - H.floor) < 0.06, `the hall's floor at ${x}, ${z} drawn at ${floor.toFixed(2)}`);
+    if (x > cel.x[0] && x < cel.x[1] && z > cel.z[0] && z < cel.z[1]) {
+      const vault = cross(x, z, 1), want = cel.spring + (cel.crown - cel.spring) * Math.sqrt(1 - (z / cel.z[1]) ** 2);
+      assert.ok(Math.abs(vault - want) < 0.06, `the vault at ${x}, ${z} drawn at ${vault.toFixed(2)}, not ${want.toFixed(2)}`);
     }
-    assert.ok(below > 0, `the cellar's air at ${x.toFixed(1)}, ${z.toFixed(1)}`);
-    assert.ok(above - below >= 0.5, `rock band ${(above - below).toFixed(2)} m at ${x.toFixed(1)}, ${z.toFixed(1)}`);
   }
 });
 
@@ -78,9 +93,9 @@ test('one walks from the armchair through the low doorway and the broken arch to
   assert.deepEqual([sx, sy, sz], [CELLAR.start.x, 0, CELLAR.start.z]);
   // From the armchair west through the low doorway into the cellar; and east through the arch, the
   // passage and into the chamber round the shaft (stopping short of its rim guard).
-  const west = walk([sx, 0, sz], [[-4.6, 1.3], [-3.9, 1.65], [-8.2, 1.65]]);
-  assert.ok(west.x < -7.6, `through the low doorway: stopped at x ${west.x.toFixed(2)}`);
-  assert.ok(Math.abs(west.y) < 0.2, `on the cellar's floor: y ${west.y.toFixed(2)}`);
+  const west = walk([sx, 0, sz], [[-4.2, 1.6], [-3.9, 1.9], [-11.6, 1.9], [-13, 0]]);
+  assert.ok(west.x < -12.6, `through the low passage into the cellar: stopped at x ${west.x.toFixed(2)}, z ${west.z.toFixed(2)}`);
+  assert.ok(Math.abs(west.y - FC) < 0.2, `on the cellar's floor: y ${west.y.toFixed(2)}`);
   const east = walk([sx, 0, sz], [[sx, 1.2], [-2.2, 1.2], [-2.2, 0], [1.5, 0], [3.4, 0]]);
   assert.ok(east.x > 3.1, `through the arch and the passage into the chamber: stopped at x ${east.x.toFixed(2)}`);
   // Head-high air and the floor at 0 all along the room, the arch and the passage.
@@ -91,7 +106,7 @@ test('one walks from the armchair through the low doorway and the broken arch to
   // Rock beyond the walls, and none of the Quarry's halls round about.
   for (const [x, z] of [[-11, 3.5], [5.5, 3.8], [2, 2.5], [-15.8, 0], [10, 0], [0, 30]]) assert.ok(level.sdf(x, 1.2, z) < 0, `rock at ${x}, ${z}`);
   // The stairs rise into the house.
-  assert.ok(level.groundAt(-10.0, -0.65) > 2.2 && Math.abs(level.groundAt(-10.6, -0.65) - F) < 0.05, 'up the stairs is her ground floor');
+  assert.ok(level.groundAt(-10.4, 0) > 2.2 && Math.abs(level.groundAt(-10.9, 0) - F) < 0.05, 'up the stairs is her ground floor');
 });
 
 test('the stairs turn', () => {
@@ -163,25 +178,25 @@ test("up the stairs is her ground floor: a body walks into the hall, the kitchen
     assert.ok(Math.abs(level.groundAt(x, z) - F) < 0.1, `floor at ${x}, ${z}: ${level.groundAt(x, z).toFixed(2)}`);
   }
   assert.ok(level.sdf(-12, F + 2.9, 0) < 0, 'a ceiling');
-  assert.ok(level.sdf(-12, 1.2, 0) > 0.3, 'and the cellar air under the hall');
+  assert.ok(level.sdf(-12, FC + 1.2, 0) > 0.3, 'and the cellar air under the hall');
   // From the foot of the stairs up into the hall, then through each doorway.
-  const go = (path: readonly (readonly [number, number])[]): Body => walk([-10.2, 0, 0.25], [[-9.4, 0.25], [-7.9, 0.25], [-7.9, -0.65], [-8.4, -0.65], [-10.5, -0.65], ...path]);
+  const go = (path: readonly (readonly [number, number])[]): Body => walk([-13.1, FC, -1], [...UP_THE_STAIRS, ...path]);
   const near = (b: Body, x: number, z: number) => Math.hypot(b.x - x, b.z - z) < 0.4 && Math.abs(b.y - F) < 0.2;
-  const kitchen = go([[-10.3, -0.4], [-9.9, 0.9], [-9.9, 1.8], [-10.6, 3.4]]);
+  const kitchen = go([[-11.4, 0.6], [-11.4, 1.8], [-10.6, 3.4]]);
   assert.ok(near(kitchen, -10.6, 3.4), `kitchen: ${kitchen.x.toFixed(2)}, ${kitchen.y.toFixed(2)}, ${kitchen.z.toFixed(2)}`);
-  const bedroom = go([[-10.9, -0.3], [-11.0, 0.9], [-13.1, 0.9], [-13.1, 2.0]]);
+  const bedroom = go([[-13.1, 0.6], [-13.1, 2.0]]);
   assert.ok(near(bedroom, -13.1, 2.0), `bedroom: ${bedroom.x.toFixed(2)}, ${bedroom.z.toFixed(2)}`);
-  const living = go([[-11.5, -0.3], [-11.7, -0.9], [-11.7, -2.6]]);
+  const living = go([[-11.7, -0.9], [-11.7, -2.6]]);
   assert.ok(near(living, -11.7, -2.6), `living room: ${living.x.toFixed(2)}, ${living.z.toFixed(2)}`);
-  // The thin walls hold: straight from the hall at the kitchen's wall does not get through it.
-  const walled = walk([-10.8, F, 0.5], [[-10.8, 3]]);
+  // The thin walls hold: straight from the hall at the bedroom's wall does not get through it.
+  const walled = walk([-14.2, F, 0.5], [[-14.2, 3]]);
   assert.ok(walled.z < 1.1, `through the wall: ${walled.z.toFixed(2)}`);
 });
 
 test("a body fits through every way out of grandma's room: the low doorway, the arch, on to the shaft and up the stairs", () => {
   // West through the low doorway into the cellar.
-  const west = walk([CELLAR.start.x, 0, CELLAR.start.z], [[-4.6, 1.3], [-3.9, 1.65], [-8.2, 1.65]]);
-  assert.ok(west.x < -7.6, `through the low doorway: stopped at x ${west.x.toFixed(2)}`);
+  const west = walk([CELLAR.start.x, 0, CELLAR.start.z], [[-4.2, 1.6], [-3.9, 1.9], [-11.6, 1.9]]);
+  assert.ok(west.x < -11.2, `through the low passage: stopped at x ${west.x.toFixed(2)}`);
   // East through the arch and into the chamber, short of the shaft's rim guard.
   const east = walk([CELLAR.start.x, 0, CELLAR.start.z], [[-4.7, 1.2], [-2.2, 1.2], [-2.2, 0], [1.5, 0], [7.5, 0]]);
   assert.ok(east.x > 3.1, `through the arch: stopped at x ${east.x.toFixed(2)}`);
@@ -194,8 +209,8 @@ test("making straight for a way out from anywhere in her room gets one through: 
   const go = (sx: number, sz: number, tx: number, tz: number): Body => walk([sx, 0, sz], [[tx, tz]]);
   // From round the wall of the room, at a slant to the low doorway (west); not from behind her chair or table.
   for (const [sx, sz] of [[-4.6, 0.0], [-4.6, -0.8], [-4.0, 1.2], [-3.0, 1.5], [-2.2, 0.8], [-2.2, -0.8]]) {
-    const w = go(sx, sz, -9.1, 1.8);
-    assert.ok(w.x < -7.4 && w.mode === 'walk', `to the low doorway from (${sx}, ${sz}): stopped at (${w.x.toFixed(2)}, ${w.z.toFixed(2)}), ${w.mode}`);
+    const w = go(sx, sz, -7.0, 1.9);
+    assert.ok(w.x < -6.6 && w.mode === 'walk', `to the low passage from (${sx}, ${sz}): stopped at (${w.x.toFixed(2)}, ${w.z.toFixed(2)}), ${w.mode}`);
   }
   // At a slant to the arch (east).
   for (const [sx, sz] of [[-3.0, 1.5], [-3.0, -1.5], [-1.8, 1.8], [-1.8, -1.8], [-1.0, 1.4], [-1.0, -1.4]]) {
@@ -213,14 +228,17 @@ test('its one way down is the old shaft, and level 1 has its way up', () => {
 });
 
 test('the cellar is furnished, lit, and its things are in the air', () => {
-  // Its own things still stand on its floor (y = 0), though the ground over it is the house's
-  // floor: the props are placed at their own heights, never through `groundAt`.
-  let onFloor = 0;
+  // Its own things still stand on its floors (the cellar's, the room's), though the ground over the
+  // cellar is the house's floor: the props are placed at their own heights, never through `groundAt`.
+  let onFloor = 0, inCellar = 0;
   for (const [tx, tz] of [[-1, 0], [-1, -1]] as const) {
     const t = quarryProps(level, tx, tz);
-    for (let i = 0; i < t.blockers.length; i += BLOCKER_STRIDE) if (Math.abs(t.blockers[i + 6]) < 1e-6) onFloor++;
+    for (let i = 0; i < t.blockers.length; i += BLOCKER_STRIDE) {
+      if (Math.abs(t.blockers[i + 6]) < 1e-6) onFloor++;
+      if (Math.abs(t.blockers[i + 6] - FC) < 1e-6) inCellar++;
+    }
   }
-  assert.ok(onFloor >= 5, `the cellar's things on its floor: ${onFloor}`);
+  assert.ok(onFloor >= 2 && inCellar >= 4, `the room's things on its floor: ${onFloor}, the cellar's: ${inCellar}`);
   let lit = 0, shafts = 0, solid = 0;
   for (let tz = -1; tz <= 0; tz++) for (let tx = -1; tx <= 1; tx++) {
     const t = quarryProps(level, tx, tz);

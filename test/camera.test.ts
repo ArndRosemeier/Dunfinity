@@ -34,19 +34,19 @@ test("in grandma's hall the camera does not swing through her thin walls into th
   for (let tz = -1; tz <= 0; tz++) for (let tx = -2; tx <= 0; tx++) blockers.set(`${tx},${tz}`, quarryProps(level, tx, tz).blockers);
   assert.ok(blockers.count > 0 && PROP_TILE > 0);
   const camera = stubCamera(), cam = new OrbitCamera(camera, level);
-  const eye = [-10, CELLAR.house.floor + 1.5, 0] as const;
+  const eye = [-13.9, CELLAR.house.floor + 1.5, 0] as const; // (west of the stairwell, the living room's door and her bedroom's)
   // Looking north from the hall: behind is south, through the wall into the living room.
   cam.yaw = Math.PI; cam.pitch = 0; cam.distance = 4;
   for (let i = 0; i < 60; i++) cam.follow(eye[0], eye[1], eye[2], 1 / 60);
-  assert.ok(camera.position.z < -1.5, `the rock alone lets it into the living room: z ${camera.position.z.toFixed(2)}`);
+  assert.ok(camera.position.z < -2, `the rock alone lets it into the living room: z ${camera.position.z.toFixed(2)}`);
   cam.blockers = blockers;
   const zs: number[] = [];
   for (let i = 0; i < 120; i++) { cam.follow(eye[0], eye[1], eye[2], 1 / 60); zs.push(camera.position.z); }
-  assert.ok(camera.position.z > -1.1, `through the wall: z ${camera.position.z.toFixed(2)}`);
+  assert.ok(camera.position.z > -1.6, `through the wall: z ${camera.position.z.toFixed(2)}`);
   // Held there, still: no shaking between two places.
   assert.ok(Math.max(...zs.slice(-30)) - Math.min(...zs.slice(-30)) < 1e-6, 'the camera jitters');
-  // Through a doorway (the kitchen's, north at x -10.4..-9.4, behind one looking south) it may go on.
+  // Through a doorway (the kitchen's, north at x -11.9..-10.9, behind one looking south) it may go on.
   cam.yaw = 0;
-  for (let i = 0; i < 240; i++) cam.follow(-9.9, eye[1] - 0.3, 0, 1 / 60);
+  for (let i = 0; i < 240; i++) cam.follow(-11.4, eye[1] - 0.3, 0, 1 / 60);
   assert.ok(camera.position.z > 1.3, `held at the doorway: z ${camera.position.z.toFixed(2)}`);
 });

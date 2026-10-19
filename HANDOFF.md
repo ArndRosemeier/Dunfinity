@@ -3,44 +3,47 @@
 <!-- One screen, overwritten in place. The next session — DSH or Claude Code —
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
-- **by:** `dsh/session-93e1713f-7556-403e-b238-acef9bce7fd1`
-- **at:** `2026-10-19T14:10:00Z`
-- **branch / worktree:** `main` · `/home/administrator/projects/Dunfinity`
-- **last verified:** `e7844e4` (PR #271's head) · gate `0` (full) · 566 tests, 566 pass, 0 fail, 106 s · CI green; main `6993ad8` carries it
+- **by:** `claude-code/session_01FyMJNLkFSHoPaEfNDrZzLV` (cloud)
+- **at:** `2026-10-19T13:30:00Z`
+- **branch / worktree:** `claude/wonderful-volta-9eekj9` · the cloud container's own clone (no other writer there)
+- **last verified:** this branch's head · gate `0` (full) · screenshots of the hall, the cellar, the stairwell, the landing and the passage
 
 ## Done
 
-- **The cross-tool contract** (PR #268): `HANDOFF.md`, one gate (`scripts/gate.sh`,
-  cheap `npm run build` / full `npm test`, atomic lock, codes 0/1/2/9), the journal and
-  worktree guard, `docs/CROSS-TOOL.md`, rules 8–10 in `CLAUDE.md`.
-- **The cellar under the house, down a turned stair** (PR #269): the vault spans the
-  house, its crown 0.5 m under the hall floor; a flight, a half-landing, a U-turn, a
-  second flight to the cellar door; the round room, the arch, the passage and the old
-  shaft moved west with it (shaft x 5.5).
-- **The street is alive** (PR #270): birds over the roofs, chimney smoke (the one new
-  `SMOKE` kind), a cat on the plinth, villagers who greet you once per approach, five
-  callable with E. `canHear(person, …)`/`talking(person, …)` live once in
-  `src/world/townsperson.ts`; the duplication baseline is net unchanged.
-- **The town's sounds** (PR #271): `amb_town_day` by day (the prologue keeps the night
-  bed), bird calls every 5–13 s, a church bell when one comes back up, and `town-day` as
-  a second town piece. The six MP3s are the owner-approved takes, byte-identical.
-- **Known residual (not hidden):** `groundAt(x, z)` without a body height answers the
-  *topmost* floor, so inside the cellar it returns the hall's 2.7. Way Home passes the
-  body's floor; foot IK returns null on the flat cellar floor; a poured salt line falls
-  back to flat. A body-height-aware pass over the remaining consumers is a follow-up
-  slice — do not let it be forgotten.
+- **The cellar's geometry, fixed** (follow-up to PR #269). The terrain is meshed on a
+  one-metre grid (`BASE_STEP`), and #269's 0.5 m floor between the cellar's vault (2.2) and
+  the hall's floor (2.7) had no grid point inside it: the hall, kitchen and living room had no
+  floor drawn over the cellar, and the cellar no vault (one saw up into her rooms). The stair's
+  foot was also pinched shut: no body could walk from the cellar to the stairs (the tests
+  started the climb inside the foot, so never saw it). The cellar's walls were coloured as its
+  floor (`col.floor` is the topmost floor, the hall's).
+- Now: the cellar's floor is `CELLAR.cellar.floor` −1.3 (vault 0.6/1.3, the old proportions),
+  the rock between 1.3 and 2.7 straddles the grid at y = 2; the turned stair stands in its own
+  walled well at the hall's east end (flights 1 m wide on grid lines z = 0 and z = −1), the
+  cellar door in the cellar's east wall at its foot; the low doorway is a low passage under the
+  kitchen and up stone steps to the room (a wider `mouth` at the room). Upstairs the living
+  room's wall moved to z −1.6, the kitchen's door to x [−11.9, −10.9] (the bedroom's wall to
+  x −12). `WAY.cellar` carries the cellar's floor.
+- New test: "the hall's floor and the cellar's vault are drawn where they are, on the
+  terrain's one-metre grid" (interpolates the field between grid samples, as the mesher does).
+  The climb now starts in the middle of the cellar.
+
+## Known residual (not hidden)
+
+- `groundAt(x, z)` without a body height still answers the *topmost* floor (over the cellar,
+  the hall's 2.7). The way back and the cellar's props pass their own floor. A body-height
+  pass over the remaining consumers is still a follow-up slice.
+- Any shape that sits between two airs, under 2 m across, must keep to the grid (see the note
+  on `CELLAR`); a new room under the house must be checked with the grid test.
 
 ## In flight
 
-- None. Every writer was retired with its worktree and branch.
+- None.
 
 ## Next action (one)
 
-The owner names the next slice. Unfinished thread from the town work, deliberately
-deferred: the **events** pass — a funeral procession for the previous heir when one comes
-up, a cart down the lane, a market on the square. Before dispatching anything:
-`node scripts/cos.mjs status --one-line`, `git fetch` and compare `origin/main`, then
-brief ONE writer into `worktrees/<slug>` with absolute paths.
+The owner reviews the cellar in the game and names the next slice (the deferred town
+**events** pass: a funeral procession, a cart down the lane, a market on the square).
 
 ## Open questions for the owner
 
@@ -50,4 +53,4 @@ brief ONE writer into `worktrees/<slug>` with absolute paths.
 
 - `CLAUDE.md`
 - `docs/CROSS-TOOL.md`
-- `docs/ARCHITECTURE.md` (the cellar, town-life, and sound-and-music rows)
+- `docs/ARCHITECTURE.md` (the cellar row)
