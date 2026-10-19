@@ -4,11 +4,21 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `claude-code/session_01FyMJNLkFSHoPaEfNDrZzLV` (cloud)
-- **at:** `2026-10-19T13:30:00Z`
+- **at:** `2026-10-19T16:00:00Z`
 - **branch / worktree:** `claude/wonderful-volta-9eekj9` · the cloud container's own clone (no other writer there)
 - **last verified:** this branch's head · gate `0` (full) · screenshots of the hall, the cellar, the stairwell, the landing and the passage
 
 ## Done
+
+- **Salt Sight as an aura** (this branch, after #272): `SaltSightView` draws a glow round each
+  creature, brightest at the body and fading outwards, its edge flowing, breathing, patches
+  drifting round (a conic gradient), currents of salt running round it, motes drifting off
+  (stateless: time + the creature's seed, `hash3f`). The glows go on a quarter-size canvas
+  stretched over the view (blurred where `ctx.filter` exists). Outline geometry moved to
+  `src/app/outline.ts` (tested; `saltSight.ts` itself imports the theme's fonts, so node cannot
+  load it). Checked in a preview page and in the game (depth 3, seed 1, rats round the player).
+  Observed, not changed: Salt Sight only rings what `seen(f)` passes, and low rats behind floor
+  bumps are not seen from a standing camera.
 
 - **The cellar's geometry, fixed** (follow-up to PR #269). The terrain is meshed on a
   one-metre grid (`BASE_STEP`), and #269's 0.5 m floor between the cellar's vault (2.2) and

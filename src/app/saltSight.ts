@@ -53,7 +53,7 @@ export const SALT_SIGHT = {
   layers: 10,
   bright: 0.95,
   /** How bright the glow is over the body itself, a share of its brightness at the line. */
-  within: 0.5,
+  within: 0.3,
   /** The glow is drawn this many times smaller and stretched back over the view: soft, and cheap; blurred so much more (px, at its size) where the browser can. */
   coarse: 4,
   blur: 2,
