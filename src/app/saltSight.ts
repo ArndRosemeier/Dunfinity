@@ -169,7 +169,7 @@ export class SaltSightView {
     const untested = r.known === 'untested';
     const [cr, cg, cb] = rgbOf(ringColour(r.tier, r.known));
     const flicker = still ? 1 : untested ? 0.75 + 0.25 * Math.sin(time * 3.1 + sd) * Math.sin(time * 1.3 + sd * 0.5) : r.known === 'guess' ? 0.88 + 0.12 * Math.sin(time * 2.3 + sd) : 1;
-    const breath = (still ? 1 : 1 + S.breathe * Math.sin(time * S.breatheSpeed + sd)) * flicker * (untested ? 0.6 : 1);
+    const breath = (still ? 1 : 1 + S.breathe * Math.sin(time * S.breatheSpeed + sd)) * flicker * (untested ? 0.8 : 1);
     const reach = Math.max(S.reachPx[0], Math.min(S.reachPx[1], S.reach * size));
     // Brighter and dimmer patches drifting slowly round it: the colour as a turning cone of light.
     const tint = (c: CanvasRenderingContext2D, alpha: number): CanvasGradient | string => {
@@ -208,8 +208,8 @@ export class SaltSightView {
     ctx.shadowBlur = S.glow;
     ctx.lineWidth = S.width;
     for (const [way, by, alpha] of [[1, 0, 0.75], [-0.7, reach * 0.25, 0.4]] as const) {
-      ctx.globalAlpha = (untested ? 0.8 : 1) * alpha * flicker;
-      ctx.setLineDash(untested ? [4, 6] : [Math.max(12, S.streak[0] * size), Math.max(8, S.streak[1] * size)]);
+      ctx.globalAlpha = alpha * flicker;
+      ctx.setLineDash(untested ? [Math.max(3, S.streak[0] * size * 0.15), Math.max(5, S.streak[1] * size * 0.5), Math.max(6, S.streak[0] * size * 0.35), Math.max(8, S.streak[1] * size)] : [Math.max(12, S.streak[0] * size), Math.max(8, S.streak[1] * size)]);
       ctx.lineDashOffset = -t * S.run * way + r.seed * 13;
       ctx.stroke(path(line, by, size * S.flow * (0.35 + by / reach)));
     }
