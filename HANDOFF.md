@@ -33,14 +33,25 @@
   acknowledge you). Writer on branch `cos/street-life`, worktree
   `/home/administrator/projects/Dunfinity/worktrees/street-life`. It owns: birds over
   the village, chimney smoke (one new `SMOKE` kind, shader policy), a cat on the wall,
-  villagers who greet you, and 4–6 villagers callable with E. No new sound assets (the
-  generator needs numpy/soundfile/ffmpeg and a paid API), no day clock.
+  villagers who greet you, and 4–6 villagers callable with E. No new sound assets in
+  this slice (sounds are the next one — see below), no day clock.
 
 ## Next action (one)
 
 When the writer reports LANDED: fetch `origin/cos/street-life`, run the full gate in
 that worktree, inject one named pin (e.g. drop the greeting's once-only guard), then
 open the PR and merge. If it reports BLOCKED, read its evidence before re-dispatching.
+
+## Queued after it
+
+- **The town's sounds** (new host capability, owner-flagged 2026-10-19): `or request
+  POST /audio/speech` with `bytedance-seed/seed-audio-1-0` generates sound effects from
+  a prompt — proven, the take is `worktrees/birds-candidate.mp3`, and the exact command,
+  limits and integration facts are in `worktrees/NOTES-town-slice.md`. Planned slice:
+  birds by day, a far dog, a bell, hand-added to `public/sounds/manifest.json` (MP3 is
+  fine: no ffmpeg or numpy on this host). Serialize it against the street slice — both
+  add rows to `docs/ARCHITECTURE.md`.
+
 
 ## Open questions for the owner
 
