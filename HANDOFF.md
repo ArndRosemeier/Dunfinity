@@ -4,9 +4,9 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `dsh/session-93e1713f-7556-403e-b238-acef9bce7fd1`
-- **at:** `2026-10-19T09:15:00.000Z`
+- **at:** `2026-10-19T09:13:00Z`
 - **branch / worktree:** `cos/cross-tool-contract` · `/home/administrator/projects/Dunfinity`
-- **last verified:** `c762b27` · `npm test` 551/551, 0 fail, 109 s (run before the gate existed)
+- **last verified:** `d0644da` · gate `0` (full) · 551 tests, 551 pass, 0 fail, 103 s
 
 ## Done
 
@@ -14,12 +14,13 @@
   `npm run build` / full `npm test`), the journal + worktree guard (`scripts/cos.mjs`,
   `scripts/cos-hook.mjs`, `.cos/hooks/`), `docs/CROSS-TOOL.md`, and rules 8–10 in
   `CLAUDE.md`. The PR + change-note + changelog flow is unchanged.
-- A clean checkout is now installable and checkable: `git submodule update --init &&
-  npm ci` (~40 s), then `npm test` green at `c762b27`.
+- A clean checkout is installable and checkable again: `git submodule update --init &&
+  npm ci` (~40 s); it was neither when this session started.
+- Baseline before the adoption: `npm test` at `c762b27` — 551/551, 109 s.
 
 ## In flight
 
-- None. This landing waits on the owner's merge (`cos/cross-tool-contract`).
+- The adoption PR, from `cos/cross-tool-contract` — waiting on the owner's merge.
 
 ## Next action (one)
 
