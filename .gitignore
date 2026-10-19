@@ -2,3 +2,12 @@ node_modules/
 dist/
 reports/
 *.log
+
+# The gate and the cross-tool record (docs/CROSS-TOOL.md)
+/.gate-logs/
+/.gate-lock/
+/worktrees/
+/.cos/journal.jsonl
+/.cos/worktrees
+/.cos/root-session
+/.cos/.stop-guard
