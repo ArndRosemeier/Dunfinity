@@ -22,6 +22,7 @@ import { DripView } from './props/dripView';
 import { BloomView } from './props/bloomView';
 import { HumView } from './humView';
 import { GateView } from './gateView';
+import { TownLife } from './townLife';
 import { DEFAULT_VIEW, type ChunkView } from '../world/chunks';
 import { QUALITY } from './quality';
 import { Prepared } from './prepared';
@@ -69,6 +70,8 @@ export class LevelView {
   readonly prepared = new Prepared();
   /** The gates on the walls near the viewer (src/gen/gates.ts), from the prop tiles. */
   readonly gates = new GateView();
+  /** The town alive above ground at depth 0: birds, chimney smoke and the cat (src/render/townLife.ts). */
+  readonly townLife = new TownLife();
   private lastTime = 0;
   /** The pulse in the veins running now: when it started and where from. */
   private pulse: { start: number; at: [number, number] } | null = null;
@@ -142,6 +145,7 @@ export class LevelView {
     await this.stage.add(this.blooms.root);
     await this.stage.add(this.hums.root);
     await this.stage.add(this.gates.root);
+    await this.stage.add(this.townLife.group);
     this.stream();
   }
 
@@ -292,6 +296,7 @@ export class LevelView {
     this.blooms.draw(this.level_, x, z, time);
     this.hums.draw(time);
     this.gates.draw(this.props.gates, this.level_, x, z, time);
+    this.townLife.present(this.level_, x, y, z, time);
     this.pulseVeins(x, z, time);
     this.follow(x, y, z, Math.max(0, Math.min(0.1, time - this.lastTime)));
     this.watchers.draw(this.props.watcherLists, x, z, this.camera, Math.min(0.1, time - this.lastTime));

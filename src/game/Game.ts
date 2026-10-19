@@ -65,7 +65,7 @@ import { GoblinView } from '../render/creatures/goblinView';
 import { GhostView } from '../render/creatures/ghostView';
 import { NeighbourView } from '../render/humans/neighbourView';
 import { townsfolkPool } from '../render/humans/villagerView';
-import { villagers } from '../world/villagers';
+import { callableVillager, villagers } from '../world/villagers';
 import { Neighbour, WEBER_KEY } from '../world/neighbour';
 import { Stranger, STRANGER_KEY } from '../world/stranger';
 import { KEEPER_KEY, Shopkeeper } from '../world/shopkeeper';
@@ -1501,6 +1501,10 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     const counterAt = nearKemal ? 'hardware' : nearPawn ? 'pawn' : null;
     const nearWeber = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && body.grounded && weber.canHear(body.x, body.y, body.z);
     const nearStranger = strangerHere() && !busy && !nearLadder && !nearFind && !nearNote && !nearWeber && body.grounded && stranger.canHear(body.x, body.y, body.z);
+    // The E ladder's last rung: the nearest villager who talks, once no shop, keeper, Weber, stranger,
+    // ladder, find or note offers itself first (they are all checked above).
+    const nearVillager = level.depth === 0 && !busy && !nearLadder && !nearFind && !nearNote && !nearWeber && !nearStranger && !counterAt && body.grounded
+      ? callableVillager(townsfolk, body.x, body.y, body.z) : null;
     const nearMarks = busy || tinView.open || nearLadder || nearFind || nearNote || !body.grounded ? undefined : [...level.inscriptions, ...view.props.inscriptions].find((i) => canRead(i, body.x, body.y, body.z));
     if (readView.open && (!nearMarks || controls.tap('Escape'))) readView.hide();
     const nearDoor = busy || nearLadder || nearFind || nearNote || nearMarks || !body.grounded ? null : doors.near(body.x, body.y, body.z);
@@ -1670,6 +1674,9 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
         riding = nearSun;
         riding.ridden = true;
         say('You reach up into the light, and it takes your weight. It is warm, not hot.', 4);
+      } else if (nearVillager) {
+        // The last rung: a villager of her street, who stops and faces you while they speak.
+        say(nearVillager.talk(now), 3);
       }
     }
     // Hanging from a sun: let go when it fades, when you die, or when the rock scrapes you off.
@@ -1960,7 +1967,12 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     spoken = fauna.ghosts.calls;
     if (level.depth === 0) weber.turn(body.x, body.z, dt);
     neighbourView.people.draw(level.depth === 0 ? [weber] : [], body.x, body.z, dt, now);
-    if (level.depth === 0) for (const v of townsfolk) v.stroll(dt, now, body.x, body.z);
+    if (level.depth === 0) for (const v of townsfolk) {
+      // Once each approach: the body comes within a few steps, and they turn and say their line.
+      const hello = v.acknowledge(now, body.x, body.y, body.z);
+      if (hello) say(hello, 2.5);
+      v.stroll(dt, now, body.x, body.z);
+    }
     villagerView.draw(level.depth === 0 ? townsfolk : [], body.x, body.z, dt, now);
     if (strangerHere()) stranger.turn(body.x, body.z, dt);
     strangerView.people.draw(strangerHere() ? [stranger] : [], body.x, body.z, dt, now);
@@ -2093,6 +2105,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
     else if (nearDoor) lines.push(`${E}: ${nearDoor.want ? 'shut' : 'open'} ${nearDoor.spec.name}`);
     else if (nearNote && !letterView.open) lines.push(writing!.kind === 'letter' ? `${E}: read the notary's letter` : writing!.kind === 'page' ? `${E}: read the page under the stone` : `${E}: read the note`);
     else if (nearSun) lines.push(`${E}: hang on to the sun`);
+    else if (nearVillager) lines.push(nearVillager.talking(now) ? '' : `${E}: say hello`);
     else if (campfire.resting && !tinView.open) lines.push(`Resting ${campfire.inHaven(body) ? 'in grandma\'s salt circle' : body.hidden ? 'in the miners\' shed, the door shut' : 'by the fire'}${campfire.mending ? ' (walk on to get up)' : ''}. ${keyName('KeyT')}: open grandma's tin (${tin.salt} salt)`);
     else if (!body.dead && !climb.active && body.grounded && body.health < body.maxHealth * 0.7 && !campfire.burning(timer.getElapsed()) && !fauna.after(body)) lines.push(shedOf() ? (body.hidden ? 'Stand still to rest' : 'Shut the shed door to rest') : `${keyName('KeyC')}: light a fire and rest`);
     else if (!body.dead && !climb.active) {

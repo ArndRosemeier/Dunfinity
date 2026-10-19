@@ -37,7 +37,8 @@ export const TOWN = {
 } as const;
 
 /** The town's seed: its layout, the same for every game. */
-const SEED = 1931;
+export const TOWN_SEED = 1931;
+const SEED = TOWN_SEED;
 
 /** A building of the town (src/gen/village.ts); its `role` says whose it is. */
 export type House = Building;

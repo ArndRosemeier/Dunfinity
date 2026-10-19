@@ -15,6 +15,7 @@ So even in the worst case, shaders take at most half of any stretch of time, and
 | Piece | File | What it does |
 |---|---|---|
 | Material registry | `src/render/materials.ts` | Every material is a *kind* from a closed list, and every mesh of a kind shares one material. So the set of shaders is known up front. Variation goes in vertex attributes or uniforms, never in a new material. |
+| `SMOKE` kind | `src/render/materials.ts` | A chimney's plume: a soft, camera-facing billboard per puff, alpha-blended (not added to the light like the wisps), its place, size and fade from `SMOKE_STATE`; one kind serves every chimney, so the town's smoke costs one shader, warmed with the rest. |
 | Stage | `src/render/stage.ts` | `warmUp()` renders one frame and compiles every kind against the real scene (lights, fog, render target) behind the loading screen. Then the cap switches on. `add(obj)` compiles the object first (including when it is outside the view) and only then puts it into the scene. |
 | Cap | `src/render/shaders/cap.ts` | Hands out build slots: ≤ 5 per second, ≥ 200 ms apart, one per frame. Off during warm-up. |
 | Renderer hooks | `src/render/shaders/patches.ts` | The safety net, on three r186 internals: async node builds queue one at a time behind the cap; a draw pipeline nobody compiled is created async and the object skipped until it is ready; no per-frame buffer uploads; GPU compile and link costs are timed. A hook that cannot be installed is listed in the Lab HUD. |

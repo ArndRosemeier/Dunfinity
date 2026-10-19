@@ -668,6 +668,36 @@ export const DUST = defineKind('dust', ['position', 'normal', 'color'], () => {
   return m;
 }, { cast: false, receive: false });
 
+/** Chimneys' plumes drawn at once, and the puffs in each (src/render/townLife.ts). */
+export const SMOKE_SLOTS = 6;
+export const SMOKE_PUFFS = 10;
+/**
+ * Per puff, two vec4: (its place in its plume's frame m, its size m), (its opacity 0–1, its shade).
+ * Set by `TownLife` each frame from `puffAt`; the kind's one shader reads them, so nothing compiles.
+ */
+export const SMOKE_STATE = uniformArray(Array.from({ length: SMOKE_SLOTS * SMOKE_PUFFS * 2 }, () => new Vector4()), 'vec4');
+
+/**
+ * A chimney's smoke (src/world/smoke.ts, src/gen/chimneys.ts): a soft, camera-facing billboard per
+ * puff, alpha-blended (not added to the light like the wisps), its place, size and fade from
+ * `SMOKE_STATE`. `position` is the quad's corner (−1..1); `color` says which plume and puff it is.
+ * Fed by fog off and faded by distance on the CPU: a plume is only drawn near the village.
+ * Same attributes as the solid kind.
+ */
+export const SMOKE = defineKind('smoke', ['position', 'normal', 'color'], () => {
+  const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, fog: false });
+  const tag = attribute<'vec3'>('color', 'vec3');
+  const at = tag.y.floor().mul(SMOKE_PUFFS).add(tag.x.floor()).mul(2).toInt();
+  const A = SMOKE_STATE.element(at) as unknown as Node<'vec4'>, B = SMOKE_STATE.element(at.add(1)) as unknown as Node<'vec4'>;
+  const corner = positionGeometry.xy;
+  const view = cameraViewMatrix.mul(modelWorldMatrix.mul(vec4(A.xyz, 1)));
+  m.vertexNode = cameraProjectionMatrix.mul(vec4(view.xy.add(corner.mul(A.w)), view.z, view.w));
+  // Soft round edges, pale grey, the alpha from the puff's age (thick at the start, gone at the top).
+  m.colorNode = vec3(0.74, 0.73, 0.72).mul(B.y);
+  m.opacityNode = B.x.mul(smoothstep(1, 0.1, length(corner)));
+  return m;
+}, { cast: false, receive: false });
+
 /**
  * A light seen in the air (a wisp, a sun's halo, a burning drop: src/render/creatures/wispView.ts,
  * sunView.ts): a quad turned to the camera, a white-hot core in a soft halo of its vertex colour,
