@@ -1,19 +1,25 @@
 /**
- * Grandma's Salt Sight drawn (src/game/Game.ts holds it open): a thin line of salt round each
- * creature in sight, a little off its body, coloured by how tough it is for you (pale blue easy,
- * green fair, amber risky, orange run, red deadly; src/combat/challenge.ts). A kind never fought is
- * ringed dashed and wavering in a muted colour of its rough band (harmless, dangerous, deadly); a
- * guess flickers a little; one well known holds still.
+ * Grandma's Salt Sight drawn (src/game/Game.ts holds it open): an aura of salt-light round each
+ * creature in sight, coloured by how tough it is for you (pale blue easy, green fair, amber risky,
+ * orange run, red deadly; src/combat/challenge.ts). At its heart a thin bright line of salt a
+ * little off the body; round it a glow, brightest at the body and fading with the distance from it,
+ * its edge flowing slowly round the creature like a liquid, its brightness breathing and drifting
+ * round in patches; now and then a mote of salt comes off it and drifts away, fading. A kind never
+ * fought gets a dimmer aura in a muted colour of its rough band (harmless, dangerous, deadly), its
+ * line broken and wavering; a guess flickers a little; one well known holds steady.
  *
- * Drawn on a canvas over the 3D view (not on the creature: the line goes round it). The line creeps
- * slowly like the veins on the interface's frames, and stands still for players who ask for less
- * motion (`prefers-reduced-motion`, or `ui-still` on the root).
+ * Drawn on a canvas over the 3D view (not on the creature: the aura goes round it, and the body
+ * itself is kept clear of it). Everything moving is a function of the time and the creature's own
+ * seed (the motes too: no state, no random numbers). It all stands still, motes gone, for players
+ * who ask for less motion (`prefers-reduced-motion`, or `ui-still` on the root).
  */
 import type { Camera } from 'three';
 import { toScreen } from '../render/screen';
+import { hash3f, hexToRgb } from '@futuremagic/core';
 import { THEME } from './theme';
 import { panel } from './panel';
 import { bandOf, type Knowledge, type Tier } from '../combat/challenge';
+import { along, hull, rounded, type Edge } from './outline';
 
 /** Something to ring: where it stands (its feet), which way it faces, its half width, height and whole length, and what is known of it. */
 export interface Ringed {
@@ -31,55 +37,60 @@ export interface Ringed {
 }
 
 export const SALT_SIGHT = {
-  /** How far outside the body the line runs, px, plus a share of its size on screen. */
-  pad: 7,
-  padShare: 0.12,
-  /** How far the line creeps in and out, px, and how fast. */
-  creep: 1.6,
-  speed: 0.7,
-  /** How much rounder than its box the line goes, a share of its size on screen. */
-  soften: 0.35,
-  /** The length of a step of the line, px (each bends on its own). */
-  step: 14,
-  /** The line's width and its glow, px. */
-  width: 1.6,
+  /** How far outside the body the salt line runs, px, plus a share of the body's size on screen. */
+  pad: 3,
+  padShare: 0.04,
+  /** How much rounder than its box the aura goes, a share of its size on screen. */
+  soften: 0.55,
+  /** The spacing of the points along the aura's outline, px. */
+  step: 9,
+  /** The flow: how far the aura's edge swells and falls back (a share of the size on screen, more at its outer reach), and how fast it runs round. */
+  flow: 0.13,
+  flowSpeed: 0.55,
+  /** The glow: how far it reaches out from the line (a share of the size on screen, held between these px), in how many layers, how bright at the line. */
+  reach: 0.55,
+  reachPx: [18, 100] as const,
+  layers: 10,
+  bright: 0.95,
+  /** How bright the glow is over the body itself, a share of its brightness at the line. */
+  within: 0.3,
+  /** The glow is drawn this many times smaller and stretched back over the view: soft, and cheap; blurred so much more (px, at its size) where the browser can. */
+  coarse: 4,
+  blur: 2,
+  /** Its breathing: by how much and how fast its brightness swells and falls, and how much brighter and dimmer the patches drifting round it are. */
+  breathe: 0.2,
+  breatheSpeed: 1.2,
+  patches: 0.45,
+  /** The salt at its heart: two currents running round the line, each in streaks (their length and gap, a share of the size on screen; how fast they run, px a second), their width and glow, px, and how much paler than the aura they are. */
+  streak: [0.9, 0.55] as const,
+  run: 22,
+  width: 1.2,
   glow: 9,
+  pale: 0.5,
+  /** The motes coming off: one every so many seconds (some skipped), living so long, flying so far (a share of the size, out and up), so big (px). */
+  every: 0.16,
+  skip: 0.3,
+  life: [0.8, 1.8] as const,
+  fly: 0.55,
+  mote: [1.1, 2.6] as const,
 } as const;
 
 const STYLE = `#salt-sight { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 3; }`;
 
-/** The convex hull of `pts` (Andrew's monotone chain), anticlockwise on screen. */
-export function hull(pts: readonly (readonly [number, number])[]): [number, number][] {
-  const s = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  if (s.length < 3) return s.map((q) => [q[0], q[1]]);
-  const cross = (o: readonly number[], a: readonly number[], b: readonly number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const lower: [number, number][] = [], upper: [number, number][] = [];
-  for (const q of s) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop(); lower.push([q[0], q[1]]); }
-  for (let i = s.length - 1; i >= 0; i--) { const q = s[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push([q[0], q[1]]); }
-  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+/** A smooth closed path through the midpoints of `q`, its points as the bends. */
+function curveThrough(q: readonly (readonly [number, number])[]): Path2D {
+  const p = new Path2D(), n = q.length, mid = (i: number) => [(q[i][0] + q[(i + 1) % n][0]) / 2, (q[i][1] + q[(i + 1) % n][1]) / 2] as const;
+  const m0 = mid(n - 1);
+  p.moveTo(m0[0], m0[1]);
+  for (let i = 0; i < n; i++) { const m = mid(i); p.quadraticCurveTo(q[i][0], q[i][1], m[0], m[1]); }
+  p.closePath();
+  return p;
 }
 
-/** A convex outline (`hull`) grown out by `pad`: each edge pushed out, each corner an arc. */
-export function rounded(shape: readonly (readonly [number, number])[], pad: number): [number, number][] {
-  const n = shape.length, out: [number, number][] = [];
-  let cx = 0, cy = 0;
-  for (const [x, y] of shape) { cx += x / n; cy += y / n; }
-  // Each edge's outward normal, as an angle (the side away from the middle).
-  const outward = (i: number) => {
-    const [ax, ay] = shape[i], [bx, by] = shape[(i + 1) % n];
-    let a = Math.atan2(bx - ax, -(by - ay));
-    if (Math.cos(a) * ((ax + bx) / 2 - cx) + Math.sin(a) * ((ay + by) / 2 - cy) < 0) a += Math.PI;
-    return a;
-  };
-  for (let i = 0; i < n; i++) {
-    const a0 = outward((i + n - 1) % n), a1 = outward(i), turn = Math.atan2(Math.sin(a1 - a0), Math.cos(a1 - a0));
-    const steps = Math.max(1, Math.ceil(Math.abs(turn) / 0.3));
-    for (let k = 0; k <= steps; k++) {
-      const a = a0 + (turn * k) / steps;
-      out.push([shape[i][0] + Math.cos(a) * pad, shape[i][1] + Math.sin(a) * pad]);
-    }
-  }
-  return out;
+/** A theme colour (#rrggbb) as 0..255 channels. */
+function rgbOf(hex: string): [number, number, number] {
+  const [r, g, b] = hexToRgb(parseInt(hex.slice(1), 16));
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
 /** The colour of a tier (a kind never fought: its rough band's, muted). */
@@ -92,6 +103,9 @@ export class SaltSightView {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly still = matchMedia('(prefers-reduced-motion: reduce)');
   private shown = false;
+  /** The glows, drawn small (`SALT_SIGHT.coarse`) and laid over the view stretched. */
+  private readonly haze = document.createElement('canvas');
+  private readonly hctx = this.haze.getContext('2d')!;
 
   constructor(host: HTMLElement) {
     this.canvas = panel(host, 'canvas', 'salt-sight', STYLE);
@@ -112,51 +126,115 @@ export class SaltSightView {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.shown = true;
     const still = this.still.matches || document.documentElement.classList.contains('ui-still');
-    for (const r of them) {
-      const pts = this.corners(camera, r);
-      if (pts.length < 3) continue;
-      const shape = hull(pts);
-      let cx = 0, cy = 0;
-      for (const [x, y] of shape) { cx += x; cy += y; }
-      cx /= shape.length; cy /= shape.length;
-      const size = Math.max(...shape.map(([x, y]) => Math.hypot(x - cx, y - cy)));
-      const pad = SALT_SIGHT.pad + SALT_SIGHT.padShare * size;
-      const t = still ? 0 : time * SALT_SIGHT.speed;
-      // Round the body's outline out by `pad` (its corners become arcs), then cut it into short steps,
-      // each creeping in and out on its own: a line of salt, not a drawn box.
-      // Drawn in towards the middle first and grown out by as much more: rounder, like a body, not a box.
-      const inset = Math.min(SALT_SIGHT.soften * size, 60);
-      const soft = shape.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1, k = Math.min(inset, d * 0.9); return [x - ((x - cx) / d) * k, y - ((y - cy) / d) * k] as const; });
-      const round = rounded(hull(soft), pad + inset);
-      const ring: (readonly [number, number])[] = [];
-      for (let i = 0; i < round.length; i++) {
-        const [ax, ay] = round[i], [bx, by] = round[(i + 1) % round.length], steps = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / SALT_SIGHT.step));
-        for (let k = 0; k < steps; k++) {
-          const x = ax + ((bx - ax) * k) / steps, y = ay + ((by - ay) * k) / steps, j = ring.length;
-          const d = Math.hypot(x - cx, y - cy) || 1, out = SALT_SIGHT.creep * (Math.sin(t + r.seed * 7.31 + j * 0.9) + 0.5 * Math.sin(t * 1.7 + r.seed * 3.1 + j * 1.9));
-          ring.push([x + ((x - cx) / d) * out, y + ((y - cy) / d) * out]);
-        }
+    const k = 1 / SALT_SIGHT.coarse, hw = Math.ceil(innerWidth * k), hh = Math.ceil(innerHeight * k), hz = this.hctx;
+    if (this.haze.width !== hw || this.haze.height !== hh) { this.haze.width = hw; this.haze.height = hh; }
+    hz.setTransform(1, 0, 0, 1, 0, 0);
+    hz.clearRect(0, 0, hw, hh);
+    hz.setTransform(k, 0, 0, k, 0, 0);
+    if ('filter' in hz) hz.filter = `blur(${SALT_SIGHT.blur}px)`;
+    for (const r of them) this.aura(camera, r, time, still);
+    // The glows under the lines and motes, stretched over the view: their light added.
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.haze, 0, 0, hw * SALT_SIGHT.coarse, hh * SALT_SIGHT.coarse);
+    ctx.restore();
+  }
+
+  /** One creature's aura: the glow, the salt line at its heart, the motes coming off it. */
+  private aura(camera: Camera, r: Ringed, time: number, still: boolean): void {
+    const ctx = this.ctx, S = SALT_SIGHT, pts = this.corners(camera, r);
+    if (pts.length < 3) return;
+    const shape = hull(pts);
+    let cx = 0, cy = 0;
+    for (const [x, y] of shape) { cx += x; cy += y; }
+    cx /= shape.length; cy /= shape.length;
+    const size = Math.max(...shape.map(([x, y]) => Math.hypot(x - cx, y - cy)));
+    const pad = S.pad + S.padShare * size, t = still ? 0 : time, sd = r.seed * 7.31;
+    // The body's outline drawn in towards its middle and grown out again: rounder, like a body, not a box.
+    const inset = Math.min(S.soften * size, 60);
+    const soft = hull(shape.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1, k = Math.min(inset, d * 0.9); return [x - ((x - cx) / d) * k, y - ((y - cy) / d) * k] as const; }));
+    const line = along(rounded(soft, inset + pad), S.step);
+    if (line.length < 3) return;
+    // The flow: swellings running round the outline (u: the way round, 0..1), each its own speed.
+    const flow = (u: number) => {
+      const a = u * Math.PI * 2, ft = t * S.flowSpeed;
+      return Math.sin(a * 2 + ft * 1.0 + sd) * 0.5 + Math.sin(a * 3 - ft * 0.7 + sd * 1.7) * 0.32 + Math.sin(a * 5 + ft * 1.6 + sd * 2.3) * 0.18;
+    };
+    /** The outline pushed out `by` px and swollen by the flow times `swell` px: a closed smooth path. */
+    const path = (from: Edge[], by: number, swell: number): Path2D => {
+      const q = from.map((e) => { const o = by + swell * flow(e.u); return [e.x + e.nx * o, e.y + e.ny * o] as const; });
+      return curveThrough(q);
+    };
+    const untested = r.known === 'untested';
+    const [cr, cg, cb] = rgbOf(ringColour(r.tier, r.known));
+    const flicker = still ? 1 : untested ? 0.75 + 0.25 * Math.sin(time * 3.1 + sd) * Math.sin(time * 1.3 + sd * 0.5) : r.known === 'guess' ? 0.88 + 0.12 * Math.sin(time * 2.3 + sd) : 1;
+    const breath = (still ? 1 : 1 + S.breathe * Math.sin(time * S.breatheSpeed + sd)) * flicker * (untested ? 0.8 : 1);
+    const reach = Math.max(S.reachPx[0], Math.min(S.reachPx[1], S.reach * size));
+    // Brighter and dimmer patches drifting slowly round it: the colour as a turning cone of light.
+    const tint = (c: CanvasRenderingContext2D, alpha: number): CanvasGradient | string => {
+      if (!c.createConicGradient) return `rgba(${cr},${cg},${cb},${alpha})`;
+      const g = c.createConicGradient(t * 0.35 + sd, cx, cy);
+      for (let k = 0; k <= 6; k++) {
+        const w = k === 6 ? 0 : k, lit = 1 - S.patches * (0.5 + 0.5 * Math.sin(w * 2.1 + sd * 3 + t * 0.6 * (w % 2 ? 1 : -1)));
+        g.addColorStop(k / 6, `rgba(${cr},${cg},${cb},${alpha * lit})`);
       }
-      const colour = ringColour(r.tier, r.known);
-      const flicker = still ? 1 : r.known === 'untested' ? 0.7 + 0.2 * Math.sin(time * 3.1 + r.seed * 5) : r.known === 'guess' ? 0.8 + 0.2 * Math.sin(time * 2.3 + r.seed * 3) : 1;
-      ctx.save();
-      ctx.globalAlpha = (r.known === 'untested' ? 0.8 : 0.9) * flicker;
-      ctx.strokeStyle = colour;
-      ctx.shadowColor = colour;
-      ctx.shadowBlur = SALT_SIGHT.glow;
-      ctx.lineWidth = SALT_SIGHT.width;
-      ctx.lineJoin = ctx.lineCap = 'round';
-      if (r.known === 'untested') ctx.setLineDash([4, 5]);
-      // A smooth closed line through the midpoints, the corners as its bends.
-      ctx.beginPath();
-      const n = ring.length, mid = (i: number) => [(ring[i][0] + ring[(i + 1) % n][0]) / 2, (ring[i][1] + ring[(i + 1) % n][1]) / 2] as const;
-      const m0 = mid(n - 1);
-      ctx.moveTo(m0[0], m0[1]);
-      for (let i = 0; i < n; i++) { const m = mid(i); ctx.quadraticCurveTo(ring[i][0], ring[i][1], m[0], m[1]); }
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
+      return g;
+    };
+    // The glow (on the small canvas): strokes along the salt line, each wider and fainter and swelling
+    // more with the flow, added up: brightest at the line, fading with the distance from it, outwards
+    // in the swell of its edge and inwards over the body's own edge.
+    const hz = this.hctx;
+    hz.save();
+    hz.globalCompositeOperation = 'lighter';
+    hz.lineJoin = hz.lineCap = 'round';
+    hz.fillStyle = tint(hz, S.bright * S.within * breath);
+    hz.fill(path(line, -reach * 0.1, size * S.flow * 0.3));
+    for (let i = 0; i < S.layers; i++) {
+      const f = 1 - i / S.layers;
+      hz.strokeStyle = tint(hz, (S.bright / S.layers) * breath);
+      hz.lineWidth = 2 * reach * f + 4;
+      hz.stroke(path(line, reach * 0.15 * (1 - f), size * S.flow * (0.3 + 1.7 * (1 - f))));
     }
+    hz.restore();
+    ctx.save();
+    ctx.lineJoin = ctx.lineCap = 'round';
+    // The salt at its heart, paler than its glow: streaks running round the line with the flow (a
+    // kind never fought: short broken flecks, wavering).
+    const pale = (k: number) => Math.round(k + (255 - k) * S.pale);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = `rgb(${pale(cr)},${pale(cg)},${pale(cb)})`;
+    ctx.shadowColor = `rgb(${cr},${cg},${cb})`;
+    ctx.shadowBlur = S.glow;
+    ctx.lineWidth = S.width;
+    for (const [way, by, alpha] of [[1, 0, 0.75], [-0.7, reach * 0.25, 0.4]] as const) {
+      ctx.globalAlpha = alpha * flicker;
+      ctx.setLineDash(untested ? [Math.max(3, S.streak[0] * size * 0.15), Math.max(5, S.streak[1] * size * 0.5), Math.max(6, S.streak[0] * size * 0.35), Math.max(8, S.streak[1] * size)] : [Math.max(12, S.streak[0] * size), Math.max(8, S.streak[1] * size)]);
+      ctx.lineDashOffset = -t * S.run * way + r.seed * 13;
+      ctx.stroke(path(line, by, size * S.flow * (0.35 + by / reach)));
+    }
+    ctx.setLineDash([]);
+    // The motes: born one every so often (which, where and how is the creature's seed and the
+    // mote's number), each flying out from the line and up, fading.
+    if (!still) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.shadowBlur = 8;
+      const moteDraw = (k: number, j: number) => hash3f(1966, r.seed, k, j);
+      for (let k = Math.floor((time - S.life[1]) / S.every) - 1; k <= Math.floor(time / S.every); k++) {
+        if (moteDraw(k, 0) < S.skip * (untested ? 2 : 1)) continue;
+        const born = (k + moteDraw(k, 1)) * S.every, life = S.life[0] + (S.life[1] - S.life[0]) * moteDraw(k, 2), a = (time - born) / life;
+        if (a < 0 || a >= 1) continue;
+        const e = line[Math.floor(moteDraw(k, 3) * line.length) % line.length], go = S.fly * size * (1 - (1 - a) * (1 - a)) * (0.5 + moteDraw(k, 4));
+        const side = (moteDraw(k, 5) - 0.5) * 0.8, dx = e.nx * 0.8 + side * -e.ny, dy = e.ny * 0.8 + side * e.nx - 0.7;
+        const x = e.x + dx * go + Math.sin(time * 4 + k) * 1.5, y = e.y + dy * go;
+        ctx.globalAlpha = Math.min(1, a * 6) * (1 - a) ** 1.5 * flicker;
+        ctx.fillStyle = `rgb(${pale(cr)},${pale(cg)},${pale(cb)})`;
+        ctx.beginPath();
+        ctx.arc(x, y, (S.mote[0] + (S.mote[1] - S.mote[0]) * moteDraw(k, 6)) * (1 - 0.5 * a), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   /** The corners of `r`'s body (a box along its yaw) on screen, CSS pixels; none if any is behind the camera or far off screen. */
