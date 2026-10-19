@@ -3,40 +3,44 @@
 <!-- One screen, overwritten in place. The next session — DSH or Claude Code —
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
-- **by:** `dsh/session-93e1713f-7556-403e-b238-acef9bce7fd1` (writer)
-- **at:** `2026-10-19T10:40:00Z`
-- **branch / worktree:** `cos/cellar-under-house` · `/home/administrator/projects/Dunfinity/worktrees/cellar-under-house`
-- **last verified:** `950a04a` · `npm test` 556 tests, 556 pass, 0 fail, 106 s · cheap gate `2` (build green, the full tier did not re-run)
+- **by:** `dsh/session-93e1713f-7556-403e-b238-acef9bce7fd1`
+- **at:** `2026-10-19T12:35:00Z`
+- **branch / worktree:** `main` · `/home/administrator/projects/Dunfinity`
+- **last verified:** `92f263f` (PR #269's head) · gate `0` (full) · 556 tests, 556 pass, 0 fail, 111.7 s · CI green; main `3f40f5f` carries the same tree
 
 ## Done
 
-- Grandma's cellar moved under the house: the brick vault `x [-15, -7.4]`, `z [-2.6, 2.6]`,
-  spring 1.6, crown 2.2 (0.5 m under the hall's floor), its walls under the house's own.
-- The way down is a turned stair inside the house's footprint: a flight east from the hall's east
-  end, a half-landing, a second flight west to the cellar door at the foot; the well is cut
-  through the vault and the house's floor (a thin rock wall round it, 0.5 m).
-- The low doorway (north of the well), the round room (r 2.5), the broken arch, the passage and the
-  chamber with the old shaft moved west with it (shaft `x 5.5`); the room's things, the cellar's
-  shelves and bulb, the door, the ward and Way Home's spot follow `CELLAR`.
-- The column's floor is the **topmost** ground: the house's floor over the cellar (so the hall's
-  feet find 2.7, and the map and a poured salt line in the hall do not inherit the cellar's 0), the
-  stair's own floor in the stairwell, 0 in the room/passage. The air no longer follows the column's
-  floor (the stair uses `stairFloorAt(x, z) ?? 0`); the cellar's props are placed at 0 explicitly.
-  Way Home's spot opens on the floor one stands on; the debug menu's depth-0 ground special case is
-  gone.
-- The pins: the cellar lies under the house, the stairs turn, the stairs have headroom, nothing
-  drawn stands in the way up the stairs, one stands on the hall's floor; the walks, the four house
-  rooms (with `[-12, 0]` back) and Way Home are updated to the new coordinates.
+- **The cross-tool contract** (PR #268, merged `bdcea23`): `HANDOFF.md`, one gate
+  (`scripts/gate.sh`: cheap `npm run build` / full `npm test`, atomic lock, exit codes
+  0/1/2/9), the journal and worktree guard (`scripts/cos.mjs`, `.cos/hooks/`),
+  `docs/CROSS-TOOL.md`, rules 8–10 in `CLAUDE.md`.
+- **The cellar is under the house, down a turned stair** (PR #269, merged `3f40f5f`):
+  the vault spans the house, its crown 0.5 m under the hall floor; a flight down east,
+  a half-landing, a U-turn, a second flight west to the cellar door; the round room,
+  the broken arch, the passage and the old shaft moved west with it (shaft x 5.5).
+  Verified by my own full gate (0, 556/556) and my own injection: with the house/cellar
+  floor priority swapped back, **"one stands on the hall's floor"** and the four-rooms
+  walk go red.
+- **Known residual (not hidden):** `groundAt(x, z)` without a body height answers the
+  *topmost* floor, so inside the cellar it returns the hall's 2.7. Way Home passes the
+  body's floor; foot IK returns null on the flat cellar floor; a poured salt line falls
+  back to flat. A body-height-aware pass over the remaining consumers is a follow-up
+  slice — do not let it be forgotten.
 
 ## In flight
 
-- The PR from `cos/cellar-under-house` — pushed, waiting on the owner's review/merge.
+- **The street is alive** (town slice, owner-approved: ambient motion + people
+  acknowledge you). Writer on branch `cos/street-life`, worktree
+  `/home/administrator/projects/Dunfinity/worktrees/street-life`. It owns: birds over
+  the village, chimney smoke (one new `SMOKE` kind, shader policy), a cat on the wall,
+  villagers who greet you, and 4–6 villagers callable with E. No new sound assets (the
+  generator needs numpy/soundfile/ffmpeg and a paid API), no day clock.
 
 ## Next action (one)
 
-The owner reviews and merges; then the next slice. Before dispatching: `node scripts/cos.mjs status
---one-line`, `git fetch` and compare `origin/main` (never a stale local branch), then brief ONE
-writer into `worktrees/<slug>` with absolute paths.
+When the writer reports LANDED: fetch `origin/cos/street-life`, run the full gate in
+that worktree, inject one named pin (e.g. drop the greeting's once-only guard), then
+open the PR and merge. If it reports BLOCKED, read its evidence before re-dispatching.
 
 ## Open questions for the owner
 
@@ -46,4 +50,4 @@ writer into `worktrees/<slug>` with absolute paths.
 
 - `CLAUDE.md`
 - `docs/CROSS-TOOL.md`
-- `docs/ARCHITECTURE.md` (the seam index, for the first slice)
+- `docs/ARCHITECTURE.md` (the cellar and town-life rows)
