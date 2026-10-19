@@ -31,8 +31,8 @@ const H = 2.0, Q = Math.PI / 2;
 
 /** Her doors: the cellar's at the foot of its stairs, the front door, and the three inner ones off the hall. */
 export const HOUSE_DOORS: readonly DoorSpec[] = [
-  // At the foot of the stairs, in the cellar's west wall, opening into the cellar.
-  { x: CELLAR.cellar.x[0] + 0.05, y: 0, z: S.z[1], width: S.z[1] - S.z[0], height: 2.15, shut: Q, swing: -Q, kind: 'cellar', name: 'the cellar door' },
+  // At the foot of the turned stair, across its mouth, opening west into the cellar.
+  { x: S.foot.x, y: 0, z: S.foot.z, width: S.foot.width, height: S.foot.height, shut: Q, swing: Q, kind: 'cellar', name: 'the cellar door' },
   // The front door, at the inside of the hall's west wall, opening into the hall.
   { x: CELLAR.house.x[0] - 0.05, y: F, z: D.z[0], width: D.z[1] - D.z[0], height: D.top - 0.05, shut: -Q, swing: Q, kind: 'front', name: 'the front door' },
   // The kitchen and her bedroom (north of the hall), the living room (south): into the room.

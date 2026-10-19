@@ -18,7 +18,7 @@ import { Townsperson } from './townsperson';
 
 export const GRANDMA = {
   /** Where she rises: beside her chair, between it and the arch, in the round room. */
-  x: 6.95,
+  x: -2.55,
   z: -0.95,
   /** She comes when a grandchild is this near (and on her floor), and turns to them; she waits this long after they arrive. */
   notice: 3.4,

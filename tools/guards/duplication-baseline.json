@@ -3520,10 +3520,6 @@
     "reason": "a local one-letter hash helper inside each style's own feature roll"
   },
   {
-    "key": "same name: dunfinity/gen/cellar.ts#color + dunfinity/gen/organic.ts#color",
-    "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
-  },
-  {
     "key": "same name: dunfinity/gen/collapse.ts#at + dunfinity/gen/organic.ts#at",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },

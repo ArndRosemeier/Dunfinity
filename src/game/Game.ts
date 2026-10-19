@@ -768,7 +768,7 @@ export async function startGame(host: HTMLElement, loading: LoadingScreen): Prom
       const [x, , z] = level.arrival;
       // Facing away from the ladder up, out over the level.
       const up = level.ascent, yaw = d === 0 ? CELLAR.start.yaw : up ? Math.atan2(up.x - x, up.z - z) : cam.yaw;
-      putDown(x, d === 0 ? 0 : level.groundAt(x, z), z, yaw);
+      putDown(x, level.groundAt(x, z), z, yaw);
       announce(level);
       debug.refresh();
     },

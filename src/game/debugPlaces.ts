@@ -62,7 +62,7 @@ function home(level: Level): Place[] {
   return [
     { name: 'Grandma\'s armchair (start)', x: CELLAR.start.x, y: 0, z: CELLAR.start.z, yaw: CELLAR.start.yaw },
     { name: 'The notary\'s letter', x: CELLAR.letter.x - 0.6, y: 0, z: CELLAR.letter.z - 0.6, yaw: towards(CELLAR.letter.x - 0.6, CELLAR.letter.z - 0.6, CELLAR.letter.x, CELLAR.letter.z) },
-    { name: 'The strange cellar door', x: door.x + 1.4, y: 0, z: 0, yaw: Math.PI / 2 },
+    { name: 'The strange cellar door', x: door.x - 1.4, y: 0, z: door.z - door.width / 2, yaw: -Math.PI / 2 },
     { name: 'Grandma\'s hall (upstairs)', x: (house.x[0] + house.x[1]) / 2, y: house.floor, z: 0, yaw: Math.PI / 2 },
     { name: 'The street outside her door', x: street, y: level.groundAt(street, 0), z: 0, yaw: -Math.PI / 2 },
     out('Ilse\'s pawn shop', shopDoor('pawn')),
