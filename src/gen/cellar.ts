@@ -177,15 +177,17 @@ export class CellarField extends QuarryField {
   }
 
   /**
-   * The floor: the stair's where it turns down through the house's floor; the cellar's under the
-   * house and out through the doorway, the room and the way to the shaft; the house's floor only
-   * where it is not over the cellar (the rooms beyond its plan).
+   * The floor: the topmost ground. The stair's own floor where it turns down through the house's
+   * floor; her house's floor over the cellar (the house's plan contains the cellar's); the cellar's
+   * own floor 0 where the house does not reach (its walls; the room and the passage to the shaft);
+   * the town's ground elsewhere. (The cellar's things are placed at their own heights, not by this:
+   * see `floorUnder` for a body on a lower floor.)
    */
   private floorOf(x: number, z: number): number {
     const C = CELLAR, H = C.house, ch = C.chamber, st = stairFloorAt(x, z);
     if (st !== null) return st;
-    if (inPlan(x, z, C.cellar.x, C.cellar.z)) return 0; // (the cellar's floor: the house is over it)
     if (inPlan(x, z, H.x, H.z)) return H.floor;
+    if (inPlan(x, z, C.cellar.x, C.cellar.z)) return 0;
     if (x >= C.cellar.x[1] - 1 && x <= ch.x + ch.r + 1 && Math.abs(z) <= ch.r + 0.3) return 0; // the room and the passage to the shaft
     return townGround(x, z).y;
   }
@@ -229,14 +231,16 @@ export class CellarField extends QuarryField {
   }
 
   /** The air of the cellar, the house, its stairwell and the two shops (as `at`, without the town outside). */
-  private inside(col: Column, x: number, y: number, z: number): number {
-    const C = CELLAR, rm = C.room, ch = C.chamber, H = C.house, D = TOWN.door, f = col.floor;
+  private inside(_col: Column, x: number, y: number, z: number): number {
+    const C = CELLAR, rm = C.room, ch = C.chamber, H = C.house, D = TOWN.door;
     // The stairwell: a shaft through the house's floor and the vault, open to the hall above (the
     // stair's own floor at the bottom); its well is the two flights and the half-landing. The
     // cellar's air is cut out round the well (the stair's solid under its flights, and a wall half a
     // metre thick round them: the mesh needs that between two airs), and joined to it again through
-    // the low doorway at its foot.
-    const well = stairWell(x, z), stair = Math.min(stairAirPlan(x, z), y - f, H.floor + H.height - y), foot = Math.min(plan(x, z, FOOT.x, FOOT.z), y - f, FOOT.top - y);
+    // the low doorway at its foot. The air is the same whichever floor the column's ground is (the
+    // house's, over the cellar): the stair and its foot use the stair's own local floor.
+    const sf = stairFloorAt(x, z) ?? 0;
+    const well = stairWell(x, z), stair = Math.min(stairAirPlan(x, z), y - sf, H.floor + H.height - y), foot = Math.min(plan(x, z, FOOT.x, FOOT.z), y - sf, FOOT.top - y);
     const cellarAir = Math.min(Math.min(plan(x, z, C.cellar.x, C.cellar.z), y, vault(z, 2.6, C.cellar.spring, C.cellar.crown) - y), -(well + 0.5));
     const air = Math.max(
       cellarAir,

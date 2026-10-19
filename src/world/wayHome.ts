@@ -72,12 +72,13 @@ export const WAY_LIFE = THIN.open + WAY.hold + THIN.close;
 /**
  * Open a window on level l a few steps ahead of feet (x, y, z) looking along `yaw`, facing them:
  * on the floor, in open air, nothing between. Where there is no room it opens right in front. With
- * `spot` (x, z) it opens there instead, still facing them.
+ * `spot` (x, z) it opens there instead, still facing them, on the floor one stands on (her cellar
+ * has her house's floor over it: `groundAt` there is the house's, not the floor one is on).
  */
 export function openWay(l: Level, x: number, y: number, z: number, yaw: number, to: WayDoor['to'], picture: WayDoor['picture'], shot: Shot, spot?: readonly [number, number]): WayDoor {
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), glimpse = homeGlimpse(l.seed, to.depth);
-  const at = (px: number, pz: number): WayDoor => ({ x: px, y: l.groundAt(px, pz, y + 1) + WAY.over, z: pz, yaw: Math.atan2(x - px, z - pz), age: 0, to, picture, shot, glimpse });
-  if (spot) return at(spot[0], spot[1]);
+  const at = (px: number, pz: number, floor: number): WayDoor => ({ x: px, y: floor + WAY.over, z: pz, yaw: Math.atan2(x - px, z - pz), age: 0, to, picture, shot, glimpse });
+  if (spot) return at(spot[0], spot[1], y);
   for (const d of [WAY.ahead[0], (WAY.ahead[0] + WAY.ahead[1]) / 2, WAY.ahead[1]]) {
     for (const t of [0, WAY.turn / 2, -WAY.turn / 2, WAY.turn, -WAY.turn]) {
       const dx = fx * Math.cos(t) - fz * Math.sin(t), dz = fz * Math.cos(t) + fx * Math.sin(t);
@@ -85,10 +86,10 @@ export function openWay(l: Level, x: number, y: number, z: number, yaw: number, 
       if (Math.abs(g - y) > 0.6 || l.sdf(px, g + WAY.over, pz) < WAY.air) continue;
       const up = (g - y) / d, n = Math.hypot(1, up);
       if (l.trace(x, y + 1.2, z, dx / n, up / n, dz / n, d * n) < d * n - 0.3) continue;
-      return at(px, pz);
+      return at(px, pz, g);
     }
   }
-  return at(x + fx * WAY.ahead[0], z + fz * WAY.ahead[0]);
+  return at(x + fx * WAY.ahead[0], z + fz * WAY.ahead[0], y);
 }
 
 /** Whether feet at (x, y, z) walk into door w now. */

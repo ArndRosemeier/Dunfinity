@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
-import { CELLAR, CELLAR_SHAFT, stairWell } from '../src/gen/cellar';
+import { CELLAR, CELLAR_SHAFT, stairFloorAt, stairWell } from '../src/gen/cellar';
 import { quarryProps, PROP_TILE } from '../src/gen/quarryProps';
 import { heirName, notaryLetter, notaryList } from '../src/gen/notary';
 import { Campfire, type Rester } from '../src/world/fire';
-import { Blockers } from '../src/world/blockers';
+import { BLOCKER_STRIDE, Blockers } from '../src/world/blockers';
 import { Body } from '../src/world/traverse/body';
 
 const level = new Level(1, 0);
@@ -109,6 +109,24 @@ test('the stairs have headroom', () => {
   for (const [x, y, z] of path) assert.ok(level.sdf(x, y + 2, z) > 0, `air 2 m over the stair at ${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`);
 });
 
+test("one stands on the hall's floor", () => {
+  const H = CELLAR.house;
+  for (let x = H.x[0] + 0.1; x < H.x[1]; x += 0.35) for (let z = H.z[0] + 0.1; z < H.z[1]; z += 0.35) {
+    const g = level.groundAt(x, z), stair = stairFloorAt(x, z);
+    if (stair !== null) assert.ok(Math.abs(g - stair) < 0.1, `the stair at ${x.toFixed(2)}, ${z.toFixed(2)}: ${g.toFixed(2)}, not ${stair.toFixed(2)}`);
+    else assert.ok(Math.abs(g - H.floor) < 0.1, `the hall's floor at ${x.toFixed(2)}, ${z.toFixed(2)}: ${g.toFixed(2)}`);
+  }
+  // Going up the stair the floor never goes down, and its top is the hall's floor.
+  let last = -Infinity;
+  for (const [x, , z] of climb().path) {
+    const f = stairFloorAt(x, z);
+    if (f === null) continue;
+    assert.ok(f >= last - 1e-6, `the stair goes down at ${x.toFixed(2)}, ${z.toFixed(2)}: ${f.toFixed(2)} after ${last.toFixed(2)}`);
+    last = f;
+  }
+  assert.ok(last > H.floor - 0.1, `the walk ends on the hall's floor: ${last.toFixed(2)}`);
+});
+
 test('nothing drawn stands in the way up the stairs that one would walk through', () => {
   // Segments along the walked path at knee and head height, against every solid prop triangle near them.
   const { path } = climb();
@@ -140,7 +158,7 @@ function crosses(a: number[], b: number[], p: number[], q: number[], r: number[]
 }
 
 test("up the stairs is her ground floor: a body walks into the hall, the kitchen, her bedroom and the living room", () => {
-  for (const [x, z] of [[-9.9, 3], [-13, 3.5], [-11, -3]]) {
+  for (const [x, z] of [[-12, 0], [-9.9, 3], [-13, 3.5], [-11, -3]]) {
     assert.ok(level.sdf(x, F + 1.2, z) > 0.3, `air at ${x}, ${z}`);
     assert.ok(Math.abs(level.groundAt(x, z) - F) < 0.1, `floor at ${x}, ${z}: ${level.groundAt(x, z).toFixed(2)}`);
   }
@@ -195,6 +213,14 @@ test('its one way down is the old shaft, and level 1 has its way up', () => {
 });
 
 test('the cellar is furnished, lit, and its things are in the air', () => {
+  // Its own things still stand on its floor (y = 0), though the ground over it is the house's
+  // floor: the props are placed at their own heights, never through `groundAt`.
+  let onFloor = 0;
+  for (const [tx, tz] of [[-1, 0], [-1, -1]] as const) {
+    const t = quarryProps(level, tx, tz);
+    for (let i = 0; i < t.blockers.length; i += BLOCKER_STRIDE) if (Math.abs(t.blockers[i + 6]) < 1e-6) onFloor++;
+  }
+  assert.ok(onFloor >= 5, `the cellar's things on its floor: ${onFloor}`);
   let lit = 0, shafts = 0, solid = 0;
   for (let tz = -1; tz <= 0; tz++) for (let tx = -1; tx <= 1; tx++) {
     const t = quarryProps(level, tx, tz);
