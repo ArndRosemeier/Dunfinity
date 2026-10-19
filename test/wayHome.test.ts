@@ -6,11 +6,12 @@ import { HOME_SHOT, WAY, WAY_LIFE, openWay, walksThrough, wayOpen } from '../src
 import { THIN } from '../src/world/thinPlaces';
 
 test('at home the way back opens in the cellar on the cellar\'s own floor', () => {
-  // (Her house's floor is over the cellar: `groundAt` there is the house's, so the way uses the
-  // floor one stands on.)
+  // (Her house's floor is over the cellar: `groundAt` there is the house's, so the way's spot names
+  // the cellar's floor, wherever one stands when it opens.)
   const l = new Level(1, 0);
   const w = openWay(l, CELLAR.start.x, 0, CELLAR.start.z, CELLAR.start.yaw, { depth: 3 }, 'back', HOME_SHOT, WAY.cellar);
-  assert.ok(Math.abs(w.y - WAY.over) < 1e-6, `the way back on the cellar's floor: ${w.y.toFixed(2)}`);
+  assert.ok(Math.abs(w.y - WAY.over - CELLAR.cellar.floor) < 1e-6, `the way back on the cellar's floor: ${w.y.toFixed(2)}`);
+  assert.ok(l.sdf(w.x, w.y, w.z) > WAY.air, 'in the cellar\'s air');
 });
 
 test('Way Home opens a few steps ahead, facing one, on the floor, and walking into it goes through', () => {

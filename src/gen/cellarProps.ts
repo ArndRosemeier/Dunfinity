@@ -9,7 +9,7 @@
  * Pure data like the rest of the props: it places only what lies in the tile it is asked for.
  */
 import { hash3f } from '@futuremagic/core';
-import { CELLAR } from './cellar';
+import { CELLAR, type Flight } from './cellar';
 import { local, type PropBuilder, type Rgb } from './propMesh';
 import { furnishTown } from './townProps';
 import { propModel } from './models';
@@ -28,11 +28,9 @@ export interface Furnish {
   block(x: number, z: number, yaw: number, hx: number, hz: number, y0: number, y1: number): void;
 }
 
-/** A flight of the cellar's stair (src/gen/cellar.ts): its plan, the floor at its first x edge (`from`) and second (`to`). */
-type Flight = { readonly x: readonly [number, number]; readonly z: readonly [number, number]; readonly from: number; readonly to: number };
-
 const WOOD: Rgb = [0.2, 0.13, 0.075], DARK: Rgb = [0.12, 0.08, 0.05], BRICK: Rgb = [0.4, 0.2, 0.14];
 const TIN: Rgb = [0.16, 0.24, 0.38], GOLD: Rgb = [0.55, 0.42, 0.18];
+const STONE: Rgb = [0.33, 0.31, 0.28];
 const SHADE: Rgb = [0.75, 0.62, 0.4], BULB: Rgb = [1, 0.86, 0.6], STEEL: Rgb = [0.55, 0.56, 0.58];
 const JARS: readonly Rgb[] = [[0.45, 0.28, 0.08], [0.2, 0.3, 0.12], [0.5, 0.12, 0.1], [0.55, 0.45, 0.2]];
 
@@ -41,58 +39,78 @@ export function furnishCellar(f: Furnish): void {
   const at = (x: number, z: number) => f.inTile(x, z);
   const h = (a: number, b: number, k: number) => hash3f(1966, a, b, k);
 
-  if (at(-12, 2)) {
-    // Shelves along the north wall, jars of things she put up, the jars catching the bulb.
-    for (const x0 of [C.cellar.x[0] + 0.6, C.cellar.x[0] + 2.4]) {
-      s.stamp(propModel('furn_cellar_shelf'), x0 + 0.75, 0, 2.2, Math.PI);
+  const fl = C.cellar.floor;
+  if (at(-13, 2)) {
+    // Shelves along the north and south walls at the west end (the low passage opens at the north
+    // wall's east end, the cellar door at the east wall), jars of things she put up, the jars
+    // catching the bulb; crates and a barrel by the south wall, towards the door.
+    for (const side of [1, -1]) {
+      const x0 = C.cellar.x[0] + 0.15, z = side * 2.2;
+      s.stamp(propModel('furn_cellar_shelf'), x0 + 0.75, fl, z, side > 0 ? Math.PI : 0);
       for (const y of [0.35, 0.95, 1.55]) {
         for (let k = 0; k < 6; k++) {
-          if (h(x0, y, k) < 0.25) continue;
-          const jx = x0 + 0.12 + k * 0.25, r = 0.045 + 0.02 * h(x0, y, k + 9);
-          s.cylinder(jx, y + 0.015 + r * 1.5, 2.18, r, r * 1.5, JARS[Math.floor(h(x0, y, k + 20) * JARS.length)], 8);
+          if (h(side, y, k) < 0.25) continue;
+          const jx = x0 + 0.12 + k * 0.25, r = 0.045 + 0.02 * h(side, y, k + 9);
+          s.cylinder(jx, fl + y + 0.015 + r * 1.5, z - side * 0.02, r, r * 1.5, JARS[Math.floor(h(side, y, k + 20) * JARS.length)], 8);
         }
       }
-      f.block(x0 + 0.75, 2.2, 0, 0.8, 0.22, 0, 1.85);
+      f.block(x0 + 0.75, z, 0, 0.8, 0.22, fl, fl + 1.85);
     }
-    // Crates and a barrel by the south wall.
-    s.upright(C.cellar.x[0] + 1.3, 0.25, -2.1, 0.2, 0.32, 0.25, 0.3, WOOD);
-    s.upright(C.cellar.x[0] + 1.4, 0.68, -2.15, -0.1, 0.25, 0.18, 0.22, DARK);
-    s.cylinder(C.cellar.x[0] + 2.6, 0.42, -2.1, 0.3, 0.42, DARK, 12, 0.12);
-    f.block(C.cellar.x[0] + 1.3, -2.1, 0.2, 0.35, 0.32, 0, 0.9);
-    f.block(C.cellar.x[0] + 2.6, -2.1, 0, 0.36, 0.36, 0, 0.84);
+    s.upright(C.cellar.x[1] - 1.9, fl + 0.25, -2.1, 0.2, 0.32, 0.25, 0.3, WOOD);
+    s.upright(C.cellar.x[1] - 1.8, fl + 0.68, -2.15, -0.1, 0.25, 0.18, 0.22, DARK);
+    s.cylinder(C.cellar.x[1] - 0.7, fl + 0.42, -2.1, 0.3, 0.42, DARK, 12, 0.12);
+    f.block(C.cellar.x[1] - 1.9, -2.1, 0.2, 0.35, 0.32, fl, fl + 0.9);
+    f.block(C.cellar.x[1] - 0.7, -2.1, 0, 0.36, 0.36, fl, fl + 0.84);
     // The bulb under the vault, on its cord.
-    hangBulb(f, C.cellar.x[0] + 3.0, C.cellar.crown, 0);
+    hangBulb(f, C.cellar.x[1] - 1.3, C.cellar.crown, 0);
   }
 
-  if (at(C.stairs.foot.x, (C.stairs.foot.z + C.stairs.lower.z[0]) / 2)) {
-    // The cellar door's frame (src/gen/doorways.ts hangs the door) at the foot of the stairs, under
-    // the vault, and the wooden treads up the two flights and the half-landing.
-    const F = C.stairs.foot;
-    for (const z of [F.z, F.z - F.width]) s.upright(F.x, F.height / 2, z, 0, 0.08, F.height / 2, 0.05, DARK);
-    s.upright(F.x, F.height + 0.04, F.z - F.width / 2, 0, 0.1, 0.05, F.width / 2 + 0.06, DARK);
-    const treads = (fl: Flight, n: number) => {
+  const S = C.stairs;
+  if (at(S.foot.x, S.foot.z - S.foot.width / 2)) {
+    // The cellar door's frame (src/gen/doorways.ts hangs the door) in the cellar's east wall, at the foot of the stairs.
+    const F = S.foot;
+    for (const z of [F.z, F.z - F.width]) s.upright(F.x, fl + F.height / 2, z, 0, 0.08, F.height / 2, 0.05, DARK);
+    s.upright(F.x, fl + F.height + 0.04, F.z - F.width / 2, 0, 0.1, 0.05, F.width / 2 + 0.06, DARK);
+  }
+  if (at((S.well.x[0] + S.well.x[1]) / 2, (S.well.z[0] + S.well.z[1]) / 2)) {
+    // The wooden treads down the two flights, the half-landing's boards, and the rail on the upper
+    // flight's open side, over the lower flight (stepped, as its handrail's posts are).
+    const treads = (f: Flight, n: number) => {
       // From the flight's low end up to its high one, a tread at every riser.
-      const low = fl.from < fl.to ? [fl.x[0], fl.from] : [fl.x[1], fl.to], high = fl.from < fl.to ? [fl.x[1], fl.to] : [fl.x[0], fl.from];
-      const step = (high[0] - low[0]) / n, zc = (fl.z[0] + fl.z[1]) / 2, hz = (fl.z[1] - fl.z[0]) / 2 - 0.03;
+      const low = f.from < f.to ? [f.x[0], f.from] : [f.x[1], f.to], high = f.from < f.to ? [f.x[1], f.to] : [f.x[0], f.from];
+      const step = (high[0] - low[0]) / n, zc = (f.z[0] + f.z[1]) / 2, hz = (f.z[1] - f.z[0]) / 2 - 0.03;
       for (let i = 0; i < n; i++) {
         const x = low[0] + (i + 0.5) * step, top = low[1] + ((i + 1) / n) * (high[1] - low[1]);
         s.upright(x, top - 0.06, zc, 0, Math.abs(step) / 2, 0.06, hz, WOOD);
       }
     };
-    treads(C.stairs.upper, 8);
-    treads(C.stairs.lower, 4);
-    const L = C.stairs.landing;
-    s.upright((L.x[0] + L.x[1]) / 2, L.y - 0.06, (L.z[0] + L.z[1]) / 2, 0, (L.x[1] - L.x[0]) / 2, 0.06, (L.z[1] - L.z[0]) / 2, WOOD);
+    treads(S.upper, 10);
+    treads(S.lower, 10);
+    const L = S.landing;
+    s.upright((L.x[0] + L.x[1]) / 2, L.y - 0.06, (L.z[0] + L.z[1]) / 2, 0, (L.x[1] - L.x[0]) / 2, 0.06, (L.z[1] - L.z[0]) / 2 - 0.03, WOOD);
+    const U = S.upper, z = U.z[0] + 0.04, n = 5, run = (U.x[1] - U.x[0]) / n;
+    for (let i = 0; i < n; i++) {
+      const x0 = U.x[0] + i * run, x1 = x0 + run, y = U.from + ((U.to - U.from) * (i + 0.5)) / n;
+      s.upright(x0 + 0.03, y + 0.45, z, 0, 0.03, 0.45, 0.03, WOOD); // a post
+      s.upright((x0 + x1) / 2, y + 0.9, z, 0, run / 2, 0.03, 0.03, WOOD); // the rail
+      f.block((x0 + x1) / 2, z, 0, run / 2, 0.06, y, y + 1);
+    }
   }
 
   furnishHouse(f);
   furnishTown(f);
 
   if (at(C.door.x[0], C.door.z[0])) {
-    // The low doorway into her room, in the cellar's east wall: posts and a lintel.
-    const D = C.door, x = C.cellar.x[1] + 0.1;
-    for (const z of [D.z[0] + 0.06, D.z[1] - 0.06]) s.upright(x, D.top / 2, z, 0, 0.08, D.top / 2, 0.06, DARK);
-    s.upright(x, D.top - 0.07, (D.z[0] + D.z[1]) / 2, 0, 0.1, 0.07, (D.z[1] - D.z[0]) / 2, DARK);
+    // The low passage to her room, in the cellar's east wall: posts and a lintel at its mouth; its
+    // stone steps up, once out from under the house.
+    const D = C.door, x = C.cellar.x[1] + 0.1, zc = (D.z[0] + D.z[1]) / 2;
+    for (const z of [D.z[0] + 0.06, D.z[1] - 0.06]) s.upright(x, fl + D.height / 2, z, 0, 0.08, D.height / 2, 0.06, DARK);
+    s.upright(x, fl + D.height - 0.07, zc, 0, 0.1, 0.07, (D.z[1] - D.z[0]) / 2, DARK);
+    const [a, b] = D.steps, n = 7, run = (b - a) / n;
+    for (let i = 0; i < n; i++) {
+      const top = fl - (fl * (i + 1)) / n, x = a + (i + 0.5) * run;
+      s.upright(x, (top + fl) / 2, zc, 0, run / 2, (top - fl) / 2, (D.z[1] - D.z[0]) / 2 - 0.02, STONE);
+    }
   }
 
   if (at(C.room.x, C.room.z)) {
@@ -163,25 +181,27 @@ function furnishHouse(f: Furnish): void {
     for (let i = 0; i < cuts.length; i += 2) piece(cuts[i], cuts[i + 1], F, top);
     for (const [a, b] of gaps) piece(a, b, F + 2.05, top); // over the doorway
   };
-  // The hall runs the middle (z in [-1.1, 1.1]); the kitchen (east) and her bedroom (west) north of it, the living room south.
-  wall('x', 1.1, H.x[0], H.x[1], [[-10.4, -9.4], [-13.6, -12.6]]);
-  wall('x', -1.1, H.x[0], H.x[1], [[-12.2, -11.2]]);
-  wall('z', -11.6, 1.1, H.z[1], []);
+  // The hall runs the middle (z in [-1.6, 1.1], the stairwell in its east end); the kitchen (east)
+  // and her bedroom (west) north of it, the living room south. The kitchen's door is west of the
+  // stairwell: east of it, between the well's rail and the kitchen's wall, there is no way past.
+  wall('x', 1.1, H.x[0], H.x[1], [[-11.9, -10.9], [-13.6, -12.6]]);
+  wall('x', -1.6, H.x[0], H.x[1], [[-12.2, -11.2]]);
+  wall('z', -12.0, 1.1, H.z[1], []);
 
-  // Rails round the stairwell at the hall's floor: north of the upper flight's west part, down the
-  // well's west edge above the foot, and north of the lower flight and the landing.
-  const S = CELLAR.stairs;
-  if (at((S.upper.x[0] + S.landing.x[1]) / 2, S.lower.z[1])) {
-    const railX = (x0: number, x1: number, z: number) => {
-      s.upright((x0 + x1) / 2, F + 0.9, z, 0, (x1 - x0) / 2, 0.03, 0.03, WOOD);
-      s.upright(x0 + 0.03, F + 0.45, z, 0, 0.03, 0.45, 0.03, WOOD);
-      f.block((x0 + x1) / 2, z, 0, (x1 - x0) / 2, 0.06, F, F + 1);
+  // Rails round the stairwell at the hall's floor: along its north side (over the upper flight, once
+  // it has gone down) and across its west end over the lower flight's foot (the upper flight's top
+  // is the way in).
+  const S = CELLAR.stairs, W = S.well;
+  if (at((W.x[0] + W.x[1]) / 2, (W.z[0] + W.z[1]) / 2)) {
+    const rail = (along: 'x' | 'z', at0: number, from: number, to: number) => {
+      const m = (from + to) / 2, hl = (to - from) / 2, yaw = along === 'x' ? 0 : Math.PI / 2;
+      const [x, z] = along === 'x' ? [m, at0] : [at0, m], [px, pz] = along === 'x' ? [from + 0.03, at0] : [at0, from + 0.03];
+      s.upright(x, F + 0.9, z, yaw, hl, 0.03, 0.03, WOOD);
+      s.upright(px, F + 0.45, pz, 0, 0.03, 0.45, 0.03, WOOD);
+      f.block(x, z, yaw, hl, 0.06, F, F + 1);
     };
-    railX(S.upper.x[0], S.lower.x[0], S.upper.z[1] + 0.04);
-    railX(S.lower.x[0], S.landing.x[1], S.lower.z[1] + 0.04);
-    s.upright(S.lower.x[0] - 0.04, F + 0.9, (S.lower.z[0] + S.lower.z[1]) / 2, 0, 0.03, 0.03, (S.lower.z[1] - S.lower.z[0]) / 2, WOOD);
-    s.upright(S.lower.x[0] - 0.04, F + 0.45, S.lower.z[0] + 0.03, 0, 0.03, 0.45, 0.03, WOOD);
-    f.block(S.lower.x[0] - 0.04, (S.lower.z[0] + S.lower.z[1]) / 2, 0, 0.06, (S.lower.z[1] - S.lower.z[0]) / 2, F, F + 1);
+    rail('x', W.z[1] + 0.04, W.x[0], W.x[1]);
+    rail('z', W.x[0] - 0.04, W.z[0], S.upper.z[0]);
   }
 
   // Night at the windows: dark panes with their crosses, one or two to a room.
@@ -220,8 +240,8 @@ function furnishHouse(f: Furnish): void {
     f.block(-9.6, 2.4, 0, 0.6, 0.45, F, F + 0.8);
     f.block(-8.65, 2.4, 0, 0.25, 0.25, F, F + 0.95);
     // Jars and a clock on the shelf over the table.
-    s.upright(-10.6, F + 1.6, 1.28, 0, 0.6, 0.015, 0.1, WOOD);
-    for (let k = 0; k < 4; k++) s.cylinder(-11.0 + k * 0.25, F + 1.685, 1.3, 0.05, 0.07, JARS[k], 8);
+    s.upright(-10.0, F + 1.6, 1.28, 0, 0.6, 0.015, 0.1, WOOD);
+    for (let k = 0; k < 4; k++) s.cylinder(-10.4 + k * 0.25, F + 1.685, 1.3, 0.05, 0.07, JARS[k], 8);
     hangBulb(f, -9.5, top, 2.8);
   }
 
@@ -231,9 +251,9 @@ function furnishHouse(f: Furnish): void {
     f.block(-13.6, 3.3, 0, 0.78, 1.05, F, F + 0.7);
     s.stamp(propModel('furn_wardrobe'), -14.6, F, 1.75, Math.PI / 2); // the wardrobe
     f.block(-14.6, 1.75, Math.PI / 2, 0.57, 0.32, F, F + 2);
-    s.stamp(propModel('furn_chair'), -12.2, F, 3.9, Math.PI);
-    s.upright(-12.2, F + 0.5, 3.88, 0, 0.18, 0.05, 0.17, [0.3, 0.32, 0.45]); // her cardigan, over the seat
-    s.upright(-12.2, F + 0.78, 4.12, -0.1, 0.19, 0.12, 0.03, [0.3, 0.32, 0.45]); // and over the back
+    s.stamp(propModel('furn_chair'), -12.45, F, 3.9, Math.PI);
+    s.upright(-12.45, F + 0.5, 3.88, 0, 0.18, 0.05, 0.17, [0.3, 0.32, 0.45]); // her cardigan, over the seat
+    s.upright(-12.45, F + 0.78, 4.12, -0.1, 0.19, 0.12, 0.03, [0.3, 0.32, 0.45]); // and over the back
   }
 
   // The living room: the sofa, her other armchair, the sideboard and its photographs, a standard lamp.

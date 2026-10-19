@@ -31,12 +31,12 @@ const H = 2.0, Q = Math.PI / 2;
 
 /** Her doors: the cellar's at the foot of its stairs, the front door, and the three inner ones off the hall. */
 export const HOUSE_DOORS: readonly DoorSpec[] = [
-  // At the foot of the turned stair, across its mouth, opening west into the cellar.
-  { x: S.foot.x, y: 0, z: S.foot.z, width: S.foot.width, height: S.foot.height, shut: Q, swing: Q, kind: 'cellar', name: 'the cellar door' },
+  // At the foot of the turned stair, in the cellar's east wall, opening west into the cellar.
+  { x: S.foot.x, y: CELLAR.cellar.floor, z: S.foot.z, width: S.foot.width, height: S.foot.height, shut: Q, swing: Q, kind: 'cellar', name: 'the cellar door' },
   // The front door, at the inside of the hall's west wall, opening into the hall.
   { x: CELLAR.house.x[0] - 0.05, y: F, z: D.z[0], width: D.z[1] - D.z[0], height: D.top - 0.05, shut: -Q, swing: Q, kind: 'front', name: 'the front door' },
   // The kitchen and her bedroom (north of the hall), the living room (south): into the room.
-  { x: -9.4, y: F, z: 1.1, width: 1.0, height: H, shut: Math.PI, swing: Q, kind: 'inner', name: 'the kitchen door' },
+  { x: -10.9, y: F, z: 1.1, width: 1.0, height: H, shut: Math.PI, swing: Q, kind: 'inner', name: 'the kitchen door' },
   { x: -12.6, y: F, z: 1.1, width: 1.0, height: H, shut: Math.PI, swing: Q, kind: 'inner', name: 'the bedroom door' },
-  { x: -11.2, y: F, z: -1.1, width: 1.0, height: H, shut: Math.PI, swing: -Q, kind: 'inner', name: 'the living-room door' },
+  { x: -11.2, y: F, z: -1.6, width: 1.0, height: H, shut: Math.PI, swing: -Q, kind: 'inner', name: 'the living-room door' },
 ];

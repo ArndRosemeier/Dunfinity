@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
+import { CELLAR } from '../src/gen/cellar';
 import { HOUSE_DOORS } from '../src/gen/doorways';
 import { quarryProps } from '../src/gen/quarryProps';
 import { Blockers } from '../src/world/blockers';
 import { DOOR, DOORS_KEY, Doors } from '../src/world/doors';
 import { Body, MOVE } from '../src/world/traverse/body';
 
-const level = new Level(1, 0);
+const level = new Level(1, 0), FC = CELLAR.cellar.floor;
 
 function world(): { blockers: Blockers; doors: Doors } {
   const blockers = new Blockers();
@@ -45,25 +46,25 @@ test("grandma's house has its doors, shut, the cellar's strange; none below the 
 
 test('a shut door stops one; opened (E), one walks through', () => {
   const w = world();
-  // The cellar door, from the cellar up the stair's foot.
-  const shut = walk(w, [-10.2, 0, 0.25], [-9.0, 0.25], 3);
-  assert.ok(shut.x < -9.3, `through the shut cellar door: x ${shut.x.toFixed(2)}`);
+  // The cellar door, from the cellar to the stair's foot.
+  const shut = walk(w, [-12.6, FC, -1], [-10.2, -1], 3);
+  assert.ok(shut.x < -11.5, `through the shut cellar door: x ${shut.x.toFixed(2)}`);
   const door = w.doors.near(shut.x, shut.y, shut.z);
   assert.equal(door?.spec.kind, 'cellar');
   w.doors.toggle(door!, 0);
   // Stand back while it swings (it will not swing through anyone), then go.
-  const back = walk(w, [shut.x, shut.y, shut.z], [-10.6, 0.25], 1);
+  const back = walk(w, [shut.x, shut.y, shut.z], [-12.7, -1], 1);
   wait(w, 1, DOOR.swing + 0.1);
-  const through = walk(w, [back.x, back.y, back.z], [-8.2, 0.25]);
-  assert.ok(through.x > -8.6, `through the open cellar door: stopped at x ${through.x.toFixed(2)}`);
+  const through = walk(w, [back.x, back.y, back.z], [-10.2, -1]);
+  assert.ok(through.x > -10.6, `through the open cellar door: stopped at x ${through.x.toFixed(2)}`);
   // An inner door too: hall to kitchen.
   const kitchen = w.doors.list.find((d) => d.spec.name === 'the kitchen door')!;
-  const hall = walk(w, [-9.9, 2.7, 0], [-9.9, 3], 3);
+  const hall = walk(w, [-11.4, 2.7, 0], [-11.4, 3], 3);
   assert.ok(hall.z < 1.1, `through the shut kitchen door: z ${hall.z.toFixed(2)}`);
   w.doors.toggle(kitchen, 0);
-  const away = walk(w, [hall.x, hall.y, hall.z], [-9.9, 0], 1);
+  const away = walk(w, [hall.x, hall.y, hall.z], [-11.4, 0], 1);
   wait(w, 1, DOOR.swing + 0.1);
-  assert.ok(walk(w, [away.x, away.y, away.z], [-9.9, 1.75]).z > 1.45, 'into the kitchen (its table just beyond)');
+  assert.ok(walk(w, [away.x, away.y, away.z], [-11.4, 1.75]).z > 1.45, 'into the kitchen');
 });
 
 test('a door does not swing through whoever stands in its way', () => {
@@ -71,7 +72,7 @@ test('a door does not swing through whoever stands in its way', () => {
   const door = w.doors.list.find((d) => d.spec.kind === 'cellar')!;
   w.doors.toggle(door, 0);
   // Standing just inside the cellar, where it opens to (it swings west, into the cellar).
-  for (let t = 0; t < 2; t += 1 / 60) w.doors.step(1 / 60, t, -9.8, 0.3, 1.75, 0.55, MOVE.radius, w.blockers);
+  for (let t = 0; t < 2; t += 1 / 60) w.doors.step(1 / 60, t, -11.7, FC + 0.3, FC + 1.75, -0.9, MOVE.radius, w.blockers);
   assert.ok(door.open < 1, 'held');
   wait(w, 2, DOOR.swing + 0.1);
   assert.equal(door.open, 1, 'and opens once one steps away');

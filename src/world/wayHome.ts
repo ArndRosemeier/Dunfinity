@@ -9,6 +9,7 @@
  * Where it opens and how open it is are pure; src/render/wayView.ts draws it, src/game/Game.ts
  * walks one through.
  */
+import { CELLAR } from '../gen/cellar';
 import type { Level } from '../gen/level';
 import { THIN, homeGlimpse, openness, steppedIn, type Glimpse } from './thinPlaces';
 
@@ -21,8 +22,8 @@ export const WAY = {
   turn: 0.7,
   /** Air it needs round its middle (m). */
   air: 0.6,
-  /** Where the way back opens in grandma's cellar: the brick vault west of the stair, clear of her chair and table (its middle under the crown). */
-  cellar: [-13.5, 0] as const,
+  /** Where the way back opens in grandma's cellar (x, its floor, z): the brick vault, west of its bulb, clear of her shelves and crates. */
+  cellar: [-13.6, CELLAR.cellar.floor, 0] as const,
   /** Seconds it stays open (it opens and closes as a thin place does). */
   hold: 20,
 } as const;
@@ -72,13 +73,13 @@ export const WAY_LIFE = THIN.open + WAY.hold + THIN.close;
 /**
  * Open a window on level l a few steps ahead of feet (x, y, z) looking along `yaw`, facing them:
  * on the floor, in open air, nothing between. Where there is no room it opens right in front. With
- * `spot` (x, z) it opens there instead, still facing them, on the floor one stands on (her cellar
- * has her house's floor over it: `groundAt` there is the house's, not the floor one is on).
+ * `spot` (x, its floor, z) it opens there instead, still facing them (its floor given: her cellar
+ * has her house's floor over it, and `groundAt` there is the house's).
  */
-export function openWay(l: Level, x: number, y: number, z: number, yaw: number, to: WayDoor['to'], picture: WayDoor['picture'], shot: Shot, spot?: readonly [number, number]): WayDoor {
+export function openWay(l: Level, x: number, y: number, z: number, yaw: number, to: WayDoor['to'], picture: WayDoor['picture'], shot: Shot, spot?: readonly [number, number, number]): WayDoor {
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), glimpse = homeGlimpse(l.seed, to.depth);
   const at = (px: number, pz: number, floor: number): WayDoor => ({ x: px, y: floor + WAY.over, z: pz, yaw: Math.atan2(x - px, z - pz), age: 0, to, picture, shot, glimpse });
-  if (spot) return at(spot[0], spot[1], y);
+  if (spot) return at(spot[0], spot[2], spot[1]);
   for (const d of [WAY.ahead[0], (WAY.ahead[0] + WAY.ahead[1]) / 2, WAY.ahead[1]]) {
     for (const t of [0, WAY.turn / 2, -WAY.turn / 2, WAY.turn, -WAY.turn]) {
       const dx = fx * Math.cos(t) - fz * Math.sin(t), dz = fz * Math.cos(t) + fx * Math.sin(t);
