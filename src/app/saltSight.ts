@@ -78,7 +78,7 @@ export const SALT_SIGHT = {
 const STYLE = `#salt-sight { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 3; }`;
 
 /** A smooth closed path through the midpoints of `q`, its points as the bends. */
-function smooth(q: readonly (readonly [number, number])[]): Path2D {
+function curveThrough(q: readonly (readonly [number, number])[]): Path2D {
   const p = new Path2D(), n = q.length, mid = (i: number) => [(q[i][0] + q[(i + 1) % n][0]) / 2, (q[i][1] + q[(i + 1) % n][1]) / 2] as const;
   const m0 = mid(n - 1);
   p.moveTo(m0[0], m0[1]);
@@ -164,7 +164,7 @@ export class SaltSightView {
     /** The outline pushed out `by` px and swollen by the flow times `swell` px: a closed smooth path. */
     const path = (from: Edge[], by: number, swell: number): Path2D => {
       const q = from.map((e) => { const o = by + swell * flow(e.u); return [e.x + e.nx * o, e.y + e.ny * o] as const; });
-      return smooth(q);
+      return curveThrough(q);
     };
     const untested = r.known === 'untested';
     const [cr, cg, cb] = rgbOf(ringColour(r.tier, r.known));
@@ -219,18 +219,18 @@ export class SaltSightView {
     if (!still) {
       ctx.globalCompositeOperation = 'lighter';
       ctx.shadowBlur = 8;
-      const h = (k: number, j: number) => hash3f(1966, r.seed, k, j);
+      const moteDraw = (k: number, j: number) => hash3f(1966, r.seed, k, j);
       for (let k = Math.floor((time - S.life[1]) / S.every) - 1; k <= Math.floor(time / S.every); k++) {
-        if (h(k, 0) < S.skip * (untested ? 2 : 1)) continue;
-        const born = (k + h(k, 1)) * S.every, life = S.life[0] + (S.life[1] - S.life[0]) * h(k, 2), a = (time - born) / life;
+        if (moteDraw(k, 0) < S.skip * (untested ? 2 : 1)) continue;
+        const born = (k + moteDraw(k, 1)) * S.every, life = S.life[0] + (S.life[1] - S.life[0]) * moteDraw(k, 2), a = (time - born) / life;
         if (a < 0 || a >= 1) continue;
-        const e = line[Math.floor(h(k, 3) * line.length) % line.length], go = S.fly * size * (1 - (1 - a) * (1 - a)) * (0.5 + h(k, 4));
-        const side = (h(k, 5) - 0.5) * 0.8, dx = e.nx * 0.8 + side * -e.ny, dy = e.ny * 0.8 + side * e.nx - 0.7;
+        const e = line[Math.floor(moteDraw(k, 3) * line.length) % line.length], go = S.fly * size * (1 - (1 - a) * (1 - a)) * (0.5 + moteDraw(k, 4));
+        const side = (moteDraw(k, 5) - 0.5) * 0.8, dx = e.nx * 0.8 + side * -e.ny, dy = e.ny * 0.8 + side * e.nx - 0.7;
         const x = e.x + dx * go + Math.sin(time * 4 + k) * 1.5, y = e.y + dy * go;
         ctx.globalAlpha = Math.min(1, a * 6) * (1 - a) ** 1.5 * flicker;
         ctx.fillStyle = `rgb(${pale(cr)},${pale(cg)},${pale(cb)})`;
         ctx.beginPath();
-        ctx.arc(x, y, (S.mote[0] + (S.mote[1] - S.mote[0]) * h(k, 6)) * (1 - 0.5 * a), 0, Math.PI * 2);
+        ctx.arc(x, y, (S.mote[0] + (S.mote[1] - S.mote[0]) * moteDraw(k, 6)) * (1 - 0.5 * a), 0, Math.PI * 2);
         ctx.fill();
       }
     }

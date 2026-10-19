@@ -6,7 +6,7 @@
 - **by:** `claude-code/session_01FyMJNLkFSHoPaEfNDrZzLV` (cloud)
 - **at:** `2026-10-19T16:00:00Z`
 - **branch / worktree:** `claude/wonderful-volta-9eekj9` · the cloud container's own clone (no other writer there)
-- **last verified:** this branch's head · gate `0` (full) · screenshots of the hall, the cellar, the stairwell, the landing and the passage
+- **last verified:** this branch's head · gate `0` (full, 568/568) · the aura in a preview page and in the game (depth 3)
 
 ## Done
 

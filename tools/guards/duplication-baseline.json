@@ -4830,5 +4830,9 @@
   {
     "key": "idiom: [.join .map] in dunfinity/app/leadsView.ts + dunfinity/app/letterView.ts + dunfinity/app/stepsView.ts",
     "reason": "a list drawn as HTML lines (map each to its markup, join): one expression per panel, each its own markup; nothing to fold"
+  },
+  {
+    "key": "idiom: [.id .some] in dunfinity/audio/music/TrackPlayer.ts + dunfinity/game/firstSteps.ts + dunfinity/persist/save.ts",
+    "reason": "is this id in the list (`list.some((x) => x.id === id)`): the language's own one-line test, each on its own list (a music deck, the first steps, the saved families); it crossed the finder's info floor when the corpus grew by a file (src/app/outline.ts), not by a copy; nothing to fold"
   }
 ]
