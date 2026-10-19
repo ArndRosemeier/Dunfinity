@@ -65,6 +65,11 @@
    "file": "tracks/town.mp3",
    "kind": "stream",
    "seconds": 120.009
+  },
+  "town-day": {
+   "file": "tracks/town-day.mp3",
+   "kind": "stream",
+   "seconds": 30.772
   }
  }
 }

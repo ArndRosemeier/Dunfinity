@@ -53,7 +53,7 @@ test('every piece and every sound the game asks for is built', async () => {
   const tracks = parseTracks(JSON.parse(readFileSync(new URL('../public/music/tracks.json', import.meta.url), 'utf8')))!;
   for (const list of Object.values(MOOD_TRACKS)) for (const id of list) assert.ok(tracks[id], `music ${id}`);
   const manifest = JSON.parse(readFileSync(new URL('../public/sounds/manifest.json', import.meta.url), 'utf8'));
-  const ids = new Set<string>(['fire', 'amb_town', 'amb_cellar', 'amb_quarry', 'amb_salt', 'amb_cistern', 'amb_threshold']);
+  const ids = new Set<string>(['fire', 'amb_town', 'amb_town_day', 'amb_cellar', 'amb_quarry', 'amb_salt', 'amb_cistern', 'amb_threshold']);
   for (const f of ['../src/audio/gameSounds.ts', '../src/game/Game.ts']) {
     const src = readFileSync(new URL(f, import.meta.url), 'utf8');
     for (const m of src.matchAll(/\bplay\((?:[^'()]*\? )?'([a-z_]+)'(?: : '([a-z_]+)')?/g)) { ids.add(m[1]); if (m[2]) ids.add(m[2]); }
