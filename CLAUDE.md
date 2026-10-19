@@ -7,6 +7,9 @@
 5. **`npm test` must be green.** It runs the guards: banned patterns, layer boundaries and the duplication ratchet. A `NEW` duplication finding means fold the copy into one seam, or list it in `tools/guards/duplication-baseline.json` with a reason. A `STALE` one means delete its baseline line.
 6. **Every ~10 PRs, a sweep:** run both finders (`npm run dup`, `npm run repeated -- --min-info 0 --clone-floor 0.6`; reports land in `reports/`), read for concept duplicates, fold what is worth folding.
 7. **Each PR adds a change note** `changes/<slug>.md` (`# Title`, then `- ` bullets; see [changes/README.md](changes/README.md)). Never edit `CHANGELOG.md` or pick a version: after the merge a workflow folds the notes into it as the next versions (v0.001 + 0.001 per merge). PR titles carry no version.
+8. **The baton is [HANDOFF.md](HANDOFF.md)** ([docs/CROSS-TOOL.md](docs/CROSS-TOOL.md)): read it before you start, overwrite it before you stop, commit it with the work.
+9. **Run checks through the one gate:** `bash scripts/gate.sh` (cheap tier `npm run build`; full tier adds `npm test`). Exit `0` green, `1` red, `2` cheap only, `9` lock busy (VOID). Never hand-roll `npm test` for a landing, and never pipe a check through `tail`/`head`.
+10. **A writer session works only in its own `worktrees/<slug>`.** The main tree belongs to whoever asked for the change.
 
 Design: [docs/design/](docs/design/) (the main plan is `dunfinity-plan.md`).
 
