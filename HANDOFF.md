@@ -44,13 +44,18 @@ open the PR and merge. If it reports BLOCKED, read its evidence before re-dispat
 
 ## Queued after it
 
-- **The town's sounds** (new host capability, owner-flagged 2026-10-19): `or request
-  POST /audio/speech` with `bytedance-seed/seed-audio-1-0` generates sound effects from
-  a prompt — proven, the take is `worktrees/birds-candidate.mp3`, and the exact command,
-  limits and integration facts are in `worktrees/NOTES-town-slice.md`. Planned slice:
-  birds by day, a far dog, a bell, hand-added to `public/sounds/manifest.json` (MP3 is
-  fine: no ffmpeg or numpy on this host). Serialize it against the street slice — both
-  add rows to `docs/ARCHITECTURE.md`.
+- **The town's sounds** (new host capability, owner-flagged 2026-10-19): Seed Audio via
+  `POST /audio/speech` (`bytedance-seed/seed-audio-1-0`, prompt in `input`,
+  `response_format: "mp3"`) generates sound effects; Lyria via a *streaming*
+  `/chat/completions` call (`modalities: ["audio"], stream: true`, audio base64 in
+  `choices[0].delta.audio.data`) generates music. **A byte-preserving client is
+  required** — `or request` decodes the body as text and destroys binary (that was my
+  first, broken take). The working method, limits and integration facts are in
+  `worktrees/NOTES-town-slice.md`; the real candidates are in
+  `worktrees/audio-candidates/` (`birds.mp3`, `day-town-ambience.mp3`,
+  `day-song-lyria.mp3`). Planned slice: a day bed + bird one-shots + a far dog, added to
+  `public/sounds/manifest.json` (MP3 is fine: no ffmpeg or numpy here). Serialize it
+  against the street slice — both add rows to `docs/ARCHITECTURE.md`.
 
 
 ## Open questions for the owner
