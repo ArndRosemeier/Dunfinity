@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Level } from '../src/gen/level';
 import { HOUSES, homeDoor, shopDoor } from '../src/gen/town';
 import { Neighbour, WEBER } from '../src/world/neighbour';
+import { canHear, talking } from '../src/world/townsperson';
 
 test('Frau Weber lives across the street, not in a shop, and stands on her step out in the air', () => {
   const homes = HOUSES.filter((h) => h.role === 'weber');
@@ -13,7 +14,7 @@ test('Frau Weber lives across the street, not in a shop, and stands on her step 
   const w = new Neighbour(), level = new Level(1, 0);
   assert.ok(level.sdf(w.x, w.y + 1, w.z) > 0.3, 'she stands in the air, not in a wall');
   assert.ok(level.sdf(d.x, w.y + 1, d.z) > 0.4, 'there is room to stand at her door');
-  assert.ok(w.canHear(d.x, w.y, d.z), 'from her door one can talk to her');
+  assert.ok(canHear(w, d.x, w.y, d.z), 'from her door one can talk to her');
 });
 
 test('she greets the first visit, mourns the fallen once each, and her rumours open with depth', () => {
@@ -27,7 +28,7 @@ test('she greets the first visit, mourns the fallen once each, and her rumours o
   const deep = new Set<string>();
   for (let i = 0; i < 20; i++) deep.add(w.talk({ deepest: 10, fallen: 1 }, 30 + i));
   assert.ok([...deep].some((l) => /Tall/.test(l)), 'the deepest rumour once the family has been to 10');
-  assert.ok(w.talking(30 + 19 + WEBER.talk - 0.1) && !w.talking(30 + 19 + WEBER.talk + 0.1));
+  assert.ok(talking(w, 30 + 19 + WEBER.talk - 0.1) && !talking(w, 30 + 19 + WEBER.talk + 0.1));
 });
 
 test('she turns to whoever comes near, steadily, and back to the street once they go', () => {

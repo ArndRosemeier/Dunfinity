@@ -12,7 +12,7 @@ import { randomAppearance, type HumanoidAppearance } from '@futuremagic/humanoid
 import type { Ghost } from '@futuremagic/humanoid/three';
 import { deriveSeed } from '@futuremagic/core';
 import { HumanPool, humans } from '../creatures/humanPool';
-import type { Townsperson } from '../../world/townsperson';
+import { talking, type Townsperson } from '../../world/townsperson';
 import { WEBER } from '../../world/neighbour';
 import { STRANGER } from '../../world/stranger';
 import { KEEPER } from '../../world/shopkeeper';
@@ -59,7 +59,7 @@ export class NeighbourView<T extends Townsperson = Townsperson> {
 
   private constructor(h: Awaited<ReturnType<typeof humans>>, talk: number, mood: 'happy' | 'sad', fade?: (n: T, time: number) => number) {
     this.people = new HumanPool<T>(h, SHOWN, (n, time) => ({
-      anim: { move: 'idle', action: n.talking(time) ? { id: 'talk', t0: n.talkAt, dur: talk } : undefined, mood: n.talking(time) ? mood : 'neutral' },
+      anim: { move: 'idle', action: talking(n, time) ? { id: 'talk', t0: n.talkAt, dur: talk } : undefined, mood: talking(n, time) ? mood : 'neutral' },
       combat: false,
     }), 0.7, fade);
   }

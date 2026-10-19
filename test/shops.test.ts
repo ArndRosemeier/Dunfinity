@@ -5,6 +5,7 @@ import { daylightAt } from '../src/gen/cellar';
 import { HOUSES, SHOP, TOWN, shopAir, shopDoor, shopKeeper, shopRoom, type Shop } from '../src/gen/town';
 import { PropBuilder, local } from '../src/gen/propMesh';
 import { furnishTown } from '../src/gen/townProps';
+import { canHear, talking } from '../src/world/townsperson';
 import { KEEPER, Shopkeeper } from '../src/world/shopkeeper';
 import { quarryProps } from '../src/gen/quarryProps';
 import { Blockers } from '../src/world/blockers';
@@ -41,8 +42,8 @@ test('the keeper stands behind the counter, facing the door, and one deals with 
     assert.ok(level.sdf(k.x, k.y + 1, k.z) > 0.25, `${shop}: the keeper stands in the air`);
     assert.ok(Math.abs(spot.yaw - Math.atan2(-d.nx, -d.nz)) < 0.01 || Math.abs(Math.abs(spot.yaw - Math.atan2(-d.nx, -d.nz)) - 2 * Math.PI) < 0.01, `${shop}: facing out`);
     const [fx, fz] = at(shop, H.door, R.v0 + SHOP.counter.at + SHOP.counter.deep + 0.35);
-    assert.ok(k.canHear(fx, TOWN.ground, fz), `${shop}: heard from the front of the counter`);
-    assert.ok(!k.canHear(d.x, TOWN.ground, d.z), `${shop}: not from the street`);
+    assert.ok(canHear(k, fx, TOWN.ground, fz), `${shop}: heard from the front of the counter`);
+    assert.ok(!canHear(k, d.x, TOWN.ground, d.z), `${shop}: not from the street`);
     // Something in the way between customer and keeper: the counter.
     const [mx, mz] = at(shop, H.door + 0.3, R.v0 + SHOP.counter.at);
     assert.ok(blocks.some(([x, z, yaw, hx, hz, y0, y1]) => {
@@ -57,9 +58,9 @@ test('keepers talk in turn when called on, and with their hands over a deal', ()
     const k = new Shopkeeper(shop), said = new Set<string>();
     for (let i = 0; i < 5; i++) said.add(k.talk(i * 10));
     assert.equal(said.size, 5);
-    assert.ok(k.talking(40 + KEEPER.talk - 0.1) && !k.talking(40 + KEEPER.talk + 0.1));
+    assert.ok(talking(k, 40 + KEEPER.talk - 0.1) && !talking(k, 40 + KEEPER.talk + 0.1));
     k.deal(100);
-    assert.ok(k.talking(100.5));
+    assert.ok(talking(k, 100.5));
   }
 });
 

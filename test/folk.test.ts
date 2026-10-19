@@ -5,6 +5,7 @@ import { Level } from '../src/gen/level';
 import { SCAVENGER, Scavenger, Scavengers, lookOf } from '../src/creatures/scavengers';
 import { GOBLIN_FOLK } from '../src/creatures/goblins';
 import { Stranger, STRANGER } from '../src/world/stranger';
+import { talking } from '../src/world/townsperson';
 import { shopDoor } from '../src/gen/town';
 
 test('each game has two peoples of the deep, never dwarves, elves, goblins or giantkin', () => {
@@ -35,7 +36,7 @@ test('the stranger stands by Ilse\'s door once the family has been below level 1
   assert.ok(Math.hypot(s.x - d.x, s.z - d.z) < 3);
   const a = s.talk(1), b = s.talk(2);
   assert.notEqual(a, b);
-  assert.ok(s.talking(3) && !s.talking(2 + STRANGER.talk + 0.1));
+  assert.ok(talking(s, 3) && !talking(s, 2 + STRANGER.talk + 0.1));
 });
 
 test('no other people below the town: the camps are goblins, goblin-sized', () => {

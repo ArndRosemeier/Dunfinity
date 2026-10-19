@@ -7,6 +7,7 @@
  */
 import { hash3f, v3cross, v3madd, v3norm, v3scale, type Vec3 } from '@futuremagic/core';
 import { HOUSES, SHOP, TOWN, VILLAGE, houseColors, shopRoom, townGround, type House } from './town';
+import { CHIMNEYS, type Chimney } from './chimneys';
 import { ridgeHeight } from './village';
 import { alongPolyline, polylineLength } from './polyline';
 import { propModel } from './models';
@@ -14,6 +15,8 @@ import { local, type PropBuilder, type Rgb } from './propMesh';
 import type { Furnish } from './cellarProps';
 
 const IRON: Rgb = [0.08, 0.08, 0.09], DOOR: Rgb = [0.18, 0.11, 0.07], FRAME: Rgb = [0.3, 0.26, 0.2], STONE: Rgb = [0.36, 0.34, 0.31];
+/** A chimney's brick and its clay pot. */
+const BRICK: Rgb = [0.34, 0.19, 0.13], POT: Rgb = [0.4, 0.24, 0.16];
 /** Window glass by day (a little of the sky in it, the rooms dim behind), a lamp's glass when it is out, a dim hall seen through an open door. */
 const PANE: Rgb = [0.2, 0.25, 0.3], BACK_PANE: Rgb = [0.1, 0.12, 0.15], LANTERN: Rgb = [0.62, 0.6, 0.52], HALL: Rgb = [0.1, 0.075, 0.06], BELFRY: Rgb = [0.03, 0.03, 0.035], CHURCH_PANE: Rgb = [0.12, 0.15, 0.22];
 
@@ -22,6 +25,9 @@ const SHELL = 0.15;
 
 /** The town's own seed for its props: which windows show more of the sky. */
 const TOWN_PROPS = 1932;
+
+/** The town's chimneys, by their house's index (src/gen/chimneys.ts). */
+const CHIMNEY_AT: ReadonlyMap<number, Chimney> = new Map(CHIMNEYS.map((c) => [c.house, c]));
 
 /** The street lamps: how far apart along a street (closer on grandma's), how high. */
 const LAMP = { every: 24, herStreet: 13, height: 3.8 } as const;
@@ -65,6 +71,8 @@ export function furnishTown(f: Furnish): void {
   HOUSES.forEach((H, i) => {
     if (!f.inTile(H.cx, H.cz)) return;
     shell(f, H, i === 0);
+    const c = CHIMNEY_AT.get(i);
+    if (c) chimney(f, H, c);
     if (i > 0) fronts(f, H, i);
   });
 
@@ -245,6 +253,14 @@ function shell(f: Furnish, H: House, hers: boolean): void {
     const mid = plus(plus(plus(c, b, eb / 2), up, (ridge + ey) / 2), n, lift);
     s.box(mid[0], mid[1], mid[2], u, half, unit(n, 0.06), roof);
   }
+}
+
+/** A house's chimney (src/gen/chimneys.ts): a brick stack through the roof, its stone cap and a clay pot. */
+function chimney(f: Furnish, H: House, c: Chimney): void {
+  const s = f.solid;
+  s.upright(c.x, (c.base + c.top) / 2, c.z, H.yaw, 0.3, (c.top - c.base) / 2, 0.3, BRICK);
+  s.upright(c.x, c.top + 0.05, c.z, H.yaw, 0.37, 0.05, 0.37, STONE);
+  s.cylinder(c.x, c.top + 0.22, c.z, 0.12, 0.16, POT, 8);
 }
 
 const SIGN: Rgb = [0.12, 0.09, 0.06], BRASS: Rgb = [0.6, 0.47, 0.2], PAINT: Rgb = [0.18, 0.3, 0.22];
