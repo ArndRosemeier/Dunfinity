@@ -38,8 +38,8 @@ export interface Ringed {
 
 export const SALT_SIGHT = {
   /** How far outside the body the salt line runs, px, plus a share of the body's size on screen. */
-  pad: 5,
-  padShare: 0.08,
+  pad: 3,
+  padShare: 0.04,
   /** How much rounder than its box the aura goes, a share of its size on screen. */
   soften: 0.55,
   /** The spacing of the points along the aura's outline, px. */
@@ -49,11 +49,11 @@ export const SALT_SIGHT = {
   flowSpeed: 0.55,
   /** The glow: how far it reaches out from the line (a share of the size on screen, held between these px), in how many layers, how bright at the line. */
   reach: 0.55,
-  reachPx: [14, 100] as const,
+  reachPx: [18, 100] as const,
   layers: 10,
-  bright: 0.62,
+  bright: 0.95,
   /** How bright the glow is over the body itself, a share of its brightness at the line. */
-  within: 0.45,
+  within: 0.5,
   /** The glow is drawn this many times smaller and stretched back over the view: soft, and cheap; blurred so much more (px, at its size) where the browser can. */
   coarse: 4,
   blur: 2,
