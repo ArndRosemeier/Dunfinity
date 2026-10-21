@@ -21,6 +21,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: .actors-pack
+          key: actors-pack-${{ hashFiles('package-lock.json') }}
+          restore-keys: actors-pack-
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run check:shaders -- ${{ matrix.part }}

@@ -33,6 +33,11 @@ jobs:
         id: pages
         with:
           enablement: true
+      - uses: actions/cache@v4
+        with:
+          path: .actors-pack
+          key: actors-pack-${{ hashFiles('package-lock.json') }}
+          restore-keys: actors-pack-
       # The repo's Pages site lives under /dunfinity/, the same subpath build:publish targets.
       - run: npm run build:publish
         env:

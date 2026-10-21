@@ -11,3 +11,6 @@ reports/
 /.cos/worktrees
 /.cos/root-session
 /.cos/.stop-guard
+
+# The Actors asset pack, fetched per version by tools/actors/pack.mjs
+/.actors-pack/

@@ -5,11 +5,20 @@
  * a newcomer takes the human of its own look where it can. A blow makes them flinch.
  */
 import { Group, type Object3D } from 'three/webgpu';
-import { Humanoid, type AnimState, type HumanoidOptions } from '@futuremagic/humanoid/three';
+import { Humanoid, type HumanoidOptions } from '@futuremagic/humanoid/three';
 import type { EquipmentVisuals, HumanoidAppearance } from '@futuremagic/humanoid';
 import { WARDROBE } from '../humans/wardrobe';
 import type { Level } from '../../gen/level';
 import { floorUnder } from '../humans/nobody';
+import type { AnimState } from '../actors/figure';
+
+/** What the pool draws with: an old human (Humanoid) or an Actors `Figure`. */
+export interface PoolFigure {
+  readonly object: Object3D;
+  readonly animator: { onHit(dirX: number, dirZ: number, strength: number): void };
+  fade: number;
+  update(f: { pos: [number, number, number]; vel: [number, number, number]; yaw: number; anim: AnimState; combat?: boolean }, dt: number, time: number, ground: (x: number, y: number, z: number) => number | null): void;
+}
 
 /** What the pool needs of someone drawn. */
 export interface Drawn {
@@ -37,7 +46,7 @@ export async function humans(n: number, look: (k: number) => HumanoidAppearance,
 }
 
 interface Slot<T> {
-  readonly human: Humanoid;
+  readonly human: PoolFigure;
   who: T | null;
   health: number;
 }
@@ -50,7 +59,7 @@ export class HumanPool<T extends Drawn> {
   private readonly slots: Slot<T>[];
 
   /** `shown`: how far off they are drawn, metres; `anim`: what the animator plays for one of them, and whether they hold their weapon ready; `flinch`: how hard a blow jerks them (a death always fully); `fade`: for ghosts, how much of one shows (0..1). */
-  constructor(humans: Humanoid[], private readonly shown: number, private readonly anim: (t: T, time: number) => { anim: AnimState; combat: boolean }, private readonly flinch = 0.7, private readonly fade?: (t: T, time: number) => number) {
+  constructor(humans: PoolFigure[], private readonly shown: number, private readonly anim: (t: T, time: number) => { anim: AnimState; combat: boolean }, private readonly flinch = 0.7, private readonly fade?: (t: T, time: number) => number) {
     this.slots = humans.map((human) => ({ human, who: null, health: 0 }));
     for (const s of this.slots) this.root.add(s.human.object);
   }
