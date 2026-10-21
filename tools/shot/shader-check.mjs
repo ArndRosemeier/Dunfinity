@@ -78,7 +78,8 @@ try {
     const game = await browser.newPage({ viewport: { width: 960, height: 600 } });
     game.on('pageerror', (e) => problems.push(`game page error: ${e.message}`));
     await game.goto(server.resolvedUrls.local[0] + '?seed=1&gl', { timeout: 120000 });
-    await game.waitForFunction(() => window.__ready === true, null, { timeout: 240000 });
+    // The village's Actors people warm every part's shadow (each figure's are its own): slow under SwiftShader.
+    await game.waitForFunction(() => window.__ready === true, null, { timeout: 600000 });
     const played = await game.evaluate(async () => {
       const g = window.__game;
       for (let t = 0; t < 20; t++) { g.cam.yaw += 0.3; await new Promise((r) => setTimeout(r, 150)); }
