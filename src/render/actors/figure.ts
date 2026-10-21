@@ -6,7 +6,6 @@
  * closes the fists round what they carry (`carry`).
  */
 import { BufferGeometry, Group, SkinnedMesh, type Material, type Mesh, type Object3D } from 'three/webgpu';
-import { uniform } from 'three/tsl';
 import { nodeMaterials } from '@actors/three/webgpu';
 import type { CharacterPatch } from '@actors/generator';
 import { Character, HUMAN_PACK, packFetch } from './pack';
@@ -139,16 +138,8 @@ export class Figure {
     return this.character.height;
   }
 
-  /** A ghost's fade (0 gone .. 1 there; src/render/actors/ghost.ts reads it); the living ignore it. */
-  readonly fadeNode = uniform(1);
-
-  get fade(): number {
-    return this.fadeNode.value;
-  }
-
-  set fade(v: number) {
-    this.fadeNode.value = v;
-  }
+  /** A ghost's fade (0 gone .. 1 there; src/render/actors/ghost.ts reads it at each draw); the living ignore it. */
+  fade = 1;
 
   /** The hips' height over the feet standing, metres. */
   get hipHeight(): number {
