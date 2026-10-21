@@ -18,7 +18,7 @@ import { CritterLineup } from '../render/creatures/critterLineup';
 import type { CritterRole } from '../creatures/bestiary';
 import { meshOf } from '../render/meshes';
 import { VERTEX_COLOR_SOLID } from '../render/materials';
-import { RACE_IDS, type RaceId } from '@futuremagic/humanoid';
+import { RACE_IDS, type RaceId } from '@actors/human';
 
 export async function startLab(host: HTMLElement, loading: LoadingScreen): Promise<void> {
   const params = parseViewParams(location.search);
@@ -32,10 +32,10 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
   const fly = new FlyCamera(camera, new Controls(canvas));
   if (params.look) [fly.yaw, fly.pitch] = [(params.look[0] * Math.PI) / 180, (params.look[1] * Math.PI) / 180];
 
-  // Every race side by side (?races), or one close up (?races=<race>), as skeletons with `bones` (?races=bones, ?races=<race>-bones): built before the warm-up, which compiles the humans.
-  const bones = !!params.races?.endsWith('bones'), race = params.races?.replace(/-?bones$/, '');
+  // Every race side by side (?races), or one close up (?races=<race>), as skeletons with `bones` (?races=bones, ?races=<race>-bones) or ghosts (?races=ghosts, ?races=<race>-ghost): built before the warm-up, which compiles the humans.
+  const as = /bones$/.test(params.races ?? '') ? 'bones' : /ghosts?$/.test(params.races ?? '') ? 'ghost' : null, race = params.races?.replace(/-?(bones|ghosts?)$/, '');
   const one = race && (RACE_IDS as readonly string[]).includes(race) ? (race as RaceId) : undefined;
-  const lineup = params.races !== null ? await Lineup.create(params.seed, one, bones) : null;
+  const lineup = params.races !== null ? await Lineup.create(params.seed, one, as) : null;
   if (lineup) {
     lineup.pool.level = level;
     lineup.stand(camera.position.x, camera.position.z, fly.yaw, one ? 1.6 : 4, (x, z) => level.groundAt(x, z));

@@ -47,14 +47,9 @@ function marked(m: Object3D): boolean {
   return false;
 }
 
-/**
- * Whether `m` builds a shadow shader of its own: under an object marked `OWN_SHADOWS`, or the old
- * humans' hair cards (attribute `hairAux`: each hairstyle's shader differs, while the key above
- * cannot tell them apart).
- */
+/** Whether `m` builds a shadow shader of its own: under an object marked `OWN_SHADOWS`. */
 function ownShadows(m: Object3D): boolean {
   const mesh = m as Mesh;
-  if (mesh.geometry?.attributes.hairAux) return true;
   if (!marked(m)) return false;
   // A plain shadow (below) is shared, unless the part's morphs or moved vertices are its own.
   const mat = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as Material & { positionNode?: unknown };
@@ -115,7 +110,7 @@ export class Stage {
 
   /**
    * Compile every material kind, then switch the cap on. Call after lights and fog are set up.
-   * `extra`: objects whose materials are not registry kinds (the humanoid's, made by its package),
+   * `extra`: objects whose materials are not registry kinds (Actors figures', made by its package),
    * compiled with them; add them with `add` later (a cache hit by then).
    */
   async warmUp(extra: readonly Object3D[] = []): Promise<void> {

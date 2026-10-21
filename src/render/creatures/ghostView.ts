@@ -1,19 +1,19 @@
 /**
- * The ghosts of the old races on screen (src/creatures/ghosts.ts): Norgo's dwarves and elves on
- * Scale's bodies, made ghosts by the humanoid package (seen through, glowing at the rim, no
+ * The ghosts of the old races on screen (src/creatures/ghosts.ts): Actors' dwarves and elves,
+ * made ghosts (src/render/actors/ghost.ts) (seen through, glowing at the rim, no
  * shadow): the dwarves a pale gold, the elves a pale silver-blue. They walk their beat, stand and
  * turn to you, talk, and fade away. A slow flicker runs through them while they are there.
  *
  * Two `HumanPool`s (a ghost keeps its own race's body): the nearest of each are drawn.
  */
-import { randomAppearance, type HumanoidAppearance } from '@futuremagic/humanoid';
-import type { Humanoid, Ghost as GhostLook } from '@futuremagic/humanoid/three';
+import type { CharacterPatch } from '@actors/generator';
 import { deriveSeed } from '@futuremagic/core';
 import type { Object3D } from 'three/webgpu';
 import { groundSpeed } from '../../creatures/creature';
 import { GHOST, type Ghost, type GhostRace } from '../../creatures/ghosts';
-import { ghostsClothes } from '../humans/wardrobe';
-import { HumanPool, humans } from './humanPool';
+import { dressOf, folkLook, type Dress } from '../actors/looks';
+import type { GhostLook } from '../actors/ghost';
+import { HumanPool, figures, type PoolFigure } from './humanPool';
 
 /** How many of each race can be drawn at once, and how far off, metres. */
 const POOL = 2;
@@ -24,13 +24,19 @@ const LOOK: Record<GhostRace, GhostLook> = {
   elf: { tint: [0.7, 0.85, 1], opacity: 0.4 },
 };
 
-/** A ghost's look, from its race's own table. */
-export function ghostLook(seed: number, race: GhostRace, k: number): HumanoidAppearance {
-  return randomAppearance(race, deriveSeed(seed, 'ghost', race, k), { age: race === 'dwarf' ? 0.7 : 0.5, gender: k === 1 ? 0.15 : 0.9 });
+/** What the ghosts wear (seen through, in their tint): a dwarf's work clothes and boots, an elf's pale tunic and trousers. */
+const DRESS: Record<GhostRace, Dress> = {
+  dwarf: dressOf([['briefs', [0.3, 0.3, 0.3]], ['tunic', [0.3, 0.26, 0.2]], ['wool-pants', [0.22, 0.2, 0.17]], ['work-boots', [0.2, 0.15, 0.1]]]),
+  elf: dressOf([['briefs', [0.6, 0.6, 0.6]], ['tunic', [0.7, 0.72, 0.76]], ['wool-pants', [0.62, 0.64, 0.7]], ['cloth-shoes', [0.55, 0.57, 0.62]]]),
+};
+
+/** A ghost's look: one of its race, in its race's clothes. */
+export function ghostLook(seed: number, race: GhostRace, k: number): Promise<CharacterPatch> {
+  return folkLook(race, deriveSeed(seed, 'ghost', race, k), { age: race === 'dwarf' ? 0.7 : 0.5, female: k === 1 }, DRESS[race]);
 }
 
 class GhostPool extends HumanPool<Ghost> {
-  constructor(humans: Humanoid[]) {
+  constructor(humans: PoolFigure[]) {
     super(humans, SHOWN, (g, time) => {
       const moving = groundSpeed(g) > 0.1;
       const action = g.mode === 'speak' ? { id: 'talk', t0: time - g.t, dur: GHOST.speaking } : undefined;
@@ -41,7 +47,7 @@ class GhostPool extends HumanPool<Ghost> {
 
 export class GhostView {
   static async create(seed: number): Promise<GhostView> {
-    const pool = async (race: GhostRace) => new GhostPool(await humans(POOL, (k) => ghostLook(seed, race, k), (k) => ghostsClothes(deriveSeed(seed, 'ghost', 'clothes', k), race), { ghost: LOOK[race] }));
+    const pool = async (race: GhostRace) => new GhostPool(await figures(POOL, (k) => ghostLook(seed, race, k), () => null, { ghost: LOOK[race] }));
     return new GhostView(await pool('dwarf'), await pool('elf'));
   }
 
