@@ -1,15 +1,15 @@
 /**
  * Climbing a ladder, played out (after Scale's manhole climb): walk to the ladder, get on it (over
  * the rim of a shaft, or at its foot), climb with hands and feet on the rungs, get off. The nobody is
- * a puppet meanwhile: the scene sets its place and facing, poses it through the animator's override
- * and puts hands and feet on the rungs and the floor (`Animator.limbs`).
+ * a puppet meanwhile: the scene sets its place and facing, poses it through its figure's `override`
+ * and puts hands and feet on the rungs and the floor (`Figure.limbs`, src/render/actors/rig.ts).
  *
  * The game strings steps together (`play`), including a change of level in the middle of a climb.
  * Heights are world heights; a ladder (src/gen/descents.ts `Ladder`) gives the rungs and the floor.
  */
 import { Vector3 } from 'three/webgpu';
-import { kf, smooth, clamp, type LimbGoal, type LimbGoals, type Pose } from '@futuremagic/humanoid/three';
-import { lerpAngle } from '@futuremagic/core';
+import { clamp, lerpAngle, smoothstep as smooth } from '@futuremagic/core';
+import { kf, type LimbGoal, type LimbGoals, type Pose } from '../actors/rig';
 import { RUNG, type Ladder } from '../../gen/descents';
 import type { Ledge } from '../../world/traverse/body';
 import type { Nobody } from './nobody';
@@ -101,8 +101,9 @@ export class LadderClimb {
   play(steps: ClimbStep[], x: number, y: number, z: number, yaw: number): void {
     this.pos.set(x, y, z);
     this.yaw = yaw;
-    this.k = this.nobody.human.height / 1.8;
-    this.hipW = this.nobody.human.animator.hipWorld() || 0.52 * this.nobody.human.height;
+    const f = this.nobody.figure;
+    this.k = f.height / 1.8;
+    this.hipW = f.hipHeight || 0.52 * f.height;
     this.segs = [];
     // Segments are planned as they come (a walk starts from wherever the last one ended).
     for (const s of steps) this.segs.push(this.plan(s));
@@ -138,10 +139,10 @@ export class LadderClimb {
       this.segT = 0;
       if (left <= 1e-6) break;
     }
-    const an = this.nobody.human.animator;
-    const fn = this.poseFn as ((p: Pose) => void) | null, w = this.overW;
-    an.override = fn && this.active ? (p: Pose) => { fn(p); return w; } : null;
-    an.limbs = this.active ? g : null;
+    const fig = this.nobody.figure;
+    const fn = this.poseFn as ((p: Pose) => void) | null;
+    fig.override = fn && this.active ? { pose: fn, w: this.overW } : null;
+    fig.limbs = this.active ? g : null;
     if (!this.walking) this.vel[0] = this.vel[1] = this.vel[2] = 0;
     this.nobody.puppet([this.pos.x, this.pos.y, this.pos.z], this.vel, this.yaw, this.walking ? 'walk' : 'idle', dt, time);
   }
@@ -151,8 +152,8 @@ export class LadderClimb {
     this.segs = [];
     this.seg = 0;
     this.fade = 0;
-    this.nobody.human.animator.override = null;
-    this.nobody.human.animator.limbs = null;
+    this.nobody.figure.override = null;
+    this.nobody.figure.limbs = null;
   }
 
   // ------------------------------------------------------------------ steps

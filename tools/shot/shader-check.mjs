@@ -78,7 +78,8 @@ try {
     const game = await browser.newPage({ viewport: { width: 960, height: 600 } });
     game.on('pageerror', (e) => problems.push(`game page error: ${e.message}`));
     await game.goto(server.resolvedUrls.local[0] + '?seed=1&gl', { timeout: 120000 });
-    await game.waitForFunction(() => window.__ready === true, null, { timeout: 240000 });
+    // The village's Actors people warm every part's shadow (each figure's are its own): slow under SwiftShader.
+    await game.waitForFunction(() => window.__ready === true, null, { timeout: 600000 });
     const played = await game.evaluate(async () => {
       const g = window.__game;
       for (let t = 0; t < 20; t++) { g.cam.yaw += 0.3; await new Promise((r) => setTimeout(r, 150)); }
@@ -103,16 +104,11 @@ try {
     await title.waitForSelector('#title .ask .mode button', { state: 'attached', timeout: 60000 });
     await title.evaluate(() => document.querySelector('#title .ask .mode button').click());
     await title.waitForSelector('#creator .side', { state: 'attached', timeout: 600000 });
-    await title.evaluate(() => {
-      const hair = () => [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'hair');
-      hair()?.click();
-      const styles = [...document.querySelectorAll('#creator .chips button')];
-      styles.find((b) => !b.classList.contains('on'))?.click();
-      // And other clothes: a dress and a cap (new garments, a rigid part on the head).
-      [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'clothes')?.click();
-      for (const t of ['Dress', 'Cap']) [...document.querySelectorAll('#creator .chips button')].find((b) => b.textContent === t)?.click();
-    });
-    await title.waitForSelector('#creator .go:not([disabled])', { state: 'attached', timeout: 900000 });
+    // Someone else by the dice (src/app/creatorView.ts): other hair, other clothes, other body.
+    await title.evaluate(() => document.querySelector('#creator .quick button')?.click());
+    // Each Actors figure's body and hair warm their shadow shader one by one, each with a frame of the whole
+    // scene: under SwiftShader that is minutes (on a GPU, milliseconds).
+    await title.waitForSelector('#creator .go:not([disabled])', { state: 'attached', timeout: 1800000 });
     await new Promise((r) => setTimeout(r, 3000)); // the new look's rebuild
     const warm = await title.evaluate(() => {
       // The Stage's shadow warm-up builds on the render path on purpose, in cap slots, and marks them.

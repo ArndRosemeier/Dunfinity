@@ -58,14 +58,14 @@ export async function startLab(host: HTMLElement, loading: LoadingScreen): Promi
     if (!params.pos) { camera.position.y = floorY + Math.max(0.3, critters.tallest * 0.9); fly.pitch = -0.2; }
   }
   if (hands) {
-    hands.pool.level = level;
+    hands.level = level;
     hands.standBefore(camera.position.x, floorY, camera.position.z, fly.yaw, 1.2);
     if (!params.pos) { camera.position.y = floorY + 1.2; fly.pitch = -0.2; }
   }
   loading.step('Warming up the shaders', 0.15);
-  await view.start([...(lineup ? lineup.pool.figures : []), ...(hands ? hands.pool.figures : []), ...(critters ? critters.roots : [])]);
+  await view.start([...(lineup ? lineup.pool.figures : []), ...(hands ? [hands.root] : []), ...(critters ? critters.roots : [])]);
   if (lineup) await stage.add(lineup.pool.root);
-  if (hands) await stage.add(hands.pool.root);
+  if (hands) await stage.add(hands.root);
   if (critters) for (const r of critters.roots) await stage.add(r);
   if (floor) { view.worldShown = false; await stage.add(floor); }
   const { terrain, props } = view;

@@ -3,7 +3,7 @@
  * they sit, as garment shells the package fits to any body: the rags a grandchild goes down in,
  * what they put on of their kit (src/loot/items.ts), and Grandma's kitchen knife in the hand.
  */
-import type { BodyFit, EquipmentVisuals, ItemVisual, ShellLayer, ShellMaterial, WearableSpec } from '@futuremagic/humanoid';
+import { setHumanAssetBase, type BodyFit, type EquipmentVisuals, type ItemVisual, type ShellLayer, type ShellMaterial, type WearableSpec } from '@futuremagic/humanoid';
 import type { Wardrobe } from '@futuremagic/humanoid/three';
 import { Group, type Mesh, type Object3D } from 'three/webgpu';
 import { PropBuilder } from '../../gen/propMesh';
@@ -11,7 +11,9 @@ import { propModel } from '../../gen/models';
 import { meshFromData } from '../meshes';
 import { METAL, VERTEX_COLOR_SOLID } from '../materials';
 import { QUALITY, type Item, type ItemKind } from '../../loot/items';
-import type { OutfitSpec } from '../../loot/outfit';
+
+// The old humans' bodies and clips (every old human is dressed from here): served by vite.config.ts.
+setHumanAssetBase(`${import.meta.env.BASE_URL}humanoid/`);
 
 type Rgb = [number, number, number];
 
@@ -43,7 +45,7 @@ function resolve(defId: string, v: ItemVisual): WearableSpec | null {
     /** Leather wrapped round the feet and ankles. */
     case 'footwraps': return shell([{ region: 'foot.L' }, { region: 'foot.R' }, { region: 'shin.L', from: 0.6 }, { region: 'shin.R', from: 0.6 }], 0.012, 2, cloth(v, 'leather', { roughness: 0.75 }));
     /** Kemal's miner's helmet: the modelled hard hat (dented green enamel, brim, lamp; `wear_hard_hat`) on the head, the hair tucked under. */
-    case 'miners-helmet': return { layers: [{ kind: 'rigid', socket: 'head', build: hardHat }], hideHair: true };
+    case 'miners-helmet': return { layers: [{ kind: 'rigid', socket: 'head', build: (fit) => hardHat(fit.headRadius) }], hideHair: true };
     /** Work gloves: leather over the hands, a cuff over the wrist. */
     case 'work-gloves': return shell([{ region: 'hand.L' }, { region: 'hand.R' }, { region: 'forearm.L', from: 0.85 }, { region: 'forearm.R', from: 0.85 }], 0.006, 3, cloth(v, 'leather', { roughness: 0.7 }));
     default: return everyday(defId, v);
@@ -215,9 +217,9 @@ function potLid(): Object3D {
  * (origin at the brim's centre underneath, lamp forward, made for a head of radius 0.1 m) scaled to
  * this head and lifted from the socket at ear height to sit on the crown.
  */
-function hardHat(fit: BodyFit): Object3D {
-  const k = fit.headRadius / HAT.radius;
-  return held((paint) => paint.stamp(propModel('wear_hard_hat'), 0, fit.headRadius * HAT.lift, HAT.forward * fit.headRadius, 0, { scale: k }));
+export function hardHat(headRadius: number): Object3D {
+  const k = headRadius / HAT.radius;
+  return held((paint) => paint.stamp(propModel('wear_hard_hat'), 0, headRadius * HAT.lift, HAT.forward * headRadius, 0, { scale: k }));
 }
 
 /** The hard hat's fit: the head it was made for, how far above the socket its brim sits and how far forward (both in head radii). */
@@ -232,17 +234,23 @@ const KNIFE_TILT = 0;
 /** How far the flashlight is turned in the off hand's fist, radians: along the forearm, the lamp forward. */
 const FLASHLIGHT_TILT = 2.7;
 
+/** A held thing by its id (the knife, a tool, the pot lid, the flashlight, the umbrella), built in grip space. */
+export function buildHeld(defId: string): Object3D {
+  if (defId === 'knife') return kitchenKnife();
+  if (TOOLS[defId]) return tool(TOOLS[defId][0]);
+  if (defId === 'potlid') return potLid();
+  if (defId === 'flashlight') return flashlight();
+  if (defId === 'umbrella') return umbrella();
+  throw new Error(`no held item "${defId}"`);
+}
+
+/** The tool of the kit `items` that is carried (a hatchet, pick or crowbar), if any. */
+export const heldTool = (items: readonly Item[]): string | null => items.find((it) => TOOLS[it.kind])?.kind ?? null;
+
 export const WARDROBE: Wardrobe = {
   resolve,
   itemDef: (defId) => (defId === 'knife' ? { visual: { shape: 'knife' }, category: 'weapon' } : defId === 'potlid' ? { visual: { shape: 'shield-potlid' }, category: 'shield' } : { visual: { shape: defId } }),
-  buildItem: (defId) => {
-    if (defId === 'knife') return kitchenKnife();
-    if (TOOLS[defId]) return tool(TOOLS[defId][0]);
-    if (defId === 'potlid') return potLid();
-    if (defId === 'flashlight') return flashlight();
-    if (defId === 'umbrella') return umbrella();
-    throw new Error(`no held item "${defId}"`);
-  },
+  buildItem: (defId) => buildHeld(defId),
   disposeItem: (o) => o.traverse((m) => (m as Mesh).geometry?.dispose()),
 };
 
@@ -254,12 +262,6 @@ interface Outfit {
   clothes: readonly (readonly ['head' | 'chest' | 'back' | 'legs' | 'feet', string, Rgb, Rgb, number, string?])[];
   hand: readonly [string, Rgb, Rgb, number] | null;
 }
-
-/** What a grandchild goes down in, and Grandma's knife. */
-const RAGS: Outfit = {
-  clothes: [['chest', 'tunic', [0.36, 0.3, 0.22], [0.24, 0.22, 0.2], 0.6], ['legs', 'trousers', [0.2, 0.19, 0.17], [0.15, 0.14, 0.12], 0.55], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.4]],
-  hand: ['knife', [0.6, 0.6, 0.62], [0.12, 0.07, 0.04], 0.3],
-};
 
 /** What a Salt-Touched's bones still wear from the day it went down (its hard hat, the salt-crusted work trousers rotting off them), and its pick. */
 const MINER: Outfit = {
@@ -321,7 +323,7 @@ function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = 
     const [slot, a, b, wear] = look;
     eq[slot] = { defId: it.kind, visual: visual(seed + 7, a, b, Math.min(1, wear / QUALITY[it.quality].factor)) };
   }
-  const weapon = items.find((it) => TOOLS[it.kind]);
+  const weapon = items.find((it) => it.kind === heldTool(items));
   if (weapon) eq.mainhand = { defId: weapon.kind, visual: { ...visual(seed + 3, [0.3, 0.29, 0.28], [0.3, 0.22, 0.14], Math.min(1, 0.5 / QUALITY[weapon.quality].factor)), shape: TOOLS[weapon.kind][1], material: 'metal' } };
   else if (o.hand) {
     const [defId, a, b, wear] = o.hand;
@@ -333,27 +335,6 @@ function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = 
   return eq;
 }
 
-/** Whether any of `items` worn hides the hair (a helmet). */
-export const hidesHair = (items: readonly Item[]): boolean =>
-  items.some((it) => !!WORN[it.kind] && !!resolve(it.kind, visual(0, [0, 0, 0], [0, 0, 0], 0))?.hideHair);
-
-/** A grandchild's rags and grandma's knife; `lid`: and her pot lid (the Pot Lid card); `items`: what of their kit they have on. */
-export const rags = (seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals => dressIn(RAGS, seed, lid, items);
-
-/**
- * A grandchild in the clothes chosen in the creator (src/loot/outfit.ts; none: the rags),
- * grandma's knife in hand, `lid` and the kit `items` as with the rags.
- */
-export function grandchildsClothes(outfit: OutfitSpec | undefined, seed: number, lid = false, items: readonly Item[] = []): EquipmentVisuals {
-  if (!outfit) return rags(seed, lid, items);
-  const o = outfit, wear = 0.15, s = o.seed >>> 0;
-  const clothes: Outfit['clothes'][number][] = [['chest', o.top, o.topColor, o.topColor2, wear, o.topPattern]];
-  if (o.top !== 'dress') clothes.push(['legs', o.bottom, o.bottomColor, o.bottomColor, o.bottom === 'jeans' ? 0.35 : wear]);
-  if (o.outer !== 'none') clothes.push(['back', o.outer, o.outerColor, shade(o.outerColor, 0.8), wear, o.outerLeather && o.outer === 'jacket' ? 'leather' : 'plain']);
-  clothes.push(['feet', o.shoes, o.shoesColor, [1, 1, 1], wear]);
-  if (o.hat !== 'none') clothes.push(['head', o.hat, o.hatColor, o.hatColor, wear]);
-  return dressIn({ clothes, hand: RAGS.hand }, s, lid, items);
-}
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
 export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
 export const goblinsClothes = (seed: number, look: number): EquipmentVisuals => dressIn(GOBLINS[look % GOBLINS.length], seed);

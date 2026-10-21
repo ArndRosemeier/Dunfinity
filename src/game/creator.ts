@@ -1,18 +1,21 @@
 /**
  * The character creator (Scale's, brought over): after New Game, before the introduction, the
  * first grandchild stands in grandma's round room, lit by the lamp of whoever looks at them, and is
- * made: body, face, hair, skin and eyes, and today's clothes (src/app/creatorView.ts). Each change rebuilds the figure
- * (the nobody itself, `Nobody.restyle`), compiled before it is swapped in.
+ * made: body, look and today's clothes in Actors' editor (src/app/creatorView.ts), on a model character of its
+ * own. Each change is shown on the nobody (`Nobody.restyle`: its spare figure, compiled before it is swapped in).
  *
  * It is drawn by the game's own renderer in the game's own scene, so nothing of it is warmed apart:
  * the nobody's shaders were built before the title, and the rest of the game's go on building
  * behind it under the cap (src/render/stage.ts warmLater). "Go down" waits for those.
  */
 import { Vector3 } from 'three/webgpu';
-import { deriveSeed } from '@futuremagic/core';
-import { randomAppearance } from '@futuremagic/humanoid';
-import { CreatorView, type Framing, type Made } from '../app/creatorView';
-import { everydayOutfit } from '../loot/outfit';
+import { Rng, deriveSeed } from '@futuremagic/core';
+import { nodeMaterials } from '@actors/three/webgpu';
+import type { CharacterConfig } from '@actors/generator';
+import { CreatorView, type Framing } from '../app/creatorView';
+import { Character, HUMAN_PACK, packFetch } from '../render/actors/pack';
+import { today } from '../render/actors/today';
+import { personOfToday } from '../render/actors/looks';
 import type { LevelView } from '../render/LevelView';
 import type { Nobody } from '../render/humans/nobody';
 import { CELLAR } from '../gen/cellar';
@@ -45,21 +48,20 @@ export interface CreatorCast {
   floor(x: number, z: number): number;
 }
 
-/** Make the first grandchild; resolves with their look and clothes, the screen black, the overlay gone. */
-export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise<Made> {
+/** Make the first grandchild; resolves with their look, the screen black, the overlay gone. */
+export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise<CharacterConfig> {
   const { view, nobody } = cast;
   const clock = (): number => performance.now() / 1000;
-  let yaw = Math.atan2(CREATOR.at.x - CREATOR.from.x, CREATOR.at.z - CREATOR.from.z) - CREATOR.turned, focus: Framing = 'body', want: Made | null = null, building = false, builtAt = 0, strangers = 0;
-  // Dressed for today from the start (a family from before kept the rags: they get today's clothes too).
-  const first: Made = { look: nobody.look, outfit: nobody.outfit ?? everydayOutfit(cast.seed, nobody.look.gender < 0.5) };
-  if (!nobody.outfit) want = structuredClone(first);
-  const ui = new CreatorView(host, first, {
-    changed: (made) => { want = structuredClone(made); },
+  let yaw = Math.atan2(CREATOR.at.x - CREATOR.from.x, CREATOR.at.z - CREATOR.from.z) - CREATOR.turned, focus: Framing = 'body', want: CharacterConfig | null = null, building = false, builtAt = 0, strangers = 0;
+  // The editor's own character: never drawn, so nothing of it compiles; only people of today.
+  const model = await Character.load({ pack: HUMAN_PACK, renderer: null, materials: nodeMaterials, clipLibraries: false, fetcher: packFetch, catalog: today, config: nobody.look });
+  const ui = new CreatorView(host, model, {
+    changed: (look) => { want = look; },
     turn: (by) => { yaw += by; },
     frame: (f) => { focus = f; },
     someoneElse: () => {
-      const look = randomAppearance('human', deriveSeed(cast.seed, 'creator', ++strangers), { age: nobody.look.age });
-      return { look, outfit: everydayOutfit(deriveSeed(cast.seed, 'creator', strangers), look.gender < 0.5) };
+      const rng = new Rng(deriveSeed(cast.seed, 'creator', ++strangers));
+      return personOfToday(rng.int(0, 1 << 30), { age: rng.range(0, 0.35), female: rng.chance(0.5) });
     },
   });
   cast.ready.then(() => ui.ready());
@@ -89,18 +91,18 @@ export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise
   aim();
   eye.copy(wantEye); at.copy(wantAt);
   const start = clock();
-  let last = start, chosen: Made | null = null, chosenAt = 0;
+  let last = start, chosen: CharacterConfig | null = null, chosenAt = 0;
   ui.done.then((l) => { chosen = l; chosenAt = clock(); });
   return new Promise((resolve) => {
     const pace = (): void => {
       const t = clock(), dt = Math.min(0.1, t - last);
       last = t;
-      // Rebuild in the newest look and clothes, one at a time and not too often while a slider is dragged.
-      const made = want;
-      if (made && !building && t - builtAt > CREATOR.rebuild) {
+      // Show the newest look, one at a time and not too often while a slider is dragged.
+      const look = want;
+      if (look && !building && t - builtAt > CREATOR.rebuild) {
         want = null;
         building = true;
-        nobody.restyle(made.look, made.outfit, (o) => view.stage.prepare(o, { everyCaster: true })).catch((e) => console.warn('[creator] rebuild failed', e)).finally(() => { building = false; builtAt = clock(); });
+        nobody.restyle(look, (o) => view.stage.prepare(o, { everyCaster: true })).catch((e) => console.warn('[creator] rebuild failed', e)).finally(() => { building = false; builtAt = clock(); });
       }
       nobody.puppet([feet.x, feet.y, feet.z], [0, 0, 0], yaw, 'idle', dt, t);
       aim();
@@ -122,6 +124,8 @@ export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise
         view.camera.updateProjectionMatrix();
         view.headlamp.intensity = power;
         ui.close();
+        model.dispose();
+        nobody.dropSpare();
         resolve(chosen);
         return;
       }

@@ -15,8 +15,7 @@ import type { Fallen } from '../gen/notary';
 import type { KeyData } from '../lore/key';
 import type { FirstStepsData } from '../game/firstSteps';
 import type { PetData } from '../creatures/pets';
-import type { HumanoidAppearance } from '@futuremagic/humanoid';
-import type { OutfitSpec } from '../loot/outfit';
+import type { CharacterConfig } from '@actors/generator';
 import { names, recall, remember } from './store';
 
 export interface GrandchildData {
@@ -60,10 +59,12 @@ export interface SaveData {
   readonly key?: KeyData;
   /** The first steps done (src/game/firstSteps.ts), or true when the list is over. A save without it is a family from before the list: over. */
   readonly steps?: FirstStepsData;
-  /** The grandchildren's look, made in the character creator (src/game/creator.ts); none: the seed's own. */
-  readonly look?: HumanoidAppearance;
-  /** What they wear, chosen in the creator (src/loot/outfit.ts); none: the rags. */
-  readonly outfit?: OutfitSpec;
+  /**
+   * The grandchildren's look and clothes, made in the character creator (src/game/creator.ts), as an
+   * Actors character; none: the seed's own. (Saves from before Actors kept `look` and `outfit` for
+   * the old humans: those are left unread, and the family gets the seed's look.)
+   */
+  readonly character?: CharacterConfig;
   /** How the family plays (none: from before modes, Rogue like). */
   readonly mode?: GameMode;
 }
