@@ -4396,14 +4396,6 @@
     "reason": "a seeded thing checking it stands on flat dry floor; each wants its own test (roof, room, radius)"
   },
   {
-    "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
-    "reason": "async factories of the human views: each builds its own humans (the nobody in the saved look and clothes)"
-  },
-  {
-    "key": "same name: dunfinity/render/humans/nobody.ts#wear + dunfinity/render/meshes.ts#wear",
-    "reason": "different things that share a word: the nobody puts on its kit; meshes.ts wears a material's look"
-  },
-  {
     "key": "idiom: [.array .pool .slots] in dunfinity/render/gateView.ts + dunfinity/render/props/bloomView.ts + dunfinity/render/props/dripView.ts",
     "reason": "the same verb for a different thing"
   },
@@ -4894,5 +4886,37 @@
   {
     "key": "same name: dunfinity/render/creatures/humanPool.ts#ground + dunfinity/render/humans/nobody.ts#ground",
     "reason": "both stand their figures on the level through the one seam, `floorUnder`; the field is just its result"
+  },
+  {
+    "key": "idiom: [.id .map Set] in dunfinity/render/actors/today.ts + dunfinity/render/terrain/Terrain.ts + dunfinity/world/chunks.ts",
+    "reason": "a set of ids from a list to test membership: one line, each over its own things (catalog entries, chunks); nothing to fold"
+  },
+  {
+    "key": "idiom: [.kind .some] in dunfinity/game/Game.ts + dunfinity/render/humans/nobody.ts + dunfinity/render/humans/wardrobe.ts",
+    "reason": "whether the kit holds an item of a kind: one `items.some` each, asking about different kinds; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/lab/hands.ts#level + dunfinity/render/LevelView.ts#level",
+    "reason": "the level a view stands on, set on the way down: each view keeps its own (the Lab's hands have none until a level is shown)"
+  },
+  {
+    "key": "same name: dunfinity/lab/hands.ts#level + dunfinity/render/creatures/foremanView.ts#level",
+    "reason": "the level a view stands on, set on the way down: each view keeps its own (the Lab's hands have none until a level is shown)"
+  },
+  {
+    "key": "same name: dunfinity/lab/hands.ts#level + dunfinity/render/creatures/ghostView.ts#level",
+    "reason": "the level a view stands on, set on the way down: each view keeps its own (the Lab's hands have none until a level is shown)"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/rig.ts#pose + dunfinity/render/creatures/rigged.ts#pose",
+    "reason": "the Actors figure's pose layer and the old humanoid's: rigged.ts goes when the last humanoid moves to Actors (port step 6)"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/rig.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
+    "reason": "the climb's `pose` is the pose it hands to the figure's rig (`rig.pose` lays it over the clips): caller and seam"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/rigged.ts#figure + dunfinity/render/humans/nobody.ts#figure",
+    "reason": "both give the drawn figure inside: the old humanoid's (goes in port step 6) and the grandchild's Actors figure"
   }
 ]

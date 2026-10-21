@@ -7,6 +7,7 @@ import type { Fetcher } from '@actors/core';
 import { Character, buildCatalog, defaultConfig, type CharacterCatalog, type CharacterConfig } from '@actors/generator';
 import { Human } from '@actors/human';
 import { IRIS_PRESETS } from '@actors/three';
+import { today } from './today';
 
 /** The human pack's manifest. */
 export const HUMAN_PACK = `${import.meta.env.BASE_URL}actors/human/manifest.json`;
@@ -29,14 +30,10 @@ export const packFetch: Fetcher = async (url) => {
 
 let catalog: Promise<{ catalog: CharacterCatalog; base: CharacterConfig }> | undefined;
 
-/**
- * What the pack offers (races, garments, hair, clips...) and the default look, loaded once. Only
- * what is free to ship without a credit line: garments and hair under CC-BY are left out.
- */
+/** What the pack offers people of today (`today`) and the default look, loaded once. */
 export function humanCatalog(): Promise<{ catalog: CharacterCatalog; base: CharacterConfig }> {
   catalog ??= Human.load(HUMAN_PACK, packFetch).then((human) => {
-    const all = buildCatalog(human, Object.keys(IRIS_PRESETS));
-    const c: CharacterCatalog = { ...all, garments: all.garments.filter((g) => !g.credit), hair: all.hair.filter((h) => !h.credit) };
+    const c = today(buildCatalog(human, Object.keys(IRIS_PRESETS)));
     return { catalog: c, base: defaultConfig(c) };
   });
   return catalog;

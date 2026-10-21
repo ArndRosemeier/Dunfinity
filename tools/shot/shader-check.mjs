@@ -104,15 +104,8 @@ try {
     await title.waitForSelector('#title .ask .mode button', { state: 'attached', timeout: 60000 });
     await title.evaluate(() => document.querySelector('#title .ask .mode button').click());
     await title.waitForSelector('#creator .side', { state: 'attached', timeout: 600000 });
-    await title.evaluate(() => {
-      const hair = () => [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'hair');
-      hair()?.click();
-      const styles = [...document.querySelectorAll('#creator .chips button')];
-      styles.find((b) => !b.classList.contains('on'))?.click();
-      // And other clothes: a dress and a cap (new garments, a rigid part on the head).
-      [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'clothes')?.click();
-      for (const t of ['Dress', 'Cap']) [...document.querySelectorAll('#creator .chips button')].find((b) => b.textContent === t)?.click();
-    });
+    // Someone else by the dice (src/app/creatorView.ts): other hair, other clothes, other body.
+    await title.evaluate(() => document.querySelector('#creator .quick button')?.click());
     // Each Actors figure's body and hair warm their shadow shader one by one, each with a frame of the whole
     // scene: under SwiftShader that is minutes (on a GPU, milliseconds).
     await title.waitForSelector('#creator .go:not([disabled])', { state: 'attached', timeout: 1800000 });

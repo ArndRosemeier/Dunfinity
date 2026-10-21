@@ -4,26 +4,26 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `claude-code/session_015a9FszEAngcaUHDv4wySRi` (cloud, thread "Actors humans replace ours")
-- **at:** `2026-10-21T03:40:00Z`
+- **at:** `2026-10-21T06:40:00Z`
 - **branch / worktree:** `claude/actors-humans-evkdkn` · the cloud container's own clone
-- **last verified:** this branch's head · gate (see PR) · `npm run check:shaders -- title` locally (see PR)
+- **last verified:** this branch's head · `bash scripts/gate.sh` green (build + 568 tests) · creator screenshots headless · `npm run check:shaders -- title` ok locally
 
 ## Done
 
-- **Fix for the Shaders workflow's title job** (red on main since #274). Each Actors figure has
-  shadow shaders of its own (its skinning nodes are per figure), and so does each old hairstyle,
-  but the Stage's shadow warm-up drew one caster per kind. `Figure` now marks its object
-  `OWN_SHADOWS` (src/render/stage.ts) and the warm-up draws every shown part under it; meshes with
-  `hairAux` (old humans' hair) are drawn one by one too. Teeth, tongue and eyes cast no shadow.
-- Earlier: step 2 of replacing our humans with Actors (#274: townsfolk on `Figure`).
-  Plan: `/mnt/project-files/dunfinity/actors/port-plan.md`.
+- Step 3 of replacing our humans with Actors (plan: `/mnt/project-files/dunfinity/actors/port-plan.md`):
+  the grandchild (`Nobody`) is an Actors `Figure`; `FigureRig` (src/render/actors/rig.ts) gives it
+  sockets (tool in the fist or at the hip, flashlight/umbrella, pot lid, hard hat), a pose layer and
+  two-bone reach (ladder climb); the creator is Actors' `CharacterEditor` on a model character never
+  drawn (src/app/creatorView.ts, src/game/creator.ts); `today()` keeps the catalog to people of today;
+  saves keep `character: CharacterConfig` (old `look`/`outfit` are left unread). Old outfit code
+  (src/loot/outfit.ts, `rags`, `grandchildsClothes`) is gone.
+- Before it (#275): Actors figures' shadow shaders warmed per figure, solid parts shared (`PLAIN_SHADOW`).
 
 ## Next
 
-- Step 3 (in progress on this thread, not in this PR): the player (`Nobody`) on `Figure` with
-  `FigureRig` (sockets, pose layer, two-bone IK; src/render/actors/rig.ts), ladder climb on it, the
-  creator on Actors' `CharacterEditor` (v0.3.0 options), saves keep a `CharacterConfig`.
-- Steps 4 to 6: goblins, scavengers, peoples of the deep, tall ones, bosses; ghosts and skeletons;
-  then remove `@futuremagic/humanoid`.
-- Note: in SwiftShader the title's creator reaches "Go down" after 7 to 10 minutes locally (the
-  scene is ~1M triangles at 0.02 to 0.4 fps); the check's limit is 15 minutes.
+- Step 4: goblins, scavengers, peoples of the deep, tall ones, bosses on Actors races. Step 5: ghosts
+  and skeletons. Step 6: thrown poses, then remove `@futuremagic/humanoid` (and `WARDROBE`'s
+  today-garments in wardrobe.ts, `setHumanAssetBase`).
+- `npm run check:shaders -- title` passes locally on this work (Go down after 533 s, 0 builds after).
+- Townsfolk could drop face morphs so their bodies share one shadow shader (fewer warm frames).
+- In SwiftShader the title reaches "Go down" after 10 to 25 minutes; the check waits 30.
