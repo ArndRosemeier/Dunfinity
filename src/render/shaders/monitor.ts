@@ -40,10 +40,10 @@ export class ShaderMonitor {
     for (const e of this.events) {
       if (BLOCKING.has(e.kind) && e.ms > this.budgetMs) out.push(`${e.phase}: ${e.kind} "${e.what}" blocked ${e.ms.toFixed(0)} ms (budget ${this.budgetMs} ms)`);
     }
-    const starts = this.events.filter((e) => e.phase === 'run' && STARTS.has(e.kind)).map((e) => e.t).sort((a, b) => a - b);
+    const runs = this.events.filter((e) => e.phase === 'run' && STARTS.has(e.kind)).sort((a, b) => a.t - b.t), starts = runs.map((e) => e.t);
     const gap = 1000 / this.maxPerSecond;
     for (let i = 0; i < starts.length; i++) {
-      if (i > 0 && starts[i] - starts[i - 1] < gap - 1) out.push(`run: two shader builds ${(starts[i] - starts[i - 1]).toFixed(0)} ms apart (minimum ${gap} ms)`);
+      if (i > 0 && starts[i] - starts[i - 1] < gap - 1) out.push(`run: two shader builds ${(starts[i] - starts[i - 1]).toFixed(0)} ms apart (minimum ${gap} ms): "${runs[i - 1].what}", "${runs[i].what}"`);
       const inSecond = starts.filter((s) => s > starts[i] - 1000 && s <= starts[i]).length;
       if (inSecond > this.maxPerSecond) out.push(`run: ${inSecond} shader builds within one second (maximum ${this.maxPerSecond})`);
     }

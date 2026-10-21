@@ -5,3 +5,5 @@
 - The Lab's race lineup shows every race as skeletons (`?lab&races=bones`) or as ghosts (`?lab&races=ghosts`).
 - Every human in the game is now an Actors person: the old human models, their clothes and their asset files are removed.
 - The people's bodies cast their shadows through one shared stand-in, and only the grandchild's hair casts a shadow, so the game is ready to go down sooner after the title.
+- The shared shadow shaders of people stay built when the title's people go, so nothing builds when you go down.
+- The shader check names any shader built after going down.

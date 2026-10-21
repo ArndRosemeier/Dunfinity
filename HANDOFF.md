@@ -4,9 +4,9 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `claude-code/session_015a9FszEAngcaUHDv4wySRi` (cloud, thread "Actors humans replace ours")
-- **at:** `2026-10-21T09:30:00Z`
+- **at:** `2026-10-21T19:40:00Z`
 - **branch / worktree:** `claude/actors-humans-evkdkn` · the cloud container's own clone
-- **last verified:** this branch's head · `bash scripts/gate.sh` green (build + 568 tests) · Lab screenshots of the races, skeletons and ghosts (0 shader violations)
+- **last verified:** this branch's head · `bash scripts/gate.sh` green (build + 568 tests) · Lab screenshots of the races, skeletons and ghosts (0 shader violations) · local `npm run check:shaders -- title` ok (ready at 597 s, 0 builds after going down)
 
 ## Done
 
@@ -18,8 +18,11 @@
   its Vite asset plugin, the `WARDROBE` hook and the old outfits are gone (step 6). wardrobe.ts keeps
   only what figures hold and wear on sockets. Lab: `?lab&races=bones`, `?lab&races=ghosts`.
 
+- The title Shaders check: body shadows go through one shared stand-in (`Figure.shadows`), and the
+  Stage keeps a never-disposed tiny copy of each shared shadow caster (`keeper` in stage.ts), since
+  three drops a shader once its last user is disposed (the title's people, the creator's spare).
+
 ## Next
 
-- Run the Shaders workflow on the branch before asking for a merge (many more figure shaders now).
-- Townsfolk could drop face morphs so their bodies share one shadow shader (fewer warm frames).
+- The title warm-up is slow under SwiftShader (each figure's materials are its own shaders): an Actors upstream change sharing material graphs would cut it.
 - `?lab&races=<race>` puts the camera inside a house at depth 0 (pre-existing; the row view is fine).

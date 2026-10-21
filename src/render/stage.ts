@@ -7,8 +7,8 @@
  *     queued build under the cap) and only then puts it into the scene. Nothing ever draws with a
  *     shader that is not ready, so nothing compiles on the render path.
  */
-import { BufferGeometry, Float32BufferAttribute, Group, Mesh, type Camera, type InstancedMesh, type Material, type Object3D, type Scene, type WebGPURenderer } from 'three/webgpu';
-import { allKinds, type MaterialKind } from './materials';
+import { Bone, BufferAttribute, BufferGeometry, Float32BufferAttribute, Group, Mesh, Skeleton, SkinnedMesh, type Camera, type InstancedMesh, type Material, type Object3D, type Scene, type WebGPURenderer } from 'three/webgpu';
+import { allKinds, SHADOW_CASTER, type MaterialKind } from './materials';
 import { surfaceAttributes } from './meshes';
 import { SURFACE_STRIDE } from '../gen/style';
 import { ShaderCap } from './shaders/cap';
@@ -144,7 +144,15 @@ export class Stage {
    * frames, so those build now, behind the loading screen, and not in play.
    */
   private async warmShadows(group: Group, extra: readonly Object3D[]): Promise<void> {
-    for (const o of [group, ...extra]) o.traverse((c) => { if ((c as Mesh).isMesh && (c as Mesh).castShadow) this.casters.add(casterKey(c as Mesh, ownShadows(c))); });
+    const keep: Mesh[] = [];
+    for (const o of [group, ...extra]) o.traverse((c) => {
+      if (!(c as Mesh).isMesh || !(c as Mesh).castShadow) return;
+      const key = casterKey(c as Mesh, ownShadows(c));
+      if (!this.casters.has(key)) keep.push(c as Mesh);
+      this.casters.add(key);
+    });
+    const kept = keep.map((m) => this.keeper(m)).filter((k): k is Mesh => !!k);
+    for (const k of kept) group.add(k);
     const parents = extra.map((o) => o.parent);
     for (const o of extra) {
       group.add(o);
@@ -160,6 +168,7 @@ export class Stage {
       await new Promise((r) => setTimeout(r, 30));
     }
     this.scene.remove(group);
+    for (const k of kept) k.removeFromParent();
     extra.forEach((o, i) => {
       o.removeFromParent();
       parents[i]?.add(o);
@@ -178,6 +187,54 @@ export class Stage {
   private shadowCam: Camera | null = null;
   /** The kinds of shadow caster whose shadow-pass shaders are built (`casterKey`). */
   private readonly casters = new Set<string>();
+  /** Tiny copies of shared shadow casters (`keeper`), never disposed. */
+  private readonly kept = new Map<string, Mesh>();
+
+  /**
+   * three drops a built shader once nothing that drew with it is left (a disposed figure takes its
+   * draws along). A shared shadow shader warmed on a figure that goes before play (the title's
+   * people, the creator's spare) would then be built again in play, on the render path. So beside
+   * each caster of a shared kind (`PLAIN_SHADOW`, not its own) a tiny copy is drawn that is never
+   * disposed: same attributes, bones and side, a shadow-only material, on the shadow-only layer.
+   * Null where the kind's shadow borrows more than that from its material.
+   */
+  private keeper(m: Mesh): Mesh | null {
+    const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as Material & { alphaMap?: unknown; displacementMap?: unknown; positionNode?: unknown; castShadowPositionNode?: unknown };
+    if (!mat?.userData[PLAIN_SHADOW] || ownShadows(m) || mat.positionNode || mat.castShadowPositionNode || Object.keys(m.geometry.morphAttributes).length || mat.alphaTest > 0 || mat.alphaMap || mat.displacementMap || (m as InstancedMesh).isInstancedMesh) return null;
+    const key = `${casterKey(m, false)}|${m.receiveShadow}`;
+    if (this.kept.has(key)) return null; // one is enough
+    const g = new BufferGeometry();
+    for (const [name, a] of Object.entries(m.geometry.attributes)) {
+      if (!(a as BufferAttribute).isBufferAttribute) return null; // interleaved: keyed by its stride, not copied
+      const Arr = (a as BufferAttribute).array.constructor as new (n: number) => ArrayLike<number>;
+      g.setAttribute(name, new BufferAttribute(new Arr(3 * a.itemSize) as Float32Array, a.itemSize, a.normalized));
+    }
+    if (m.geometry.index) g.setIndex([0, 1, 2]);
+    const look = SHADOW_CASTER.make().clone(); // its own: the kind's one material is shared
+    look.userData[PLAIN_SHADOW] = true;
+    look.side = mat.side;
+    look.shadowSide = mat.shadowSide;
+    look.transparent = mat.transparent;
+    // The shadow pass copies these from the material drawn, and they are part of its shader's key.
+    const src = mat as unknown as Record<string, unknown>, dst = look as unknown as Record<string, unknown>;
+    dst.displacementMap = src.displacementMap; // (null and undefined key differently)
+    dst.displacementScale = src.displacementScale;
+    dst.displacementBias = src.displacementBias;
+    const bones = (m as SkinnedMesh).skeleton?.bones.length;
+    let k: Mesh;
+    if (bones !== undefined) {
+      const s = new SkinnedMesh(g, look);
+      s.bind(new Skeleton(Array.from({ length: bones }, () => new Bone())));
+      k = s;
+    } else k = new Mesh(g, look);
+    k.castShadow = true;
+    k.receiveShadow = m.receiveShadow;
+    k.frustumCulled = false;
+    k.layers.set(SHADOW_LAYER);
+    k.name = 'shadow keeper';
+    this.kept.set(key, k);
+    return k;
+  }
 
   /**
    * Warm `objs` while the game is already drawing (behind the title screen) instead of in the
@@ -219,12 +276,15 @@ export class Stage {
       if (inst && !count) inst.count = 1;
       m.layers.set(WARM_LAYER);
       m.frustumCulled = false;
+      const kept = this.keeper(m);
+      if (kept) obj.add(kept);
       // Drawn now, not left to the view's next frame (the view may not be drawing yet): its build
       // happens here, in the slot just taken.
       this.scene.add(obj);
       newNodeFrame(this.renderer); // the shadow map is drawn once a frame, and the view may have drawn this one
       this.renderer.render(this.scene, this.camera);
       this.scene.remove(obj);
+      kept?.removeFromParent();
       m.layers.disableAll();
       if (inst) inst.count = count;
       for (const p of hidden) p.visible = false;

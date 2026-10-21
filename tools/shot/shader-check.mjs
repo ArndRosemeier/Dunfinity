@@ -130,11 +130,12 @@ try {
     const after = await title.evaluate(async (at) => {
       const g = window.__game;
       for (let t = 0; t < 20; t++) { g.cam.yaw += 0.3; await new Promise((r) => setTimeout(r, 150)); }
-      return { built: window.shaders.events.slice(at).filter((e) => e.kind === 'node-async' || e.kind === 'node-sync').length, violations: window.shaders.violations() };
+      const late = window.shaders.events.slice(at).filter((e) => e.kind === 'node-async' || e.kind === 'node-sync');
+      return { built: late.length, what: late.map((e) => `${e.what} (${e.kind}, ${e.phase})`), violations: window.shaders.violations() };
     }, warm.at);
     console.log(`title: ${after.built} shaders built after going down`);
     clearInterval(progress);
-    if (after.built) problems.push(`title: ${after.built} shaders built after going down (something play draws was not warmed under the title and the creator)`);
+    if (after.built) problems.push(`title: ${after.built} shaders built after going down (something play draws was not warmed under the title and the creator): ${after.what.join(', ')}`);
     problems.push(...after.violations.map((v) => `title: ${v}`));
   }
 } catch (e) {
