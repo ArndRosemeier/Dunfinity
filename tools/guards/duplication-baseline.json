@@ -4832,7 +4832,67 @@
     "reason": "a list drawn as HTML lines (map each to its markup, join): one expression per panel, each its own markup; nothing to fold"
   },
   {
-    "key": "idiom: [.id .some] in dunfinity/audio/music/TrackPlayer.ts + dunfinity/game/firstSteps.ts + dunfinity/persist/save.ts",
-    "reason": "is this id in the list (`list.some((x) => x.id === id)`): the language's own one-line test, each on its own list (a music deck, the first steps, the saved families); it crossed the finder's info floor when the corpus grew by a file (src/app/outline.ts), not by a copy; nothing to fold"
+    "key": "idiom: [.ok] in dunfinity/audio/music/TrackPlayer.ts + dunfinity/gen/models.ts + dunfinity/render/actors/pack.ts",
+    "reason": "check a fetch's response before reading it: one line in each place that fetches its own files; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/audio/music/Music.ts#update + dunfinity/render/actors/animator.ts#update",
+    "reason": "the usual lifecycle name (`update`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/audio/music/Music.ts#update + dunfinity/render/actors/figure.ts#update",
+    "reason": "the usual lifecycle name (`update`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/audio/music/TrackPlayer.ts#update + dunfinity/render/actors/animator.ts#update",
+    "reason": "the usual lifecycle name (`update`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/audio/music/mood.ts#update + dunfinity/render/actors/animator.ts#update",
+    "reason": "the usual lifecycle name (`update`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/lab/FlyCamera.ts#update + dunfinity/render/actors/animator.ts#update",
+    "reason": "the usual lifecycle name (`update`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/animator.ts#load + dunfinity/render/actors/figure.ts#load",
+    "reason": "the usual lifecycle name (`load`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/animator.ts#load + dunfinity/render/creatures/petView.ts#load",
+    "reason": "the usual lifecycle name (`load`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/animator.ts#stop + dunfinity/render/humans/ladderClimb.ts#stop",
+    "reason": "the usual lifecycle name (`stop`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/animator.ts#update + dunfinity/render/props/Props.ts#update",
+    "reason": "the usual lifecycle name (`update`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/figure.ts#dispose + dunfinity/render/prepared.ts#dispose",
+    "reason": "the usual lifecycle name (`dispose`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/figure.ts#dispose + dunfinity/render/props/Props.ts#dispose",
+    "reason": "the usual lifecycle name (`dispose`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/figure.ts#dispose + dunfinity/render/terrain/Terrain.ts#dispose",
+    "reason": "the usual lifecycle name (`dispose`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/figure.ts#dispose + dunfinity/workers/pool.ts#dispose",
+    "reason": "the usual lifecycle name (`dispose`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/actors/figure.ts#update + dunfinity/render/terrain/Terrain.ts#update",
+    "reason": "the usual lifecycle name (`update`) on unrelated things: a different job each"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/humanPool.ts#ground + dunfinity/render/humans/nobody.ts#ground",
+    "reason": "both stand their figures on the level through the one seam, `floorUnder`; the field is just its result"
   }
 ]
