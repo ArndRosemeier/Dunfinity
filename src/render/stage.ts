@@ -53,7 +53,40 @@ function marked(m: Object3D): boolean {
  * cannot tell them apart).
  */
 function ownShadows(m: Object3D): boolean {
-  return !!(m as Mesh).geometry?.attributes.hairAux || marked(m);
+  const mesh = m as Mesh;
+  if (mesh.geometry?.attributes.hairAux) return true;
+  if (!marked(m)) return false;
+  // A plain shadow (below) is shared, unless the part's morphs or moved vertices are its own.
+  const mat = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as Material & { positionNode?: unknown };
+  return !mat?.userData[PLAIN_SHADOW] || Object.keys(mesh.geometry.morphAttributes).length > 0 || !!mat.positionNode;
+}
+
+/**
+ * Marks (in a material's `userData`) a solid material whose shadow ignores its colour and cut-outs:
+ * the shadow pass then borrows nothing from it, so every figure's part of that kind shares one
+ * shadow shader. Without it, three builds a shadow shader per material that has a colour node.
+ */
+export const PLAIN_SHADOW = 'plainShadow';
+
+type ShadowNodes = { version: number; colorNode: unknown; depthNode: unknown; positionNode: unknown };
+
+/**
+ * Let the shadow pass borrow nothing but moved vertices from a `PLAIN_SHADOW` material. Reaches into
+ * r186 internals (the renderer's per-material shadow nodes); false if renamed.
+ */
+function plainShadows(renderer: WebGPURenderer): boolean {
+  const r = renderer as unknown as { _cacheShadowNodes?: WeakMap<Material, ShadowNodes> };
+  if (!(r._cacheShadowNodes instanceof WeakMap)) return false;
+  const own = r._cacheShadowNodes;
+  r._cacheShadowNodes = new (class extends WeakMap<Material, ShadowNodes> {
+    override get(mat: Material): ShadowNodes | undefined {
+      if (!mat.userData[PLAIN_SHADOW]) return own.get(mat);
+      const m = mat as Material & { castShadowPositionNode?: unknown; positionNode?: unknown };
+      return { version: mat.version, colorNode: null, depthNode: null, positionNode: m.castShadowPositionNode ?? m.positionNode ?? null };
+    }
+    override set(mat: Material, v: ShadowNodes): this { own.set(mat, v); return this; }
+  })();
+  return true;
 }
 
 /**
@@ -73,6 +106,7 @@ export class Stage {
 
   constructor(readonly renderer: WebGPURenderer, readonly scene: Scene, readonly camera: Camera) {
     this.missingHooks = installShaderPolicy(renderer, this.cap, this.monitor);
+    if (!plainShadows(renderer)) this.missingHooks.push('_cacheShadowNodes');
     (globalThis as { shaders?: ShaderMonitor }).shaders = this.monitor;
   }
 

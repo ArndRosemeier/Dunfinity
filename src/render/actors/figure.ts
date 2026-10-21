@@ -3,12 +3,12 @@
  * game's animator, placed where the game says each frame. Faces like the old humans did: the
  * figure's front turned by `yaw` about +Y from −Z.
  */
-import { Group } from 'three/webgpu';
+import { Group, type Material, type Mesh } from 'three/webgpu';
 import { nodeMaterials } from '@actors/three/webgpu';
 import type { CharacterPatch } from '@actors/generator';
 import { Character, HUMAN_PACK, packFetch } from './pack';
 import { FigureAnimator, type AnimState } from './animator';
-import { OWN_SHADOWS } from '../stage';
+import { OWN_SHADOWS, PLAIN_SHADOW } from '../stage';
 
 export type { AnimState, ActionAnim, Mood, MoveState } from './animator';
 
@@ -26,6 +26,8 @@ export type GroundFn = (x: number, y: number, z: number) => number | null;
 
 /** Parts too small to cast a shadow anyone sees. */
 const NO_SHADOW = /^(teeth|tongue|eyes|eyebrow|brows|lashes|eyelashes)/;
+/** Parts whose shadow needs their cut-outs (hair cards); every other solid part casts a plain shadow. */
+const CUT_SHADOW = /^hair/;
 
 export class Figure {
   /** The scene object: at the feet, turned to face where the game says. */
@@ -50,11 +52,25 @@ export class Figure {
       fetcher: packFetch,
       config: { anatomy: false, ...look, animation: null },
     });
-    // The mouth and eyes cast no shadow worth its shader (each figure's are its own).
-    character.object.traverse((o) => { if (NO_SHADOW.test(o.name)) o.castShadow = false; });
     const figure = new Figure(character);
+    figure.shadows();
     await figure.animator.load();
     return figure;
+  }
+
+  /**
+   * Set how its parts cast shadows; again after its look changes (new parts). The mouth and eyes cast
+   * none worth its shader (each figure's are its own); solid parts a plain one, shared by every
+   * figure (src/render/stage.ts `PLAIN_SHADOW`); hair keeps its cut-outs.
+   */
+  shadows(): void {
+    this.character.object.traverse((o) => {
+      const m = o as Mesh;
+      if (!m.isMesh) return;
+      if (NO_SHADOW.test(m.name)) m.castShadow = false;
+      const mat = m.material as Material;
+      if (m.castShadow && !mat.transparent && !CUT_SHADOW.test(m.name)) mat.userData[PLAIN_SHADOW] = true;
+    });
   }
 
   /** Standing height, metres. */
