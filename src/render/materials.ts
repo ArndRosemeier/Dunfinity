@@ -53,6 +53,16 @@ export const VERTEX_COLOR_SOLID = defineKind('vertexColorSolid', ['position', 'n
 });
 
 /**
+ * A caster drawn for its shadow alone (on the shadow-only layer, src/render/stage.ts
+ * `SHADOW_LAYER`): an Actors figure's body stand-in, so every figure's body shares one shadow
+ * shader (src/render/actors/figure.ts). Never seen: it writes nothing where the camera looks.
+ */
+export const SHADOW_CASTER = defineKind('shadowCaster', ['position', 'normal'], () => {
+  const m = new MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
+  return m;
+}, { cast: true, receive: false });
+
+/**
  * The rock: the generator's vertex colours (bands, dust, soot) with the stone's finer look worked in
  * by the shader, from the world position so it needs no uvs and never repeats, and a bumpy surface
  * (a procedural height turned into a normal with screen-space derivatives, Mikkelsen's surface-gradient

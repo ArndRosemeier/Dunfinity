@@ -9,7 +9,7 @@ import type { Level } from '../gen/level';
 import { airOf, type Air } from '../gen/air';
 import { daylightAt } from '../gen/cellar';
 import { createRenderer } from './renderer';
-import { Stage } from './stage';
+import { SHADOW_LAYER, Stage } from './stage';
 import { Dust } from './dust';
 import { ROCK_FINISH, ROCK_VEINS, SKY_LOOK, VEIN_PULSE, setRockRecipes } from './materials';
 import { pulseAt, pulseFrom, pulseRing } from '../gen/veinPulse';
@@ -117,6 +117,7 @@ export class LevelView {
     sh.bias = -0.0004;
     sh.normalBias = 0.03;
     this.headlamp.castShadow = true;
+    sh.camera.layers.enable(SHADOW_LAYER); // shadow-only casters (figures' body stand-ins)
     // On the camera: lights moved out of it into the scene changed every shader's key after the warm-up.
     this.headlamp.target.position.set(0, 0, -10);
     this.camera.add(this.headlamp, this.headlamp.target, this.spill);

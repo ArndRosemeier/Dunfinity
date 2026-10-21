@@ -1,6 +1,6 @@
 /**
- * The Salt-Touched on screen (src/creatures/touched.ts): the lost miners' skeletons, Scale's humans
- * with only their bones left (old bone crusted with salt crystals, a pale glow deep in the eye
+ * The Salt-Touched on screen (src/creatures/touched.ts): the lost miners' skeletons, Actors people
+ * with only their bones left (src/render/actors/bones.ts) (old bone crusted with salt crystals, a pale glow deep in the eye
  * sockets), in the hard hat and the rotten work trousers they went down in, with a miner's pick.
  * They work the rock with it, turn to you, trudge after you and bring it down over their heads; a
  * stab makes them flinch, and they fall when they die.
@@ -8,32 +8,39 @@
  * A `HumanPool`: the nearest Salt-Touched are drawn with it.
  */
 import { groundSpeed } from '../../creatures/creature';
-import { randomAppearance, type HumanoidAppearance } from '@futuremagic/humanoid';
-import type { Humanoid, ActionAnim, Bones } from '@futuremagic/humanoid/three';
+import type { CharacterPatch } from '@actors/generator';
+import type { ActionAnim } from '../actors/figure';
+import type { Bones } from '../actors/bones';
+import { dressOf, folkLook } from '../actors/looks';
 import { deriveSeed } from '@futuremagic/core';
 import { TOUCHED, type Touched } from '../../creatures/touched';
-import { minersClothes } from '../humans/wardrobe';
-import { HumanPool, humans } from './humanPool';
+import { HumanPool, figures, type PoolFigure, type Remains } from './humanPool';
 
 /** How many can be drawn at once, and how far off they are drawn, metres. */
 const POOL = 3;
 const SHOWN = 55;
 
+/** What a Salt-Touched's bones still wear from the day it went down: the salt-crusted work trousers rotting off them (and the hard hat, `MINER`). */
+const RAGS = dressOf([['wool-pants', [0.14, 0.13, 0.13]]]);
+
 /** A lost miner's frame (the bones are his): a man (mostly), lean from the work. */
-export function touchedLook(seed: number, k: number): HumanoidAppearance {
-  return randomAppearance('human', deriveSeed(seed, 'touched', k), { age: 0.5 + 0.1 * k, gender: k === 2 ? 0.3 : 0.95 });
+export function touchedLook(seed: number, k: number): Promise<CharacterPatch> {
+  return folkLook('human', deriveSeed(seed, 'touched', k), { age: 0.5 + 0.1 * k, female: k === 2 }, RAGS);
 }
 
 /** A lost miner's bones: old bone, the salt grown over them, a pale blue glow in the sockets; `crust` 0..1. */
 export const minersBones = (crust: number): Bones => ({ tint: [0.74, 0.7, 0.6], crust, crustTint: [0.84, 0.92, 1], eyes: [0.6, 0.85, 1] });
 
+/** A lost miner as drawn: his bones (`crust` 0..1) in his hard hat. */
+export const miner = (crust: number): Remains => ({ bones: minersBones(crust), hat: true });
+
 /** The Salt-Touched's humans; `level` is the floor their feet find. */
 export class TouchedView extends HumanPool<Touched> {
   static async create(seed: number): Promise<TouchedView> {
-    return new TouchedView(await humans(POOL, (k) => touchedLook(seed, k), (k) => minersClothes(deriveSeed(seed, 'touched', 'clothes', k)), { bones: minersBones(0.6) }));
+    return new TouchedView(await figures(POOL, (k) => touchedLook(seed, k), () => 'pick', miner(0.6)));
   }
 
-  private constructor(humans: Humanoid[]) {
+  private constructor(humans: PoolFigure[]) {
     super(humans, SHOWN, (t, time) => {
       const S = TOUCHED.swing;
       let action: ActionAnim | undefined;

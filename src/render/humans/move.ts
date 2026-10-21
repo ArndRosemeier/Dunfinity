@@ -1,6 +1,6 @@
-/** The body's state as the humanoid animator's move state (pure, so tests run it). */
+/** The body's state as the figure animator's move state (pure, so tests run it). */
 import { groundSpeed } from '../../creatures/creature';
-import type { MoveState } from '@futuremagic/humanoid/three';
+import type { MoveState } from '../actors/figure';
 import { MOVE, type Body } from '../../world/traverse/body';
 
 /** What the animator should play for the body's state. The gait (walk, run) follows the speed. */

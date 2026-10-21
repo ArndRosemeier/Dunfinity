@@ -8,17 +8,15 @@
  * Built before the warm-up (his materials compile with the rest) and added with the Stage once.
  */
 import { Group, type Object3D } from 'three/webgpu';
-import type { Humanoid, ActionAnim } from '@futuremagic/humanoid/three';
-import { deriveSeed } from '@futuremagic/core';
+import type { ActionAnim } from '../actors/figure';
 import type { Rgb } from '../../gen/propMesh';
 import { meshOf as mesh } from '../meshes';
 import { METAL, VERTEX_COLOR_SOLID } from '../materials';
 import { FOREMAN, type Boss, type Hall } from '../../creatures/foreman';
 import { groundSpeed } from '../../creatures/creature';
 import type { Level } from '../../gen/level';
-import { minersClothes } from '../humans/wardrobe';
-import { HumanPool, humans } from './humanPool';
-import { minersBones, touchedLook } from './touchedView';
+import { HumanPool, figures, type PoolFigure } from './humanPool';
+import { miner, touchedLook } from './touchedView';
 
 const WOOD: Rgb = [0.3, 0.22, 0.15], BRONZE: Rgb = [0.42, 0.3, 0.14];
 /** One strike of the bell, seconds (he strikes it twice in a ringing). */
@@ -45,10 +43,16 @@ export class ForemanView {
   private readonly swing = new Group();
 
   static async create(seed: number): Promise<ForemanView> {
-    return new ForemanView(await humans(1, () => ({ ...touchedLook(seed, 0), scale: FOREMAN.height / 1.78, muscle: 1, weight: 0.85 }), () => minersClothes(deriveSeed(seed, 'foreman', 'clothes')), { bones: minersBones(1) }));
+    const [f] = await figures(1, async () => {
+      const look = await touchedLook(seed, 0);
+      return { ...look, body: { ...look.body, muscle: 1, weight: 0.85 } };
+    }, () => 'pick', miner(1));
+    // Three metres of him: the man's frame, scaled.
+    f.object.scale.setScalar(FOREMAN.height / f.height);
+    return new ForemanView([f]);
   }
 
-  private constructor(man: Humanoid[]) {
+  private constructor(man: PoolFigure[]) {
     this.man = new HumanPool(man, Infinity, (f, time) => {
       const S = FOREMAN.swing;
       let action: ActionAnim | undefined;

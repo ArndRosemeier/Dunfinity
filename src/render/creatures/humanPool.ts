@@ -1,18 +1,20 @@
 /**
- * A fixed pool of drawn humans (the Salt-Touched and the Foreman as skeletons, the scavengers, goblins, ghosts): Scale's humans built before the
- * warm-up (their materials compile with the rest) and added with the Stage once; each frame the
+ * A fixed pool of drawn humans (Actors figures: the townsfolk, goblins and scavengers, the Tall One,
+ * the town's people one calls on, the ghosts, and the Salt-Touched and the Foreman as skeletons): built before the warm-up (their materials compile with the rest) and added with the Stage once; each frame the
  * nearest of a list are drawn with them. Who is drawn keeps their human while they stay near, and
  * a newcomer takes the human of its own look where it can. A blow makes them flinch.
  */
 import { Group, type Object3D } from 'three/webgpu';
-import { Humanoid, type HumanoidOptions } from '@futuremagic/humanoid/three';
-import type { EquipmentVisuals, HumanoidAppearance } from '@futuremagic/humanoid';
-import { WARDROBE } from '../humans/wardrobe';
+import type { CharacterPatch } from '@actors/generator';
+import { buildHeld, hardHat } from '../humans/wardrobe';
+import { Figure } from '../actors/figure';
+import { skeletal, type Bones } from '../actors/bones';
+import { ghostly, type GhostLook } from '../actors/ghost';
 import type { Level } from '../../gen/level';
 import { floorUnder } from '../humans/nobody';
 import type { AnimState } from '../actors/figure';
 
-/** What the pool draws with: an old human (Humanoid) or an Actors `Figure`. */
+/** What the pool draws with (an Actors `Figure`). */
 export interface PoolFigure {
   readonly object: Object3D;
   readonly animator: { onHit(dirX: number, dirZ: number, strength: number): void };
@@ -34,13 +36,29 @@ export interface Drawn {
   readonly look?: number;
 }
 
-/** `n` humans for a pool: human k with `look(k)`, dressed in `clothes(k)` (from the WARDROBE); `as.ghost`: all of them ghosts in that tint; `as.bones`: all of them skeletons (only their bones, animated as the living). */
-export async function humans(n: number, look: (k: number) => HumanoidAppearance, clothes: (k: number) => EquipmentVisuals, as: Pick<HumanoidOptions, 'ghost' | 'bones'> = {}): Promise<Humanoid[]> {
-  const out: Humanoid[] = [];
+/** What else the figures of a pool are: skeletons (only their bones, and what they wear), ghosts (seen through, in one tint), in a miner's hard hat. */
+export interface Remains {
+  bones?: Bones;
+  ghost?: GhostLook;
+  hat?: boolean;
+}
+
+/**
+ * `n` Actors figures for a pool: figure k with `look(k)` (src/render/actors/looks.ts), holding
+ * `held(k)` in the right fist (a held item's id, src/render/humans/wardrobe.ts `buildHeld`); `as`:
+ * what else they are.
+ */
+export async function figures(n: number, look: (k: number) => Promise<CharacterPatch>, held: (k: number) => string | null = () => null, as: Remains = {}): Promise<Figure[]> {
+  const out: Figure[] = [];
   for (let k = 0; k < n; k++) {
-    const h = await Humanoid.create(look(k), { wardrobe: WARDROBE, expressions: !as.bones, ...as });
-    h.dress(clothes(k));
-    out.push(h);
+    const patch = await look(k);
+    const f = await Figure.load(patch);
+    if (as.bones) skeletal(f, patch.outfit ?? [], { ...as.bones, seed: (as.bones.seed ?? 1) + k });
+    if (as.ghost) ghostly(f, as.ghost);
+    if (as.hat) f.carry('head', hardHat(f.rig.headRadius));
+    const id = held(k);
+    if (id) f.carry('grip.R', buildHeld(id));
+    out.push(f);
   }
   return out;
 }

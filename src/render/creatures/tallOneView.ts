@@ -1,42 +1,35 @@
 /**
- * The Tall One on screen (src/creatures/tallOne.ts): one of Scale's humans made four metres tall
- * and starved thin, long in the arm and the neck, hairless, its skin the grey of the cave and veined
- * darker, its eyes white and glowing, in a long dark shroud. It walks, never runs; it opens its arms
- * to stare (the tell), brings its long arm down to reach, flinches when stabbed and falls when it
- * dies.
+ * The Tall One on screen (src/creatures/tallOne.ts): one of Actors' umbral (the pale people of the
+ * underworld, veins shimmering, eyes glowing) made four metres tall and starved thin, hairless, in a
+ * long dark shroud. It walks, never runs; it opens its arms to stare (the tell), brings its long arm
+ * down to reach, flinches when stabbed and falls when it dies.
  *
  * A `HumanPool` of one, built before the warm-up (draw it with `draw(list, x, z, dt, time)`).
  */
-import { randomAppearance, type HumanoidAppearance } from '@futuremagic/humanoid';
-import type { ActionAnim, Humanoid } from '@futuremagic/humanoid/three';
 import { deriveSeed } from '@futuremagic/core';
 import { TALL, type TallOne } from '../../creatures/tallOne';
 import { groundSpeed } from '../../creatures/creature';
-import { shroud } from '../humans/wardrobe';
-import { HumanPool, humans } from './humanPool';
+import type { ActionAnim, Figure } from '../actors/figure';
+import { dressOf, folkLook } from '../actors/looks';
+import { HumanPool, figures } from './humanPool';
 
-/** Gaunt and too long everywhere. */
-function tallLook(seed: number): HumanoidAppearance {
-  const a = randomAppearance('human', deriveSeed(seed, 'tall-one'), { age: 0.5, gender: 0.6 });
-  return {
-    ...a,
-    faceDetail: 0.3, muscle: 0.05, weight: 0, scale: TALL.height / 1.78,
-    face: { ...a.face, cheekFullness: -1, cheekbones: 1, jaw: 0.6, chin: 0.7, eyeSize: -0.4, mouthWidth: -0.6, lipFullness: -1, headRound: -0.6, faceWidth: -0.8, smile: -0.4 },
-    body: { ...a.body, armLength: 1, legLength: 1, neck: 1, shoulders: -0.6, chest: -1, waist: -1, hips: -0.8, hands: 1, feet: 0.6, belly: -1 },
-    skinTone: [0.5, 0.52, 0.54], skinAccent: [0.28, 0.3, 0.34], skinPattern: 'veins', patternStrength: 0.6,
-    eyeColor: [0.95, 0.97, 1], eyeGlow: 1, pupil: 'none',
-    hairStyle: 'bald', beardStyle: 'none', browStyle: 'none',
-  };
-}
+/** Its shroud: a long robe, dark and worn. */
+const SHROUD = dressOf([['monk-robe', [0.06, 0.06, 0.07]]]);
 
 /** Its human; `level` is the floor its feet find. */
 export class TallOneView extends HumanPool<TallOne> {
   static async create(seed: number): Promise<TallOneView> {
-    return new TallOneView(await humans(1, () => tallLook(seed), () => shroud(deriveSeed(seed, 'tall-one', 'shroud'))));
+    const [f] = await figures(1, async () => {
+      const look = await folkLook('umbral', deriveSeed(seed, 'tall-one'), { age: 0.5, female: false, hair: null }, SHROUD);
+      // Gaunt: no flesh on it, and long.
+      return { ...look, beard: 'none', brows: null, body: { ...look.body!, muscle: 0.05, weight: 0, height: 1, proportions: 1 } };
+    });
+    f.object.scale.setScalar(TALL.height / f.height);
+    return new TallOneView([f]);
   }
 
-  private constructor(h: Humanoid[]) {
-    super(h, Infinity, (t, time) => {
+  private constructor(f: Figure[]) {
+    super(f, Infinity, (t, time) => {
       let action: ActionAnim | undefined;
       if (t.mode === 'reach') action = { id: 'slam', t0: time - t.swingT, dur: TALL.reach.dur };
       else if (t.mode === 'stare') action = { id: 'cast_forward', t0: time - t.stareT, dur: TALL.stare.dur };

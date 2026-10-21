@@ -9,7 +9,7 @@
  * Pure.
  */
 import { deriveSeed, Rng } from '@futuremagic/core';
-import type { RaceId } from '@futuremagic/humanoid';
+import type { RaceId } from '@actors/human';
 
 /** The peoples a buried world may have. */
 export const DEEP_FOLK: readonly RaceId[] = ['orc', 'halfling', 'sylvan', 'drakeborn', 'umbral'];
