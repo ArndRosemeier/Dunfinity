@@ -4,26 +4,26 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `claude-code/session_015a9FszEAngcaUHDv4wySRi` (cloud, thread "Actors humans replace ours")
-- **at:** `2026-10-21T01:00:00Z`
+- **at:** `2026-10-21T03:40:00Z`
 - **branch / worktree:** `claude/actors-humans-evkdkn` · the cloud container's own clone
-- **last verified:** this branch's head · gate (see PR) · townsfolk screenshotted in the town (`?seed=1&gl&light`)
+- **last verified:** this branch's head · gate (see PR) · `npm run check:shaders -- title` locally (see PR)
 
 ## Done
 
-- **Step 2 of replacing our humans with Actors** (plan: `/mnt/project-files/dunfinity/actors/port-plan.md`).
-  Actors 0.2.0 (`@actors/core|human|three|generator`, from its GitHub release tarballs) is installed;
-  `tools/actors/pack.mjs` fetches the matching asset pack (without the CMU library) into
-  `.actors-pack/<version>` (git-ignored, cached in CI); the `actorsPack` Vite plugin serves it at
-  `/actors/` and copies it into the build (~300 MB, files loaded only when worn).
-- `src/render/actors/`: `pack.ts` (pack URL, shared fetcher, catalog without CC-BY items),
-  `animator.ts` (`FigureAnimator`: move states → Actors clips, lower/upper split, actions on the
-  upper body placed by the game clock, flinch, moods as expressions, stride matched to speed),
-  `figure.ts` (`Figure`: Character + animator, faces −Z by yaw like the old humans),
-  `looks.ts` (`personOfToday`).
-- `HumanPool` takes any `PoolFigure`; `townsfolkPool()` builds Actors figures.
+- **Fix for the Shaders workflow's title job** (red on main since #274). Each Actors figure has
+  shadow shaders of its own (its skinning nodes are per figure), and so does each old hairstyle,
+  but the Stage's shadow warm-up drew one caster per kind. `Figure` now marks its object
+  `OWN_SHADOWS` (src/render/stage.ts) and the warm-up draws every shown part under it; meshes with
+  `hairAux` (old humans' hair) are drawn one by one too. Teeth, tongue and eyes cast no shadow.
+- Earlier: step 2 of replacing our humans with Actors (#274: townsfolk on `Figure`).
+  Plan: `/mnt/project-files/dunfinity/actors/port-plan.md`.
 
 ## Next
 
-- Step 3: the player (`Nobody`) and the character creator on Actors' `CharacterEditor`; saves keep a `CharacterConfig`.
-- Step 4: goblins, scavengers, peoples of the deep, tall ones, bosses on Actors races. Step 5: ghosts and skeletons. Step 6: ladder climb and thrown poses, then remove `@futuremagic/humanoid`.
-- Not done yet in the animator: foot IK on uneven floor, look-at, lip flap.
+- Step 3 (in progress on this thread, not in this PR): the player (`Nobody`) on `Figure` with
+  `FigureRig` (sockets, pose layer, two-bone IK; src/render/actors/rig.ts), ladder climb on it, the
+  creator on Actors' `CharacterEditor` (v0.3.0 options), saves keep a `CharacterConfig`.
+- Steps 4 to 6: goblins, scavengers, peoples of the deep, tall ones, bosses; ghosts and skeletons;
+  then remove `@futuremagic/humanoid`.
+- Note: in SwiftShader the title's creator reaches "Go down" after 7 to 10 minutes locally (the
+  scene is ~1M triangles at 0.02 to 0.4 fps); the check's limit is 15 minutes.

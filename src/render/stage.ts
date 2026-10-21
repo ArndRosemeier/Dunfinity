@@ -27,13 +27,33 @@ const WARM_LAYER = 7;
  * What the shadow pass's shader for a caster depends on: whether it is instanced, how many bones it
  * is skinned to, its attributes and morphs, and what the pass borrows from its material (its kind,
  * by type and name; side, cut-outs, moved vertices). Casters alike share a shader; one of each is
- * drawn. Humans have a material each, alike per part, so not the material itself.
+ * drawn. Humans have a material each, alike per part, so not the material itself, except where a
+ * mesh's shadow shader is its own (`ownShadows`): then each material is drawn.
  */
-function casterKey(m: Mesh): string {
+function casterKey(m: Mesh, own: boolean): string {
   const g = m.geometry, mat = (Array.isArray(m.material) ? m.material[0] : m.material) as Material & { alphaMap?: unknown; positionNode?: unknown; displacementMap?: unknown };
   return [(m as { isInstancedMesh?: boolean }).isInstancedMesh, (m as { skeleton?: { bones: unknown[] } }).skeleton?.bones.length ?? -1,
     Object.keys(g.attributes).sort().join(','), Object.keys(g.morphAttributes).join(','),
-    mat.type, mat.name, mat.side, mat.shadowSide, mat.alphaTest > 0, !!mat.alphaMap, mat.transparent, !!mat.positionNode, !!mat.displacementMap].join('|');
+    mat.type, mat.name, mat.side, mat.shadowSide, mat.alphaTest > 0, !!mat.alphaMap, mat.transparent, !!mat.positionNode, !!mat.displacementMap,
+    own ? mat.uuid : ''].join('|');
+}
+
+/** Marks (in `userData`) an object whose meshes each build shadow shaders of their own (`casterKey`). */
+export const OWN_SHADOWS = 'ownShadows';
+
+/** Whether `m` is under an object marked `OWN_SHADOWS`. */
+function marked(m: Object3D): boolean {
+  for (let p: Object3D | null = m; p; p = p.parent) if (p.userData[OWN_SHADOWS]) return true;
+  return false;
+}
+
+/**
+ * Whether `m` builds a shadow shader of its own: under an object marked `OWN_SHADOWS`, or the old
+ * humans' hair cards (attribute `hairAux`: each hairstyle's shader differs, while the key above
+ * cannot tell them apart).
+ */
+function ownShadows(m: Object3D): boolean {
+  return !!(m as Mesh).geometry?.attributes.hairAux || marked(m);
 }
 
 /**
@@ -90,7 +110,7 @@ export class Stage {
    * frames, so those build now, behind the loading screen, and not in play.
    */
   private async warmShadows(group: Group, extra: readonly Object3D[]): Promise<void> {
-    for (const o of [group, ...extra]) o.traverse((c) => { if ((c as Mesh).isMesh && (c as Mesh).castShadow) this.casters.add(casterKey(c as Mesh)); });
+    for (const o of [group, ...extra]) o.traverse((c) => { if ((c as Mesh).isMesh && (c as Mesh).castShadow) this.casters.add(casterKey(c as Mesh, ownShadows(c))); });
     const parents = extra.map((o) => o.parent);
     for (const o of extra) {
       group.add(o);
@@ -146,7 +166,8 @@ export class Stage {
     obj.traverse((c) => { if ((c as Mesh).isMesh) meshes.push(c as Mesh); });
     for (const m of meshes) {
       if (!m.castShadow) continue; // the shadow pass draws casters only
-      const key = casterKey(m);
+      if (!m.visible && marked(m)) continue; // a figure's part not worn now (a garment off, a far body)
+      const key = casterKey(m, ownShadows(m));
       if (this.casters.has(key) && !every) continue;
       this.casters.add(key);
       fresh.push(m);

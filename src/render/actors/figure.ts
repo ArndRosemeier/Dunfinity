@@ -8,6 +8,7 @@ import { nodeMaterials } from '@actors/three/webgpu';
 import type { CharacterPatch } from '@actors/generator';
 import { Character, HUMAN_PACK, packFetch } from './pack';
 import { FigureAnimator, type AnimState } from './animator';
+import { OWN_SHADOWS } from '../stage';
 
 export type { AnimState, ActionAnim, Mood, MoveState } from './animator';
 
@@ -23,6 +24,9 @@ export interface FigureFrame {
 /** The floor under a foot at (x, y, z), or null (the old humans' foot IK; not used yet). */
 export type GroundFn = (x: number, y: number, z: number) => number | null;
 
+/** Parts too small to cast a shadow anyone sees. */
+const NO_SHADOW = /^(teeth|tongue|eyes|eyebrow|brows|lashes|eyelashes)/;
+
 export class Figure {
   /** The scene object: at the feet, turned to face where the game says. */
   readonly object = new Group();
@@ -30,6 +34,8 @@ export class Figure {
 
   private constructor(readonly character: Character) {
     this.object.name = 'actors-figure';
+    // Its skinning nodes are its own, so are its shadow shaders: each warmed (src/render/stage.ts).
+    this.object.userData[OWN_SHADOWS] = true;
     this.object.add(character.object);
     this.animator = new FigureAnimator(character);
   }
@@ -44,6 +50,8 @@ export class Figure {
       fetcher: packFetch,
       config: { anatomy: false, ...look, animation: null },
     });
+    // The mouth and eyes cast no shadow worth its shader (each figure's are its own).
+    character.object.traverse((o) => { if (NO_SHADOW.test(o.name)) o.castShadow = false; });
     const figure = new Figure(character);
     await figure.animator.load();
     return figure;
