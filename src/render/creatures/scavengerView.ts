@@ -1,6 +1,6 @@
 /**
- * The scavengers on screen (src/creatures/scavengers.ts): goblins (Norgo's goblin race on Scale's
- * bodies), in the miners' patched cast-offs, with crowbars. They sit round their fire on crates, get up and
+ * The scavengers on screen (src/creatures/scavengers.ts): goblins (Actors' goblins), in the
+ * miners' patched cast-offs, with crowbars. They sit round their fire on crates, get up and
  * turn to you, come at you swinging the crowbar, flinch when stabbed, and fall when they die. Their
  * camps: a `Hearth` (src/render/props/hearth.ts) and a crate to sit on at each seat.
  *
@@ -8,30 +8,31 @@
  * Stage once.
  */
 import { Group, type Object3D } from 'three/webgpu';
-import { randomAppearance, type HumanoidAppearance } from '@futuremagic/humanoid';
-import type { Humanoid, ActionAnim } from '@futuremagic/humanoid/three';
-import { deriveSeed } from '@futuremagic/core';
 import { SCAVENGER, type Camp, type Scavenger } from '../../creatures/scavengers';
 import { groundSpeed } from '../../creatures/creature';
 import type { Rgb } from '../../gen/propMesh';
 import { meshOf as mesh } from '../meshes';
 import { VERTEX_COLOR_SOLID } from '../materials';
 import { Hearth, hearthParts } from '../props/hearth';
-import { scavengersClothes } from '../humans/wardrobe';
-import { HumanPool, humans } from './humanPool';
+import type { ActionAnim, Figure as Person } from '../actors/figure';
+import { dressOf, type Dress } from '../actors/looks';
+import { HumanPool, figures } from './humanPool';
+import { goblinLook } from './goblinView';
 import { FigurePool, type Figure } from './figures';
 
-/** How many people and camps can be drawn at once, and how far off the people are drawn, metres: four goblins (`lookOf`). */
+/** How many people and camps can be drawn at once, and how far off the people are drawn, metres. */
 const PEOPLE = 4;
 const CAMPS = 3;
 const SHOWN = 60;
 
 const CRATE: Rgb = [0.34, 0.26, 0.17], SLAT: Rgb = [0.25, 0.19, 0.12];
 
-/** A scavenger's look: a goblin. */
-function scavengerLook(seed: number, k: number): HumanoidAppearance {
-  return randomAppearance('goblin', deriveSeed(seed, 'scavenger', k), { age: 0.3 + 0.12 * k, gender: k === 1 ? 0.15 : 0.85 });
-}
+/** What the scavengers wear (three looks: patched work clothes, a dyed jumper, faded blue). */
+const SCAVENGERS: readonly Dress[] = [
+  dressOf([['longsleeve', [0.3, 0.33, 0.22]], ['cargo-pants', [0.18, 0.2, 0.24]], ['work-boots', [0.22, 0.16, 0.1]]]),
+  dressOf([['fisherman-sweater', [0.42, 0.16, 0.12]], ['wool-pants', [0.16, 0.15, 0.13]], ['work-boots', [0.12, 0.1, 0.08]]]),
+  dressOf([['longsleeve', [0.16, 0.24, 0.3]], ['cargo-pants', [0.26, 0.24, 0.18]], ['cloth-shoes', [0.3, 0.2, 0.12]]]),
+];
 
 function campParts() {
   const crate = mesh((b) => {
@@ -75,11 +76,11 @@ export class ScavengerView {
   readonly camps: FigurePool<Camp>;
 
   static async create(seed: number): Promise<ScavengerView> {
-    return new ScavengerView(await humans(PEOPLE, (k) => scavengerLook(seed, k), (k) => scavengersClothes(deriveSeed(seed, 'scavenger', 'clothes', k), k)));
+    return new ScavengerView(await figures(PEOPLE, (k) => goblinLook(seed, k, SCAVENGERS[k % SCAVENGERS.length], 'scavenger'), () => 'crowbar'));
   }
 
-  private constructor(humans: Humanoid[]) {
-    this.people = new HumanPool(humans, SHOWN, (s, time) => {
+  private constructor(people: Person[]) {
+    this.people = new HumanPool(people, SHOWN, (s, time) => {
       let action: ActionAnim | undefined;
       if (s.mode === 'swing') action = { id: 'slam', t0: time - s.swingT, dur: SCAVENGER.swing.dur };
       const moving = groundSpeed(s) > 0.15;

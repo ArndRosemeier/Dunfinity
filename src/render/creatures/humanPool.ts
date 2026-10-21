@@ -1,13 +1,16 @@
 /**
- * A fixed pool of drawn humans (the Salt-Touched and the Foreman as skeletons, the scavengers, goblins, ghosts): Scale's humans built before the
- * warm-up (their materials compile with the rest) and added with the Stage once; each frame the
+ * A fixed pool of drawn humans (the townsfolk, goblins and scavengers, the Tall One, the town's
+ * people one calls on as Actors figures; the Salt-Touched and the Foreman as skeletons and the ghosts
+ * still Scale's humans): built before the warm-up (their materials compile with the rest) and added with the Stage once; each frame the
  * nearest of a list are drawn with them. Who is drawn keeps their human while they stay near, and
  * a newcomer takes the human of its own look where it can. A blow makes them flinch.
  */
 import { Group, type Object3D } from 'three/webgpu';
 import { Humanoid, type HumanoidOptions } from '@futuremagic/humanoid/three';
 import type { EquipmentVisuals, HumanoidAppearance } from '@futuremagic/humanoid';
-import { WARDROBE } from '../humans/wardrobe';
+import type { CharacterPatch } from '@actors/generator';
+import { WARDROBE, buildHeld } from '../humans/wardrobe';
+import { Figure } from '../actors/figure';
 import type { Level } from '../../gen/level';
 import { floorUnder } from '../humans/nobody';
 import type { AnimState } from '../actors/figure';
@@ -41,6 +44,18 @@ export async function humans(n: number, look: (k: number) => HumanoidAppearance,
     const h = await Humanoid.create(look(k), { wardrobe: WARDROBE, expressions: !as.bones, ...as });
     h.dress(clothes(k));
     out.push(h);
+  }
+  return out;
+}
+
+/** `n` Actors figures for a pool: figure k with `look(k)` (src/render/actors/looks.ts), holding `held(k)` in the right fist (a held item's id, src/render/humans/wardrobe.ts `buildHeld`). */
+export async function figures(n: number, look: (k: number) => Promise<CharacterPatch>, held: (k: number) => string | null = () => null): Promise<Figure[]> {
+  const out: Figure[] = [];
+  for (let k = 0; k < n; k++) {
+    const f = await Figure.load(await look(k));
+    const id = held(k);
+    if (id) f.carry('grip.R', buildHeld(id));
+    out.push(f);
   }
   return out;
 }

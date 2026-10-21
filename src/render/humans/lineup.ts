@@ -1,14 +1,18 @@
 /**
- * Every race side by side, for looking them over (the Lab's `?lab&races`): Norgo's ten races on
- * Scale's bodies, a man of each in front and a woman behind, standing idle in a row across the view,
- * all in the same plain clothes (`?lab&races=bones`, `?lab&races=<race>-bones`: as the Salt-Touched's
- * skeletons, in a miner's hat and trousers). A `HumanPool` with one human per place.
+ * Every race side by side, for looking them over (the Lab's `?lab&races`): Actors' ten peoples, a
+ * man of each in front and a woman behind, standing idle in a row across the view, all in the same
+ * plain travelling clothes (`?lab&races=bones`, `?lab&races=<race>-bones`: as the Salt-Touched's
+ * skeletons on Scale's bodies, in a miner's hat and trousers). A `HumanPool` with one figure per place.
  */
 import { RACE_IDS, randomAppearance, type RaceId } from '@futuremagic/humanoid';
 import { deriveSeed } from '@futuremagic/core';
-import { HumanPool, humans, type Drawn } from '../creatures/humanPool';
-import { minersClothes, travellersClothes } from './wardrobe';
+import { HumanPool, figures, humans, type Drawn, type PoolFigure } from '../creatures/humanPool';
+import { minersClothes } from './wardrobe';
+import { dressOf, folkLook } from '../actors/looks';
 import { minersBones } from '../creatures/touchedView';
+
+/** The same plain travelling clothes on everyone. */
+const PLAIN = dressOf([['briefs', [0.6, 0.6, 0.6]], ['longsleeve', [0.3, 0.27, 0.22]], ['wool-pants', [0.18, 0.17, 0.15]], ['cloth-shoes', [0.2, 0.15, 0.1]]]);
 
 /** Metres between them along the row, and between the rows. */
 const GAP = 1.15;
@@ -22,16 +26,17 @@ export class Lineup {
   /** `only`: just that race, a man and a woman side by side (for a close look); `bones`: as skeletons. */
   static async create(seed: number, only?: RaceId, bones = false): Promise<Lineup> {
     const races = only ? [only] : RACE_IDS, n = races.length;
-    const look = (k: number) => randomAppearance(races[k % n], deriveSeed(seed, 'lineup', k), { age: 0.5, gender: k < n ? 0.95 : 0.05 });
-    const clothes = (k: number) => (bones ? minersClothes : travellersClothes)(deriveSeed(seed, 'lineup', 'clothes', k));
-    return new Lineup(await humans(n * 2, look, clothes, bones ? { bones: minersBones(0.6) } : {}), races);
+    if (bones) {
+      const look = (k: number) => randomAppearance(races[k % n], deriveSeed(seed, 'lineup', k), { age: 0.5, gender: k < n ? 0.95 : 0.05 });
+      const old = await humans(n * 2, look, (k) => minersClothes(deriveSeed(seed, 'lineup', 'clothes', k)), { bones: minersBones(0.6) });
+      return new Lineup(old, Math.max(...old.map((x) => x.height)), races);
+    }
+    const all = await figures(n * 2, (k) => folkLook(races[k % n], deriveSeed(seed, 'lineup', k), { age: 0.3, female: k >= n }, PLAIN));
+    return new Lineup(all, Math.max(...all.map((x) => x.height)), races);
   }
 
-  /** The tallest of them, metres (the Lab looks one race in the eye). */
-  readonly tallest: number;
-
-  private constructor(h: Awaited<ReturnType<typeof humans>>, readonly races: readonly RaceId[]) {
-    this.tallest = Math.max(...h.map((x) => x.height));
+  /** `tallest`: the tallest of them, metres (the Lab looks one race in the eye). */
+  private constructor(h: PoolFigure[], readonly tallest: number, readonly races: readonly RaceId[]) {
     this.pool = new HumanPool(h, 200, () => ({ anim: { move: 'idle', mood: 'neutral' }, combat: false }));
   }
 

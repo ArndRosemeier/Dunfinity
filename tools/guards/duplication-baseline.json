@@ -1748,12 +1748,8 @@
     "reason": "each view draws its own thing per frame; the Foreman's draws his bell and hands him to HumanPool.draw"
   },
   {
-    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/scavengerView.ts#create",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
+    "reason": "async factories of the views: each builds its own figures (looks, clothes, what they hold) for its own pool; nothing to fold"
   },
   {
     "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
@@ -1800,28 +1796,8 @@
     "reason": "both hand the nobody's humanoid one frame (Humanoid.update): Nobody.pose from the Body, the ladder climb from its script; the posing itself is the package's animator"
   },
   {
-    "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
-    "reason": "each creature view loads its own glb onto its own coat kind through Rigged.fetch, the one loader"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/scavengerView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
     "reason": "async factories of the human views (humans load their assets first)"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/scavengerView.ts#deriveSeed + dunfinity/render/creatures/touchedView.ts#deriveSeed",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
   },
   {
     "key": "same name: dunfinity/render/creatures/rigged.ts#pose + dunfinity/render/humans/ladderClimb.ts#pose",
@@ -1842,14 +1818,6 @@
   {
     "key": "same name: dunfinity/render/creatures/shroomView.ts#draw + dunfinity/render/props/watchers.ts#draw",
     "reason": "each view's own draw of its own things on screen; the same name for unrelated things"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/tallOneView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
-    "reason": "async factories of the human views: each picks its own looks and clothes and hands them to humans() (src/render/creatures/humanPool.ts)"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/tallOneView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
-    "reason": "async factories of the human views (humans load their assets first)"
   },
   {
     "key": "same name: dunfinity/render/creatures/touchedView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
@@ -2924,35 +2892,11 @@
     "reason": "unrelated methods that share the word take"
   },
   {
-    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/creatures/goblinView.ts#create",
-    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/scavengerView.ts#create",
     "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
   },
   {
-    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
-    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/slimeView.ts#create",
-    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
-    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/creatures/touchedView.ts#create",
-    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/goblinView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
-    "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/goblinView.ts#deriveSeed + dunfinity/render/creatures/scavengerView.ts#deriveSeed",
     "reason": "each view's static factory: its own pool size, looks and clothes passed to humans() / its figure pool"
   },
   {
@@ -3052,14 +2996,6 @@
     "reason": "a getter/setter for the level each view stands on; the Foreman's hands it on to his HumanPool"
   },
   {
-    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/goblinView.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/scavengerView.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/shroomView.ts#create",
     "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
   },
@@ -3073,10 +3009,6 @@
   },
   {
     "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/creatures/goblinView.ts#deriveSeed",
-    "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/creatures/scavengerView.ts#deriveSeed",
     "reason": "the view imports core's deriveSeed (deriveSeed(seed, 'ghost', ...)) for its looks and clothes; a use, not a copy"
   },
   {
@@ -3132,24 +3064,8 @@
     "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
   },
   {
-    "key": "same name: dunfinity/render/creatures/foremanView.ts#create + dunfinity/render/humans/lineup.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/humans/lineup.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
-  },
-  {
     "key": "same name: dunfinity/render/creatures/ghostView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
     "reason": "the module imports core's deriveSeed for its own looks and clothes; a use, not a copy"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/humans/lineup.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/slimeView.ts#create + dunfinity/render/humans/lineup.ts#create",
-    "reason": "each creature view's own async factory (its humans or models are built before the warm-up); a HumanPool view's create builds its pool with humans(), the one way"
   },
   {
     "key": "same name: dunfinity/render/creatures/tallOneView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
@@ -4918,5 +4834,33 @@
   {
     "key": "same name: dunfinity/render/creatures/rigged.ts#figure + dunfinity/render/humans/nobody.ts#figure",
     "reason": "both give the drawn figure inside: the old humanoid's (goes in port step 6) and the grandchild's Actors figure"
+  },
+  {
+    "key": "same name: dunfinity/gen/geode.ts#deriveSeed + dunfinity/render/creatures/tallOneView.ts#deriveSeed",
+    "reason": "the module imports core's deriveSeed for its own look; a use, not a copy"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
+    "reason": "async factories of the views: each builds its own figures (looks, clothes, what they hold) for its own pool; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/ghostView.ts#create + dunfinity/render/humans/neighbourView.ts#create",
+    "reason": "async factories of the views: each builds its own figures (looks, clothes, what they hold) for its own pool; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/shroomView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
+    "reason": "async factories of the views: each builds its own figures (looks, clothes, what they hold) for its own pool; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/slimeView.ts#create + dunfinity/render/creatures/tallOneView.ts#create",
+    "reason": "async factories of the views: each builds its own figures (looks, clothes, what they hold) for its own pool; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/tallOneView.ts#create + dunfinity/render/humans/lineup.ts#create",
+    "reason": "async factories of the views: each builds its own figures (looks, clothes, what they hold) for its own pool; nothing to fold"
+  },
+  {
+    "key": "same name: dunfinity/render/creatures/goblinView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
+    "reason": "each pool seeds its own folk looks with deriveSeed (the one seam) under its own label"
   }
 ]

@@ -269,47 +269,15 @@ const MINER: Outfit = {
   hand: ['pick', [0.22, 0.21, 0.2], [0.3, 0.22, 0.14], 0.6],
 };
 
-/** What the scavengers wear (three looks: patched work clothes, a dyed coat, tarpaulin), and their crowbars. */
-const SCAVENGERS: readonly Outfit[] = [
-  { clothes: [['chest', 'tunic', [0.3, 0.33, 0.22], [0.22, 0.2, 0.15], 0.75], ['legs', 'trousers', [0.18, 0.2, 0.24], [0.13, 0.14, 0.16], 0.7], ['feet', 'footwraps', [0.22, 0.16, 0.1], [0.15, 0.11, 0.07], 0.6]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
-  { clothes: [['chest', 'tunic', [0.42, 0.16, 0.12], [0.2, 0.12, 0.1], 0.7], ['legs', 'trousers', [0.16, 0.15, 0.13], [0.12, 0.11, 0.1], 0.75], ['feet', 'footwraps', [0.12, 0.1, 0.08], [0.1, 0.08, 0.06], 0.6]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
-  { clothes: [['chest', 'tunic', [0.16, 0.24, 0.3], [0.12, 0.16, 0.18], 0.8], ['legs', 'trousers', [0.26, 0.24, 0.18], [0.18, 0.16, 0.12], 0.8], ['feet', 'footwraps', [0.3, 0.2, 0.12], [0.2, 0.13, 0.08], 0.65]], hand: ['crowbar', [0.3, 0.29, 0.28], [0.24, 0.16, 0.12], 0.7] },
-];
-
-/** What the goblins wear (stolen and cut down: a sack-cloth smock, a miner's jacket gone black, a dyed rag), and a stolen kitchen knife each. */
-const GOBLINS: readonly Outfit[] = [
-  { clothes: [['chest', 'tunic', [0.34, 0.29, 0.2], [0.25, 0.2, 0.13], 0.95], ['legs', 'trousers', [0.2, 0.16, 0.11], [0.14, 0.11, 0.08], 0.9]], hand: ['knife', [0.5, 0.48, 0.45], [0.1, 0.06, 0.03], 0.8] },
-  { clothes: [['chest', 'tunic', [0.12, 0.12, 0.13], [0.3, 0.3, 0.3], 0.95], ['legs', 'trousers', [0.16, 0.13, 0.1], [0.1, 0.09, 0.07], 0.9]], hand: ['knife', [0.5, 0.48, 0.45], [0.1, 0.06, 0.03], 0.8] },
-  { clothes: [['chest', 'tunic', [0.4, 0.14, 0.1], [0.22, 0.1, 0.08], 0.95], ['legs', 'trousers', [0.22, 0.2, 0.14], [0.15, 0.13, 0.1], 0.9], ['feet', 'footwraps', [0.2, 0.15, 0.1], [0.14, 0.1, 0.07], 0.9]], hand: ['knife', [0.5, 0.48, 0.45], [0.1, 0.06, 0.03], 0.8] },
-];
-
 /** What the ghosts of the old races wear (seen through, in their tint): a dwarf's work clothes and boots, an elf's long pale robe; nothing in the hand. */
 const GHOSTS: Readonly<Record<'dwarf' | 'elf', Outfit>> = {
   dwarf: { clothes: [['chest', 'tunic', [0.3, 0.26, 0.2], [0.42, 0.34, 0.2], 0.5], ['legs', 'trousers', [0.22, 0.2, 0.17], [0.16, 0.14, 0.12], 0.5], ['feet', 'footwraps', [0.2, 0.15, 0.1], [0.14, 0.1, 0.07], 0.5]], hand: null },
   elf: { clothes: [['chest', 'tunic', [0.7, 0.72, 0.76], [0.55, 0.6, 0.68], 0.3], ['legs', 'trousers', [0.62, 0.64, 0.7], [0.5, 0.52, 0.58], 0.3]], hand: null },
 };
 
-/** The stranger at Ilse's: a long dark travelling coat over dark trousers, worn boots. */
-const TRAVELLER: Outfit = {
-  clothes: [['chest', 'tunic', [0.14, 0.13, 0.12], [0.24, 0.2, 0.15], 0.7], ['legs', 'trousers', [0.12, 0.11, 0.1], [0.1, 0.09, 0.08], 0.7], ['feet', 'footwraps', [0.22, 0.16, 0.1], [0.15, 0.11, 0.07], 0.75]],
-  hand: null,
-};
-
 /** Frau Weber's cardigan over a long dark skirt, and her slippers: nothing in her hands. */
 const CARDIGAN: Outfit = {
   clothes: [['chest', 'tunic', [0.42, 0.33, 0.36], [0.3, 0.25, 0.27], 0.35], ['legs', 'trousers', [0.12, 0.12, 0.16], [0.1, 0.1, 0.12], 0.3], ['feet', 'footwraps', [0.3, 0.12, 0.14], [0.2, 0.08, 0.1], 0.3]],
-  hand: null,
-};
-
-/** The shopkeepers: Kemal's brown shop coat over grey work trousers; Ilse's bottle-green cardigan over a dark skirt. Nothing in their hands. */
-const KEEPERS: Readonly<Record<'hardware' | 'pawn', Outfit>> = {
-  hardware: { clothes: [['chest', 'tunic', [0.34, 0.24, 0.14], [0.2, 0.15, 0.1], 0.35], ['legs', 'trousers', [0.24, 0.24, 0.25], [0.16, 0.16, 0.17], 0.4], ['feet', 'footwraps', [0.12, 0.09, 0.07], [0.08, 0.06, 0.05], 0.3]], hand: null },
-  pawn: { clothes: [['chest', 'tunic', [0.14, 0.26, 0.18], [0.1, 0.18, 0.13], 0.3], ['legs', 'trousers', [0.13, 0.11, 0.12], [0.1, 0.08, 0.09], 0.3], ['feet', 'footwraps', [0.16, 0.08, 0.06], [0.1, 0.05, 0.04], 0.3]], hand: null },
-};
-
-/** The Tall One's shroud: a long, dark, worn cloth, and nothing in the hand. */
-const SHROUD: Outfit = {
-  clothes: [['chest', 'tunic', [0.06, 0.06, 0.07], [0.04, 0.04, 0.05], 0.95], ['legs', 'trousers', [0.05, 0.05, 0.06], [0.04, 0.04, 0.05], 0.95]],
   hand: null,
 };
 
@@ -336,10 +304,5 @@ function dressIn(o: Outfit, seed: number, lid = false, items: readonly Item[] = 
 }
 
 export const minersClothes = (seed: number): EquipmentVisuals => dressIn(MINER, seed);
-export const scavengersClothes = (seed: number, look: number): EquipmentVisuals => dressIn(SCAVENGERS[look % SCAVENGERS.length], seed);
-export const goblinsClothes = (seed: number, look: number): EquipmentVisuals => dressIn(GOBLINS[look % GOBLINS.length], seed);
 export const ghostsClothes = (seed: number, race: 'dwarf' | 'elf'): EquipmentVisuals => dressIn(GHOSTS[race], seed);
-export const travellersClothes = (seed: number): EquipmentVisuals => dressIn(TRAVELLER, seed);
-export const shroud = (seed: number): EquipmentVisuals => dressIn(SHROUD, seed);
 export const cardigan = (seed: number): EquipmentVisuals => dressIn(CARDIGAN, seed);
-export const keepersClothes = (seed: number, shop: 'hardware' | 'pawn'): EquipmentVisuals => dressIn(KEEPERS[shop], seed);

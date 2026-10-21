@@ -7,7 +7,7 @@ import type { Fetcher } from '@actors/core';
 import { Character, buildCatalog, defaultConfig, type CharacterCatalog, type CharacterConfig } from '@actors/generator';
 import { Human } from '@actors/human';
 import { IRIS_PRESETS } from '@actors/three';
-import { today } from './today';
+import { today, uncredited } from './today';
 
 /** The human pack's manifest. */
 export const HUMAN_PACK = `${import.meta.env.BASE_URL}actors/human/manifest.json`;
@@ -28,15 +28,33 @@ export const packFetch: Fetcher = async (url) => {
   return (await job).slice(0);
 };
 
-let catalog: Promise<{ catalog: CharacterCatalog; base: CharacterConfig }> | undefined;
+type Catalog = { catalog: CharacterCatalog; base: CharacterConfig };
+let full: Promise<CharacterCatalog> | undefined;
+const narrowed = new Map<(c: CharacterCatalog) => CharacterCatalog, Promise<Catalog>>();
 
-/** What the pack offers people of today (`today`) and the default look, loaded once. */
-export function humanCatalog(): Promise<{ catalog: CharacterCatalog; base: CharacterConfig }> {
-  catalog ??= Human.load(HUMAN_PACK, packFetch).then((human) => {
-    const c = today(buildCatalog(human, Object.keys(IRIS_PRESETS)));
-    return { catalog: c, base: defaultConfig(c) };
-  });
-  return catalog;
+/** The pack's whole catalog, loaded once. */
+function packCatalog(): Promise<CharacterCatalog> {
+  full ??= Human.load(HUMAN_PACK, packFetch).then((human) => buildCatalog(human, Object.keys(IRIS_PRESETS)));
+  return full;
 }
+
+/** The catalog narrowed by `by`, and its default look, made once. */
+function catalogOf(by: (c: CharacterCatalog) => CharacterCatalog): Promise<Catalog> {
+  let c = narrowed.get(by);
+  if (!c) {
+    c = packCatalog().then((all) => {
+      const catalog = by(all);
+      return { catalog, base: defaultConfig(catalog) };
+    });
+    narrowed.set(by, c);
+  }
+  return c;
+}
+
+/** What the pack offers people of today (`today`) and the default look. */
+export const humanCatalog = (): Promise<Catalog> => catalogOf(today);
+
+/** What the pack offers every people the game draws (`uncredited`: goblins, the peoples of the deep...), and the default look. */
+export const folkCatalog = (): Promise<Catalog> => catalogOf(uncredited);
 
 export { Character };
