@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.285 — The ghosts and the Salt-Touched are Actors people; the old human models are gone
+
+- The dwarf and elf ghosts and grandma's ghost are Actors people, seen through and glowing at the rim as before; grandma keeps her bun and cardigan.
+- The Salt-Touched and the Foreman are Actors skeletons: their own bones, salt-crusted, eyes glowing, in a hard hat and rotting work trousers, with their picks.
+- The Lab's race lineup shows every race as skeletons (`?lab&races=bones`) or as ghosts (`?lab&races=ghosts`).
+- Every human in the game is now an Actors person: the old human models, their clothes and their asset files are removed.
+- The people's bodies cast their shadows through one shared stand-in, and only the grandchild's hair casts a shadow, so the game is ready to go down sooner after the title.
+- The shared shadow shaders of people stay built when the title's people go, so nothing builds when you go down.
+- The shader check names any shader built after going down.
+
+## v0.284 — Goblins, scavengers, the Tall One and the townsfolk you talk to are Actors people
+
+- Goblins are Actors' goblin race, in rough tunics and with a knife in hand; the scavengers are goblins too, in work clothes with their crowbars.
+- The Tall One is a gaunt umbral in a dark robe, as tall as before.
+- Frau Weber, Kemal and Ilse behind their counters, and the stranger at Ilse's (one of the peoples of the deep) are Actors people.
+- The Lab's race lineup (`?lab&races`) shows Actors' races.
+- Ghosts and skeletons still use the old bodies; they move next.
+
 ## v0.283 — The grandchild is an Actors person, made in Actors' character editor
 
 - The player's figure is now an Actors person: body, skin, hair and today's clothes from the Actors pack, animated by the game's own animator.
