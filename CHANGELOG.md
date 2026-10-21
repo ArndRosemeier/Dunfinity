@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.283 — The grandchild is an Actors person, made in Actors' character editor
+
+- The player's figure is now an Actors person: body, skin, hair and today's clothes from the Actors pack, animated by the game's own animator.
+- The character creator is Actors' editor (body, look, clothes), dressed in the game's frame; the dice still roll someone else, and only people of today are on offer.
+- The kit sits on the new figure: the tool in the fist when fighting and at the hip otherwise, the flashlight or umbrella in the other hand, grandma's pot lid on the forearm, Kemal's hard hat on the head (the hair tucked under it). Fists close round what they hold.
+- The ladder climb poses the new figure: hands and feet on the rungs.
+- Saves keep the new look; a save from before starts with the seed's grandchild.
+
+## v0.282 — Actors figures' shadows warmed, and shared
+
+- The title screen and the character creator no longer build shadow shaders on the render path when the townsfolk come into the scene.
+- An Actors figure's solid clothes now share one shadow shader with every other figure's (their shadow ignores colour), so the village warms far fewer shaders; the body and hair, which differ per figure, are warmed one by one.
+- The old humans' hair is warmed hairstyle by hairstyle for the same reason.
+- An Actors figure's teeth, tongue and eyes cast no shadow (too small to see, and each would need a shader).
+
 ## v0.281 — The townsfolk are Actors people
 
 - The people walking the village are the first figures from Arnd's new Actors humans: real faces, hair and skin, in everyday clothes of today (T-shirts and jeans, polo shirts, work overalls, skirts).
