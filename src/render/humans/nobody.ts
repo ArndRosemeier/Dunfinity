@@ -51,7 +51,7 @@ export class Nobody {
 
   /** `look`: the one made in the creator (src/game/creator.ts), else the seed's. */
   static async create(seed: number, level: Level | null, look?: CharacterConfig): Promise<Nobody> {
-    return new Nobody(await Figure.load(look ?? await nobodyLook(seed)), level);
+    return new Nobody(await Figure.load(look ?? await nobodyLook(seed), { hairShadow: true }), level);
   }
 
   private constructor(figure: Figure, level: Level | null) {
@@ -77,7 +77,7 @@ export class Nobody {
     if (next) {
       await next.character.set(look);
       next.shadows(); // new parts
-    } else next = await Figure.load(look);
+    } else next = await Figure.load(look, { hairShadow: true });
     await prepare(next.object);
     const old = this.figure_;
     next.object.position.copy(old.object.position);
@@ -158,11 +158,11 @@ export class Nobody {
   /** Under the hard hat the hair is tucked away (the hair it wears: Actors keeps the others hidden). */
   private hideHair(f: Figure): void {
     const hat = this.onSocket.has('head');
-    f.character.object.traverse((o) => {
-      if (!(o as Mesh).isMesh || !o.name.startsWith('hair')) return;
+    for (const o of f.meshes()) {
+      if (!o.name.startsWith('hair')) continue;
       if (hat && o.visible) { o.visible = false; o.userData[TUCKED] = true; }
       else if (!hat && o.userData[TUCKED]) { o.visible = true; delete o.userData[TUCKED]; }
-    });
+    }
   }
 
   /**

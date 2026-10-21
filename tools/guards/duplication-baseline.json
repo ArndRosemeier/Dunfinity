@@ -4240,14 +4240,6 @@
     "reason": "each full-screen overlay's own black to fade in from and out to: one setter of one line each"
   },
   {
-    "key": "same name: dunfinity/render/creatures/cricketView.ts#create + dunfinity/render/humans/nobody.ts#create",
-    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
-  },
-  {
-    "key": "same name: dunfinity/render/creatures/eelView.ts#create + dunfinity/render/humans/nobody.ts#create",
-    "reason": "async factories of the views (models and assets load first); the nobody's builds its human in the saved or seeded look"
-  },
-  {
     "key": "same name: dunfinity/gen/cellar.ts#climbable + dunfinity/gen/styledField.ts#climbable",
     "reason": "the Style contract (src/gen/style.ts): every style implements column/at/color/climbable/portal, and StyledField blends them under the same names; one seam, many implementations"
   },
@@ -4910,5 +4902,9 @@
   {
     "key": "same name: dunfinity/render/creatures/touchedView.ts#deriveSeed + dunfinity/render/humans/lineup.ts#deriveSeed",
     "reason": "each pool seeds its own looks with deriveSeed (the one seam) under its own label"
+  },
+  {
+    "key": "same name: dunfinity/render/humans/neighbourView.ts#create + dunfinity/render/humans/nobody.ts#create",
+    "reason": "async factories of the views: each builds its own figures (looks, clothes, what they hold) for its own pool; nothing to fold"
   }
 ]

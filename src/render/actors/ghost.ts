@@ -4,10 +4,10 @@
  * compiled; the figure's materials are its own, so nothing is shared with the living. Ghosts cast no
  * shadow. (Came over from the old humanoid package's ghosts.)
  */
-import type { Material, Mesh, MeshStandardNodeMaterial, NodeBuilder } from 'three/webgpu';
+import type { Material, MeshStandardNodeMaterial, NodeBuilder } from 'three/webgpu';
 import { abs, diffuseColor, dot, float, luminance, materialEmissive, mix, normalView, positionViewDirection, pow, saturate, sub, vec3, vec4 } from 'three/tsl';
 import { Color, SRGBColorSpace } from 'three/webgpu';
-import type { Figure } from './figure';
+import { STAND_IN, type Figure } from './figure';
 
 export interface GhostLook {
   /** sRGB 0..1. */
@@ -20,10 +20,14 @@ export interface GhostLook {
 export function ghostly(f: Figure, g: GhostLook): void {
   const c = new Color().setRGB(g.tint[0], g.tint[1], g.tint[2], SRGBColorSpace), tint = vec3(c.r, c.g, c.b);
   const fade = f.fadeNode;
-  f.character.object.traverse((o) => {
-    const m = o as Mesh;
-    if (!m.isMesh) return;
+  // A ghost casts no shadow: its bodies' shadow stand-ins go (their material is shared).
+  for (const m of f.meshes()) {
+    if (m.name === STAND_IN) {
+      m.removeFromParent();
+      continue;
+    }
     m.castShadow = false;
+    m.userData[STAND_IN] = false; // and none comes back (src/render/actors/figure.ts shadows)
     for (const mat of (Array.isArray(m.material) ? m.material : [m.material]) as Material[]) {
       const n = mat as MeshStandardNodeMaterial;
       // Facing you, thin; at the edges, where one looks through more of it, stronger.
@@ -43,5 +47,5 @@ export function ghostly(f: Figure, g: GhostLook): void {
       n.depthWrite = false;
       n.needsUpdate = true;
     }
-  });
+  }
 }

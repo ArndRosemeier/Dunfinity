@@ -10,7 +10,7 @@
  * skeleton shares their shaders. Seeded (no Math.random). The shapes came over from the old humanoid
  * package's skeletons, set on Actors' bones.
  */
-import { BufferGeometry, Float32BufferAttribute, Matrix4, Mesh, SkinnedMesh, Uint16BufferAttribute, Vector3, type Object3D } from 'three/webgpu';
+import { BufferGeometry, Float32BufferAttribute, Matrix4, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three/webgpu';
 import { Rng, srgbToLinear } from '@futuremagic/core';
 import { GLOW, VERTEX_COLOR_SOLID } from '../materials';
 import type { Figure } from './figure';
@@ -385,9 +385,7 @@ function restOf(f: Figure): Rest {
  */
 export function skeletal(f: Figure, worn: readonly string[], bones: Bones): void {
   const rest = restOf(f), actor = f.character.actor, keep = new Set(worn);
-  const flesh: Object3D[] = [];
-  f.character.object.traverse((o) => { if ((o as Mesh).isMesh && !keep.has(o.name)) flesh.push(o); });
-  for (const o of flesh) o.removeFromParent();
+  for (const m of f.meshes()) if (!keep.has(m.name)) m.removeFromParent();
   const geo = boneGeometry(rest, bones);
   const add = (g: BufferGeometry, kind: typeof VERTEX_COLOR_SOLID, shadow: boolean) => {
     const mesh = new SkinnedMesh(g, kind.make());

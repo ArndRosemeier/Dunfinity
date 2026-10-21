@@ -118,7 +118,8 @@ try {
     console.log(`title: ready to go down after ${((Date.now() - woke) / 1000).toFixed(0)} s, ${warm.sync} synchronous builds while warming`);
     if (warm.sync) problems.push(`title: ${warm.sync} shaders built synchronously on the render path while the title and the creator warmed: ${warm.what.join(', ')}`);
     await title.evaluate(() => document.querySelector('#creator .go').click());
-    await title.waitForFunction(() => !document.querySelector('#title') && !document.querySelector('#creator') && window.__ready === true, null, { timeout: 600000 });
+    // The cellar streams in at a frame or two a minute under SwiftShader (the village's people drawn): up to 20 minutes.
+    await title.waitForFunction(() => !document.querySelector('#title') && !document.querySelector('#creator') && window.__ready === true, null, { timeout: 1200000 });
     const after = await title.evaluate(async (at) => {
       const g = window.__game;
       for (let t = 0; t < 20; t++) { g.cam.yaw += 0.3; await new Promise((r) => setTimeout(r, 150)); }

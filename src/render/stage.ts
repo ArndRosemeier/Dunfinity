@@ -21,6 +21,11 @@ const WARM_FRAMES = 8;
 const SETTLE_MS = 500;
 /** A layer only the headlamp's shadow camera sees: casters warmed later are drawn into its map alone. */
 const WARM_LAYER = 7;
+/**
+ * A layer only the headlamp's shadow camera sees, always (src/render/LevelView.ts): casters that
+ * exist for their shadow alone, like an Actors figure's body stand-in (src/render/actors/figure.ts).
+ */
+export const SHADOW_LAYER = 6;
 
 
 /**
