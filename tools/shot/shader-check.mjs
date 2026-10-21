@@ -113,7 +113,9 @@ try {
       [...document.querySelectorAll('#creator .tabs button')].find((b) => b.dataset.tab === 'clothes')?.click();
       for (const t of ['Dress', 'Cap']) [...document.querySelectorAll('#creator .chips button')].find((b) => b.textContent === t)?.click();
     });
-    await title.waitForSelector('#creator .go:not([disabled])', { state: 'attached', timeout: 900000 });
+    // Each Actors figure's body and hair warm their shadow shader one by one, each with a frame of the whole
+    // scene: under SwiftShader that is minutes (on a GPU, milliseconds).
+    await title.waitForSelector('#creator .go:not([disabled])', { state: 'attached', timeout: 1800000 });
     await new Promise((r) => setTimeout(r, 3000)); // the new look's rebuild
     const warm = await title.evaluate(() => {
       // The Stage's shadow warm-up builds on the render path on purpose, in cap slots, and marks them.
