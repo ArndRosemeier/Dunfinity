@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.288 — People draw again on WebGPU
+
+- Actors 0.6.6: people and animals drew nothing on real WebGPU since 0.6.5 (their face morphs took too many vertex buffers); they share one buffer now. Races with a tail no longer break WebGPU when their bones change.
+
 ## v0.287 — People share their shaders
 
 - Actors 0.6.5: every person's skin, eyes, hair and clothes draw with one shader per kind instead of building their own, so the title and the levels warm up much faster (the Lab's race lineup: 260 shaders down to 81, the ghosts: 248 down to 69).
