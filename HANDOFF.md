@@ -4,16 +4,17 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `claude-code/session_015a9FszEAngcaUHDv4wySRi` (cloud, thread "Actors humans replace ours")
-- **at:** `2026-10-21T23:10:00Z`
+- **at:** `2026-10-22T15:20:00Z`
 - **branch / worktree:** `claude/actors-humans-evkdkn` · the cloud container's own clone
-- **last verified:** `bash scripts/gate.sh` green (build + tests) with Actors 0.6.0 · Lab screenshots of the races, ghosts, skeletons and an elf close-up, side by side with 0.5.0 (same look; warm-up shaders: races 262 → 83, ghosts 250 → 69)
+- **last verified:** `bash scripts/gate.sh` green with Actors 0.6.5 · Lab lineups vs 0.6.4: warm-up shaders 260 → 81 (races), 248 → 69 (ghosts), same look
 
 ## Done
 
-- Actors 0.6.0 (Actors PR #23): every character shares one node graph per material kind, its own values read at each draw; face morphs are plain vertex attributes. Dunfinity upgrades to it.
-- Ghosts share their shaders too (src/render/actors/ghost.ts): ghost nodes built once per kind, a ghost's tint, opacity and fade read from the drawn material (`userData.ghost`). `Figure.fade` is a plain number now.
+- Actors 0.6.5 (Actors #23, on top of Scale's 0.6.4): every character shares one node graph per material kind; face morphs are plain attributes. Dunfinity #277 had installed Arnd's own 0.6.0, which did NOT have this yet; this PR brings it.
+- Ghosts share their shaders (src/render/actors/ghost.ts, since #277).
 
 ## Next
 
-- Run the Shaders workflow (title check) on main after the merge: it timed out on the runner before this change.
+- Run the Shaders workflow (title check) after the merge too.
+- Several projects (Scale, Dunfinity) push to Actors: fetch Actors main before every Actors PR.
 - `?lab&races=<race>` puts the camera inside a house at depth 0 (pre-existing; the row view is fine).

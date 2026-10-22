@@ -19,10 +19,10 @@
     "actors:pack": "node tools/actors/pack.mjs"
   },
   "dependencies": {
-    "@actors/core": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.0/actors-core-0.6.0.tgz",
-    "@actors/generator": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.0/actors-generator-0.6.0.tgz",
-    "@actors/human": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.0/actors-human-0.6.0.tgz",
-    "@actors/three": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.0/actors-three-0.6.0.tgz",
+    "@actors/core": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.5/actors-core-0.6.5.tgz",
+    "@actors/generator": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.5/actors-generator-0.6.5.tgz",
+    "@actors/human": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.5/actors-human-0.6.5.tgz",
+    "@actors/three": "https://github.com/ArndRosemeier/Actors/releases/download/v0.6.5/actors-three-0.6.5.tgz",
     "@fontsource/alegreya": "5.3.0",
     "@fontsource/alegreya-sans": "5.3.0",
     "@fontsource/im-fell-english": "5.3.0",
