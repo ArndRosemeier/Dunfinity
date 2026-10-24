@@ -3,8 +3,8 @@
  */
 import type { CharacterCatalog } from '@actors/generator';
 
-/** Garments of a fantasy world (helmets, robes, gowns, horns...), not worn in a village of today. */
-const FANTASY = /viking|wizard|witch|santa|knight|dragon|skull|horned|corinthian|monk|medieval|goddess|elven|priestess|ninja|pirate|gown|bodice|helmet/;
+/** Garments of a fantasy world (helmets, robes, gowns, horns...) or of the far future (Commonwear 3026), not worn in a village of today. */
+const FANTASY = /future|viking|wizard|witch|santa|knight|dragon|skull|horned|corinthian|monk|medieval|goddess|elven|priestess|ninja|pirate|gown|bodice|helmet/;
 
 /**
  * What the game may draw of the pack at all: every people, and only what is free to ship without a
