@@ -4,13 +4,13 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `claude-code/session_015a9FszEAngcaUHDv4wySRi` (cloud, thread "Actors humans replace ours")
-- **at:** `2026-10-24T13:30:00Z`
+- **at:** `2026-11-05T00:30:00Z`
 - **branch / worktree:** `claude/actors-humans-evkdkn` · the cloud container's own clone
-- **last verified:** `bash scripts/gate.sh` green with Actors 0.8.2; Lab race lineup on real WebGPU (SwiftShader Vulkan): max 7 of 8 vertex buffers, no WebGPU errors
+- **last verified:** `bash scripts/gate.sh` green with Actors 0.33.4 and AssetGenerator b34dda6
 
 ## Done
 
-- Actors 0.8.2 (from 0.6.6). New in Actors: the futuristic Commonwear 3026 wardrobe (kept out of `today()`, src/render/actors/today.ts, with a test), shared screen textures (`ScreenTexturePool`; Dunfinity wears no screen fabrics, so nothing to wire), sheer stockings keep the skin beneath them.
+- Actors 0.33.4 (from 0.8.2) and the AssetGenerator submodule at b34dda6 (210 commits; the game only imports `@futuremagic/core`, which only gained `ground.ts`; none of `tools/props/models.json`'s specs changed, so the props pack was not rebuilt). `today()` now filters by Actors' theme tags (`filterCatalog`, modern + vintage, without real-faith) and drops helmets and gowns; test/today.test.ts. New Actors defaults on: skin detail, cloth tuck, cloth motion; face rig, living face and wrinkles stay off.
 
 ## Next
 
