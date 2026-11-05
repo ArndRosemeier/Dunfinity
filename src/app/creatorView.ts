@@ -1,7 +1,7 @@
 /**
  * The character creator's overlay (src/game/creator.ts plays it): beside the grandchild standing in
- * grandma's round room, a panel with Actors' character editor (body, look, today's clothes; in the
- * game's colours), a dice for a stranger, and "Go down", which wakes once the game's shaders are all
+ * grandma's round room, a panel with Actors' character editor (body, face and hair, clothes: each
+ * with Simple and Detailed tabs; in the game's colours), a dice for a stranger, and "Go down", which wakes once the game's shaders are all
  * built. Dragging on the room turns the grandchild; the wheel (or the Face / Body buttons) looks at
  * the face or the whole body.
  *
@@ -105,7 +105,7 @@ export class CreatorView {
     button(quick, 'Shape them yourself', () => side.classList.remove('simple'), 'ui-btn');
     const scroll = child(side, 'div', 'ui-scroll');
     this.editor = new CharacterEditor(model, scroll, {
-      title: 'The grandchild', sections: ['body', 'look', 'outfit'], buttons: [], hide: HIDDEN, mode: 'simple',
+      title: 'The grandchild', sections: ['body', 'face', 'outfit'], buttons: [], hide: HIDDEN, mode: 'simple',
       randomize: () => hooks.someoneElse(),
     });
     this.unsubscribe = model.onChange((c) => hooks.changed(c));
