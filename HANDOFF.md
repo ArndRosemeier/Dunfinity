@@ -4,13 +4,13 @@
      reads this after CLAUDE.md and docs/CROSS-TOOL.md. -->
 
 - **by:** `claude-code/session_015a9FszEAngcaUHDv4wySRi` (cloud, thread "Actors humans replace ours")
-- **at:** `2026-11-05T00:30:00Z`
+- **at:** `2026-11-05T10:00:00Z`
 - **branch / worktree:** `claude/actors-humans-evkdkn` · the cloud container's own clone
-- **last verified:** `bash scripts/gate.sh` green with Actors 0.33.4 and AssetGenerator b34dda6
+- **last verified:** `bash scripts/gate.sh` green with Actors 0.34.0; creator probe on `?gl` wearing 3026 and medieval presets, no shader policy violations
 
 ## Done
 
-- Actors 0.33.4 (from 0.8.2) and the AssetGenerator submodule at b34dda6 (210 commits; the game only imports `@futuremagic/core`, which only gained `ground.ts`; none of `tools/props/models.json`'s specs changed, so the props pack was not rebuilt). `today()` now filters by Actors' theme tags (`filterCatalog`, modern + vintage, without real-faith) and drops helmets and gowns; test/today.test.ts. New Actors defaults on: skin detail, cloth tuck, cloth motion; face rig, living face and wrinkles stay off. Cloth motion made the skirt's collider shadow shader 108 to 135 ms on the CI runner (budget 100): `Figure.shadows()` now gives any part with a `positionNode` (Actors' collider garments) the body's shared shadow stand-in.
+- Actors 0.34.0: the creator (src/game/creator.ts) loads its model character with `allow: GRANDCHILD` (src/render/actors/today.ts: humans only) and the `uncredited` catalog, so every uncredited garment is on offer (Arnd 2026-11-05: medieval and futuristic are fine for the player). Editor sections are now `body`, `face`, `outfit`, each with Simple/Detailed tabs. Townsfolk keep `today()`; the dice (`personOfToday`) still rolls someone of today.
 
 ## Next
 

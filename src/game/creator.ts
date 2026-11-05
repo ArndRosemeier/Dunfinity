@@ -1,7 +1,7 @@
 /**
  * The character creator (Scale's, brought over): after New Game, before the introduction, the
  * first grandchild stands in grandma's round room, lit by the lamp of whoever looks at them, and is
- * made: body, look and today's clothes in Actors' editor (src/app/creatorView.ts), on a model character of its
+ * made: body, face and hair, and any clothes (`GRANDCHILD`) in Actors' editor (src/app/creatorView.ts), on a model character of its
  * own. Each change is shown on the nobody (`Nobody.restyle`: its spare figure, compiled before it is swapped in).
  *
  * It is drawn by the game's own renderer in the game's own scene, so nothing of it is warmed apart:
@@ -14,7 +14,7 @@ import { nodeMaterials } from '@actors/three/webgpu';
 import type { CharacterConfig } from '@actors/generator';
 import { CreatorView, type Framing } from '../app/creatorView';
 import { Character, HUMAN_PACK, packFetch } from '../render/actors/pack';
-import { today } from '../render/actors/today';
+import { GRANDCHILD, uncredited } from '../render/actors/today';
 import { personOfToday } from '../render/actors/looks';
 import type { LevelView } from '../render/LevelView';
 import type { Nobody } from '../render/humans/nobody';
@@ -53,8 +53,8 @@ export async function playCreator(host: HTMLElement, cast: CreatorCast): Promise
   const { view, nobody } = cast;
   const clock = (): number => performance.now() / 1000;
   let yaw = Math.atan2(CREATOR.at.x - CREATOR.from.x, CREATOR.at.z - CREATOR.from.z) - CREATOR.turned, focus: Framing = 'body', want: CharacterConfig | null = null, building = false, builtAt = 0, strangers = 0;
-  // The editor's own character: never drawn, so nothing of it compiles; only people of today.
-  const model = await Character.load({ pack: HUMAN_PACK, renderer: null, materials: nodeMaterials, clipLibraries: false, fetcher: packFetch, catalog: today, config: nobody.look });
+  // The editor's own character: never drawn, so nothing of it compiles; a human in any clothes (`GRANDCHILD`).
+  const model = await Character.load({ pack: HUMAN_PACK, renderer: null, materials: nodeMaterials, clipLibraries: false, fetcher: packFetch, allow: GRANDCHILD, catalog: uncredited, config: nobody.look });
   const ui = new CreatorView(host, model, {
     changed: (look) => { want = look; },
     turn: (by) => { yaw += by; },
