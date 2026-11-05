@@ -10,7 +10,7 @@
 
 ## Done
 
-- Actors 0.33.4 (from 0.8.2) and the AssetGenerator submodule at b34dda6 (210 commits; the game only imports `@futuremagic/core`, which only gained `ground.ts`; none of `tools/props/models.json`'s specs changed, so the props pack was not rebuilt). `today()` now filters by Actors' theme tags (`filterCatalog`, modern + vintage, without real-faith) and drops helmets and gowns; test/today.test.ts. New Actors defaults on: skin detail, cloth tuck, cloth motion; face rig, living face and wrinkles stay off.
+- Actors 0.33.4 (from 0.8.2) and the AssetGenerator submodule at b34dda6 (210 commits; the game only imports `@futuremagic/core`, which only gained `ground.ts`; none of `tools/props/models.json`'s specs changed, so the props pack was not rebuilt). `today()` now filters by Actors' theme tags (`filterCatalog`, modern + vintage, without real-faith) and drops helmets and gowns; test/today.test.ts. New Actors defaults on: skin detail, cloth tuck, cloth motion; face rig, living face and wrinkles stay off. Cloth motion made the skirt's collider shadow shader 108 to 135 ms on the CI runner (budget 100): `Figure.shadows()` now gives any part with a `positionNode` (Actors' collider garments) the body's shared shadow stand-in.
 
 ## Next
 
