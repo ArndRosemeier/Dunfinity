@@ -34,7 +34,7 @@ const NO_SHADOW = /^(teeth|tongue|eyes|eyebrow|brows|lashes|eyelashes)/;
 const CUT_SHADOW = /^hair/;
 /** The body: its face morphs are its own, so its shadow is cast by a stand-in without them (`shadows`). */
 const BODY = /^body/;
-/** A body's shadow stand-in (its material is the registry's, shared: never change it). */
+/** A body's or a skirt's shadow stand-in (its material is the registry's, shared: never change it). */
 export const STAND_IN = 'body-shadow';
 /** How far a fist closes round a handle, radians a finger joint. */
 const GRIP_CURL = 1.15;
@@ -92,15 +92,18 @@ export class Figure {
    * every figure (src/render/stage.ts `PLAIN_SHADOW`); hair keeps its cut-outs, if it casts one at
    * all (`hairShadow`). The body's face morphs would make its shadow shader its own too, so a
    * stand-in casts it: the body's skinned mesh without the morphs, seen by the shadow camera alone
-   * (`SHADOW_LAYER`), one shader for every figure's body.
+   * (`SHADOW_LAYER`), one shader for every figure's body. A skirt's shadow too: its leg colliders and
+   * swing (Actors' `positionNode`) made a shadow shader over the build budget, so the same stand-in casts
+   * it, as it hangs at rest on the skin.
    */
   shadows(): void {
     const bodies: SkinnedMesh[] = [], old: Object3D[] = [];
     for (const m of this.meshes()) {
       if (m.name === STAND_IN) { old.push(m); continue; }
       if (NO_SHADOW.test(m.name) || (!this.hairShadow && CUT_SHADOW.test(m.name))) m.castShadow = false;
-      if (BODY.test(m.name) && (m as SkinnedMesh).isSkinnedMesh && (m.castShadow || m.userData[STAND_IN])) bodies.push(m as SkinnedMesh);
-      const mat = m.material as Material;
+      const mat = m.material as Material & { positionNode?: unknown };
+      const own = BODY.test(m.name) || !!mat.positionNode;
+      if (own && (m as SkinnedMesh).isSkinnedMesh && (m.castShadow || m.userData[STAND_IN])) bodies.push(m as SkinnedMesh);
       if (m.castShadow && !mat.transparent && !CUT_SHADOW.test(m.name)) mat.userData[PLAIN_SHADOW] = true;
     }
     for (const o of old) o.removeFromParent();

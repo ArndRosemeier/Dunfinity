@@ -1,10 +1,13 @@
 /**
  * Who the game's people may be and what they wear, from what the Actors pack offers (pure: tests run it).
  */
-import type { CharacterCatalog } from '@actors/generator';
+import { filterCatalog, type CharacterCatalog } from '@actors/generator';
 
-/** Garments of a fantasy world (helmets, robes, gowns, horns...) or of the far future (Commonwear 3026), not worn in a village of today. */
-const FANTASY = /future|viking|wizard|witch|santa|knight|dragon|skull|horned|corinthian|monk|medieval|goddess|elven|priestess|ninja|pirate|gown|bodice|helmet/;
+/** The settings of today's village in Actors' theme tags: modern clothes and grandma's vintage ones; no real-world religious symbols. */
+const NOW = { themes: ['modern', 'vintage'], without: ['real-faith'] };
+
+/** Garments the tags call modern that are still not worn about the village: helmets (motorcycle, army) and gowns. */
+const NOT_EVERYDAY = /helmet|gown/;
 
 /**
  * What the game may draw of the pack at all: every people, and only what is free to ship without a
@@ -15,9 +18,10 @@ export function uncredited(all: CharacterCatalog): CharacterCatalog {
   return keep(all, all.garments.filter((g) => !g.credit), all.races);
 }
 
-/** What a person of today may be and wear: human, in everyday clothes, and nothing credited (`uncredited`). */
-export function today(all: CharacterCatalog): CharacterCatalog {
-  return keep(all, all.garments.filter((g) => !g.credit && !FANTASY.test(g.id)), all.races.filter((r) => r.id === 'human'));
+/** What a person of today may be and wear: human, in everyday clothes (`NOW`, less `NOT_EVERYDAY`), and nothing credited (`uncredited`). */
+export function today(every: CharacterCatalog): CharacterCatalog {
+  const all = filterCatalog(every, NOW);
+  return keep(all, all.garments.filter((g) => !g.credit && !NOT_EVERYDAY.test(g.id)), all.races.filter((r) => r.id === 'human'));
 }
 
 function keep(all: CharacterCatalog, garments: CharacterCatalog['garments'], races: CharacterCatalog['races']): CharacterCatalog {
