@@ -16,6 +16,7 @@ export function installShaderPolicy(renderer: WebGPURenderer, cap: ShaderCap, mo
   const missing: string[] = [];
   if (!queueNodeBuilds(renderer, cap, monitor)) missing.push('node build queue');
   if (!asyncDrawPipelines(renderer)) missing.push('async draw pipelines');
+  if (!balancedBindingRelease(renderer)) missing.push('balanced binding release');
   noPerFrameUploads();
   timeGpu(monitor);
   return missing;
@@ -71,6 +72,29 @@ function asyncDrawPipelines(renderer: WebGPURenderer): boolean {
     if (inFlight >= MAX_DRAW_PIPES && this.get(ro).pipeline === undefined) return;
     this.getForRender(ro, sink);
   };
+  return true;
+}
+
+/**
+ * three.js bug (r186, still in r187): disposing a render object releases its bind groups, counting
+ * each group's users down, even when its bind groups were never set up (it was only queued for
+ * compileAsync, or disposed while its async node build was pending). Groups shared by every render
+ * object of one shader then reached zero while still drawn and lost their GPU buffers: the next
+ * draw threw "writeBuffer: parameter 1 is not of type 'GPUBuffer'". Only bind groups that were set
+ * up are released. Internal: Bindings.deleteForRender and getForRender's `initialized` flag (r186).
+ * From AssetGenerator's @futuremagic/stage (packages/stage/src/patches.ts, from Scale).
+ */
+function balancedBindingRelease(renderer: WebGPURenderer): boolean {
+  const bindings = (renderer as Any)._bindings;
+  const release = bindings?.deleteForRender;
+  if (typeof release !== 'function' || typeof bindings.has !== 'function' || typeof bindings.get !== 'function' || typeof bindings.delete !== 'function') return false;
+  if (release.balanced) return true;
+  const balanced = function (this: Any, renderObject: Any) {
+    if (this.has(renderObject) && this.get(renderObject).initialized === true) return release.call(this, renderObject);
+    this.delete(renderObject);
+  };
+  balanced.balanced = true;
+  bindings.deleteForRender = balanced;
   return true;
 }
 
